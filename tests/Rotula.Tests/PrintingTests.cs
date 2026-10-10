@@ -271,3 +271,57 @@ public class PrintingWinspoolSmokeTests
         Assert.Equal(PrintErrorKind.PrinterNotFound, r.Error!.Kind);
     }
 }
+
+/// <summary>Raw ZPL blocks imported from bytes must reach the printer byte for byte.</summary>
+public class PrintingRawBytesTests
+{
+    [Fact]
+    public async Task Raw_block_with_high_bytes_is_sent_as_latin1_while_the_rest_stays_utf8()
+    {
+        var fake = new FakeSpooler();
+        var svc = new PrintService(fake, new TcpRawPrinter(), fake);
+        var doc = new LabelDocument { Width = Measure.Millimeters(50), Height = Measure.Millimeters(30), Encoding = ZplEncoding.Utf8 };
+        doc.Elements.Add(new TextElement { X = 10, Y = 10, Text = "Niño" });
+        doc.Elements.Add(new RawZplElement { Zpl = "^FO5,5^FDéÿ^FS", IsVisual = true });
+
+        var r = await svc.PrintAsync(PrinterTarget.Spooler("Zebra ZD420"), doc);
+
+        Assert.True(r.Succeeded);
+        var bytes = Assert.Single(fake.Jobs).Data;
+        // Raw block: one byte per char (E9 FF), not the UTF-8 pairs C3 A9 C3 BF.
+        Assert.Equal(1, Count(bytes, [0x5E, 0x46, 0x44, 0xE9, 0xFF, 0x5E, 0x46, 0x53]));
+        // The generator hex-escapes real text, so nothing else may carry a byte above 0x7F (no UTF-8 lead bytes).
+        Assert.Equal(2, bytes.Count(b => b > 0x7F));
+    }
+
+    [Fact]
+    public void Cp1252_document_sends_raw_0x80_to_0x9F_bytes_unchanged()
+    {
+        // Latin-1 char U+0085 is byte 0x85; cp1252 would map it differently, so it needs the byte-exact path.
+        const string zpl = "^XA^FDabc\u0085\u0099^FS^XZ";
+        Assert.True(PrintService.TryEncode(zpl, ZplEncoding.Cp1252, ["abc\u0085\u0099"], out var bytes));
+        Assert.Equal([0x61, 0x62, 0x63, 0x85, 0x99], bytes[6..11]);
+    }
+
+    [Fact]
+    public void Without_raw_blocks_encoding_is_unchanged()
+    {
+        Assert.True(PrintService.TryEncode("ñ", ZplEncoding.Utf8, [], out var bytes));
+        Assert.Equal([0xC3, 0xB1], bytes);
+    }
+
+    [Theory]
+    [InlineData("^FO1,1^FS", false)]
+    [InlineData("^FDé", true)]
+    [InlineData("^FD€é", false)] // a real Unicode char: not a stored byte
+    public void Only_latin1_blocks_with_high_chars_need_byte_exact_encoding(string raw, bool expected) =>
+        Assert.Equal(expected, PrintService.NeedsByteExactEncoding(raw));
+
+    private static int Count(byte[] hay, byte[] needle)
+    {
+        int n = 0;
+        for (int i = 0; i + needle.Length <= hay.Length; i++)
+            if (hay.AsSpan(i, needle.Length).SequenceEqual(needle)) n++;
+        return n;
+    }
+}

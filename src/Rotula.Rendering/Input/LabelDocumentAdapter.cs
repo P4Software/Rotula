@@ -161,10 +161,36 @@ public static class LabelDocumentAdapter
                 };
             }
 
+            case RecallPlaceholderElement recall:
+                // The stored object is unknown, so the designer's own size is used. The caption says what is recalled.
+                return new RenderPlaceholder
+                {
+                    WidthDots = Math.Max(1, recall.WidthDots),
+                    HeightDots = Math.Max(1, recall.HeightDots),
+                    Caption = string.IsNullOrWhiteSpace(recall.Reference)
+                        ? "Stored on printer (^" + recall.Command + ")"
+                        : "Stored on printer: " + recall.Reference,
+                    Typeset = typeset,
+                };
+
+            // Only raw blocks that draw something get a marker; configuration commands have no place on the label.
+            // The real size of the content is unknown, so a small fixed marker is drawn at the field position.
+            case RawZplElement { IsVisual: true }:
+                return new RenderPlaceholder
+                {
+                    WidthDots = RawMarkerWidthDots,
+                    HeightDots = RawMarkerHeightDots,
+                    Caption = "Raw ZPL",
+                    Typeset = typeset,
+                };
+
             default:
                 return null;
         }
     }
+
+    private const int RawMarkerWidthDots = 100;
+    private const int RawMarkerHeightDots = 40;
 
     private static RenderRotation ToRotation(FieldRotation r) => r switch
     {

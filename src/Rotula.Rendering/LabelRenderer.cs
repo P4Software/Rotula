@@ -147,6 +147,7 @@ public static class LabelRenderer
         {
             RenderText t => new TextLayout(t),
             RenderBox b => new BoxLayout(b),
+            RenderPlaceholder p => new PlaceholderLayout(p),
             RenderCircle c => new CircleLayout(c),
             RenderLine l => new LineLayout(l),
             RenderBarcode bc => new BarcodeLayout(bc, issues),
@@ -296,6 +297,55 @@ public static class LabelRenderer
     }
 
     // ----------------------------------------------------------------------------------- shapes
+
+    /// <summary>Hatched outline with a caption; honest about being a stand-in rather than the real content.</summary>
+    private sealed class PlaceholderLayout : Layout
+    {
+        private readonly RenderPlaceholder _p;
+
+        public PlaceholderLayout(RenderPlaceholder p)
+        {
+            _p = p;
+            Width = Math.Max(0, p.WidthDots);
+            Height = Math.Max(0, p.HeightDots);
+        }
+
+        public override void Paint(SKCanvas canvas)
+        {
+            if (Width <= 0 || Height <= 0) return;
+            float w = (float)Width, h = (float)Height;
+            using var paint = MakePaint(_p, white: false, antiAlias: false);
+            paint.Style = SKPaintStyle.Stroke;
+            paint.StrokeWidth = 1;
+
+            canvas.DrawRect(0.5f, 0.5f, w - 1, h - 1, paint);
+
+            // Diagonal hatch, clipped to the box so the lines never spill out of it.
+            canvas.Save();
+            canvas.ClipRect(new SKRect(0, 0, w, h));
+            const float step = 12;
+            for (float x = -h; x < w; x += step)
+                canvas.DrawLine(x, h, x + h, 0, paint);
+            canvas.Restore();
+
+            if (string.IsNullOrEmpty(_p.Caption)) return;
+            using var font = new SKFont(RenderFonts.Get(RenderFontFamily.Sans, bold: false), Math.Clamp(h / 4f, 8f, 24f))
+            {
+                Edging = SKFontEdging.Antialias,
+            };
+            // A white plate under the caption keeps it readable on top of the hatch lines.
+            float textW = Math.Min(font.MeasureText(_p.Caption), w - 4);
+            float plateH = font.Size + 4;
+            float plateX = Math.Max(2, (w - textW) / 2 - 2), plateY = Math.Max(0, (h - plateH) / 2);
+            using var plate = new SKPaint { Color = SKColors.White, Style = SKPaintStyle.Fill };
+            canvas.DrawRect(plateX, plateY, textW + 4, plateH, plate);
+            canvas.Save();
+            canvas.ClipRect(new SKRect(2, 0, w - 2, h));
+            using var text = MakePaint(_p, white: false, antiAlias: true);
+            canvas.DrawText(_p.Caption, plateX + 2, plateY + plateH - 4 - font.Metrics.Descent, SKTextAlign.Left, font, text);
+            canvas.Restore();
+        }
+    }
 
     private sealed class BoxLayout : Layout
     {

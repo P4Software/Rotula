@@ -70,7 +70,13 @@ public sealed class PrintService : IPrintService
             if (bad.Count > 0) return Task.FromResult(PrintResult.Fail(PrintError.Create(PrintErrorKind.InvalidProfile, bad.ToArray())));
             zpl = PrinterSetup.BuildSetupZpl(profile) + zpl;
         }
-        return PrintZplAsync(target, zpl, document.Encoding, cancellationToken);
+        ArgumentNullException.ThrowIfNull(target);
+        // Raw blocks imported from bytes hold bytes above 0x7F as the Latin-1 character with the same value, so they
+        // must go out as those exact bytes; the rest of the label follows the document encoding.
+        var rawBlocks = document.Elements.OfType<RawZplElement>().Select(r => r.Zpl).Where(NeedsByteExactEncoding).Distinct().ToArray();
+        if (!TryEncode(zpl, document.Encoding, rawBlocks, out var bytes))
+            return Task.FromResult(PrintResult.Fail(PrintErrorKind.EncodingFailed, document.Encoding.ToString()));
+        return SendAsync(target, bytes, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -105,7 +111,63 @@ public sealed class PrintService : IPrintService
     /// Encodes ZPL with the document's code page: UTF-8 for ^CI28, the matching legacy page otherwise.
     /// Strict (exception) fallback so an unmappable character is reported instead of silently becoming "?".
     /// </summary>
-    internal static bool TryEncode(string zpl, ZplEncoding encoding, out byte[] bytes)
+    internal static bool TryEncode(string zpl, ZplEncoding encoding, out byte[] bytes) => TryEncode(zpl, encoding, [], out bytes);
+
+    /// <summary>True for a raw ZPL block whose characters are all Latin-1 and at least one is above 0x7F (a byte kept as a char).</summary>
+    internal static bool NeedsByteExactEncoding(string rawZpl)
+    {
+        bool high = false;
+        foreach (char c in rawZpl)
+        {
+            if (c > 0xFF) return false; // a real Unicode character: not a stored byte, so the document encoding applies
+            if (c > 0x7F) high = true;
+        }
+        return high;
+    }
+
+    /// <summary>
+    /// Like the plain overload, but every occurrence of a block in <paramref name="byteExactBlocks"/> is written as
+    /// Latin-1 (one byte per char) instead of the document encoding. Why: re-encoding such a char as UTF-8 would turn
+    /// one original byte into two and corrupt the command (for example a ^GF payload or a binary ^FD).
+    /// Matching by text is safe here because the generator emits raw blocks verbatim; a block that cannot be found
+    /// simply follows the document encoding.
+    /// </summary>
+    internal static bool TryEncode(string zpl, ZplEncoding encoding, IReadOnlyCollection<string> byteExactBlocks, out byte[] bytes)
+    {
+        if (byteExactBlocks.Count == 0) return TryEncodeSegment(zpl, encoding, out bytes);
+
+        var ranges = new List<(int Start, int End)>();
+        foreach (var block in byteExactBlocks)
+        {
+            for (int i = zpl.IndexOf(block, StringComparison.Ordinal); i >= 0; i = zpl.IndexOf(block, i + block.Length, StringComparison.Ordinal))
+                ranges.Add((i, i + block.Length));
+        }
+        ranges.Sort();
+
+        using var ms = new MemoryStream();
+        int pos = 0;
+        foreach (var (start, end) in ranges)
+        {
+            if (end <= pos) continue; // nested in an earlier range
+            int s = Math.Max(start, pos); // overlapping ranges are merged
+            if (s > pos)
+            {
+                if (!TryEncodeSegment(zpl[pos..s], encoding, out var head)) { bytes = []; return false; }
+                ms.Write(head);
+            }
+            ms.Write(Encoding.Latin1.GetBytes(zpl[s..end]));
+            pos = end;
+        }
+        if (pos < zpl.Length)
+        {
+            if (!TryEncodeSegment(zpl[pos..], encoding, out var tail)) { bytes = []; return false; }
+            ms.Write(tail);
+        }
+        bytes = ms.ToArray();
+        return true;
+    }
+
+    private static bool TryEncodeSegment(string zpl, ZplEncoding encoding, out byte[] bytes)
     {
         try
         {

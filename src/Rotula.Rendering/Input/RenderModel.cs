@@ -115,6 +115,22 @@ public sealed record RenderText : RenderElement
     public double LineSpacingDots { get; init; }
 }
 
+/// <summary>
+/// A hatched, captioned box standing in for something the preview cannot draw (an object stored on the printer,
+/// or imported ZPL the designer does not model). It is a preview aid only and is never printed.
+/// </summary>
+public sealed record RenderPlaceholder : RenderElement
+{
+    /// <summary>Box width in dots.</summary>
+    public double WidthDots { get; init; } = 120;
+
+    /// <summary>Box height in dots.</summary>
+    public double HeightDots { get; init; } = 80;
+
+    /// <summary>Short caption drawn inside the box (for example the recalled object name). May be empty.</summary>
+    public string Caption { get; init; } = string.Empty;
+}
+
 /// <summary>A rectangle outline or filled box.</summary>
 public sealed record RenderBox : RenderElement
 {
