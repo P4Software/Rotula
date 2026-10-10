@@ -56,11 +56,11 @@ Diséñala, previsualízala, combina tus datos e imprímela. Sin cuenta, sin nub
 
 <div align="center">
 
-### [Descargar el instalador de Rotula para Windows (firmado)](https://github.com/P4Software/Rotula/releases/download/v0.1.0/Rotula-0.1.0-win-x64-setup.exe)
+### Se está preparando la primera versión firmada (v0.1.0)
 
-`Rotula-0.1.0-win-x64-setup.exe` · se instala solo para tu usuario, sin permisos de administrador
+El instalador se publicará en la [página de Releases](https://github.com/P4Software/Rotula/releases) como `Rotula-0.1.0-win-x64-setup.exe`. Se instala solo para tu usuario, sin permisos de administrador. Sigue el repositorio (Watch, luego Custom, luego Releases) para que GitHub te avise cuando salga.
 
-Siempre la versión más reciente: [github.com/P4Software/Rotula/releases/latest](https://github.com/P4Software/Rotula/releases/latest)
+Mientras tanto puedes compilar Rotula desde el código fuente: consulta [Compilar desde el código fuente](#compilar-desde-el-código-fuente).
 
 </div>
 
