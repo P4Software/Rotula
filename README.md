@@ -1,6 +1,6 @@
 # Rotula
 
-[![Build](https://github.com/glenntosco/Rotula/actions/workflows/build.yml/badge.svg)](https://github.com/glenntosco/Rotula/actions/workflows/build.yml)
+[![Build](https://github.com/P4Software/Rotula/actions/workflows/build.yml/badge.svg)](https://github.com/P4Software/Rotula/actions/workflows/build.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 Language: [English](#english) | [Espanol](#espanol)
@@ -34,7 +34,7 @@ The commands Rotula reads and writes are listed in [docs/zpl-support.md](docs/zp
 
 ### Install
 
-Download the latest release from the [Releases page](https://github.com/glenntosco/Rotula/releases):
+Download the latest release from the [Releases page](https://github.com/P4Software/Rotula/releases):
 
 - **Portable**: `Rotula-<version>-win-x64-portable.zip`. Unzip anywhere and double-click `Rotula.App.exe`. No .NET needed.
 - **Installer**: `Rotula-<version>-win-x64-setup.exe`. Installs for your user only; no administrator rights needed.
@@ -131,7 +131,7 @@ Los comandos que Rotula lee y escribe estan en [docs/zpl-support.md](docs/zpl-su
 
 ### Instalacion
 
-Descarga la ultima version desde la [pagina de Releases](https://github.com/glenntosco/Rotula/releases):
+Descarga la ultima version desde la [pagina de Releases](https://github.com/P4Software/Rotula/releases):
 
 - **Portatil**: `Rotula-<version>-win-x64-portable.zip`. Descomprime en cualquier carpeta y haz doble clic en `Rotula.App.exe`.
   No necesita .NET.

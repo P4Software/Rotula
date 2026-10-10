@@ -25,7 +25,7 @@ These are product rules; changes that break them will not be merged.
 You need Windows and the .NET 10 SDK.
 
 ```
-git clone https://github.com/glenntosco/Rotula.git
+git clone https://github.com/P4Software/Rotula.git
 cd Rotula
 dotnet build Rotula.sln -c Release
 dotnet test  Rotula.sln -c Release

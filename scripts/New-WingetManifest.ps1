@@ -12,7 +12,7 @@ param(
     [Parameter(Mandatory)] [string] $Version,
     [Parameter(Mandatory)] [string] $InstallerPath,
     [Parameter(Mandatory)] [string] $OutputDir,
-    [string] $Repository = 'glenntosco/Rotula'
+    [string] $Repository = 'P4Software/Rotula'
 )
 $ErrorActionPreference = 'Stop'
 $Version = $Version.TrimStart('v')

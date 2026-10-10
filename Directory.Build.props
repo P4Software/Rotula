@@ -8,6 +8,6 @@
     <Company>P4 Software</Company>
     <Product>Rotula</Product>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <RepositoryUrl>https://github.com/glenntosco/Rotula</RepositoryUrl>
+    <RepositoryUrl>https://github.com/P4Software/Rotula</RepositoryUrl>
   </PropertyGroup>
 </Project>

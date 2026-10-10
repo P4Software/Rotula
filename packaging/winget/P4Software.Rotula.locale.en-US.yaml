@@ -3,12 +3,12 @@ PackageIdentifier: P4Software.Rotula
 PackageVersion: __VERSION__
 PackageLocale: en-US
 Publisher: P4 Software
-PublisherUrl: https://github.com/glenntosco
-PublisherSupportUrl: https://github.com/glenntosco/Rotula/issues
+PublisherUrl: https://github.com/P4Software
+PublisherSupportUrl: https://github.com/P4Software/Rotula/issues
 PackageName: Rotula
-PackageUrl: https://github.com/glenntosco/Rotula
+PackageUrl: https://github.com/P4Software/Rotula
 License: MIT
-LicenseUrl: https://github.com/glenntosco/Rotula/blob/main/LICENSE
+LicenseUrl: https://github.com/P4Software/Rotula/blob/main/LICENSE
 Copyright: Copyright (c) P4 Software
 ShortDescription: Offline label designer for Windows with ZPL-compatible output.
 Description: >-
