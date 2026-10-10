@@ -1,13 +1,28 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
-  <ItemGroup>
-    <ProjectReference Include="..\Rotula.Core\Rotula.Core.csproj" />
-  </ItemGroup>
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <!-- Emit XML docs so missing documentation on public members shows up as a warning (CS1591). -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Rotula.Core\Rotula.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- SkiaSharp: MIT. Pulls the Windows native assets transitively. -->
+    <PackageReference Include="SkiaSharp" Version="4.153.1" />
+    <!-- ZXing.Net: Apache-2.0. Used only as a barcode ENCODER (bit matrices); drawing is done by us. -->
+    <PackageReference Include="ZXing.Net" Version="0.16.11" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Bundled stand-in fonts (Liberation, SIL OFL 1.1). Embedded so the app needs no installed fonts. -->
+    <EmbeddedResource Include="Fonts\*.ttf" LogicalName="Rotula.Rendering.Fonts.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="Fonts\LICENSE-LiberationFonts.txt" LogicalName="Rotula.Rendering.Fonts.LICENSE-LiberationFonts.txt" />
+  </ItemGroup>
 
 </Project>
