@@ -1,2 +1,2 @@
-tests/fixtures/*.zpl text eol=lf
+tests/fixtures/**/*.zpl text eol=lf
 

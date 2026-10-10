@@ -124,6 +124,10 @@ public static class ZplGenerator
             case LineElement line: return EmitLine(doc, line, issues);
             case CircleElement c: return EmitCircle(doc, c, issues);
             case ImageElement img: return EmitImage(doc, img, issues);
+            // Imported content the designer cannot model is written back unchanged.
+            case RawZplElement raw: return raw.Zpl.Length == 0 ? null : raw.Zpl;
+            case RecallPlaceholderElement recall:
+                return recall.Zpl.Length == 0 ? null : recall.EmitAsField ? Origin(recall) + recall.Zpl + "^FS" : recall.Zpl;
             default:
                 issues.Add(new ValidationIssue(ValidationSeverity.Error, "Element.Unsupported", e.Id, e.GetType().Name));
                 return null;

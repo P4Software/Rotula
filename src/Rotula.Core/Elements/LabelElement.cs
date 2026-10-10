@@ -159,3 +159,40 @@ public sealed class ImageElement : LabelElement
     /// <summary>Swap black and white before reduction.</summary>
     public bool Invert { get; set; }
 }
+
+/// <summary>
+/// ZPL that the importer could not interpret, kept verbatim so nothing is lost on a re-export.
+/// It is either a standalone command (for example <c>^LS20</c>) or a whole field that uses an unsupported feature.
+/// </summary>
+public sealed class RawZplElement : LabelElement
+{
+    /// <summary>
+    /// The original ZPL text, emitted unchanged by the generator. When the file was imported from bytes,
+    /// bytes above 0x7F are held as the Latin-1 character with the same value.
+    /// </summary>
+    public string Zpl { get; set; } = string.Empty;
+
+    /// <summary>True when the block draws something on the label (a field); false for configuration commands.</summary>
+    public bool IsVisual { get; set; }
+}
+
+/// <summary>
+/// Stand-in for something stored on the printer that a recall command (<c>^XG</c>, <c>^IL</c>, <c>^XF</c>)
+/// would print. The stored object is not part of the file, so the designer only shows a placeholder, and the
+/// generator writes the original recall command back so the printed result does not change.
+/// </summary>
+public sealed class RecallPlaceholderElement : LabelElement
+{
+    /// <summary>The command without its prefix, upper case: <c>XG</c>, <c>IL</c> or <c>XF</c>.</summary>
+    public string Command { get; set; } = string.Empty;
+    /// <summary>The recalled object, for example <c>R:LOGO.GRF</c>; may be empty.</summary>
+    public string Reference { get; set; } = string.Empty;
+    /// <summary>The full original command including its parameters, for example <c>^XGR:LOGO.GRF,1,1</c>.</summary>
+    public string Zpl { get; set; } = string.Empty;
+    /// <summary>True when the command lives inside a positioned field (<c>^FO..^FS</c>), false when it stands alone.</summary>
+    public bool EmitAsField { get; set; }
+    /// <summary>Width the designer draws the placeholder with, in dots (the real size is unknown).</summary>
+    public int WidthDots { get; set; } = 120;
+    /// <summary>Height the designer draws the placeholder with, in dots (the real size is unknown).</summary>
+    public int HeightDots { get; set; } = 80;
+}

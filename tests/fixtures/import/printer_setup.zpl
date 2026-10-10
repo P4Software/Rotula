@@ -1,0 +1,9 @@
+^XA
+^PON
+^MUd
+^PW812
+^MNY
+^LH0,0
+^PMN
+^ISR:FORMAT.GRF,Y
+^XZ
