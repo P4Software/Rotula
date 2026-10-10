@@ -72,10 +72,10 @@ public static class ZplText
     }
 }
 
-/// <summary>Substitutes <c>{{name}}</c> placeholders with merge data or sample values.</summary>
+/// <summary>Substitutes <c>{{name}}</c> placeholders with merge data or sample values. A leading <c>#</c> (for example <c>{{#Counter}}</c>) marks a virtual serial-number column.</summary>
 public static class VariableResolver
 {
-    private static readonly Regex Token = new(@"\{\{\s*([A-Za-z_][A-Za-z0-9_]*)\s*\}\}", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+    private static readonly Regex Token = new(@"\{\{\s*(#?[A-Za-z_][A-Za-z0-9_]*)\s*\}\}", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
     /// <summary>Names of all placeholders in <paramref name="template"/>, in order of appearance (duplicates kept).</summary>
     public static IReadOnlyList<string> FindVariables(string template) =>

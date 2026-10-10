@@ -8,5 +8,9 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="MiniExcel" Version="1.46.0" />
+  </ItemGroup>
+
 </Project>
 
