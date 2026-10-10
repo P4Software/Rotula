@@ -1,0 +1,18 @@
+<views:DialogWindow x:Class="Rotula.App.Views.NoticesWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:Rotula.App.Localization"
+        xmlns:views="clr-namespace:Rotula.App.Views"
+        Title="{loc:T About.Notices.Title}" Width="860" Height="620" MinWidth="520" MinHeight="360"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        AutomationProperties.Name="{loc:T About.Notices.Title}">
+  <DockPanel>
+    <Border DockPanel.Dock="Bottom" Background="{StaticResource ToolbarBrush}" BorderBrush="{StaticResource BorderBrushLight}" BorderThickness="0,1,0,0" Padding="24,14">
+      <Button Content="{loc:T Common.Close}" IsDefault="True" IsCancel="True" Style="{StaticResource PrimaryButton}" MinWidth="96" HorizontalAlignment="Right"
+              AutomationProperties.Name="{loc:T Common.Close}" Click="OnClose" />
+    </Border>
+    <!-- Read-only text box: the text can be selected and copied, and the keyboard scrolls it. -->
+    <TextBox x:Name="Notices" IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" BorderThickness="0" Margin="8,8,0,8"
+             Padding="16,8" FontFamily="{StaticResource MonoFont}" FontSize="12" MinHeight="0" AutomationProperties.Name="{loc:T About.Notices.Title}" />
+  </DockPanel>
+</views:DialogWindow>

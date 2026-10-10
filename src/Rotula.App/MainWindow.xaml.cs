@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using Rotula.App.Localization;
+using Rotula.App.Views;
 using Rotula.App.ViewModels;
 using Rotula.Core.Model;
 
@@ -35,6 +36,8 @@ public partial class MainWindow : Window
         {
             RestorePanelSplit();
             viewModel.ZoomFitCommand.Execute(null);
+            // The first thing a keyboard user should land on is the main call to action of the start screen.
+            if (viewModel.ShowStartScreen) StartNewButton.Focus();
             // Printer discovery is async; the window is already usable while Windows lists its printers.
             await viewModel.Printer.RefreshPrintersAsync();
         };
@@ -229,7 +232,5 @@ public partial class MainWindow : Window
         }
     }
 
-    private void OnAbout(object sender, RoutedEventArgs e) =>
-        MessageBox.Show(this, Loc.Get("About.Body", typeof(App).Assembly.GetName().Version?.ToString(3) ?? "1.0"), Loc.Get("Menu.About"),
-            MessageBoxButton.OK, MessageBoxImage.Information);
+    private void OnAbout(object sender, RoutedEventArgs e) => new AboutWindow { Owner = this }.ShowDialog();
 }

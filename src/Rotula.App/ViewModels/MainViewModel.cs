@@ -119,7 +119,8 @@ public sealed partial class MainViewModel : ObservableObject
 
         FillToolbox();
 
-        Session.DocumentChanged += (_, _) => OnDocumentChanged();
+        // Any change of the label (an edit, a loaded file) means the user has started working: the start screen is no longer needed.
+        Session.DocumentChanged += (_, _) => { ShowStartScreen = false; OnDocumentChanged(); };
         Session.SelectionChanged += (_, _) => OnSelectionChanged();
         Session.DirtyChanged += (_, _) => OnDirtyChanged();
         Session.Undo.Changed += (_, _) => RefreshCommandStates();
@@ -191,6 +192,23 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Status bar message about the last action.</summary>
     [ObservableProperty]
     private string _statusMessage = string.Empty;
+
+    /// <summary>True when the status bar has a message (so the divider next to it is only drawn then).</summary>
+    public bool HasStatusMessage => !string.IsNullOrEmpty(StatusMessage);
+
+    partial void OnStatusMessageChanged(string value) => OnPropertyChanged(nameof(HasStatusMessage));
+
+    /// <summary>
+    /// True while the friendly start screen covers the canvas: the program was started with no file and nothing has been done yet.
+    /// It goes away once a label is created, opened or imported, on the first edit, or when the user chooses to start with a blank label.
+    /// A cancelled dialog or a file that fails to load leaves it in place.
+    /// </summary>
+    [ObservableProperty]
+    private bool _showStartScreen = true;
+
+    /// <summary>Hides the start screen and carries on with the blank label.</summary>
+    [RelayCommand]
+    private void DismissStartScreen() => ShowStartScreen = false;
 
     /// <summary>Status bar text about the selection.</summary>
     [ObservableProperty]
@@ -644,6 +662,7 @@ public sealed partial class MainViewModel : ObservableObject
         // Data settings are replaced first: the loaded data belonged to the previous label, and only the settings are kept per file.
         Data.Apply(merge);
         Session.Load(doc, markDirty);
+        ShowStartScreen = false;
         FilePath = path;
         Zoom = new ZoomModel(1.0);
         ZoomToFitRequested?.Invoke(this, EventArgs.Empty);

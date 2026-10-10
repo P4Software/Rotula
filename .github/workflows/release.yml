@@ -1,12 +1,15 @@
 name: Release
 
 # Runs when a version tag such as v0.1.0 (or v0.2.0-rc1) is pushed.
+# This workflow only verifies and builds: it never signs, never builds the installer and never creates or touches a
+# GitHub Release. The signed installer and the Release are produced locally with the company's Azure login
+# (packaging/installer/build-installer.cmd, see docs/releasing.md). CI holds no signing secrets by design.
 on:
   push:
     tags: ["v*"]
 
 permissions:
-  contents: write # needed to create the GitHub Release and upload assets
+  contents: read # nothing here writes to the repository or to Releases
 
 env:
   DOTNET_CLI_TELEMETRY_OPTOUT: "1"
@@ -14,7 +17,7 @@ env:
 
 jobs:
   release:
-    name: Build, test, package and publish
+    name: Build, test and package (unsigned workflow artifact)
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -36,7 +39,6 @@ jobs:
           $version = '${{ github.ref_name }}'.TrimStart('v')
           if ($version -notmatch '^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$') { throw "Tag '${{ github.ref_name }}' is not a v<major>.<minor>.<patch>[-suffix] version." }
           "version=$version" >> $env:GITHUB_OUTPUT
-          "prerelease=$($version.Contains('-').ToString().ToLower())" >> $env:GITHUB_OUTPUT
 
       - name: Restore
         run: dotnet restore Rotula.sln
@@ -68,6 +70,7 @@ jobs:
           -p:Version=${{ steps.ver.outputs.version }}
           -o publish/win-x64
 
+      # The zip is an UNSIGNED CI artifact for inspection only; the signed portable zip comes from the local build.
       - name: Stage files and create the portable zip
         shell: pwsh
         run: |
@@ -75,33 +78,7 @@ jobs:
           New-Item -ItemType Directory -Force artifacts, stage | Out-Null
           Copy-Item publish/win-x64/Rotula.App.exe stage/
           Copy-Item LICENSE, THIRD-PARTY-NOTICES.md, README.md stage/
-          Compress-Archive -Path stage/* -DestinationPath "artifacts/Rotula-$v-win-x64-portable.zip" -Force
-
-      # Inno Setup is a build-time tool only; nothing from it ships inside the app.
-      - name: Install Inno Setup
-        shell: pwsh
-        run: choco install innosetup --no-progress -y
-
-      - name: Build the installer
-        shell: pwsh
-        run: |
-          $iscc = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'
-          & $iscc "/DAppVersion=${{ steps.ver.outputs.version }}" "/DSourceDir=$PWD\stage" "/DOutputDir=$PWD\artifacts" packaging/installer/Rotula.iss
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-
-      - name: Generate the winget manifests
-        shell: pwsh
-        run: |
-          $v = '${{ steps.ver.outputs.version }}'
-          ./scripts/New-WingetManifest.ps1 -Version $v -InstallerPath "artifacts/Rotula-$v-win-x64-setup.exe" -OutputDir winget-out -Repository '${{ github.repository }}'
-          Compress-Archive -Path winget-out/* -DestinationPath "artifacts/Rotula-$v-winget-manifests.zip" -Force
-
-      - name: Checksums
-        shell: pwsh
-        run: |
-          Get-ChildItem artifacts -File | Where-Object Name -ne 'SHA256SUMS.txt' | ForEach-Object {
-            '{0}  {1}' -f (Get-FileHash -Algorithm SHA256 $_.FullName).Hash.ToLowerInvariant(), $_.Name
-          } | Set-Content -Encoding ascii artifacts/SHA256SUMS.txt
+          Compress-Archive -Path stage/* -DestinationPath "artifacts/Rotula-$v-win-x64-portable-unsigned-ci.zip" -Force
 
       # Smoke test: the published exe must start and stay up (a missing native asset would crash it at once).
       - name: Smoke test the published exe
@@ -116,27 +93,5 @@ jobs:
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: release-artifacts
+          name: portable-unsigned-ci
           path: artifacts/
-
-      - name: Create the GitHub Release
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          $v = '${{ steps.ver.outputs.version }}'
-          $ghArgs = @('release', 'create', '${{ github.ref_name }}', '--title', "Rotula $v", '--verify-tag')
-          if ('${{ steps.ver.outputs.prerelease }}' -eq 'true') { $ghArgs += '--prerelease' }
-          # Use the matching CHANGELOG section as the notes when it exists, otherwise let GitHub generate them.
-          $m = Select-String -Path CHANGELOG.md -Pattern "^## \[$([regex]::Escape($v))\]" | Select-Object -First 1
-          if ($m) {
-            $lines = Get-Content CHANGELOG.md
-            $start = $m.LineNumber
-            $end = ($start..($lines.Count - 1) | Where-Object { $lines[$_] -match '^(## \[|\[[^\]]+\]: )' } | Select-Object -First 1)
-            if (-not $end) { $end = $lines.Count }
-            $lines[$start..($end - 1)] -join "`n" | Set-Content -Encoding utf8 release-notes.md
-            $ghArgs += @('--notes-file', 'release-notes.md')
-          } else { $ghArgs += '--generate-notes' }
-          $files = Get-ChildItem artifacts -File | ForEach-Object FullName
-          gh @args @files
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

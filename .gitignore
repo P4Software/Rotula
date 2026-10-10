@@ -8,3 +8,6 @@ coverage/
 publish/
 artifacts/
 *.nupkg
+
+# Per-developer release build settings (created by packaging/installer/build-installer.ps1)
+packaging/installer/build-settings.json

@@ -26,6 +26,17 @@ public class DialogWindow : Window
         CommandBindings.Add(new CommandBinding(SystemCommands.MaximizeWindowCommand, (_, _) => SystemCommands.MaximizeWindow(this)));
         CommandBindings.Add(new CommandBinding(SystemCommands.RestoreWindowCommand, (_, _) => SystemCommands.RestoreWindow(this)));
         Loaded += (_, _) => PlaceOnOwner();
+        // A window can grow after it is shown (printer detection adds a note, a list gets longer): keep its bottom edge on the screen.
+        SizeChanged += (_, _) => { if (IsLoaded && WindowState == WindowState.Normal) KeepInsideWorkArea(); };
+    }
+
+    private void KeepInsideWorkArea()
+    {
+        var area = WorkAreaInDips(Owner ?? this);
+        double top = Math.Max(area.Top, Math.Min(Top, area.Bottom - ActualHeight));
+        double left = Math.Max(area.Left, Math.Min(Left, area.Right - ActualWidth));
+        if (Math.Abs(top - Top) > 0.5) Top = top;
+        if (Math.Abs(left - Left) > 0.5) Left = left;
     }
 
     /// <inheritdoc />

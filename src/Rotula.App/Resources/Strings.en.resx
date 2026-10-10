@@ -58,12 +58,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="About.Body" xml:space="preserve">
-    <value>Rotula {0}
-A free, offline label designer for Zebra (ZPL) printers.
-
-MIT licence. No telemetry, no network access.</value>
-  </data>
   <data name="Canvas.Help" xml:space="preserve">
     <value>Click an element to select it. Drag to move. Arrow keys nudge the selection by one dot; hold Shift for eight dots. Press Delete to remove it.</value>
   </data>
@@ -116,9 +110,7 @@ MIT licence. No telemetry, no network access.</value>
     <value>The label was not printed</value>
   </data>
   <data name="Dialog.SaveChanges.Body" xml:space="preserve">
-    <value>"{0}" has changes that are not saved. Do you want to save them first?
-
-Yes saves, No discards the changes, Cancel goes back to the label.</value>
+    <value>"{0}" has changes that are not saved. Do you want to save them first?</value>
   </data>
   <data name="Dialog.SaveChanges.Title" xml:space="preserve">
     <value>Unsaved changes</value>
@@ -2081,5 +2073,98 @@ Yes saves, No discards the changes, Cancel goes back to the label.</value>
   </data>
   <data name="Print.DpiConvert.Failed.Title" xml:space="preserve">
     <value>Cannot switch the label</value>
+  </data>
+  <data name="Common.Ok" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="Dialog.SaveChanges.Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Dialog.SaveChanges.Discard" xml:space="preserve">
+    <value>Don't save</value>
+  </data>
+  <data name="Dialog.Kind.Info" xml:space="preserve">
+    <value>Information</value>
+  </data>
+  <data name="Dialog.Kind.Warning" xml:space="preserve">
+    <value>Warning</value>
+  </data>
+  <data name="Dialog.Kind.Error" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="Dialog.Kind.Question" xml:space="preserve">
+    <value>Question</value>
+  </data>
+  <data name="About.Title" xml:space="preserve">
+    <value>About Rotula</value>
+  </data>
+  <data name="About.Version" xml:space="preserve">
+    <value>Version {0}</value>
+  </data>
+  <data name="About.Tagline" xml:space="preserve">
+    <value>Free, open-source (MIT) barcode and label designer for Windows (ZPL)</value>
+  </data>
+  <data name="About.Privacy" xml:space="preserve">
+    <value>Works offline. No telemetry, no network access.</value>
+  </data>
+  <data name="About.Approximate" xml:space="preserve">
+    <value>The on-screen preview is approximate: text is drawn with a stand-in font, so letter shapes and line breaks can differ slightly on the printed label.</value>
+  </data>
+  <data name="About.Link" xml:space="preserve">
+    <value>https://github.com/P4Software/Rotula</value>
+  </data>
+  <data name="About.Link.Tip" xml:space="preserve">
+    <value>Open the project page in your web browser</value>
+  </data>
+  <data name="About.Link.Failed" xml:space="preserve">
+    <value>The web browser could not be opened. The project page is {0}</value>
+  </data>
+  <data name="About.Notices" xml:space="preserve">
+    <value>Third-party notices</value>
+  </data>
+  <data name="About.Notices.Title" xml:space="preserve">
+    <value>Third-party notices</value>
+  </data>
+  <data name="About.Notices.Missing" xml:space="preserve">
+    <value>The notices file is not part of this build. It is available at https://github.com/P4Software/Rotula in THIRD-PARTY-NOTICES.md.</value>
+  </data>
+  <data name="Start.Title" xml:space="preserve">
+    <value>Welcome to Rotula</value>
+  </data>
+  <data name="Start.Subtitle" xml:space="preserve">
+    <value>Design a label, check it on screen and print it on your Zebra printer.</value>
+  </data>
+  <data name="Start.New" xml:space="preserve">
+    <value>New label</value>
+  </data>
+  <data name="Start.New.Desc" xml:space="preserve">
+    <value>Pick a size and start designing.</value>
+  </data>
+  <data name="Start.Open" xml:space="preserve">
+    <value>Open label</value>
+  </data>
+  <data name="Start.Open.Desc" xml:space="preserve">
+    <value>Continue a saved .rotula file.</value>
+  </data>
+  <data name="Start.Import" xml:space="preserve">
+    <value>Import ZPL</value>
+  </data>
+  <data name="Start.Import.Desc" xml:space="preserve">
+    <value>Turn an existing ZPL file into an editable design.</value>
+  </data>
+  <data name="Start.Recent" xml:space="preserve">
+    <value>Recent labels</value>
+  </data>
+  <data name="Start.Recent.None" xml:space="preserve">
+    <value>Labels you save or open will appear here.</value>
+  </data>
+  <data name="Start.Blank" xml:space="preserve">
+    <value>Start with a blank label</value>
+  </data>
+  <data name="Start.Hint" xml:space="preserve">
+    <value>Tip: drag the corners to resize, press the arrow keys to nudge, and use Ctrl+Z to undo any step.</value>
+  </data>
+  <data name="Start.Name" xml:space="preserve">
+    <value>Start screen</value>
   </data>
 </root>

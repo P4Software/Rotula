@@ -7,7 +7,9 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 - GitHub Actions workflows: build and test with a Rotula.Core line-coverage gate (80%), a repository hygiene check, and a
-  release workflow that publishes a portable single-file win-x64 zip, an installer and winget manifests.
+  tag workflow that re-runs the checks and keeps an unsigned portable single-file win-x64 zip as a workflow artifact. CI
+  does not sign or publish anything: signed releases (installer, portable zip, checksums and winget manifests) are built
+  locally with Azure Artifact Signing, as described in docs/releasing.md.
 - Project documentation: README (English and Spanish), ZPL support matrix, contributing guide, code of conduct, security
   policy, third-party notices, issue and pull request templates.
 
@@ -38,7 +40,8 @@ First public version.
 - Preview text uses a stand-in typeface; bitmap fonts and `FontWidth` are approximated.
 - `^PO` is written to the ZPL but not previewed.
 - Variables do not survive a ZPL round trip.
-- Unsigned release builds trigger a Windows SmartScreen prompt.
+- Releases are signed with Azure Artifact Signing, but Windows SmartScreen can still show a reputation warning for a new,
+  little-downloaded file until downloads build trust (More info, then Run anyway).
 
 [Unreleased]: https://github.com/P4Software/Rotula/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/P4Software/Rotula/releases/tag/v0.1.0

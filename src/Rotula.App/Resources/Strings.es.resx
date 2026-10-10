@@ -58,12 +58,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="About.Body" xml:space="preserve">
-    <value>Rotula {0}
-Un diseñador de etiquetas gratuito y sin conexión para impresoras Zebra (ZPL).
-
-Licencia MIT. Sin telemetría ni acceso a la red.</value>
-  </data>
   <data name="Canvas.Help" xml:space="preserve">
     <value>Haga clic en un elemento para seleccionarlo. Arrastre para moverlo. Las flechas mueven la selección un punto; con Mayús, ocho puntos. Pulse Supr para eliminarlo.</value>
   </data>
@@ -116,9 +110,7 @@ Licencia MIT. Sin telemetría ni acceso a la red.</value>
     <value>La etiqueta no se imprimió</value>
   </data>
   <data name="Dialog.SaveChanges.Body" xml:space="preserve">
-    <value>"{0}" tiene cambios sin guardar. ¿Desea guardarlos antes?
-
-Sí guarda, No descarta los cambios, Cancelar vuelve a la etiqueta.</value>
+    <value>"{0}" tiene cambios sin guardar. ¿Desea guardarlos antes?</value>
   </data>
   <data name="Dialog.SaveChanges.Title" xml:space="preserve">
     <value>Cambios sin guardar</value>
@@ -2081,5 +2073,98 @@ Sí guarda, No descarta los cambios, Cancelar vuelve a la etiqueta.</value>
   </data>
   <data name="Print.DpiConvert.Failed.Title" xml:space="preserve">
     <value>No se puede cambiar la etiqueta</value>
+  </data>
+  <data name="Common.Ok" xml:space="preserve">
+    <value>Aceptar</value>
+  </data>
+  <data name="Dialog.SaveChanges.Save" xml:space="preserve">
+    <value>Guardar</value>
+  </data>
+  <data name="Dialog.SaveChanges.Discard" xml:space="preserve">
+    <value>No guardar</value>
+  </data>
+  <data name="Dialog.Kind.Info" xml:space="preserve">
+    <value>Información</value>
+  </data>
+  <data name="Dialog.Kind.Warning" xml:space="preserve">
+    <value>Advertencia</value>
+  </data>
+  <data name="Dialog.Kind.Error" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="Dialog.Kind.Question" xml:space="preserve">
+    <value>Pregunta</value>
+  </data>
+  <data name="About.Title" xml:space="preserve">
+    <value>Acerca de Rotula</value>
+  </data>
+  <data name="About.Version" xml:space="preserve">
+    <value>Versión {0}</value>
+  </data>
+  <data name="About.Tagline" xml:space="preserve">
+    <value>Diseñador de etiquetas y códigos de barras para Windows (ZPL), gratuito y de código abierto (MIT)</value>
+  </data>
+  <data name="About.Privacy" xml:space="preserve">
+    <value>Funciona sin conexión. Sin telemetría ni acceso a la red.</value>
+  </data>
+  <data name="About.Approximate" xml:space="preserve">
+    <value>La vista previa en pantalla es aproximada: el texto se dibuja con una fuente de reemplazo, así que la forma de las letras y los saltos de línea pueden variar un poco en la etiqueta impresa.</value>
+  </data>
+  <data name="About.Link" xml:space="preserve">
+    <value>https://github.com/P4Software/Rotula</value>
+  </data>
+  <data name="About.Link.Tip" xml:space="preserve">
+    <value>Abrir la página del proyecto en el navegador</value>
+  </data>
+  <data name="About.Link.Failed" xml:space="preserve">
+    <value>No se pudo abrir el navegador. La página del proyecto es {0}</value>
+  </data>
+  <data name="About.Notices" xml:space="preserve">
+    <value>Avisos de terceros</value>
+  </data>
+  <data name="About.Notices.Title" xml:space="preserve">
+    <value>Avisos de terceros</value>
+  </data>
+  <data name="About.Notices.Missing" xml:space="preserve">
+    <value>El archivo de avisos no forma parte de esta versión. Está disponible en https://github.com/P4Software/Rotula como THIRD-PARTY-NOTICES.md.</value>
+  </data>
+  <data name="Start.Title" xml:space="preserve">
+    <value>Bienvenido a Rotula</value>
+  </data>
+  <data name="Start.Subtitle" xml:space="preserve">
+    <value>Diseñe una etiqueta, revísela en pantalla e imprímala en su impresora Zebra.</value>
+  </data>
+  <data name="Start.New" xml:space="preserve">
+    <value>Nueva etiqueta</value>
+  </data>
+  <data name="Start.New.Desc" xml:space="preserve">
+    <value>Elija un tamaño y empiece a diseñar.</value>
+  </data>
+  <data name="Start.Open" xml:space="preserve">
+    <value>Abrir etiqueta</value>
+  </data>
+  <data name="Start.Open.Desc" xml:space="preserve">
+    <value>Continúe un archivo .rotula guardado.</value>
+  </data>
+  <data name="Start.Import" xml:space="preserve">
+    <value>Importar ZPL</value>
+  </data>
+  <data name="Start.Import.Desc" xml:space="preserve">
+    <value>Convierta un archivo ZPL existente en un diseño editable.</value>
+  </data>
+  <data name="Start.Recent" xml:space="preserve">
+    <value>Etiquetas recientes</value>
+  </data>
+  <data name="Start.Recent.None" xml:space="preserve">
+    <value>Las etiquetas que guarde o abra aparecerán aquí.</value>
+  </data>
+  <data name="Start.Blank" xml:space="preserve">
+    <value>Empezar con una etiqueta en blanco</value>
+  </data>
+  <data name="Start.Hint" xml:space="preserve">
+    <value>Consejo: arrastre las esquinas para cambiar el tamaño, use las flechas para mover y Ctrl+Z para deshacer cualquier paso.</value>
+  </data>
+  <data name="Start.Name" xml:space="preserve">
+    <value>Pantalla de inicio</value>
   </data>
 </root>

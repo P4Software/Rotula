@@ -52,31 +52,34 @@ public sealed class WpfFileDialogService : IFileDialogService
     }
 }
 
-/// <summary>Message boxes.</summary>
+/// <summary>Message boxes, shown with the program's own styled dialog (<see cref="MessageDialogWindow"/>).</summary>
 public sealed class WpfMessageService : IMessageService
 {
     /// <inheritdoc />
     public void ShowError(string title, string message) =>
-        MessageBox.Show(Application.Current?.MainWindow!, message, title, MessageBoxButton.OK, MessageBoxImage.Error);
+        MessageDialogWindow.Show(MessageKind.Error, title, message, new DialogChoice(Loc.Get("Common.Ok"), IsPrimary: true, IsDefault: true, IsCancel: true));
 
     /// <inheritdoc />
     public void ShowInfo(string title, string message) =>
-        MessageBox.Show(Application.Current?.MainWindow!, message, title, MessageBoxButton.OK, MessageBoxImage.Information);
+        MessageDialogWindow.Show(MessageKind.Info, title, message, new DialogChoice(Loc.Get("Common.Ok"), IsPrimary: true, IsDefault: true, IsCancel: true));
 
     /// <inheritdoc />
     public bool Confirm(string title, string message) =>
-        MessageBox.Show(Application.Current?.MainWindow!, message, title, MessageBoxButton.OKCancel, MessageBoxImage.Question) == MessageBoxResult.OK;
+        MessageDialogWindow.Show(MessageKind.Question, title, message,
+            new DialogChoice(Loc.Get("Common.Cancel"), IsCancel: true), new DialogChoice(Loc.Get("Common.Ok"), IsPrimary: true, IsDefault: true)) == 1;
 
     /// <inheritdoc />
     public SaveChangesAnswer AskSaveChanges(string documentName)
     {
-        // Yes = save, No = discard, Cancel = stay. The question names the buttons so the mapping is clear.
-        var result = MessageBox.Show(Application.Current?.MainWindow!, Loc.Get("Dialog.SaveChanges.Body", documentName),
-            Loc.Get("Dialog.SaveChanges.Title"), MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
-        return result switch
+        // Buttons are named for what they do (Save / Don't save / Cancel); Save is the recommended, default choice and Esc means Cancel.
+        int answer = MessageDialogWindow.Show(MessageKind.Question, Loc.Get("Dialog.SaveChanges.Title"), Loc.Get("Dialog.SaveChanges.Body", documentName),
+            new DialogChoice(Loc.Get("Dialog.SaveChanges.Discard")),
+            new DialogChoice(Loc.Get("Common.Cancel"), IsCancel: true),
+            new DialogChoice(Loc.Get("Dialog.SaveChanges.Save"), IsPrimary: true, IsDefault: true));
+        return answer switch
         {
-            MessageBoxResult.Yes => SaveChangesAnswer.Save,
-            MessageBoxResult.No => SaveChangesAnswer.Discard,
+            2 => SaveChangesAnswer.Save,
+            0 => SaveChangesAnswer.Discard,
             _ => SaveChangesAnswer.Cancel,
         };
     }

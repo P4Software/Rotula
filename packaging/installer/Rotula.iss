@@ -1,13 +1,13 @@
 ; Inno Setup script for the Rotula installer.
-; Built by .github/workflows/release.yml:
-;   ISCC.exe /DAppVersion=0.1.0 /DSourceDir=<publish folder> /DOutputDir=<out> packaging\installer\Rotula.iss
-; The installer is per-user (no administrator rights) and unsigned; see the README for the SmartScreen note.
+; Built locally by packaging\installer\build-installer.cmd (which also signs the program and the installer):
+;   ISCC.exe /DAppVersion=0.1.0 /DSourceDir=<staged files> /DOutputDir=<out> packaging\installer\Rotula.iss
+; The installer is per-user (no administrator rights). See docs/releasing.md.
 
 #ifndef AppVersion
   #define AppVersion "0.0.0"
 #endif
 #ifndef SourceDir
-  #define SourceDir "..\..\publish\win-x64"
+  #define SourceDir "..\..\artifacts\stage"
 #endif
 #ifndef OutputDir
   #define OutputDir "..\..\artifacts"
@@ -37,6 +37,8 @@ OutputBaseFilename=Rotula-{#AppVersion}-win-x64-setup
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
+; Tells Explorer to refresh file associations after install/uninstall (needed for the .rotula association below).
+ChangesAssociations=yes
 UninstallDisplayIcon={app}\Rotula.App.exe
 UninstallDisplayName=Rotula
 VersionInfoVersion={#AppVersion}
@@ -47,12 +49,22 @@ Name: "spanish"; MessagesFile: "compiler:Languages\Spanish.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+; Checked by default: double-clicking a .rotula file should open it in Rotula. Users can untick it.
+Name: "associate"; Description: "Open .rotula label files with Rotula"; GroupDescription: "File associations:"
 
 [Files]
 Source: "{#SourceDir}\Rotula.App.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceDir}\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceDir}\THIRD-PARTY-NOTICES.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceDir}\README.md"; DestDir: "{app}"; Flags: ignoreversion
+
+[Registry]
+; HKA writes to HKCU for a per-user install and to HKLM for an all-users install, so no admin rights are
+; needed by default. The file name is passed as the first argument, which the app already opens (App.OnStartup).
+Root: HKA; Subkey: "Software\Classes\.rotula"; ValueType: string; ValueName: ""; ValueData: "Rotula.Label"; Flags: uninsdeletevalue; Tasks: associate
+Root: HKA; Subkey: "Software\Classes\Rotula.Label"; ValueType: string; ValueName: ""; ValueData: "Rotula label"; Flags: uninsdeletekey; Tasks: associate
+Root: HKA; Subkey: "Software\Classes\Rotula.Label\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\Rotula.App.exe,0"; Tasks: associate
+Root: HKA; Subkey: "Software\Classes\Rotula.Label\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\Rotula.App.exe"" ""%1"""; Tasks: associate
 
 [Icons]
 Name: "{autoprograms}\Rotula"; Filename: "{app}\Rotula.App.exe"

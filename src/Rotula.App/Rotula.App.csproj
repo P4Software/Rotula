@@ -17,6 +17,11 @@
     <Using Include="System.Threading.Tasks" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The third-party notices are linked from the repository root (not copied) and embedded, so the About box can show them offline. -->
+    <EmbeddedResource Include="..\..\THIRD-PARTY-NOTICES.md" Link="THIRD-PARTY-NOTICES.md" LogicalName="Rotula.App.THIRD-PARTY-NOTICES.md" />
+  </ItemGroup>
+
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0-windows</TargetFramework>

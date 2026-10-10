@@ -40,7 +40,7 @@ public partial class App : Application
         catch (Exception ex)
         {
             LogCrash(ex);
-            MessageBox.Show(Loc.Get("Crash.Startup", LogPath), "Rotula", MessageBoxButton.OK, MessageBoxImage.Error);
+            ShowCrashMessage(Loc.Get("Crash.Startup", LogPath));
             Shutdown(1);
         }
     }
@@ -52,8 +52,25 @@ public partial class App : Application
     {
         LogCrash(e.Exception);
         // Keep the program running: one failed command should not throw away the user's open label.
-        MessageBox.Show(Loc.Get("Crash.Unexpected", LogPath), "Rotula", MessageBoxButton.OK, MessageBoxImage.Error);
+        ShowCrashMessage(Loc.Get("Crash.Unexpected", LogPath));
         e.Handled = true;
+    }
+
+    /// <summary>
+    /// Shows a failure with the styled dialog. If that cannot be shown (for example the theme itself failed to load, which is what a
+    /// start-up crash may be), the plain Windows message box is the last resort so the user always sees the message.
+    /// </summary>
+    private static void ShowCrashMessage(string message)
+    {
+        try
+        {
+            Views.MessageDialogWindow.Show(Views.MessageKind.Error, "Rotula", message,
+                new Views.DialogChoice(Loc.Get("Common.Ok"), IsPrimary: true, IsDefault: true, IsCancel: true));
+        }
+        catch (Exception)
+        {
+            MessageBox.Show(message, "Rotula", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 
     private static void LogCrash(Exception? ex)

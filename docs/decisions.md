@@ -146,3 +146,16 @@ pack). The title bar is drawn by the app (`WindowChrome`), the tool rail replace
 number fields two to a line (`PropertyGridPanel`). The ZPL panel is the only dark surface (a code view by design) and is hidden by
 default; View > Show ZPL code or the toolbar toggle shows it, and the choice is stored in settings.json. UI font is
 Segoe UI Variable with Segoe UI fallback; no font is bundled.
+
+### Signed releases are built locally, not in CI
+Release files are signed with Azure Artifact Signing (account and certificate profile `p4software`, signer "Barrdega Sistemas
+NA LLC") using the developer's `az login` session and the Microsoft `sign` tool, the same process as the company's other
+products. CI has no signing secrets by design, so `.github/workflows/release.yml` no longer builds the installer, the winget
+manifests or the GitHub Release: on a `v*` tag it runs the tests, the coverage gate, the hygiene check and a smoke test, and
+keeps an unsigned portable zip as a workflow artifact only. Because it never touches Releases, it cannot fail or clobber a
+release created locally. `packaging/installer/build-installer.cmd` (double-click) does the whole signed build into the
+git-ignored `artifacts/` folder; it is safe by default (builds and signs, publishes only with `"publishToGitHub": true` in
+`build-settings.json`, only after both signatures verify, never replaces assets of an existing release, and never publishes
+unsigned output). Signatures are verified with `Get-AuthenticodeSignature` (Valid, expected signer, timestamp), never from the
+sign tool's exit code; the signing helper is named `SignFile`; calls run one at a time and retry up to three times on a
+transient token error. The version lives only in `Directory.Build.props`. See `docs/releasing.md`.

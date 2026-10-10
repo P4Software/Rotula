@@ -43,6 +43,8 @@ public partial class DataWindow : DialogWindow
                 MinWidth = 70,
             });
         }
+        // The last column takes the space that is left, so the table always fills its frame instead of ending in an empty strip.
+        if (PreviewGrid.Columns.Count > 0) PreviewGrid.Columns[^1].Width = new DataGridLength(1, DataGridLengthUnitType.Star);
     }
 
     private void OnGoToKeyDown(object sender, KeyEventArgs e)

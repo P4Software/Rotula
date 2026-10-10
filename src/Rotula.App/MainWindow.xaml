@@ -44,7 +44,7 @@
 
     <!-- Rows of the Objects list: 48 px tall. -->
     <Style x:Key="LayerRowStyle" TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
-      <Setter Property="MinHeight" Value="48" />
+      <Setter Property="MinHeight" Value="40" />
       <Setter Property="Padding" Value="12,0" />
     </Style>
 
@@ -374,6 +374,90 @@
       <!-- canvas -->
       <views:DesignArea x:Name="Design" Grid.Column="1" Grid.Row="0" />
 
+      <!-- start screen: covers the canvas while no label has been created or opened yet -->
+      <Border x:Name="StartScreen" Grid.Column="1" Grid.Row="0" Grid.RowSpan="2" Background="{StaticResource WorkspaceBrush}" Visibility="{Binding ShowStartScreen, Converter={StaticResource B2V}}"
+              AutomationProperties.Name="{loc:T Start.Name}">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+          <StackPanel MaxWidth="700" Margin="32,40,32,32" VerticalAlignment="Center" HorizontalAlignment="Center">
+            <TextBlock Text="{loc:T Start.Title}" FontSize="28" FontWeight="SemiBold" AutomationProperties.HeadingLevel="Level1" />
+            <TextBlock Text="{loc:T Start.Subtitle}" Style="{StaticResource MutedText}" FontSize="14" Margin="0,4,0,24" />
+            <WrapPanel>
+              <WrapPanel.Resources>
+                <Style TargetType="Button" BasedOn="{StaticResource StartCardButton}">
+                  <Setter Property="Width" Value="212" />
+                  <Setter Property="Margin" Value="0,0,12,12" />
+                </Style>
+              </WrapPanel.Resources>
+              <Button x:Name="StartNewButton" Command="{Binding NewCommand}" AutomationProperties.Name="{loc:T Start.New}" AutomationProperties.HelpText="{loc:T Start.New.Desc}">
+                <StackPanel>
+                  <Border Width="40" Height="40" CornerRadius="20" Background="{StaticResource AccentTintBrush}" HorizontalAlignment="Left">
+                    <Path Style="{StaticResource Icon}" Data="{StaticResource IconNew}" Width="20" Height="20" TextElement.Foreground="{StaticResource AccentBrush}" />
+                  </Border>
+                  <TextBlock Text="{loc:T Start.New}" FontWeight="SemiBold" FontSize="15" Margin="0,12,0,2" />
+                  <TextBlock Text="{loc:T Start.New.Desc}" Style="{StaticResource MutedText}" FontSize="12" MinHeight="48" />
+                </StackPanel>
+              </Button>
+              <Button Command="{Binding OpenCommand}" AutomationProperties.Name="{loc:T Start.Open}" AutomationProperties.HelpText="{loc:T Start.Open.Desc}">
+                <StackPanel>
+                  <Border Width="40" Height="40" CornerRadius="20" Background="{StaticResource AccentTintBrush}" HorizontalAlignment="Left">
+                    <Path Style="{StaticResource Icon}" Data="{StaticResource IconOpen}" Width="20" Height="20" TextElement.Foreground="{StaticResource AccentBrush}" />
+                  </Border>
+                  <TextBlock Text="{loc:T Start.Open}" FontWeight="SemiBold" FontSize="15" Margin="0,12,0,2" />
+                  <TextBlock Text="{loc:T Start.Open.Desc}" Style="{StaticResource MutedText}" FontSize="12" MinHeight="48" />
+                </StackPanel>
+              </Button>
+              <Button Command="{Binding ImportZplCommand}" AutomationProperties.Name="{loc:T Start.Import}" AutomationProperties.HelpText="{loc:T Start.Import.Desc}">
+                <StackPanel>
+                  <Border Width="40" Height="40" CornerRadius="20" Background="{StaticResource AccentTintBrush}" HorizontalAlignment="Left">
+                    <Path Style="{StaticResource Icon}" Data="{StaticResource IconCode}" Width="20" Height="20" TextElement.Foreground="{StaticResource AccentBrush}" />
+                  </Border>
+                  <TextBlock Text="{loc:T Start.Import}" FontWeight="SemiBold" FontSize="15" Margin="0,12,0,2" />
+                  <TextBlock Text="{loc:T Start.Import.Desc}" Style="{StaticResource MutedText}" FontSize="12" MinHeight="48" />
+                </StackPanel>
+              </Button>
+            </WrapPanel>
+
+            <TextBlock Text="{loc:T Start.Recent}" Style="{StaticResource SectionHeading}" Margin="0,12,0,8" AutomationProperties.HeadingLevel="Level2" />
+            <Border Style="{StaticResource Card}" Padding="8" MaxWidth="660" HorizontalAlignment="Left" MinWidth="360">
+              <Grid>
+                <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="170" Focusable="False">
+                  <ItemsControl ItemsSource="{Binding RecentFiles}" AutomationProperties.Name="{loc:T Start.Recent}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate>
+                        <Button Command="{Binding DataContext.OpenRecentCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"
+                                Style="{StaticResource ListRowButton}" ToolTip="{Binding Path}" AutomationProperties.Name="{Binding Display}">
+                          <DockPanel LastChildFill="True">
+                            <Path DockPanel.Dock="Left" Style="{StaticResource Icon}" Data="{StaticResource IconFile}" Width="18" Height="18" Margin="0,0,10,0" TextElement.Foreground="{StaticResource MutedBrush}" />
+                            <StackPanel>
+                              <TextBlock Text="{Binding Display}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                              <TextBlock Text="{Binding Path}" Style="{StaticResource MutedText}" FontSize="11.5" Margin="0" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
+                            </StackPanel>
+                          </DockPanel>
+                        </Button>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </ScrollViewer>
+                <TextBlock Text="{loc:T Start.Recent.None}" Margin="10,10">
+                  <TextBlock.Style>
+                    <Style TargetType="TextBlock" BasedOn="{StaticResource MutedText}">
+                      <Setter Property="Visibility" Value="Collapsed" />
+                      <Style.Triggers>
+                        <DataTrigger Binding="{Binding RecentFiles.Count}" Value="0"><Setter Property="Visibility" Value="Visible" /></DataTrigger>
+                      </Style.Triggers>
+                    </Style>
+                  </TextBlock.Style>
+                </TextBlock>
+              </Grid>
+            </Border>
+
+            <Button Style="{StaticResource LinkButton}" Content="{loc:T Start.Blank}" Command="{Binding DismissStartScreenCommand}" Margin="0,16,0,0"
+                    AutomationProperties.Name="{loc:T Start.Blank}" />
+            <TextBlock Text="{loc:T Start.Hint}" Style="{StaticResource MutedText}" FontSize="12" Margin="2,10,0,0" />
+          </StackPanel>
+        </ScrollViewer>
+      </Border>
+
       <GridSplitter Grid.Column="2" Grid.Row="0" Grid.RowSpan="2" Style="{StaticResource SplitterVerticalStyle}" ResizeBehavior="PreviousAndNext"
                     AutomationProperties.Name="{loc:T Splitter.Properties}" />
 
@@ -488,13 +572,28 @@
           <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
         <!-- left: counts, then the transient message -->
-        <StackPanel Orientation="Horizontal">
-          <TextBlock Text="{Binding ObjectsText}" Style="{StaticResource StatusText}" TextTrimming="None" />
+        <TextBlock Text="{Binding ObjectsText}" Style="{StaticResource StatusText}" TextTrimming="None" />
+        <!-- The divider belongs to the message: with no message there is nothing to divide, so no stray hairline is left. -->
+        <StackPanel Grid.Column="1" Orientation="Horizontal">
+          <StackPanel.Style>
+            <Style TargetType="StackPanel">
+              <Style.Triggers>
+                <DataTrigger Binding="{Binding HasStatusMessage}" Value="False"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
+              </Style.Triggers>
+            </Style>
+          </StackPanel.Style>
           <Border Style="{StaticResource StatusSeparator}" />
+          <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource StatusText}" ToolTip="{Binding StatusMessage}" />
         </StackPanel>
-        <TextBlock Grid.Column="1" Text="{Binding StatusMessage}" Style="{StaticResource StatusText}" ToolTip="{Binding StatusMessage}" />
         <!-- right: problems, notice (short; the full explanation is the tooltip), pointer, label size -->
         <StackPanel Grid.Column="2" Orientation="Horizontal">
+          <StackPanel.Style>
+            <Style TargetType="StackPanel">
+              <Style.Triggers>
+                <DataTrigger Binding="{Binding ProblemsText}" Value=""><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
+              </Style.Triggers>
+            </Style>
+          </StackPanel.Style>
           <Border Style="{StaticResource StatusSeparator}" />
           <TextBlock Text="{Binding ProblemsText}" Style="{StaticResource StatusText}" TextTrimming="None" />
         </StackPanel>
