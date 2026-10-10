@@ -71,8 +71,12 @@ public sealed class ZplEncoding : IEquatable<ZplEncoding>
     /// <summary>True for UTF-8.</summary>
     public bool IsUtf8 => DotNetCodePage is null;
 
-    /// <summary>The .NET encoding that produces the bytes sent to the printer.</summary>
-    internal Encoding GetEncoding() =>
+    /// <summary>
+    /// The .NET encoding that produces the bytes sent to the printer. It throws on characters the
+    /// code page cannot hold (strict fallback) so callers can report the problem instead of
+    /// silently printing a wrong character. Public so Printing and the app share one lookup.
+    /// </summary>
+    public Encoding GetEncoding() =>
         DotNetCodePage is null ? new UTF8Encoding(false) : Encoding.GetEncoding(DotNetCodePage.Value, EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback);
 
     /// <inheritdoc />
