@@ -1,0 +1,13 @@
+<Project>
+  <!-- Shared build settings. Core is stricter than the rest: it is the reusable, UI-free library. -->
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Authors>P4 Software</Authors>
+    <Company>P4 Software</Company>
+    <Product>Rotula</Product>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/glenntosco/Rotula</RepositoryUrl>
+  </PropertyGroup>
+</Project>
