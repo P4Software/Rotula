@@ -1,0 +1,12 @@
+^XA
+^MNY
+^MTT
+^CI28
+^PW800
+^LL400
+^PON
+^LH0,0
+^FWN
+^CF0,30,30
+^PQ1,0,1,N
+^XZ

@@ -1,0 +1,13 @@
+^XA
+^MNY
+^MTT
+^CI28
+^PW800
+^LL400
+^PON
+^LH0,0
+^FWN
+^CF0,30,30
+^FO50,50^FR^FDInverse^FS
+^PQ1,0,1,N
+^XZ
