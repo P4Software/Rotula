@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Rotula.Core\Rotula.Core.csproj" />
+    <ProjectReference Include="..\..\src\Rotula.Data\Rotula.Data.csproj" />
     <ProjectReference Include="..\..\src\Rotula.Rendering\Rotula.Rendering.csproj" />
     <ProjectReference Include="..\..\src\Rotula.Printing\Rotula.Printing.csproj" />
     <ProjectReference Include="..\..\src\Rotula.App\Rotula.App.csproj" />

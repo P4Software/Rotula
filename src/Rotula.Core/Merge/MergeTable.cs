@@ -43,7 +43,12 @@ public sealed class MergeTable
         _rows.Add(row);
     }
 
-    internal void AddIssue(ValidationIssue issue) => _issues.Add(issue);
+    /// <summary>Records a problem found while the table was produced (readers, database sources). Message keys only.</summary>
+    public void AddIssue(ValidationIssue issue)
+    {
+        ArgumentNullException.ThrowIfNull(issue);
+        _issues.Add(issue);
+    }
 
     /// <summary>Index of the column called <paramref name="name"/> (case-insensitive), or -1.</summary>
     public int IndexOfColumn(string name)
