@@ -1,0 +1,402 @@
+<Window x:Class="Rotula.App.Views.DataWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:Rotula.App.Localization"
+        xmlns:views="clr-namespace:Rotula.App.Views"
+        Title="{loc:T Data.Title}" Width="1060" Height="780" MinWidth="820" MinHeight="560"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="True"
+        AutomationProperties.Name="{loc:T Data.Title}">
+  <Window.Resources>
+    <BooleanToVisibilityConverter x:Key="B2V" />
+    <Style x:Key="NavButton" TargetType="Button" BasedOn="{StaticResource IconButton}">
+      <Setter Property="Width" Value="34" />
+      <Setter Property="Height" Value="34" />
+    </Style>
+  </Window.Resources>
+
+  <DockPanel>
+    <!-- ============================== footer: busy, result, close -->
+    <Border DockPanel.Dock="Bottom" Background="{StaticResource ToolbarBrush}" BorderBrush="{StaticResource BorderBrushLight}" BorderThickness="0,1,0,0" Padding="24,12">
+      <DockPanel>
+        <Button DockPanel.Dock="Right" Content="{loc:T Common.Close}" IsCancel="True" MinWidth="88" Command="{Binding CloseCommand}" AutomationProperties.Name="{loc:T Common.Close}" />
+        <Grid Margin="0,0,16,0">
+          <DockPanel Visibility="{Binding IsBusy, Converter={StaticResource B2V}}">
+            <Button DockPanel.Dock="Right" Content="{loc:T Common.StopOperation}" Command="{Binding CancelOperationCommand}" MinHeight="30" Margin="12,0,0,0"
+                    AutomationProperties.Name="{loc:T Common.StopOperation}" />
+            <StackPanel VerticalAlignment="Center">
+              <TextBlock Text="{Binding BusyText}" Margin="0,0,0,6" />
+              <Grid>
+                <ProgressBar IsIndeterminate="True" Visibility="{Binding IsProgressUnknown, Converter={StaticResource B2V}}" AutomationProperties.Name="{Binding BusyText}" />
+                <ProgressBar Minimum="0" Maximum="100" Value="{Binding Progress, Mode=OneWay}" Visibility="{Binding IsProgressKnown, Converter={StaticResource B2V}}"
+                             AutomationProperties.Name="{Binding BusyText}" />
+              </Grid>
+            </StackPanel>
+          </DockPanel>
+          <Border Style="{StaticResource ErrorBanner}" Visibility="{Binding HasError, Converter={StaticResource B2V}}" AutomationProperties.LiveSetting="Assertive">
+            <TextBlock Text="{Binding ResultText}" TextWrapping="Wrap" Foreground="{StaticResource ErrorBrush}" />
+          </Border>
+          <Border Style="{StaticResource SuccessBanner}" Visibility="{Binding HasSuccess, Converter={StaticResource B2V}}" AutomationProperties.LiveSetting="Polite">
+            <TextBlock Text="{Binding ResultText}" TextWrapping="Wrap" Foreground="{StaticResource SuccessBrush}" />
+          </Border>
+        </Grid>
+      </DockPanel>
+    </Border>
+
+    <!-- ============================== header: source -->
+    <Border DockPanel.Dock="Top" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrushLight}" BorderThickness="0,0,0,1" Padding="24,16">
+      <Grid>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <StackPanel>
+          <TextBlock Text="{loc:T Data.Title}" FontSize="20" FontWeight="SemiBold" AutomationProperties.HeadingLevel="Level1" />
+          <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+            <Path Style="{StaticResource Icon}" Data="{StaticResource IconDatabase}" Width="14" Height="14" TextElement.Foreground="{StaticResource MutedBrush}" Margin="0,0,6,0" />
+            <TextBlock Text="{Binding SourceName}" FontFamily="{StaticResource MonoFont}" FontSize="12.5" VerticalAlignment="Center" Visibility="{Binding HasSource, Converter={StaticResource B2V}}" />
+            <TextBlock Text="{loc:T Data.NoFile}" Style="{StaticResource MutedText}" VerticalAlignment="Center" Visibility="{Binding HasNoData, Converter={StaticResource B2V}}" />
+          </StackPanel>
+          <TextBlock Style="{StaticResource MutedText}" Margin="0,4,0,0" FontSize="12" Text="{loc:T Data.PrivacyNote}" />
+        </StackPanel>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
+          <Button Content="{loc:T Data.Reload}" Command="{Binding ReloadCommand}" IsEnabled="{Binding CanReload}" Margin="0,0,8,0" AutomationProperties.Name="{loc:T Data.Reload}"
+                  ToolTip="{Binding SourcePath}" />
+          <Button Content="{loc:T Data.Clear}" Command="{Binding ClearDataCommand}" IsEnabled="{Binding HasData}" Margin="0,0,8,0" AutomationProperties.Name="{loc:T Data.Clear}" />
+          <Button Content="{loc:T Data.Open}" Command="{Binding OpenDataCommand}" IsEnabled="{Binding IsIdle}" Style="{StaticResource PrimaryButton}"
+                  AutomationProperties.Name="{loc:T Data.Open}" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- ============================== record navigator (drives the canvas) -->
+    <Border DockPanel.Dock="Top" Background="{StaticResource ToolbarBrush}" BorderBrush="{StaticResource BorderBrushLight}" BorderThickness="0,0,0,1" Padding="24,8"
+            Visibility="{Binding HasData, Converter={StaticResource B2V}}">
+      <DockPanel>
+        <CheckBox DockPanel.Dock="Right" Content="{loc:T Data.ShowOnCanvas}" IsChecked="{Binding PreviewEnabled}" VerticalAlignment="Center" AutomationProperties.Name="{loc:T Data.ShowOnCanvas}" />
+        <StackPanel Orientation="Horizontal">
+          <Button Style="{StaticResource NavButton}" Command="{Binding FirstRecordCommand}" ToolTip="{loc:T Data.Record.First}" AutomationProperties.Name="{loc:T Data.Record.First}">
+            <Path Style="{StaticResource Icon}" Data="{StaticResource IconFirst}" />
+          </Button>
+          <Button Style="{StaticResource NavButton}" Command="{Binding PreviousRecordCommand}" ToolTip="{loc:T Data.Record.Previous}" AutomationProperties.Name="{loc:T Data.Record.Previous}">
+            <Path Style="{StaticResource Icon}" Data="{StaticResource IconPrevious}" />
+          </Button>
+          <TextBlock Text="{Binding RecordText}" VerticalAlignment="Center" MinWidth="130" TextAlignment="Center" FontFamily="{StaticResource MonoFont}" FontSize="12.5"
+                     AutomationProperties.Name="{loc:T Data.Record.Current}" />
+          <Button Style="{StaticResource NavButton}" Command="{Binding NextRecordCommand}" ToolTip="{loc:T Data.Record.Next}" AutomationProperties.Name="{loc:T Data.Record.Next}">
+            <Path Style="{StaticResource Icon}" Data="{StaticResource IconNext}" />
+          </Button>
+          <Button Style="{StaticResource NavButton}" Command="{Binding LastRecordCommand}" ToolTip="{loc:T Data.Record.Last}" AutomationProperties.Name="{loc:T Data.Record.Last}">
+            <Path Style="{StaticResource Icon}" Data="{StaticResource IconLast}" />
+          </Button>
+          <TextBlock Text="{loc:T Data.Record.GoTo}" VerticalAlignment="Center" Margin="24,0,8,0" Style="{StaticResource MutedText}" />
+          <TextBox Width="72" MinHeight="32" Style="{StaticResource MonoTextBox}" Text="{Binding GoToText, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{loc:T Data.Record.GoTo}"
+                   KeyDown="OnGoToKeyDown" />
+          <Button Content="{loc:T Data.Record.GoToButton}" Command="{Binding GoToRecordCommand}" MinHeight="32" Margin="8,0,0,0" AutomationProperties.Name="{loc:T Data.Record.GoToButton}" />
+        </StackPanel>
+      </DockPanel>
+    </Border>
+
+    <!-- ============================== empty state -->
+    <Grid Visibility="{Binding HasNoData, Converter={StaticResource B2V}}" Margin="24">
+      <Border Style="{StaticResource Card}" MaxWidth="560" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="32">
+        <StackPanel>
+          <Path Style="{StaticResource Icon}" Data="{StaticResource IconDatabase}" Width="40" Height="40" StrokeThickness="1.3" TextElement.Foreground="{StaticResource AccentBrush}" Margin="0,0,0,16" HorizontalAlignment="Left" />
+          <TextBlock Text="{loc:T Data.Empty.Title}" FontSize="18" FontWeight="SemiBold" />
+          <TextBlock Text="{loc:T Data.Empty.Body}" Style="{StaticResource MutedText}" Margin="0,8,0,20" />
+          <Border Style="{StaticResource WarningBanner}" Margin="0,0,0,20" Visibility="{Binding ShowReloadHint, Converter={StaticResource B2V}}">
+            <StackPanel>
+              <TextBlock Text="{loc:T Data.Empty.Hint}" TextWrapping="Wrap" Foreground="{StaticResource WarningBrush}" />
+              <TextBlock Text="{Binding SourcePath}" TextWrapping="Wrap" FontFamily="{StaticResource MonoFont}" FontSize="12" Margin="0,6,0,0" Foreground="{StaticResource WarningBrush}"
+                         AutomationProperties.Name="{loc:T Data.Empty.Path}" />
+            </StackPanel>
+          </Border>
+          <Border Style="{StaticResource WarningBanner}" Margin="0,0,0,20" Visibility="{Binding SourceHintIgnored, Converter={StaticResource B2V}}">
+            <TextBlock Text="{loc:T Data.Hint.Ignored}" TextWrapping="Wrap" Foreground="{StaticResource WarningBrush}" />
+          </Border>
+          <StackPanel Orientation="Horizontal">
+            <Button Content="{loc:T Data.Open}" Command="{Binding OpenDataCommand}" Style="{StaticResource PrimaryButton}" Margin="0,0,8,0" AutomationProperties.Name="{loc:T Data.Open}" />
+            <Button Content="{loc:T Data.Reload}" Command="{Binding ReloadCommand}" IsEnabled="{Binding CanReload}" Visibility="{Binding ShowReloadHint, Converter={StaticResource B2V}}"
+                    AutomationProperties.Name="{loc:T Data.Reload}" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </Grid>
+
+    <!-- ============================== tabs -->
+    <TabControl Visibility="{Binding HasData, Converter={StaticResource B2V}}" Margin="24,8,24,12" AutomationProperties.Name="{loc:T Data.Title}">
+
+      <!-- tab: data preview -->
+      <TabItem Header="{loc:T Data.Tab.Data}" AutomationProperties.Name="{loc:T Data.Tab.Data}">
+        <DockPanel Margin="0,16,0,0">
+          <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+            <StackPanel Margin="0,0,16,0" Visibility="{Binding IsXlsx, Converter={StaticResource B2V}}">
+              <TextBlock Text="{loc:T Data.Sheet}" Style="{StaticResource FieldLabel}" />
+              <ComboBox MinWidth="200" ItemsSource="{Binding Sheets}" SelectedItem="{Binding SelectedSheet}" AutomationProperties.Name="{loc:T Data.Sheet}" />
+            </StackPanel>
+            <StackPanel Margin="0,0,16,0" Visibility="{Binding IsCsv, Converter={StaticResource B2V}}">
+              <TextBlock Text="{loc:T Data.Delimiter}" Style="{StaticResource FieldLabel}" />
+              <ComboBox MinWidth="200" ItemsSource="{Binding DelimiterChoices}" DisplayMemberPath="Name" SelectedValuePath="Value" SelectedValue="{Binding SelectedDelimiter}"
+                        AutomationProperties.Name="{loc:T Data.Delimiter}" />
+            </StackPanel>
+            <CheckBox Content="{loc:T Data.HasHeader}" IsChecked="{Binding HasHeader}" VerticalAlignment="Bottom" Margin="0,0,16,6" AutomationProperties.Name="{loc:T Data.HasHeader}" />
+            <StackPanel VerticalAlignment="Bottom" Margin="0,0,0,6">
+              <TextBlock Text="{Binding DelimiterText}" Style="{StaticResource MutedText}" FontFamily="{StaticResource MonoFont}" FontSize="12" />
+              <TextBlock Text="{Binding TableSummary}" Style="{StaticResource MutedText}" FontSize="12" />
+            </StackPanel>
+          </WrapPanel>
+          <Border DockPanel.Dock="Top" Style="{StaticResource WarningBanner}" Margin="0,0,0,12" Visibility="{Binding HasLoadWarnings, Converter={StaticResource B2V}}">
+            <ItemsControl ItemsSource="{Binding LoadWarnings}" AutomationProperties.Name="{loc:T Data.LoadWarnings}">
+              <ItemsControl.ItemTemplate><DataTemplate><TextBlock Text="{Binding}" TextWrapping="Wrap" Foreground="{StaticResource WarningBrush}" /></DataTemplate></ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </Border>
+          <TextBlock DockPanel.Dock="Bottom" Text="{Binding PreviewNote}" Style="{StaticResource MutedText}" FontSize="12" Margin="0,8,0,0" Visibility="{Binding PreviewTruncated, Converter={StaticResource B2V}}" />
+          <DataGrid x:Name="PreviewGrid" ItemsSource="{Binding PreviewRows}" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
+                    AutomationProperties.Name="{loc:T Data.Preview}" />
+        </DockPanel>
+      </TabItem>
+
+      <!-- tab: mapping -->
+      <TabItem Header="{loc:T Data.Tab.Mapping}" AutomationProperties.Name="{loc:T Data.Tab.Mapping}">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+          <StackPanel Margin="0,16,0,8" Grid.IsSharedSizeScope="True">
+            <TextBlock Text="{loc:T Data.Mapping.Intro}" Style="{StaticResource MutedText}" Margin="0,0,0,12" />
+            <TextBlock Text="{loc:T Data.Mapping.NoPlaceholders}" Style="{StaticResource MutedText}" Visibility="{Binding LabelHasNoPlaceholders, Converter={StaticResource B2V}}" />
+            <ItemsControl ItemsSource="{Binding MappingRows}" AutomationProperties.Name="{loc:T Data.Tab.Mapping}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Border Style="{StaticResource Card}" Padding="12,8" Margin="0,0,0,6">
+                    <Grid>
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="200" SharedSizeGroup="Ph" />
+                        <ColumnDefinition Width="240" />
+                        <ColumnDefinition Width="*" />
+                      </Grid.ColumnDefinitions>
+                      <TextBlock Text="{Binding Display}" FontFamily="{StaticResource MonoFont}" FontSize="12.5" VerticalAlignment="Center" />
+                      <ComboBox Grid.Column="1" ItemsSource="{Binding Choices}" DisplayMemberPath="Name" SelectedItem="{Binding Selected}" IsEnabled="{Binding CanChoose}"
+                                MinHeight="32" Margin="0,0,16,0" AutomationProperties.Name="{Binding Display}" />
+                      <TextBlock Grid.Column="2" Text="{Binding Status}" VerticalAlignment="Center" TextWrapping="Wrap">
+                        <TextBlock.Style>
+                          <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="{StaticResource SuccessBrush}" />
+                            <Style.Triggers>
+                              <DataTrigger Binding="{Binding IsUnmapped}" Value="True"><Setter Property="Foreground" Value="{StaticResource WarningBrush}" /></DataTrigger>
+                            </Style.Triggers>
+                          </Style>
+                        </TextBlock.Style>
+                      </TextBlock>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Border Style="{StaticResource WarningBanner}" Margin="0,12,0,0" Visibility="{Binding HasMappingWarnings, Converter={StaticResource B2V}}">
+              <StackPanel>
+                <TextBlock Text="{loc:T Data.Mapping.Warnings}" FontWeight="SemiBold" Foreground="{StaticResource WarningBrush}" />
+                <ItemsControl ItemsSource="{Binding MappingWarnings}" Margin="0,4,0,0" AutomationProperties.Name="{loc:T Data.Mapping.Warnings}">
+                  <ItemsControl.ItemTemplate><DataTemplate><TextBlock Text="{Binding}" TextWrapping="Wrap" Foreground="{StaticResource WarningBrush}" Margin="0,2" /></DataTemplate></ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <!-- tab: counters -->
+      <TabItem Header="{loc:T Data.Tab.Counters}" AutomationProperties.Name="{loc:T Data.Tab.Counters}">
+        <Grid Margin="0,16,0,8">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="260" />
+            <ColumnDefinition Width="24" />
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
+          <DockPanel>
+            <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,8,0,0">
+              <Button Command="{Binding AddCounterCommand}" Margin="0,0,8,0" AutomationProperties.Name="{loc:T Data.Counter.Add}">
+                <StackPanel Orientation="Horizontal">
+                  <Path Style="{StaticResource Icon}" Data="{StaticResource IconPlus}" Width="14" Height="14" Margin="0,0,6,0" />
+                  <TextBlock Text="{loc:T Data.Counter.Add}" />
+                </StackPanel>
+              </Button>
+              <Button Command="{Binding RemoveCounterCommand}" AutomationProperties.Name="{loc:T Data.Counter.Remove}">
+                <StackPanel Orientation="Horizontal">
+                  <Path Style="{StaticResource Icon}" Data="{StaticResource IconTrash}" Width="14" Height="14" Margin="0,0,6,0" />
+                  <TextBlock Text="{loc:T Data.Counter.Remove}" />
+                </StackPanel>
+              </Button>
+            </StackPanel>
+            <Border Style="{StaticResource Card}" Padding="0,8">
+              <Grid>
+                <ListBox ItemsSource="{Binding Counters}" SelectedItem="{Binding SelectedCounter}" AutomationProperties.Name="{loc:T Data.Tab.Counters}">
+                  <ListBox.ItemTemplate>
+                    <DataTemplate>
+                      <StackPanel>
+                        <TextBlock Text="{Binding Display}" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding Placeholder}" FontFamily="{StaticResource MonoFont}" FontSize="11.5" Foreground="{StaticResource MutedBrush}" />
+                      </StackPanel>
+                    </DataTemplate>
+                  </ListBox.ItemTemplate>
+                </ListBox>
+                <TextBlock Text="{loc:T Data.Counter.None}" Style="{StaticResource MutedText}" Margin="16" VerticalAlignment="Top" Visibility="{Binding HasNoCounters, Converter={StaticResource B2V}}" />
+              </Grid>
+            </Border>
+          </DockPanel>
+
+          <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto" Focusable="False" Visibility="{Binding HasSelectedCounter, Converter={StaticResource B2V}}">
+            <Border Style="{StaticResource Card}" DataContext="{Binding SelectedCounter}">
+              <StackPanel>
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="12" />
+                    <ColumnDefinition Width="*" />
+                  </Grid.ColumnDefinitions>
+                  <StackPanel>
+                    <TextBlock Text="{loc:T Data.Counter.Name}" Style="{StaticResource FieldLabel}" />
+                    <TextBox Style="{StaticResource MonoTextBox}" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{loc:T Data.Counter.Name}" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="2">
+                    <TextBlock Text="{loc:T Data.Counter.UseIn}" Style="{StaticResource FieldLabel}" />
+                    <TextBox Style="{StaticResource MonoTextBox}" Text="{Binding Placeholder, Mode=OneWay}" IsReadOnly="True" AutomationProperties.Name="{loc:T Data.Counter.UseIn}" />
+                  </StackPanel>
+                </Grid>
+
+                <TextBlock Text="{loc:T Data.Counter.Kind}" Style="{StaticResource FieldLabel}" Margin="0,16,0,2" />
+                <StackPanel Orientation="Horizontal">
+                  <RadioButton GroupName="CounterKind" Content="{loc:T Enum.CounterKind.Numeric}" IsChecked="{Binding IsNumeric}" AutomationProperties.Name="{loc:T Enum.CounterKind.Numeric}" />
+                  <RadioButton GroupName="CounterKind" Content="{loc:T Enum.CounterKind.Alphanumeric}" IsChecked="{Binding IsAlphanumeric}" AutomationProperties.Name="{loc:T Enum.CounterKind.Alphanumeric}" />
+                </StackPanel>
+
+                <Grid Margin="0,12,0,0">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" /><ColumnDefinition Width="12" /><ColumnDefinition Width="*" /><ColumnDefinition Width="12" /><ColumnDefinition Width="*" />
+                  </Grid.ColumnDefinitions>
+                  <StackPanel>
+                    <TextBlock Text="{loc:T Data.Counter.Start}" Style="{StaticResource FieldLabel}" />
+                    <TextBox Style="{StaticResource MonoTextBox}" Text="{Binding StartText, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{loc:T Data.Counter.Start}" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="2">
+                    <TextBlock Text="{loc:T Data.Counter.Step}" Style="{StaticResource FieldLabel}" />
+                    <TextBox Style="{StaticResource MonoTextBox}" Text="{Binding StepText, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{loc:T Data.Counter.Step}" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="4">
+                    <TextBlock Text="{loc:T Data.Counter.Padding}" Style="{StaticResource FieldLabel}" />
+                    <TextBox Style="{StaticResource MonoTextBox}" Text="{Binding PaddingText, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{loc:T Data.Counter.Padding}" />
+                  </StackPanel>
+                </Grid>
+
+                <Grid Margin="0,12,0,0">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" /><ColumnDefinition Width="12" /><ColumnDefinition Width="*" />
+                  </Grid.ColumnDefinitions>
+                  <StackPanel>
+                    <TextBlock Text="{loc:T Data.Counter.Prefix}" Style="{StaticResource FieldLabel}" />
+                    <TextBox Style="{StaticResource MonoTextBox}" Text="{Binding Prefix, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{loc:T Data.Counter.Prefix}" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="2">
+                    <TextBlock Text="{loc:T Data.Counter.Suffix}" Style="{StaticResource FieldLabel}" />
+                    <TextBox Style="{StaticResource MonoTextBox}" Text="{Binding Suffix, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{loc:T Data.Counter.Suffix}" />
+                  </StackPanel>
+                </Grid>
+
+                <TextBlock Text="{loc:T Data.Counter.Overflow}" Style="{StaticResource FieldLabel}" Margin="0,16,0,2" />
+                <StackPanel Orientation="Horizontal">
+                  <RadioButton GroupName="CounterOverflow" Content="{loc:T Enum.CounterOverflow.Wrap}" IsChecked="{Binding WrapOnOverflow}" AutomationProperties.Name="{loc:T Enum.CounterOverflow.Wrap}" />
+                  <RadioButton GroupName="CounterOverflow" Content="{loc:T Enum.CounterOverflow.Error}" IsChecked="{Binding StopOnOverflow}" AutomationProperties.Name="{loc:T Enum.CounterOverflow.Error}" />
+                </StackPanel>
+
+                <StackPanel Margin="0,16,0,0">
+                  <TextBlock Text="{loc:T Data.Counter.Example}" Style="{StaticResource FieldLabel}" />
+                  <TextBlock Text="{Binding Example}" FontFamily="{StaticResource MonoFont}" FontSize="13" />
+                  <TextBlock Text="{Binding Error}" Style="{StaticResource ErrorText}" AutomationProperties.LiveSetting="Polite" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
+          </ScrollViewer>
+        </Grid>
+      </TabItem>
+
+      <!-- tab: copies and jobs -->
+      <TabItem Header="{loc:T Data.Tab.Copies}" AutomationProperties.Name="{loc:T Data.Tab.Copies}">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+          <StackPanel Margin="0,16,0,8" MaxWidth="640" HorizontalAlignment="Left">
+            <Border Style="{StaticResource Card}">
+              <StackPanel>
+                <TextBlock Text="{loc:T Data.Copies.Heading}" Style="{StaticResource SectionHeading}" />
+                <TextBlock Text="{loc:T Data.Copies.Source}" Style="{StaticResource FieldLabel}" />
+                <ComboBox ItemsSource="{Binding CopiesSourceChoices}" DisplayMemberPath="Name" SelectedValuePath="Value" SelectedValue="{Binding CopiesSource}"
+                          AutomationProperties.Name="{loc:T Data.Copies.Source}" />
+                <StackPanel Margin="0,12,0,0" Visibility="{Binding IsFixedCopies, Converter={StaticResource B2V}}">
+                  <TextBlock Text="{loc:T Data.Copies.Number}" Style="{StaticResource FieldLabel}" />
+                  <TextBox Style="{StaticResource MonoTextBox}" Width="140" HorizontalAlignment="Left" Text="{Binding FixedCopiesText, UpdateSourceTrigger=PropertyChanged}"
+                           AutomationProperties.Name="{loc:T Data.Copies.Number}" />
+                </StackPanel>
+                <StackPanel Margin="0,12,0,0" Visibility="{Binding IsColumnCopies, Converter={StaticResource B2V}}">
+                  <TextBlock Text="{loc:T Data.Copies.FromColumn}" Style="{StaticResource FieldLabel}" />
+                  <ComboBox ItemsSource="{Binding ColumnNames}" SelectedItem="{Binding CopiesColumn}" AutomationProperties.Name="{loc:T Data.Copies.FromColumn}" />
+                </StackPanel>
+                <TextBlock Text="{loc:T Data.Copies.Mode}" Style="{StaticResource FieldLabel}" Margin="0,12,0,4" />
+                <ComboBox ItemsSource="{Binding CopiesModeChoices}" DisplayMemberPath="Name" SelectedValuePath="Value" SelectedValue="{Binding CopiesMode}"
+                          AutomationProperties.Name="{loc:T Data.Copies.Mode}" />
+                <TextBlock Text="{loc:T Data.Copies.Mode.Hint}" Style="{StaticResource MutedText}" FontSize="12" Margin="0,6,0,0" />
+              </StackPanel>
+            </Border>
+            <Border Style="{StaticResource Card}" Margin="0,16,0,0">
+              <StackPanel>
+                <TextBlock Text="{loc:T Data.Jobs.Heading}" Style="{StaticResource SectionHeading}" />
+                <TextBlock Text="{loc:T Data.Invalid.Label}" Style="{StaticResource FieldLabel}" />
+                <ComboBox ItemsSource="{Binding InvalidPolicyChoices}" DisplayMemberPath="Name" SelectedValuePath="Value" SelectedValue="{Binding InvalidPolicy}"
+                          AutomationProperties.Name="{loc:T Data.Invalid.Label}" />
+                <TextBlock Text="{loc:T Data.MaxRecords.Label}" Style="{StaticResource FieldLabel}" Margin="0,12,0,4" />
+                <TextBox Style="{StaticResource MonoTextBox}" Width="140" HorizontalAlignment="Left" Text="{Binding MaxRecordsText, UpdateSourceTrigger=PropertyChanged}"
+                         AutomationProperties.Name="{loc:T Data.MaxRecords.Label}" />
+                <TextBlock Text="{loc:T Data.MaxRecords.Hint}" Style="{StaticResource MutedText}" FontSize="12" Margin="0,6,0,0" />
+              </StackPanel>
+            </Border>
+            <TextBlock Text="{Binding OptionsError}" Style="{StaticResource ErrorText}" Visibility="{Binding HasOptionsError, Converter={StaticResource B2V}}" AutomationProperties.LiveSetting="Polite" />
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <!-- tab: batch -->
+      <TabItem Header="{loc:T Data.Tab.Batch}" AutomationProperties.Name="{loc:T Data.Tab.Batch}">
+        <Grid Margin="0,16,0,8" IsEnabled="{Binding IsIdle}">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="400" />
+            <ColumnDefinition Width="24" />
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
+          <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+            <Border Style="{StaticResource Card}"><views:PrinterSettingsView DataContext="{Binding Printer}" /></Border>
+          </ScrollViewer>
+          <DockPanel Grid.Column="2">
+            <Border DockPanel.Dock="Top" Style="{StaticResource Card}">
+              <StackPanel>
+                <TextBlock Text="{loc:T Data.Batch.Heading}" Style="{StaticResource SectionHeading}" />
+                <TextBlock Text="{loc:T Data.Batch.Intro}" Style="{StaticResource MutedText}" Margin="0,0,0,12" />
+                <WrapPanel>
+                  <Button Content="{loc:T Data.Batch.Check}" Command="{Binding CheckAllCommand}" Margin="0,0,8,8" AutomationProperties.Name="{loc:T Data.Batch.Check}" />
+                  <Button Content="{loc:T Data.Batch.Export}" Command="{Binding ExportBatchCommand}" Margin="0,0,8,8" AutomationProperties.Name="{loc:T Data.Batch.Export}" />
+                  <Button Content="{loc:T Data.Batch.PrintAll}" Command="{Binding PrintAllCommand}" Style="{StaticResource PrimaryButton}" Margin="0,0,0,8" AutomationProperties.Name="{loc:T Data.Batch.PrintAll}" />
+                </WrapPanel>
+                <CheckBox Content="{loc:T Data.Batch.OneFilePerJob}" IsChecked="{Binding OneFilePerJob}" AutomationProperties.Name="{loc:T Data.Batch.OneFilePerJob}" />
+              </StackPanel>
+            </Border>
+            <TextBlock DockPanel.Dock="Top" Text="{Binding IssuesSummary}" Margin="0,16,0,8" FontWeight="SemiBold" Visibility="{Binding HasIssues, Converter={StaticResource B2V}}" />
+            <DataGrid ItemsSource="{Binding Issues}" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" Visibility="{Binding HasIssues, Converter={StaticResource B2V}}"
+                      FontFamily="{StaticResource UiFont}" FontSize="13" RowHeight="32" AutomationProperties.Name="{loc:T Data.Issues.List}">
+              <DataGrid.Columns>
+                <DataGridTextColumn Header="{loc:T Data.Issues.Record}" Binding="{Binding RecordText}" Width="80" />
+                <DataGridTextColumn Header="{loc:T Data.Issues.Severity}" Binding="{Binding SeverityText}" Width="100" />
+                <DataGridTextColumn Header="{loc:T Data.Issues.Message}" Binding="{Binding Message}" Width="*">
+                  <DataGridTextColumn.ElementStyle>
+                    <Style TargetType="TextBlock"><Setter Property="TextWrapping" Value="Wrap" /><Setter Property="VerticalAlignment" Value="Center" /></Style>
+                  </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+              </DataGrid.Columns>
+            </DataGrid>
+          </DockPanel>
+        </Grid>
+      </TabItem>
+    </TabControl>
+  </DockPanel>
+</Window>

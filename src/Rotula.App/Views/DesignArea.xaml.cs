@@ -55,6 +55,8 @@ public partial class DesignArea : UserControl
             r.Dpi = dpi;
             r.PixelsPerDot = ppd;
         }
+        HRuler.LabelLengthDots = _vm.Session.Document.WidthDots;
+        VRuler.LabelLengthDots = _vm.Session.Document.HeightDots;
         HRuler.ScrollOffset = Scroller.HorizontalOffset;
         VRuler.ScrollOffset = Scroller.VerticalOffset;
     }

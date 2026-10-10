@@ -35,6 +35,17 @@ public sealed class RulerControl : FrameworkElement
     public static readonly DependencyProperty ScrollOffsetProperty = DependencyProperty.Register(
         nameof(ScrollOffset), typeof(double), typeof(RulerControl), new FrameworkPropertyMetadata(0.0, FrameworkPropertyMetadataOptions.AffectsRender));
 
+    /// <summary>Length of the label along this ruler in dots; the end of the label is marked with its size and unit (for example "4 in").</summary>
+    public static readonly DependencyProperty LabelLengthDotsProperty = DependencyProperty.Register(
+        nameof(LabelLengthDots), typeof(double), typeof(RulerControl), new FrameworkPropertyMetadata(0.0, FrameworkPropertyMetadataOptions.AffectsRender));
+
+    /// <summary>Label length in dots.</summary>
+    public double LabelLengthDots { get => (double)GetValue(LabelLengthDotsProperty); set => SetValue(LabelLengthDotsProperty, value); }
+
+    private static readonly Brush TickBrush = new SolidColorBrush(Color.FromRgb(0xA9, 0xA4, 0x9A));
+    private static readonly Brush TextBrush = new SolidColorBrush(Color.FromRgb(0x62, 0x66, 0x6D));
+    private static readonly Brush BackgroundBrush = new SolidColorBrush(Color.FromRgb(0xF0, 0xED, 0xE8));
+
     /// <summary>Orientation.</summary>
     public Orientation Orientation { get => (Orientation)GetValue(OrientationProperty); set => SetValue(OrientationProperty, value); }
 
@@ -55,7 +66,7 @@ public sealed class RulerControl : FrameworkElement
     {
         base.OnRender(dc);
         var size = RenderSize;
-        dc.DrawRectangle(new SolidColorBrush(Color.FromRgb(0xF0, 0xF1, 0xF3)), null, new Rect(size));
+        dc.DrawRectangle(BackgroundBrush, null, new Rect(size));
         bool horizontal = Orientation == Orientation.Horizontal;
         double length = horizontal ? size.Width : size.Height;
         double ppd = PixelsPerDot;
@@ -65,7 +76,7 @@ public sealed class RulerControl : FrameworkElement
         double startDots = (ScrollOffset - DesignCanvas.Gutter) / ppd;
         double endDots = (ScrollOffset + length - DesignCanvas.Gutter) / ppd;
         var ticks = Ruler.GetTicks(Unit, Dpi, ppd, startDots, endDots);
-        var pen = new Pen(Brushes.DimGray, 1);
+        var pen = new Pen(TickBrush, 1);
         var dpiScale = VisualTreeHelper.GetDpi(this).PixelsPerDip;
         var typeface = new Typeface("Segoe UI");
         foreach (var t in ticks)
@@ -79,7 +90,7 @@ public sealed class RulerControl : FrameworkElement
             else dc.DrawLine(pen, new Point(size.Width, pos), new Point(size.Width - len, pos));
             if (t.IsMajor && t.Label.Length > 0)
             {
-                var ft = new FormattedText(t.Label, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, typeface, 10, Brushes.DimGray, dpiScale);
+                var ft = new FormattedText(t.Label, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, typeface, 10, TextBrush, dpiScale);
                 if (horizontal) dc.DrawText(ft, new Point(pos + 2, 1));
                 else
                 {
@@ -91,7 +102,38 @@ public sealed class RulerControl : FrameworkElement
                 }
             }
         }
-        dc.DrawLine(new Pen(Brushes.Silver, 1), horizontal ? new Point(0, size.Height - 0.5) : new Point(size.Width - 0.5, 0),
+        DrawEndLabel(dc, size, horizontal, ppd, typeface, dpiScale);
+        dc.DrawLine(new Pen(new SolidColorBrush(Color.FromRgb(0xE1, 0xDC, 0xD3)), 1), horizontal ? new Point(0, size.Height - 0.5) : new Point(size.Width - 0.5, 0),
             horizontal ? new Point(size.Width, size.Height - 0.5) : new Point(size.Width - 0.5, size.Height));
+    }
+
+    // Marks where the label ends with its size and unit, for example "4 in" or "100 mm", so the size is readable at a glance.
+    private void DrawEndLabel(DrawingContext dc, Size size, bool horizontal, double ppd, Typeface typeface, double pixelsPerDip)
+    {
+        if (LabelLengthDots <= 0) return;
+        double value = UnitConverter.Convert(LabelLengthDots, LengthUnit.Dots, Unit, Dpi);
+        string suffix = Unit switch { LengthUnit.Millimeters => "mm", LengthUnit.Inches => "in", _ => "dots" };
+        string text = value.ToString(Unit == LengthUnit.Dots ? "0" : "0.##", CultureInfo.CurrentCulture) + " " + suffix;
+        double p = DesignCanvas.Gutter + LabelLengthDots * ppd - ScrollOffset;
+        var ft = new FormattedText(text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, typeface, 10.5, new SolidColorBrush(Color.FromRgb(0xC8, 0x42, 0x0F)), pixelsPerDip);
+        ft.SetFontWeight(FontWeights.SemiBold);
+        if (horizontal)
+        {
+            double x = p - ft.Width - 4;
+            if (x < 0 || p > size.Width + ft.Width) return;
+            dc.DrawRectangle(BackgroundBrush, null, new Rect(x - 2, 0, ft.Width + 4, size.Height - 6));
+            dc.DrawText(ft, new Point(x, 1));
+        }
+        else
+        {
+            double y = p - ft.Width - 4;
+            if (y < 0 || p > size.Height + ft.Width) return;
+            dc.DrawRectangle(BackgroundBrush, null, new Rect(0, y - 2, size.Width - 6, ft.Width + 4));
+            dc.PushTransform(new TranslateTransform(12, y + ft.Width));
+            dc.PushTransform(new RotateTransform(-90));
+            dc.DrawText(ft, new Point(0, 0));
+            dc.Pop();
+            dc.Pop();
+        }
     }
 }

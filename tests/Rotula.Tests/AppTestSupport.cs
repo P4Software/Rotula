@@ -5,6 +5,8 @@ using Rotula.App.ViewModels;
 using Rotula.Core.Elements;
 using Rotula.Core.Imaging;
 using Rotula.Core.Model;
+using Rotula.Core.Zpl;
+using Rotula.Printing;
 
 namespace Rotula.Tests;
 
@@ -83,7 +85,9 @@ internal static class AppTestSupport
 /// <summary>Scriptable fakes for every service of the main view-model.</summary>
 internal sealed class FakeServices
 {
-    public string? OpenPath, SavePath, ExportPath, ZplPath, ImagePath;
+    public string? OpenPath, SavePath, ExportPath, ZplPath, ImagePath, DataPath;
+    public bool ConfirmAnswer = true;
+    public readonly List<string> Confirms = new();
     public readonly List<(string Title, string Message)> Errors = new();
     public readonly List<(string Title, string Message)> Infos = new();
     public SaveChangesAnswer SaveAnswer = SaveChangesAnswer.Discard;
@@ -91,12 +95,13 @@ internal sealed class FakeServices
     public string? ClipboardText;
     public LabelDocument? NewLabel;
     public IZplImporter Importer = new StubZplImporter();
-    public IPrintService Printer = new StubPrintService();
+    public FakePrintService Printer = new();
+    public readonly FakeToolDialogs ToolDialogs = new();
     public GrayscaleBitmap? Image = AppTestSupport.SmallBitmap();
     public readonly InMemorySettings Settings = new();
 
     public MainServices Build() => new(
-        new Dialogs(this), new Messages(this), new Clip(this), new Images(this), new NewDialog(this), Importer, Printer, Settings);
+        new Dialogs(this), new Messages(this), new Clip(this), new Images(this), new NewDialog(this), Importer, Printer, Settings, ToolDialogs);
 
     private sealed class Dialogs(FakeServices f) : IFileDialogService
     {
@@ -105,6 +110,7 @@ internal sealed class FakeServices
         public string? PickExportFile(ExportKind kind, string suggestedFileName) => f.ExportPath;
         public string? PickOpenZpl() => f.ZplPath;
         public string? PickOpenImage() => f.ImagePath;
+        public string? PickOpenData() => f.DataPath;
     }
 
     private sealed class Messages(FakeServices f) : IMessageService
@@ -112,6 +118,7 @@ internal sealed class FakeServices
         public void ShowError(string title, string message) => f.Errors.Add((title, message));
         public void ShowInfo(string title, string message) => f.Infos.Add((title, message));
         public SaveChangesAnswer AskSaveChanges(string documentName) { f.SaveQuestions++; return f.SaveAnswer; }
+        public bool Confirm(string title, string message) { f.Confirms.Add(message); return f.ConfirmAnswer; }
     }
 
     private sealed class Clip(FakeServices f) : IClipboardService
@@ -139,4 +146,69 @@ internal sealed class InMemorySettings : ISettingsStore
     public bool LoadProblem => false;
     public AppSettings Load() => Current;
     public bool Save(AppSettings settings) { Current = settings; Saves++; return true; }
+}
+
+/// <summary>The tool windows are recorded, never opened.</summary>
+internal sealed class FakeToolDialogs : IToolDialogService
+{
+    public Rotula.App.ViewModels.PrintViewModel? LastPrint;
+    public Rotula.App.ViewModels.DataMergeViewModel? LastData;
+    public void ShowPrintDialog(Rotula.App.ViewModels.PrintViewModel viewModel) => LastPrint = viewModel;
+    public void ShowDataWindow(Rotula.App.ViewModels.DataMergeViewModel viewModel) => LastData = viewModel;
+    public int Previews;
+    public void ShowPreviewDialog(Rotula.App.Editing.PreviewCache preview, string title) => Previews++;
+}
+
+/// <summary>
+/// A scriptable <see cref="IPrintService"/>. Every call is recorded and nothing is ever sent anywhere, so tests can never
+/// reach a real printer or the network.
+/// </summary>
+internal sealed class FakePrintService : IPrintService
+{
+    public readonly List<(PrinterTarget Target, LabelDocument Doc, IReadOnlyDictionary<string, string>? Data, PrinterProfile? Profile)> Printed = new();
+    public readonly List<(PrinterTarget Target, string Zpl, ZplEncoding Encoding)> ZplJobs = new();
+    public readonly List<(PrinterTarget Target, PrinterProfile Profile)> TestLabels = new();
+    public IReadOnlyList<PrinterInfo> Printers = Array.Empty<PrinterInfo>();
+    public Exception? DiscoveryFailure;
+    /// <summary>The result for the next calls; a function so a test can fail only the n-th job.</summary>
+    public Func<int, PrintResult> Result = _ => PrintResult.Ok(10);
+    /// <summary>When set, calls wait for it (or for cancellation), which keeps a job "in flight".</summary>
+    public TaskCompletionSource? Gate;
+    private int _calls;
+
+    private async Task<PrintResult> Respond(CancellationToken ct)
+    {
+        int n = ++_calls;
+        if (Gate is not null)
+        {
+            try { await Gate.Task.WaitAsync(ct); }
+            catch (OperationCanceledException) { return PrintResult.Fail(PrintErrorKind.Cancelled); }
+        }
+        return Result(n);
+    }
+
+    public Task<IReadOnlyList<PrinterInfo>> GetPrintersAsync(CancellationToken cancellationToken = default) =>
+        DiscoveryFailure is null ? Task.FromResult(Printers) : Task.FromException<IReadOnlyList<PrinterInfo>>(DiscoveryFailure);
+
+    public Task<PrintResult> PrintAsync(PrinterTarget target, LabelDocument document, IReadOnlyDictionary<string, string>? data = null,
+        PrinterProfile? profile = null, CancellationToken cancellationToken = default)
+    {
+        Printed.Add((target, document, data, profile));
+        return Respond(cancellationToken);
+    }
+
+    public Task<PrintResult> PrintZplAsync(PrinterTarget target, string zpl, ZplEncoding encoding, CancellationToken cancellationToken = default)
+    {
+        ZplJobs.Add((target, zpl, encoding));
+        return Respond(cancellationToken);
+    }
+
+    public Task<PrintResult> ApplyProfileAsync(PrinterTarget target, PrinterProfile profile, CancellationToken cancellationToken = default) =>
+        Respond(cancellationToken);
+
+    public Task<PrintResult> PrintTestLabelAsync(PrinterTarget target, PrinterProfile profile, CancellationToken cancellationToken = default)
+    {
+        TestLabels.Add((target, profile));
+        return Respond(cancellationToken);
+    }
 }

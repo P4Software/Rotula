@@ -30,11 +30,10 @@ public sealed class DesignCanvas : FrameworkElement
     private enum Mode { None, Move, Resize, Rotate, Marquee }
 
     private static readonly Brush PaperBrush = Brushes.White;
-    private static readonly Brush ShadowBrush = new SolidColorBrush(Color.FromArgb(40, 0, 0, 0));
-    private static readonly Brush AccentBrush = new SolidColorBrush(Color.FromRgb(0x0F, 0x6C, 0xBD));
-    private static readonly Brush MarqueeFill = new SolidColorBrush(Color.FromArgb(32, 0x0F, 0x6C, 0xBD));
+    private static readonly Brush AccentBrush = new SolidColorBrush(Color.FromRgb(0xC8, 0x42, 0x0F));
+    private static readonly Brush MarqueeFill = new SolidColorBrush(Color.FromArgb(32, 0xC8, 0x42, 0x0F));
     private static readonly Brush GuideBrush = new SolidColorBrush(Color.FromRgb(0xD6, 0x2F, 0x8B));
-    private static readonly Pen GridPen = CreatePen(Color.FromArgb(70, 120, 130, 140), 1, null);
+    private static readonly Brush GridDotBrush = new SolidColorBrush(Color.FromArgb(120, 110, 100, 90));
     private static readonly Pen MarginPen = CreatePen(Color.FromArgb(150, 200, 120, 0), 1, new DashStyle(new double[] { 3, 3 }, 0));
 
     private MainViewModel? _vm;
@@ -164,7 +163,12 @@ public sealed class DesignCanvas : FrameworkElement
         var labelRect = new Rect(Gutter, Gutter, Doc.WidthDots * ppd, Doc.HeightDots * ppd);
 
         dc.DrawRectangle(Brushes.Transparent, null, new Rect(RenderSize));
-        dc.DrawRectangle(ShadowBrush, null, new Rect(labelRect.X + 3, labelRect.Y + 3, labelRect.Width, labelRect.Height));
+        // A soft drop shadow: a few translucent layers growing outwards read as blur without an expensive bitmap effect.
+        for (int i = 4; i >= 1; i--)
+        {
+            var layer = new SolidColorBrush(Color.FromArgb((byte)(10 + (5 - i) * 4), 40, 30, 20));
+            dc.DrawRoundedRectangle(layer, null, new Rect(labelRect.X - i + 1, labelRect.Y - i + 4, labelRect.Width + 2 * i - 2, labelRect.Height + 2 * i - 2), 2 + i, 2 + i);
+        }
         dc.DrawRectangle(PaperBrush, null, labelRect);
 
         DrawPreview(dc, labelRect);
@@ -218,9 +222,11 @@ public sealed class DesignCanvas : FrameworkElement
     {
         double step = _vm!.Grid.SpacingDots(Dpi) * Ppd;
         // Lines closer than 5 px only make a grey smear; skip them like design tools do.
-        if (step < 5) return;
-        for (double x = labelRect.X; x <= labelRect.Right + 0.01; x += step) dc.DrawLine(GridPen, new Point(x, labelRect.Y), new Point(x, labelRect.Bottom));
-        for (double y = labelRect.Y; y <= labelRect.Bottom + 0.01; y += step) dc.DrawLine(GridPen, new Point(labelRect.X, y), new Point(labelRect.Right, y));
+        if (step < 8) return;
+        // A dot grid (a dot at every crossing) stays out of the way of the design far better than lines do.
+        for (double x = labelRect.X; x <= labelRect.Right + 0.01; x += step)
+            for (double y = labelRect.Y; y <= labelRect.Bottom + 0.01; y += step)
+                dc.DrawRectangle(GridDotBrush, null, new Rect(x - 0.5, y - 0.5, 1.5, 1.5));
     }
 
     private void DrawPrintableArea(DrawingContext dc)
@@ -237,7 +243,7 @@ public sealed class DesignCanvas : FrameworkElement
     {
         var selected = _vm!.Session.SelectedElements;
         if (selected.Count == 0) return;
-        var pen = new Pen(AccentBrush, 1) { DashStyle = new DashStyle(new double[] { 4, 3 }, 0) };
+        var pen = new Pen(AccentBrush, 1);
         foreach (var e in selected)
             dc.DrawRectangle(null, pen, ToPixelRect(_vm.Session.Bounds.GetBounds(e)));
 

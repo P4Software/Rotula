@@ -20,11 +20,54 @@ public sealed class AppSettings
     /// <summary>Snap to the edges and centres of other elements while dragging.</summary>
     public bool SnapToGuides { get; set; } = true;
 
+    /// <summary>Show the ZPL code panel under the canvas. Hidden by default; the choice is remembered.</summary>
+    public bool ZplPanelVisible { get; set; }
+
     /// <summary>Grid spacing in millimetres.</summary>
     public double GridSpacingMm { get; set; } = 2.0;
 
     /// <summary>Most recently used files, newest first.</summary>
     public List<string> RecentFiles { get; set; } = new();
+
+    /// <summary>The printer and printer profile used last time, so the Print dialog opens ready to go.</summary>
+    public PrintSettings Print { get; set; } = new();
+}
+
+/// <summary>The last printer and printer profile, stored in settings.json. Enum values are stored by name.</summary>
+public sealed class PrintSettings
+{
+    /// <summary>False until the user has printed or saved once; the dialog then starts from the open label's size.</summary>
+    public bool Configured { get; set; }
+
+    /// <summary>"Spooler" (an installed Windows printer) or "Tcp" (host and port).</summary>
+    public string Transport { get; set; } = "Spooler";
+
+    /// <summary>Windows printer queue name.</summary>
+    public string PrinterName { get; set; } = string.Empty;
+
+    /// <summary>Host name or IP address of a network printer.</summary>
+    public string Host { get; set; } = string.Empty;
+
+    /// <summary>TCP port of a network printer (9100 for Zebra).</summary>
+    public int Port { get; set; } = 9100;
+
+    /// <summary>Printhead resolution: "Dpi203", "Dpi300" or "Dpi600".</summary>
+    public string Dpi { get; set; } = "Dpi203";
+
+    /// <summary>Label width in millimetres (sent as ^PW).</summary>
+    public double WidthMm { get; set; } = 100;
+
+    /// <summary>Label height in millimetres (used by the test label).</summary>
+    public double HeightMm { get; set; } = 50;
+
+    /// <summary>Media tracking: "Web", "Continuous" or "Mark".</summary>
+    public string MediaTracking { get; set; } = "Web";
+
+    /// <summary>Darkness 0-30 (~SD) or null to leave the printer as it is.</summary>
+    public int? Darkness { get; set; }
+
+    /// <summary>Print speed 1-14 (^PR) or null to leave the printer as it is.</summary>
+    public int? SpeedIps { get; set; }
 }
 
 /// <summary>Loads and saves <see cref="AppSettings"/>.</summary>

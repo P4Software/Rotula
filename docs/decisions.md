@@ -80,3 +80,48 @@ coverlet). The script counts hit lines itself rather than trusting the rounded `
 `scripts/check-hygiene.sh` runs in CI and can be run locally. It fails when the tree contains tooling directories or files
 that must not be published, or when a commit message in the pushed range carries a co-author trailer or generated-with
 footer naming an automated tool.
+
+### Printing (Print dialog)
+`Rotula.Printing.IPrintService` is the only printing API the App uses; `new PrintService()` is created in `App.xaml.cs`
+and nowhere else. The Print dialog (Ctrl+P) works on `PrintViewModel` + `PrinterSettingsViewModel`: a Windows printer
+(discovered asynchronously) or TCP host and port, plus the profile (DPI, width/height, media tracking, darkness ~SD, speed ^PR),
+copies, "Print test label" and "Save as ZPL". Every send is async with a `CancellationToken`, a busy bar and a Stop button; closing
+the window cancels a job in flight. The label is validated in the App before sending (so the user sees the real issues, not the
+service's bare keys); the test label does not depend on the design being valid. `Print.Error.<Kind>` and `Print.Profile.*.Range`
+keys are translated in both languages; a test enumerates `PrintErrorKind` and scans the Printing sources for the keys.
+The last printer and profile are stored in `settings.json` (`print` section) only after something was actually sent or saved.
+Tests use a fake `IPrintService` that records calls: no test can reach a printer or the network.
+Known gap: `PrintZplAsync` does not do the byte-exact encoding of imported raw ZPL blocks that `PrintAsync` does, so a batch
+containing raw blocks with high bytes could be altered. This needs an API change in Rotula.Printing.
+
+### Data merge
+`DataMergeViewModel` (window opened with Ctrl+M, not modal so the canvas can be watched) wraps Core.Merge: CSV (delimiter auto
+detected and shown; UTF-8 with fallback to Windows-1252 as Excel writes it) or .xlsx (sheet picker), read off the UI thread with
+`FileShare.ReadWrite` so a workbook open in Excel can still be read. The record shown on the canvas and in the ZPL view comes
+from `MergeDataSet.GetRecordData`; the export/"has errors" gate keeps using the design with its sample values.
+Batches (check, print all, export) take a private copy of the label and a fresh `MergeOptions`, then enumerate `MergeBatch` on a
+background thread, so editing the label never changes a running batch. Print all asks for confirmation, sends jobs of at most
+`MaxRecordsPerJob` records, puts the printer set-up commands in front of the first job only, and on failure says how many jobs
+were already sent. Export writes one file (through a temp file) or one numbered file per job, in the label's encoding.
+Settings are saved in the .rotula file (`merge` object); the data is never saved.
+
+### .rotula format version 2
+`formatVersion` 2 adds the optional `merge` object. A file is written as version 1 when it has no data-merge settings, so older
+copies of Rotula still open it; version 1 files open unchanged; versions above 2 are refused with the "update Rotula" message.
+Unknown or missing values inside `merge` fall back to defaults.
+
+### Untrusted paths
+A path stored in a .rotula file (the data-source hint) or in settings.json (recent files) is untrusted: `\host\share` makes
+Windows send the user's credentials just by checking the path. `SafeLocalPath` accepts only plain local drive paths
+(`C:\...`), rejecting UNC, device (`\?\`, `\.\`), URL, relative and alternate-stream forms, using string checks only. Opening a
+label never touches the file system for the hint (`CanReload` does not look at the disk); the file is checked only when the user
+clicks Reload, which also refuses mapped network drive letters. A path the user picks in a file dialog is trusted.
+
+### Look and feel
+Warm off-white chrome, white surfaces, one burnt-orange accent (`#C8420F`) for primary actions, selection, focus and the canvas
+handles. Everything is in `Resources/Theme.xaml` (colours, type, restyled Button/TextBox/ComboBox/CheckBox/RadioButton/ListBox/
+Tab/Menu templates, focus ring) and `Resources/Icons.xaml` (original thin-stroke vector icons drawn for this project, no icon
+pack). The title bar is drawn by the app (`WindowChrome`), the tool rail replaces the toolbox, and the properties panel lays
+number fields two to a line (`PropertyGridPanel`). The ZPL panel is the only dark surface (a code view by design) and is hidden by
+default; View > Show ZPL code or the toolbar toggle shows it, and the choice is stored in settings.json. UI font is
+Segoe UI Variable with Segoe UI fallback; no font is bundled.

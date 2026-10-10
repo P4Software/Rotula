@@ -66,7 +66,7 @@ public class AppLocalizationTests : IDisposable
                 used.Add(m.Groups[1].Value);
 
         // Literals in code that look like resource keys. Comment lines are skipped (they quote member names).
-        var keyShape = new Regex("\"((?:Prop|Panel|Menu|Tool|Status|Dialog|File|Undo|Element|Validation|Preview|Preset|Import|Print|Image|Issue|Document|Encoding|Layers|About|Ruler|Zpl|Toolbar|Canvas|Common|Crash|Filter|Splitter)(?:\\.[A-Za-z0-9]+)+)\"");
+        var keyShape = new Regex("\"((?:Prop|Panel|Menu|Tool|Status|Dialog|File|Undo|Element|Validation|Preview|Preset|Import|Print|Image|Issue|Document|Encoding|Layers|About|Ruler|Zpl|Toolbar|Canvas|Common|Crash|Filter|Splitter|Data)(?:\\.[A-Za-z0-9]+)+)\"");
         foreach (var cs in Directory.EnumerateFiles(src, "*.cs", SearchOption.AllDirectories).Where(f => !f.Contains(@"\obj\") && !f.Contains(@"\bin\")))
             foreach (var line in File.ReadAllLines(cs).Where(l => !l.TrimStart().StartsWith("//")))
                 foreach (Match m in keyShape.Matches(line))
@@ -105,6 +105,27 @@ public class AppLocalizationTests : IDisposable
     }
 
     [Fact]
+    public void EveryMessageKeyEmittedByPrinting_IsTranslatedInBothLanguages()
+    {
+        var en = ReadResx("en");
+        var es = ReadResx("es");
+        var keys = new HashSet<string>();
+        // Every failure category has a Print.Error.<Kind> key (PrintError.Create derives the key from the kind).
+        foreach (var kind in Enum.GetValues<Rotula.Printing.PrintErrorKind>()) keys.Add("Print.Error." + kind);
+        // Profile validation returns literal Print.Profile.*.Range keys; find them in the Printing sources.
+        var printing = Path.Combine(RepoRoot(), "src", "Rotula.Printing");
+        foreach (var file in Directory.EnumerateFiles(printing, "*.cs", SearchOption.AllDirectories).Where(f => !f.Contains(@"\obj\") && !f.Contains(@"in\")))
+            foreach (Match m in Regex.Matches(File.ReadAllText(file), @"""(Print\.[A-Za-z]+(?:\.[A-Za-z]+)+)"""))
+                keys.Add(m.Groups[1].Value);
+        Assert.True(keys.Count >= 16, "expected to find the Printing keys, found " + keys.Count);
+        Assert.Empty(keys.Where(k => !en.ContainsKey(k)).OrderBy(k => k));
+        Assert.Empty(keys.Where(k => !es.ContainsKey(k)).OrderBy(k => k));
+        // Messages with holes must not leave an unreplaced {n} when the library supplies fewer arguments than holes.
+        foreach (var k in keys.Where(k => k.StartsWith("Print.Error.")))
+            Assert.True(Regex.Matches(en[k], @"(?<!\{)\{(\d)\}(?!\})").Count <= 2, k);
+    }
+
+    [Fact]
     public void EveryEnumValueShownInTheUi_HasAName_InBothLanguages()
     {
         var en = ReadResx("en").Keys.ToHashSet();
@@ -121,6 +142,8 @@ public class AppLocalizationTests : IDisposable
         Check<FieldOriginKind>(); Check<FieldRotation>(); Check<GraphicColor>(); Check<LineDirection>(); Check<BarcodeSymbology>();
         Check<HumanReadablePosition>(); Check<Code128Mode>(); Check<QrErrorCorrection>(); Check<TextAlignment>(); Check<ImageDitherMode>();
         Check<LengthUnit>(); Check<PrinterDpi>(); Check<LabelOrientation>(); Check<MediaType>(); Check<MediaTracking>();
+        Check<Rotula.Core.Merge.CopiesMode>(); Check<Rotula.Core.Merge.InvalidRecordPolicy>(); Check<Rotula.Core.Merge.CounterKind>();
+        Check<Rotula.Core.Merge.CounterOverflow>(); Check<Rotula.Printing.PrinterTransport>();
     }
 
     [Fact]

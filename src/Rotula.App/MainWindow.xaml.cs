@@ -22,7 +22,13 @@ public partial class MainWindow : Window
         viewModel.Session.SelectionChanged += (_, _) => SyncLayersFromSession();
         viewModel.Layers.CollectionChanged += (_, _) => SyncLayersFromSession();
         viewModel.ExitRequested += (_, _) => Close();
-        Loaded += (_, _) => viewModel.ZoomFitCommand.Execute(null);
+        StateChanged += (_, _) => UpdateMaximizeGlyph();
+        Loaded += async (_, _) =>
+        {
+            viewModel.ZoomFitCommand.Execute(null);
+            // Printer discovery is async; the window is already usable while Windows lists its printers.
+            await viewModel.Printer.RefreshPrintersAsync();
+        };
     }
 
     /// <inheritdoc />
@@ -33,6 +39,57 @@ public partial class MainWindow : Window
         if (!_vm.ConfirmClose()) e.Cancel = true;
         else _vm.OnClosing();
     }
+
+    // ------------------------------------------------------------------------------- custom title bar
+
+    private void OnMinimize(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
+
+    private void OnMaximize(object sender, RoutedEventArgs e) =>
+        WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+
+    private void OnCloseWindow(object sender, RoutedEventArgs e) => Close();
+
+    private void UpdateMaximizeGlyph()
+    {
+        bool maximized = WindowState == WindowState.Maximized;
+        MaximizeGlyph.Data = (System.Windows.Media.Geometry)FindResource(maximized ? "IconRestore" : "IconMaximize");
+        string label = Loc.Get(maximized ? "Window.Restore" : "Window.Maximize");
+        MaximizeButton.ToolTip = label;
+        System.Windows.Automation.AutomationProperties.SetName(MaximizeButton, label);
+        // A borderless window that is maximised extends past the screen by its resize border; pull the content back in.
+        RootGrid.Margin = maximized ? new Thickness(SystemParameters.WindowResizeBorderThickness.Left + SystemParameters.FixedFrameVerticalBorderWidth,
+            SystemParameters.WindowResizeBorderThickness.Top + SystemParameters.FixedFrameHorizontalBorderHeight,
+            SystemParameters.WindowResizeBorderThickness.Right + SystemParameters.FixedFrameVerticalBorderWidth,
+            SystemParameters.WindowResizeBorderThickness.Bottom + SystemParameters.FixedFrameHorizontalBorderHeight) : new Thickness(0);
+    }
+
+    // ------------------------------------------------------------------------------- toolbar
+
+    private void OnZoomPresetChosen(object sender, SelectionChangedEventArgs e)
+    {
+        if (sender is not ComboBox combo || e.AddedItems.Count != 1 || e.AddedItems[0] is not int percent) return;
+        _vm.SetZoomPercent(percent);
+        // Clear the pick so the same preset can be chosen again (the box itself displays the live zoom).
+        combo.SelectedItem = null;
+    }
+
+    private void OnPrinterChosen(object sender, SelectionChangedEventArgs e)
+    {
+        if (e.AddedItems.Count == 0 || sender is not ComboBox { IsDropDownOpen: true }) return;
+        // Choosing a Windows printer in the toolbar switches away from a network target and is remembered for next time.
+        _vm.Printer.UseNetwork = false;
+        _vm.Printer.Persist();
+    }
+
+    private void OnSelectTool(object sender, RoutedEventArgs e)
+    {
+        // The pointer is always the active tool (other tools place an element at once), so the button stays pressed.
+        SelectTool.IsChecked = true;
+        _vm.SelectNoneCommand.Execute(null);
+        Design.FocusCanvas();
+    }
+
+    // ------------------------------------------------------------------------------- layers
 
     private void OnLayersSelectionChanged(object sender, SelectionChangedEventArgs e)
     {

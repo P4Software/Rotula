@@ -26,14 +26,25 @@ public sealed class RotulaFileException : Exception
     public string[] Args { get; }
 }
 
+/// <summary>A loaded .rotula file: the label plus the saved data-merge settings (null when the file has none).</summary>
+/// <param name="Document">The label.</param>
+/// <param name="Merge">Data-merge settings, or null.</param>
+public sealed record RotulaFileContent(LabelDocument Document, DataMergeSettings? Merge);
+
 /// <summary>
 /// Reads and writes the versioned .rotula JSON format and converts between the Core model and the file DTOs.
 /// The same conversion also backs the clipboard, so copy/paste between two running copies of Rotula works.
 /// </summary>
 public static class RotulaFileSerializer
 {
-    /// <summary>The format version this build writes and the newest it can read.</summary>
-    public const int CurrentFormatVersion = 1;
+    /// <summary>Version 1: label and elements only.</summary>
+    public const int BaseFormatVersion = 1;
+
+    /// <summary>Version 2: adds the optional "merge" object (data-merge settings, never the data).</summary>
+    public const int DataMergeFormatVersion = 2;
+
+    /// <summary>The newest format version this build can read. Files are written with the lowest version that can hold their content.</summary>
+    public const int CurrentFormatVersion = DataMergeFormatVersion;
 
     private const string ClipboardMarker = "rotulaElements";
 
@@ -48,11 +59,28 @@ public static class RotulaFileSerializer
         AllowOutOfOrderMetadataProperties = true,
     };
 
-    /// <summary>Serializes a document to .rotula JSON text.</summary>
-    public static string Serialize(LabelDocument document) => JsonSerializer.Serialize(ToDto(document), Options);
+    /// <summary>
+    /// Serializes a document to .rotula JSON text. Why the version depends on the content: a label without data-merge
+    /// settings stays at version 1, so older copies of Rotula can still open it.
+    /// </summary>
+    /// <param name="document">The label.</param>
+    /// <param name="merge">Data-merge settings to store, or null/empty for none.</param>
+    public static string Serialize(LabelDocument document, DataMergeSettings? merge = null)
+    {
+        var dto = ToDto(document);
+        if (merge is { IsEmpty: false })
+        {
+            dto.Merge = MergeSettingsMapper.ToDto(merge);
+            dto.FormatVersion = DataMergeFormatVersion;
+        }
+        return JsonSerializer.Serialize(dto, Options);
+    }
 
     /// <summary>Parses .rotula JSON text. Throws <see cref="RotulaFileException"/> with a localizable key when it cannot be used.</summary>
-    public static LabelDocument Deserialize(string json)
+    public static LabelDocument Deserialize(string json) => DeserializeFile(json).Document;
+
+    /// <summary>Parses .rotula JSON text into the label and its data-merge settings (null for version 1 files).</summary>
+    public static RotulaFileContent DeserializeFile(string json)
     {
         RotulaFileDto? dto;
         try
@@ -76,7 +104,8 @@ public static class RotulaFileSerializer
         if (dto is null) throw new RotulaFileException("File.Error.Corrupt");
         try
         {
-            return FromDto(dto);
+            var merge = dto.Merge is null ? null : MergeSettingsMapper.FromDto(dto.Merge);
+            return new RotulaFileContent(FromDto(dto), merge);
         }
         catch (Exception ex) when (ex is ArgumentException or FormatException or InvalidOperationException or OverflowException or NullReferenceException)
         {
@@ -85,9 +114,9 @@ public static class RotulaFileSerializer
     }
 
     /// <summary>Writes a document to a file (UTF-8 without BOM). A temp file is written first so a failed save never destroys the previous version.</summary>
-    public static void Save(LabelDocument document, string path)
+    public static void Save(LabelDocument document, string path, DataMergeSettings? merge = null)
     {
-        string json = Serialize(document);
+        string json = Serialize(document, merge);
         string? folder = Path.GetDirectoryName(Path.GetFullPath(path));
         if (!string.IsNullOrEmpty(folder)) Directory.CreateDirectory(folder);
         string temp = path + ".tmp";
@@ -97,6 +126,9 @@ public static class RotulaFileSerializer
 
     /// <summary>Reads a document from a file.</summary>
     public static LabelDocument Load(string path) => Deserialize(File.ReadAllText(path));
+
+    /// <summary>Reads a document and its data-merge settings from a file.</summary>
+    public static RotulaFileContent LoadFile(string path) => DeserializeFile(File.ReadAllText(path));
 
     private static readonly JsonSerializerOptions FingerprintOptions = new()
     {
@@ -122,7 +154,7 @@ public static class RotulaFileSerializer
     /// <summary>Serializes elements for the clipboard.</summary>
     public static string SerializeElements(IEnumerable<LabelElement> elements)
     {
-        var payload = new ClipboardDto { RotulaElements = CurrentFormatVersion, Elements = elements.Select(ToDto).ToList() };
+        var payload = new ClipboardDto { RotulaElements = BaseFormatVersion, Elements = elements.Select(ToDto).ToList() };
         return JsonSerializer.Serialize(payload, Options);
     }
 
@@ -157,7 +189,7 @@ public static class RotulaFileSerializer
     {
         var dto = new RotulaFileDto
         {
-            FormatVersion = CurrentFormatVersion,
+            FormatVersion = BaseFormatVersion,
             Generator = "Rotula",
             Label = new LabelDto
             {

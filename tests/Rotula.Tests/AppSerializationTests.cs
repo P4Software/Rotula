@@ -53,7 +53,8 @@ public class AppSerializationTests
         using var parsed = JsonDocument.Parse(json);
         var first = parsed.RootElement.EnumerateObject().First();
         Assert.Equal("formatVersion", first.Name);
-        Assert.Equal(RotulaFileSerializer.CurrentFormatVersion, first.Value.GetInt32());
+        // Without data-merge settings the file stays at the base version, so older copies of Rotula can still open it.
+        Assert.Equal(RotulaFileSerializer.BaseFormatVersion, first.Value.GetInt32());
         var types = parsed.RootElement.GetProperty("elements").EnumerateArray().Select(e => e.GetProperty("type").GetString()).ToList();
         Assert.Equal(new[] { "text", "dataField", "barcode", "box", "line", "circle", "image" }, types);
     }

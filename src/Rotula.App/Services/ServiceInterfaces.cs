@@ -45,6 +45,9 @@ public interface IFileDialogService
 
     /// <summary>Asks for an image file to place on the label.</summary>
     string? PickOpenImage();
+
+    /// <summary>Asks for a CSV or Excel (.xlsx) data file for the data merge.</summary>
+    string? PickOpenData();
 }
 
 /// <summary>Message boxes.</summary>
@@ -58,6 +61,9 @@ public interface IMessageService
 
     /// <summary>Asks whether to save the changes before continuing.</summary>
     SaveChangesAnswer AskSaveChanges(string documentName);
+
+    /// <summary>Asks an OK/Cancel question (for example before sending a large batch to a printer); true means go ahead.</summary>
+    bool Confirm(string title, string message);
 }
 
 /// <summary>Text clipboard.</summary>
@@ -108,18 +114,6 @@ public interface IZplImporter
     ZplImportResult Import(byte[] zpl);
 }
 
-/// <summary>Outcome of a print request.</summary>
-/// <param name="Success">True when the job was sent.</param>
-/// <param name="MessageKey">Resource key explaining a failure (or a note on success).</param>
-public sealed record PrintOutcome(bool Success, string? MessageKey);
-
-/// <summary>Sends a label to a printer.</summary>
-public interface IPrintService
-{
-    /// <summary>Prints the label described by <paramref name="document"/> using the already generated <paramref name="zpl"/>.</summary>
-    Task<PrintOutcome> PrintAsync(LabelDocument document, string zpl);
-}
-
 /// <summary>Placeholder importer used until the ZPL parser in Rotula.Core is wired in.</summary>
 public sealed class StubZplImporter : IZplImporter
 {
@@ -127,10 +121,15 @@ public sealed class StubZplImporter : IZplImporter
     public ZplImportResult Import(byte[] zpl) => ZplImportResult.Failure("Import.NotAvailable");
 }
 
-/// <summary>Placeholder printing service used until the Rotula.Printing layer is wired in.</summary>
-public sealed class StubPrintService : IPrintService
+/// <summary>Opens the tool windows that belong to the main window (print and data merge).</summary>
+public interface IToolDialogService
 {
-    /// <inheritdoc />
-    public Task<PrintOutcome> PrintAsync(LabelDocument document, string zpl) =>
-        Task.FromResult(new PrintOutcome(false, "Print.NotAvailable"));
+    /// <summary>Shows the Print dialog modally; returns when it is closed.</summary>
+    void ShowPrintDialog(Rotula.App.ViewModels.PrintViewModel viewModel);
+
+    /// <summary>Shows the Data merge window (not modal, so the canvas preview can be watched); brings it forward if already open.</summary>
+    void ShowDataWindow(Rotula.App.ViewModels.DataMergeViewModel viewModel);
+
+    /// <summary>Shows a larger preview of the label as the printer will draw it.</summary>
+    void ShowPreviewDialog(Rotula.App.Editing.PreviewCache preview, string title);
 }

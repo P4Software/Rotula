@@ -61,6 +61,16 @@ public sealed class EditorSession
     /// <summary>Raised when <see cref="IsDirty"/> may have changed.</summary>
     public event EventHandler? DirtyChanged;
 
+    /// <summary>
+    /// Marks the document as changed without an undo step. Used for settings that are saved in the file but are not part of
+    /// the design (data-merge settings), so closing still offers to save them.
+    /// </summary>
+    public void MarkDirty()
+    {
+        _savedToken = -1;
+        DirtyChanged?.Invoke(this, EventArgs.Empty);
+    }
+
     /// <summary>Marks the current state as saved.</summary>
     public void MarkSaved()
     {

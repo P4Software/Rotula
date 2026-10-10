@@ -25,6 +25,10 @@ public sealed class RotulaFileDto
     /// <summary>Elements in z-order (first = back).</summary>
     [JsonPropertyOrder(3)]
     public List<ElementDto> Elements { get; set; } = new();
+
+    /// <summary>Data-merge settings (format version 2 and later). Absent in version 1 files.</summary>
+    [JsonPropertyOrder(4)]
+    public MergeDto? Merge { get; set; }
 }
 
 /// <summary>A length with its unit.</summary>

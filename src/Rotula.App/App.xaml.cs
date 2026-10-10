@@ -24,7 +24,7 @@ public partial class App : Application
         {
             var services = new MainServices(
                 new WpfFileDialogService(), new WpfMessageService(), new WpfClipboardService(), new WpfImageLoader(),
-                new WpfNewLabelDialogService(), CreateZplImporter(), new StubPrintService(), new JsonSettingsStore());
+                new WpfNewLabelDialogService(), CreateZplImporter(), new Rotula.Printing.PrintService(), new JsonSettingsStore(), new WpfToolDialogService());
             var vm = new MainViewModel(services);
             var window = new MainWindow(vm);
             MainWindow = window;

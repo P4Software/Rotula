@@ -238,25 +238,14 @@ public class AppViewModelTests : IDisposable
     }
 
     [Fact]
-    public async Task Print_WithTheStub_ExplainsPrintingIsNotConnected()
+    public void Print_OpensThePrintDialog_WithoutSendingAnything()
     {
-        var vm = Create();
-        vm.AddElementCommand.Execute(ToolboxKind.Text);
-        await vm.PrintCommand.ExecuteAsync(null);
-        Assert.Single(_fake.Infos);
-        Assert.Contains("not connected", _fake.Infos[0].Message);
-    }
-
-    [Fact]
-    public async Task Print_PassesTheGeneratedZplToTheService()
-    {
-        var printer = new RecordingPrinter();
-        _fake.Printer = printer;
         var vm = Create();
         vm.AddElementCommand.Execute(ToolboxKind.Box);
-        await vm.PrintCommand.ExecuteAsync(null);
-        Assert.StartsWith("^XA", printer.Zpl);
-        Assert.Contains("^GB", printer.Zpl);
+        vm.PrintCommand.Execute(null);
+        Assert.NotNull(_fake.ToolDialogs.LastPrint);
+        Assert.Empty(_fake.Printer.Printed);
+        Assert.Empty(_fake.Printer.ZplJobs);
     }
 
     // ------------------------------------------------------------------------------- editing through the VM
@@ -516,15 +505,5 @@ public class AppViewModelTests : IDisposable
     private sealed class FixedImporter(ZplImportResult result) : IZplImporter
     {
         public ZplImportResult Import(byte[] zpl) => result;
-    }
-
-    private sealed class RecordingPrinter : IPrintService
-    {
-        public string? Zpl;
-        public Task<PrintOutcome> PrintAsync(LabelDocument document, string zpl)
-        {
-            Zpl = zpl;
-            return Task.FromResult(new PrintOutcome(true, null));
-        }
     }
 }

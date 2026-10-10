@@ -924,9 +924,6 @@ Yes saves, No discards the changes, Cancel goes back to the label.</value>
   <data name="Print.Failed" xml:space="preserve">
     <value>The label could not be printed. Check the printer connection and try again.</value>
   </data>
-  <data name="Print.NotAvailable" xml:space="preserve">
-    <value>Printing is not connected in this version yet. Export the ZPL or a PDF and print it from there.</value>
-  </data>
   <data name="Prop.BarHeight" xml:space="preserve">
     <value>Bar height (dots)</value>
   </data>
@@ -1304,5 +1301,680 @@ Yes saves, No discards the changes, Cancel goes back to the label.</value>
   </data>
   <data name="Zpl.Copy" xml:space="preserve">
     <value>Copy ZPL</value>
+  </data>
+  <data name="Common.Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="Common.StopOperation" xml:space="preserve">
+    <value>Stop</value>
+  </data>
+  <data name="Common.OperationCancelled" xml:space="preserve">
+    <value>Stopped. Nothing more was done.</value>
+  </data>
+  <data name="Common.OperationFailed" xml:space="preserve">
+    <value>Something unexpected went wrong ({0}). Nothing was changed; try again.</value>
+  </data>
+  <data name="Print.Error.PrinterNotFound" xml:space="preserve">
+    <value>Windows has no printer called "{0}". Refresh the printer list and choose another one, or check that the printer is installed.</value>
+  </data>
+  <data name="Print.Error.AccessDenied" xml:space="preserve">
+    <value>You do not have permission to print to "{0}". Ask your administrator for access or choose another printer.</value>
+  </data>
+  <data name="Print.Error.Offline" xml:space="preserve">
+    <value>The printer "{0}" is offline. Switch it on, check the cable and make sure it is not paused, then try again.</value>
+  </data>
+  <data name="Print.Error.Timeout" xml:space="preserve">
+    <value>The printer at {0}:{1} did not answer in time. Check that it is switched on and on the same network, then try again.</value>
+  </data>
+  <data name="Print.Error.ConnectionRefused" xml:space="preserve">
+    <value>The device at {0}:{1} refused the connection. Check the port (Zebra printers use 9100) and that the printer's network port is enabled.</value>
+  </data>
+  <data name="Print.Error.HostUnreachable" xml:space="preserve">
+    <value>Cannot reach {0}:{1}. Check the address, the network cable or Wi-Fi, and that the printer is switched on.</value>
+  </data>
+  <data name="Print.Error.Cancelled" xml:space="preserve">
+    <value>Printing was cancelled. Nothing more was sent.</value>
+  </data>
+  <data name="Print.Error.InvalidLabel" xml:space="preserve">
+    <value>The label has errors, so nothing was sent. Fix the problems below and try again.</value>
+  </data>
+  <data name="Print.Error.InvalidProfile" xml:space="preserve">
+    <value>The printer settings are out of range, so nothing was sent. Correct the values and try again.</value>
+  </data>
+  <data name="Print.Error.EncodingFailed" xml:space="preserve">
+    <value>The label contains characters that the character set {0} cannot print. Change the label's character set to UTF-8 or remove those characters.</value>
+  </data>
+  <data name="Print.Error.Unsupported" xml:space="preserve">
+    <value>Printing through Windows printers is only available on Windows. Use a network printer or save the ZPL file instead.</value>
+  </data>
+  <data name="Print.Error.Unknown" xml:space="preserve">
+    <value>The printer reported an unexpected problem ({0}). Check the connection and try again, or save the ZPL file and send it another way.</value>
+  </data>
+  <data name="Print.Profile.Darkness.Range" xml:space="preserve">
+    <value>Darkness must be a number from 0 to 30. Change it, or leave it empty to keep the printer's own setting.</value>
+  </data>
+  <data name="Print.Profile.Speed.Range" xml:space="preserve">
+    <value>Speed must be a number from 1 to 14 inches per second. Change it, or leave it empty to keep the printer's own setting.</value>
+  </data>
+  <data name="Print.Profile.Width.Range" xml:space="preserve">
+    <value>The label width is out of range: it must be between 1 and 9999 dots at the chosen resolution. Check the width and the resolution (DPI).</value>
+  </data>
+  <data name="Print.Profile.Height.Range" xml:space="preserve">
+    <value>The label height is out of range: it must be between 1 and 32000 dots at the chosen resolution. Check the height and the resolution (DPI).</value>
+  </data>
+  <data name="Print.Title" xml:space="preserve">
+    <value>Print</value>
+  </data>
+  <data name="Print.Subtitle" xml:space="preserve">
+    <value>Choose a printer, check its settings and print the label.</value>
+  </data>
+  <data name="Print.Section.Printer" xml:space="preserve">
+    <value>Printer</value>
+  </data>
+  <data name="Print.Section.Setup" xml:space="preserve">
+    <value>Printer setup</value>
+  </data>
+  <data name="Print.Transport.Windows" xml:space="preserve">
+    <value>Windows printer (USB or installed)</value>
+  </data>
+  <data name="Print.Transport.Network" xml:space="preserve">
+    <value>Network printer (TCP/IP)</value>
+  </data>
+  <data name="Print.Printer.Label" xml:space="preserve">
+    <value>Printer</value>
+  </data>
+  <data name="Print.Printers.Refresh" xml:space="preserve">
+    <value>Refresh the printer list</value>
+  </data>
+  <data name="Print.Printers.Loading" xml:space="preserve">
+    <value>Looking for printers</value>
+  </data>
+  <data name="Print.Printers.None" xml:space="preserve">
+    <value>Windows has no printers installed. Install the printer driver, or switch to a network printer and enter its address.</value>
+  </data>
+  <data name="Print.Printers.Missing" xml:space="preserve">
+    <value>The printer "{0}" used last time is not installed on this PC. Choose another printer.</value>
+  </data>
+  <data name="Print.Printers.Default" xml:space="preserve">
+    <value>(default)</value>
+  </data>
+  <data name="Print.Printers.Offline" xml:space="preserve">
+    <value>(offline)</value>
+  </data>
+  <data name="Print.Host" xml:space="preserve">
+    <value>Host name or IP address</value>
+  </data>
+  <data name="Print.Port" xml:space="preserve">
+    <value>Port</value>
+  </data>
+  <data name="Print.Profile.Dpi" xml:space="preserve">
+    <value>Resolution</value>
+  </data>
+  <data name="Print.Profile.Media" xml:space="preserve">
+    <value>Media tracking</value>
+  </data>
+  <data name="Print.Profile.Width" xml:space="preserve">
+    <value>Label width (mm)</value>
+  </data>
+  <data name="Print.Profile.Height" xml:space="preserve">
+    <value>Label height (mm)</value>
+  </data>
+  <data name="Print.Profile.Darkness" xml:space="preserve">
+    <value>Darkness (0-30)</value>
+  </data>
+  <data name="Print.Profile.Speed" xml:space="preserve">
+    <value>Speed (1-14 in/s)</value>
+  </data>
+  <data name="Print.Profile.Hint" xml:space="preserve">
+    <value>Leave darkness and speed empty to keep the settings stored in the printer.</value>
+  </data>
+  <data name="Print.Copies" xml:space="preserve">
+    <value>Copies</value>
+  </data>
+  <data name="Print.Button.Print" xml:space="preserve">
+    <value>Print</value>
+  </data>
+  <data name="Print.Button.SaveZpl" xml:space="preserve">
+    <value>Save as ZPL...</value>
+  </data>
+  <data name="Print.Button.Test" xml:space="preserve">
+    <value>Print test label</value>
+  </data>
+  <data name="Print.Button.Test.Tip" xml:space="preserve">
+    <value>Prints a small sample label to check the connection, the width and the accents.</value>
+  </data>
+  <data name="Print.LabelHasErrors" xml:space="preserve">
+    <value>The label has errors and cannot be printed yet:</value>
+  </data>
+  <data name="Print.UsesRecord" xml:space="preserve">
+    <value>The label will be printed with the values of the data record shown on the canvas.</value>
+  </data>
+  <data name="Print.Busy.Printing" xml:space="preserve">
+    <value>Sending the label to the printer...</value>
+  </data>
+  <data name="Print.Busy.Test" xml:space="preserve">
+    <value>Sending the test label...</value>
+  </data>
+  <data name="Print.Busy.Saving" xml:space="preserve">
+    <value>Saving the ZPL file...</value>
+  </data>
+  <data name="Print.Done.Label" xml:space="preserve">
+    <value>Sent to the printer ({0} copies).</value>
+  </data>
+  <data name="Print.Done.Test" xml:space="preserve">
+    <value>The test label was sent to the printer.</value>
+  </data>
+  <data name="Print.Done.Saved" xml:space="preserve">
+    <value>Saved {0}.</value>
+  </data>
+  <data name="Print.Field.NoPrinter" xml:space="preserve">
+    <value>No printer is selected. Choose an installed printer, or switch to a network printer and enter its address.</value>
+  </data>
+  <data name="Print.Field.NoHost" xml:space="preserve">
+    <value>Enter the host name or IP address of the network printer, for example 192.168.1.50.</value>
+  </data>
+  <data name="Print.Field.Port" xml:space="preserve">
+    <value>The port must be a whole number from 1 to 65535 (Zebra printers use 9100).</value>
+  </data>
+  <data name="Print.Field.Number" xml:space="preserve">
+    <value>{0} must be a number. Enter digits only, for example 12.</value>
+  </data>
+  <data name="Print.Field.Copies" xml:space="preserve">
+    <value>Copies must be a whole number from 1 to 99999999.</value>
+  </data>
+  <data name="Enum.CopiesMode.PrintQuantity" xml:space="preserve">
+    <value>One label with a print quantity (^PQ)</value>
+  </data>
+  <data name="Enum.CopiesMode.RepeatBlock" xml:space="preserve">
+    <value>Repeat the label once per copy</value>
+  </data>
+  <data name="Enum.InvalidRecordPolicy.Skip" xml:space="preserve">
+    <value>Skip the record and continue</value>
+  </data>
+  <data name="Enum.InvalidRecordPolicy.Stop" xml:space="preserve">
+    <value>Stop at the record</value>
+  </data>
+  <data name="Enum.CounterKind.Numeric" xml:space="preserve">
+    <value>Numbers</value>
+  </data>
+  <data name="Enum.CounterKind.Alphanumeric" xml:space="preserve">
+    <value>Letters and digits</value>
+  </data>
+  <data name="Enum.CounterOverflow.Wrap" xml:space="preserve">
+    <value>Start over</value>
+  </data>
+  <data name="Enum.CounterOverflow.Error" xml:space="preserve">
+    <value>Report an error</value>
+  </data>
+  <data name="Enum.PrinterTransport.Spooler" xml:space="preserve">
+    <value>Windows printer</value>
+  </data>
+  <data name="Enum.PrinterTransport.Tcp" xml:space="preserve">
+    <value>Network printer (TCP/IP)</value>
+  </data>
+  <data name="Filter.Data" xml:space="preserve">
+    <value>CSV and Excel files</value>
+  </data>
+  <data name="Data.Title" xml:space="preserve">
+    <value>Data merge</value>
+  </data>
+  <data name="Data.Open" xml:space="preserve">
+    <value>Open data file...</value>
+  </data>
+  <data name="Data.Reload" xml:space="preserve">
+    <value>Reload</value>
+  </data>
+  <data name="Data.Clear" xml:space="preserve">
+    <value>Clear data</value>
+  </data>
+  <data name="Data.NoFile" xml:space="preserve">
+    <value>No data file open</value>
+  </data>
+  <data name="Data.PrivacyNote" xml:space="preserve">
+    <value>The data stays on this PC. Only the settings below are saved in the label file, never the data itself.</value>
+  </data>
+  <data name="Data.Empty.Title" xml:space="preserve">
+    <value>Merge a spreadsheet into your label</value>
+  </data>
+  <data name="Data.Empty.Body" xml:space="preserve">
+    <value>Open a CSV or Excel (.xlsx) file. Each row becomes one label, and each column can fill a {{variable}} in the label. You can then step through the records and print them all.</value>
+  </data>
+  <data name="Data.Empty.Hint" xml:space="preserve">
+    <value>This label remembers its data file, but the data is not loaded. Choose Reload to read it again, or open another file.</value>
+  </data>
+  <data name="Data.Tab.Data" xml:space="preserve">
+    <value>Data</value>
+  </data>
+  <data name="Data.Tab.Mapping" xml:space="preserve">
+    <value>Variables</value>
+  </data>
+  <data name="Data.Tab.Counters" xml:space="preserve">
+    <value>Counters</value>
+  </data>
+  <data name="Data.Tab.Copies" xml:space="preserve">
+    <value>Copies and jobs</value>
+  </data>
+  <data name="Data.Tab.Batch" xml:space="preserve">
+    <value>Check and print</value>
+  </data>
+  <data name="Data.Sheet" xml:space="preserve">
+    <value>Worksheet</value>
+  </data>
+  <data name="Data.Delimiter" xml:space="preserve">
+    <value>Delimiter</value>
+  </data>
+  <data name="Data.Delimiter.Auto" xml:space="preserve">
+    <value>Detect automatically</value>
+  </data>
+  <data name="Data.Delimiter.Comma" xml:space="preserve">
+    <value>comma (,)</value>
+  </data>
+  <data name="Data.Delimiter.Semicolon" xml:space="preserve">
+    <value>semicolon (;)</value>
+  </data>
+  <data name="Data.Delimiter.Tab" xml:space="preserve">
+    <value>tab</value>
+  </data>
+  <data name="Data.Delimiter.Detected" xml:space="preserve">
+    <value>Delimiter detected: {0}</value>
+  </data>
+  <data name="Data.Delimiter.Using" xml:space="preserve">
+    <value>Delimiter used: {0}</value>
+  </data>
+  <data name="Data.HasHeader" xml:space="preserve">
+    <value>First row holds the column names</value>
+  </data>
+  <data name="Data.Summary" xml:space="preserve">
+    <value>{0} records, {1} columns</value>
+  </data>
+  <data name="Data.Preview" xml:space="preserve">
+    <value>Data preview</value>
+  </data>
+  <data name="Data.PreviewNote" xml:space="preserve">
+    <value>Showing the first {0} records.</value>
+  </data>
+  <data name="Data.LoadWarnings" xml:space="preserve">
+    <value>Notes about the data file</value>
+  </data>
+  <data name="Data.Loaded" xml:space="preserve">
+    <value>{0} was loaded: {1} records.</value>
+  </data>
+  <data name="Data.Busy.Loading" xml:space="preserve">
+    <value>Reading {0}...</value>
+  </data>
+  <data name="Data.Error.Read" xml:space="preserve">
+    <value>{0} could not be opened. If it is open in Excel or another program, close it there and try again; otherwise check that the file still exists.</value>
+  </data>
+  <data name="Data.Error.Format" xml:space="preserve">
+    <value>{0} could not be read as a CSV or Excel (.xlsx) file. Open it in Excel, save it again as .xlsx or .csv and try again.</value>
+  </data>
+  <data name="Data.Error.Empty" xml:space="preserve">
+    <value>{0} has no columns. Check that the first row holds the column names, or untick "First row holds the column names".</value>
+  </data>
+  <data name="Data.Error.NoData" xml:space="preserve">
+    <value>Open a data file first.</value>
+  </data>
+  <data name="Data.Error.NoRecords" xml:space="preserve">
+    <value>The data file has no records (rows) to merge.</value>
+  </data>
+  <data name="Data.Record.First" xml:space="preserve">
+    <value>First record</value>
+  </data>
+  <data name="Data.Record.Previous" xml:space="preserve">
+    <value>Previous record</value>
+  </data>
+  <data name="Data.Record.Next" xml:space="preserve">
+    <value>Next record</value>
+  </data>
+  <data name="Data.Record.Last" xml:space="preserve">
+    <value>Last record</value>
+  </data>
+  <data name="Data.Record.Current" xml:space="preserve">
+    <value>Current record</value>
+  </data>
+  <data name="Data.Record.GoTo" xml:space="preserve">
+    <value>Go to record</value>
+  </data>
+  <data name="Data.Record.GoToButton" xml:space="preserve">
+    <value>Go</value>
+  </data>
+  <data name="Data.Record.GoToInvalid" xml:space="preserve">
+    <value>Enter a record number from 1 to {0}.</value>
+  </data>
+  <data name="Data.Record.None" xml:space="preserve">
+    <value>No records</value>
+  </data>
+  <data name="Data.Record.Of" xml:space="preserve">
+    <value>Record {0} of {1}</value>
+  </data>
+  <data name="Data.ShowOnCanvas" xml:space="preserve">
+    <value>Show this record on the canvas</value>
+  </data>
+  <data name="Data.Mapping.Intro" xml:space="preserve">
+    <value>Each variable in the label takes its value from the column with the same name. Choose a different column here if the names do not match.</value>
+  </data>
+  <data name="Data.Mapping.NoPlaceholders" xml:space="preserve">
+    <value>The label has no variables yet. Add a text with {{name}} in it (or a data field) and it will appear here.</value>
+  </data>
+  <data name="Data.Mapping.Auto" xml:space="preserve">
+    <value>Same name (automatic)</value>
+  </data>
+  <data name="Data.Mapping.Uses" xml:space="preserve">
+    <value>Filled from column {0}</value>
+  </data>
+  <data name="Data.Mapping.None" xml:space="preserve">
+    <value>No matching column: choose one</value>
+  </data>
+  <data name="Data.Mapping.FromCounter" xml:space="preserve">
+    <value>Filled by the counter</value>
+  </data>
+  <data name="Data.Mapping.NoCounter" xml:space="preserve">
+    <value>No counter with this name: add one in the Counters tab</value>
+  </data>
+  <data name="Data.Mapping.Warnings" xml:space="preserve">
+    <value>Things to check</value>
+  </data>
+  <data name="Data.Counter.Add" xml:space="preserve">
+    <value>Add counter</value>
+  </data>
+  <data name="Data.Counter.Remove" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="Data.Counter.None" xml:space="preserve">
+    <value>No counters yet. A counter makes a serial number such as 0001, 0002, 0003 for each record.</value>
+  </data>
+  <data name="Data.Counter.Unnamed" xml:space="preserve">
+    <value>(no name)</value>
+  </data>
+  <data name="Data.Counter.Name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Data.Counter.UseIn" xml:space="preserve">
+    <value>Type this in the label</value>
+  </data>
+  <data name="Data.Counter.Kind" xml:space="preserve">
+    <value>Counts with</value>
+  </data>
+  <data name="Data.Counter.Start" xml:space="preserve">
+    <value>Start at</value>
+  </data>
+  <data name="Data.Counter.Step" xml:space="preserve">
+    <value>Step</value>
+  </data>
+  <data name="Data.Counter.Padding" xml:space="preserve">
+    <value>Zero padding (digits)</value>
+  </data>
+  <data name="Data.Counter.Prefix" xml:space="preserve">
+    <value>Prefix</value>
+  </data>
+  <data name="Data.Counter.Suffix" xml:space="preserve">
+    <value>Suffix</value>
+  </data>
+  <data name="Data.Counter.Overflow" xml:space="preserve">
+    <value>When the counter runs out</value>
+  </data>
+  <data name="Data.Counter.Example" xml:space="preserve">
+    <value>First values</value>
+  </data>
+  <data name="Data.Counter.Invalid" xml:space="preserve">
+    <value>Counter settings: {0}.</value>
+  </data>
+  <data name="Data.Counter.StepInvalid" xml:space="preserve">
+    <value>The step must be a whole number, for example 1 or -1.</value>
+  </data>
+  <data name="Data.Counter.PaddingInvalid" xml:space="preserve">
+    <value>The zero padding must be a whole number from 0 to 18.</value>
+  </data>
+  <data name="Data.Copies.Heading" xml:space="preserve">
+    <value>Copies of each record</value>
+  </data>
+  <data name="Data.Copies.Source" xml:space="preserve">
+    <value>Number of copies comes from</value>
+  </data>
+  <data name="Data.Copies.Label" xml:space="preserve">
+    <value>The label's own quantity</value>
+  </data>
+  <data name="Data.Copies.Fixed" xml:space="preserve">
+    <value>The same number for every record</value>
+  </data>
+  <data name="Data.Copies.Column" xml:space="preserve">
+    <value>A column of the data</value>
+  </data>
+  <data name="Data.Copies.Number" xml:space="preserve">
+    <value>Copies</value>
+  </data>
+  <data name="Data.Copies.FromColumn" xml:space="preserve">
+    <value>Column with the copies</value>
+  </data>
+  <data name="Data.Copies.FixedInvalid" xml:space="preserve">
+    <value>Copies must be a whole number from 1 to 99999999.</value>
+  </data>
+  <data name="Data.Copies.Mode" xml:space="preserve">
+    <value>How copies are written</value>
+  </data>
+  <data name="Data.Copies.Mode.Hint" xml:space="preserve">
+    <value>A print quantity (^PQ) is smaller and faster. Repeating the label is only needed if your printer ignores ^PQ.</value>
+  </data>
+  <data name="Data.Jobs.Heading" xml:space="preserve">
+    <value>Jobs and problems</value>
+  </data>
+  <data name="Data.Invalid.Label" xml:space="preserve">
+    <value>A record that has errors</value>
+  </data>
+  <data name="Data.MaxRecords.Label" xml:space="preserve">
+    <value>Records per print job (0 = a single job)</value>
+  </data>
+  <data name="Data.MaxRecords.Hint" xml:space="preserve">
+    <value>Counted in records, not copies. Smaller jobs are easier on the printer and let you stop part-way.</value>
+  </data>
+  <data name="Data.MaxRecords.Invalid" xml:space="preserve">
+    <value>Records per job must be a whole number from 0 to 1000000.</value>
+  </data>
+  <data name="Data.Batch.Heading" xml:space="preserve">
+    <value>Check and print every record</value>
+  </data>
+  <data name="Data.Batch.Intro" xml:space="preserve">
+    <value>Check first to see which records have problems. Printing sends every valid record to the printer on the left.</value>
+  </data>
+  <data name="Data.Batch.Check" xml:space="preserve">
+    <value>Check all records</value>
+  </data>
+  <data name="Data.Batch.Export" xml:space="preserve">
+    <value>Export ZPL...</value>
+  </data>
+  <data name="Data.Batch.PrintAll" xml:space="preserve">
+    <value>Print all</value>
+  </data>
+  <data name="Data.Batch.OneFilePerJob" xml:space="preserve">
+    <value>Write one file per job when exporting</value>
+  </data>
+  <data name="Data.Busy.Checking" xml:space="preserve">
+    <value>Checking every record...</value>
+  </data>
+  <data name="Data.Busy.Printing" xml:space="preserve">
+    <value>Sending the records to the printer...</value>
+  </data>
+  <data name="Data.Busy.Exporting" xml:space="preserve">
+    <value>Writing the ZPL...</value>
+  </data>
+  <data name="Data.Check.Summary" xml:space="preserve">
+    <value>Checked {0} records: {1} ready, {2} with errors.</value>
+  </data>
+  <data name="Data.Check.Truncated" xml:space="preserve">
+    <value>Showing the first {0} of {1} problems.</value>
+  </data>
+  <data name="Data.Check.Ok" xml:space="preserve">
+    <value>All {0} records are ready to print.</value>
+  </data>
+  <data name="Data.Check.Problems" xml:space="preserve">
+    <value>{0} records have errors and would be left out. See the list for each problem and fix the data or the label.</value>
+  </data>
+  <data name="Data.PrintAll.Title" xml:space="preserve">
+    <value>Print all records</value>
+  </data>
+  <data name="Data.PrintAll.Confirm" xml:space="preserve">
+    <value>Send {0} records to {1}? Labels will start printing right away.</value>
+  </data>
+  <data name="Data.PrintAll.Done" xml:space="preserve">
+    <value>Sent {0} labels to the printer in {1} job(s).</value>
+  </data>
+  <data name="Data.Export.Done" xml:space="preserve">
+    <value>Wrote {0} labels to one file.</value>
+  </data>
+  <data name="Data.Export.DonePerJob" xml:space="preserve">
+    <value>Wrote {0} labels in {1} files.</value>
+  </data>
+  <data name="Data.Export.ReplaceTitle" xml:space="preserve">
+    <value>Replace existing files?</value>
+  </data>
+  <data name="Data.Export.ReplaceBody" xml:space="preserve">
+    <value>{0} file(s) with the same names already exist and will be replaced.</value>
+  </data>
+  <data name="Data.Batch.Partial" xml:space="preserve">
+    <value>{0} job(s) were already sent before this stopped; do not print those again.</value>
+  </data>
+  <data name="Data.Batch.CancelledPartial" xml:space="preserve">
+    <value>Stopped. {0} job(s) were already sent to the printer.</value>
+  </data>
+  <data name="Data.Batch.Skipped" xml:space="preserve">
+    <value>{0} record(s) were left out because of errors; see the list.</value>
+  </data>
+  <data name="Data.Batch.Stopped" xml:space="preserve">
+    <value>It stopped at record {0} because of the "stop" setting.</value>
+  </data>
+  <data name="Data.Batch.NothingProduced" xml:space="preserve">
+    <value>No label was produced because every record has errors. Check the records and the label.</value>
+  </data>
+  <data name="Data.Issues.List" xml:space="preserve">
+    <value>Problems per record</value>
+  </data>
+  <data name="Data.Issues.Record" xml:space="preserve">
+    <value>Record</value>
+  </data>
+  <data name="Data.Issues.Severity" xml:space="preserve">
+    <value>Kind</value>
+  </data>
+  <data name="Data.Issues.Message" xml:space="preserve">
+    <value>What happened</value>
+  </data>
+  <data name="Data.Issue.Error" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="Data.Issue.Warning" xml:space="preserve">
+    <value>Warning</value>
+  </data>
+  <data name="Data.Hint.Ignored" xml:space="preserve">
+    <value>This label file named a data file in a place Rotula does not follow automatically (a network path, a web address or a relative path), so it was ignored for your safety. Choose "Open data file" to pick the file yourself.</value>
+  </data>
+  <data name="Data.Reload.NotLocal" xml:space="preserve">
+    <value>The remembered data file ({0}) is not on a local disk, so Rotula will not open it automatically. Choose "Open data file" to pick it yourself.</value>
+  </data>
+  <data name="Data.Reload.Missing" xml:space="preserve">
+    <value>The data file {0} was not found. It may have been moved or renamed; choose "Open data file" to find it.</value>
+  </data>
+  <data name="Data.Empty.Path" xml:space="preserve">
+    <value>Remembered data file path</value>
+  </data>
+  <data name="Window.Minimize" xml:space="preserve">
+    <value>Minimize</value>
+  </data>
+  <data name="Window.Maximize" xml:space="preserve">
+    <value>Maximize</value>
+  </data>
+  <data name="Window.Restore" xml:space="preserve">
+    <value>Restore</value>
+  </data>
+  <data name="Window.Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="Menu.Label" xml:space="preserve">
+    <value>Label</value>
+  </data>
+  <data name="Menu.LabelProperties" xml:space="preserve">
+    <value>Label properties</value>
+  </data>
+  <data name="Menu.Printer" xml:space="preserve">
+    <value>Printer</value>
+  </data>
+  <data name="Menu.RefreshPrinters" xml:space="preserve">
+    <value>Refresh printer list</value>
+  </data>
+  <data name="Menu.DataMerge" xml:space="preserve">
+    <value>Data merge...</value>
+  </data>
+  <data name="Menu.OpenData" xml:space="preserve">
+    <value>Open data file...</value>
+  </data>
+  <data name="Toolbar.Zoom" xml:space="preserve">
+    <value>Zoom</value>
+  </data>
+  <data name="Toolbar.Label" xml:space="preserve">
+    <value>Label</value>
+  </data>
+  <data name="Toolbar.Printer" xml:space="preserve">
+    <value>Printer</value>
+  </data>
+  <data name="Toolbar.Printer.Tip" xml:space="preserve">
+    <value>Choose the printer for this label. Printer setup is under Printer &gt; Print.</value>
+  </data>
+  <data name="Toolbar.SelectPrinter" xml:space="preserve">
+    <value>Select printer</value>
+  </data>
+  <data name="Toolbar.Preview" xml:space="preserve">
+    <value>Preview</value>
+  </data>
+  <data name="Toolbar.Preview.Tip" xml:space="preserve">
+    <value>Show the label larger, as it will be drawn</value>
+  </data>
+  <data name="Toolbar.Print" xml:space="preserve">
+    <value>Print</value>
+  </data>
+  <data name="Toolbar.Print.Tip" xml:space="preserve">
+    <value>Print... (Ctrl+P)</value>
+  </data>
+  <data name="Tool.Select" xml:space="preserve">
+    <value>Select</value>
+  </data>
+  <data name="Splitter.Properties" xml:space="preserve">
+    <value>Resize the properties panel</value>
+  </data>
+  <data name="Panel.Objects" xml:space="preserve">
+    <value>Objects</value>
+  </data>
+  <data name="Panel.TypeTag" xml:space="preserve">
+    <value>Kind of the selected object</value>
+  </data>
+  <data name="Zpl.Output" xml:space="preserve">
+    <value>ZPL OUTPUT</value>
+  </data>
+  <data name="Zpl.ExportButton" xml:space="preserve">
+    <value>Export .zpl</value>
+  </data>
+  <data name="Status.LabelInfo" xml:space="preserve">
+    <value>Label size, resolution and format</value>
+  </data>
+  <data name="Status.Objects" xml:space="preserve">
+    <value>{0} objects</value>
+  </data>
+  <data name="Status.ObjectsOne" xml:space="preserve">
+    <value>1 object</value>
+  </data>
+  <data name="Status.NoneSelected" xml:space="preserve">
+    <value>none selected</value>
+  </data>
+  <data name="Status.SomeSelected" xml:space="preserve">
+    <value>{0} selected</value>
+  </data>
+  <data name="Preview.Title" xml:space="preserve">
+    <value>Label preview</value>
+  </data>
+  <data name="Preview.TitleFor" xml:space="preserve">
+    <value>Preview - {0}</value>
+  </data>
+  <data name="Menu.ShowZpl" xml:space="preserve">
+    <value>Show ZPL code</value>
+  </data>
+  <data name="Toolbar.ZplToggle" xml:space="preserve">
+    <value>Show or hide the ZPL code panel</value>
   </data>
 </root>

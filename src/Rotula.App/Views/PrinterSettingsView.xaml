@@ -1,0 +1,96 @@
+<UserControl x:Class="Rotula.App.Views.PrinterSettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:Rotula.App.Localization">
+  <UserControl.Resources>
+    <BooleanToVisibilityConverter x:Key="B2V" />
+  </UserControl.Resources>
+  <StackPanel>
+    <!-- ============================== where to print -->
+    <TextBlock Text="{loc:T Print.Section.Printer}" Style="{StaticResource SectionHeading}" AutomationProperties.HeadingLevel="Level2" />
+    <WrapPanel Margin="0,0,0,8">
+      <RadioButton GroupName="Transport" Content="{loc:T Print.Transport.Windows}" IsChecked="{Binding UseWindowsPrinter, Mode=TwoWay}"
+                   AutomationProperties.Name="{loc:T Print.Transport.Windows}" />
+      <RadioButton GroupName="Transport" Content="{loc:T Print.Transport.Network}" IsChecked="{Binding UseNetwork, Mode=TwoWay}"
+                   AutomationProperties.Name="{loc:T Print.Transport.Network}" />
+    </WrapPanel>
+
+    <!-- Windows printer -->
+    <StackPanel Visibility="{Binding UseWindowsPrinter, Converter={StaticResource B2V}}">
+      <TextBlock Text="{loc:T Print.Printer.Label}" Style="{StaticResource FieldLabel}" />
+      <DockPanel>
+        <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}" Margin="6,0,0,0" ToolTip="{loc:T Print.Printers.Refresh}"
+                AutomationProperties.Name="{loc:T Print.Printers.Refresh}" Click="OnRefreshPrinters">
+          <Path Style="{StaticResource Icon}" Data="{StaticResource IconRefresh}" />
+        </Button>
+        <ComboBox ItemsSource="{Binding Printers}" DisplayMemberPath="Display" SelectedValuePath="Name" SelectedValue="{Binding SelectedPrinterName}"
+                  AutomationProperties.Name="{loc:T Print.Printer.Label}" />
+      </DockPanel>
+      <ProgressBar IsIndeterminate="True" Margin="0,6,0,0" Visibility="{Binding IsLoadingPrinters, Converter={StaticResource B2V}}"
+                   AutomationProperties.Name="{loc:T Print.Printers.Loading}" />
+      <TextBlock Text="{Binding PrintersNote}" Style="{StaticResource MutedText}" Margin="0,6,0,0" />
+    </StackPanel>
+
+    <!-- Network printer -->
+    <Grid Visibility="{Binding UseNetwork, Converter={StaticResource B2V}}">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="12" />
+        <ColumnDefinition Width="110" />
+      </Grid.ColumnDefinitions>
+      <StackPanel>
+        <TextBlock Text="{loc:T Print.Host}" Style="{StaticResource FieldLabel}" />
+        <TextBox Style="{StaticResource MonoTextBox}" Text="{Binding Host, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{loc:T Print.Host}" />
+      </StackPanel>
+      <StackPanel Grid.Column="2">
+        <TextBlock Text="{loc:T Print.Port}" Style="{StaticResource FieldLabel}" />
+        <TextBox Style="{StaticResource MonoTextBox}" Text="{Binding PortText, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{loc:T Print.Port}" />
+      </StackPanel>
+    </Grid>
+
+    <!-- ============================== printer profile -->
+    <TextBlock Text="{loc:T Print.Section.Setup}" Style="{StaticResource SectionHeading}" Margin="0,20,0,8" AutomationProperties.HeadingLevel="Level2" />
+    <Grid>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="12" />
+        <ColumnDefinition Width="*" />
+      </Grid.ColumnDefinitions>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+      </Grid.RowDefinitions>
+
+      <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,0,12">
+        <TextBlock Text="{loc:T Print.Profile.Dpi}" Style="{StaticResource FieldLabel}" />
+        <ComboBox ItemsSource="{Binding DpiChoices}" DisplayMemberPath="Name" SelectedValuePath="Value" SelectedValue="{Binding SelectedDpi}"
+                  AutomationProperties.Name="{loc:T Print.Profile.Dpi}" />
+      </StackPanel>
+      <StackPanel Grid.Row="0" Grid.Column="2" Margin="0,0,0,12">
+        <TextBlock Text="{loc:T Print.Profile.Media}" Style="{StaticResource FieldLabel}" />
+        <ComboBox ItemsSource="{Binding MediaChoices}" DisplayMemberPath="Name" SelectedValuePath="Value" SelectedValue="{Binding SelectedMedia}"
+                  AutomationProperties.Name="{loc:T Print.Profile.Media}" />
+      </StackPanel>
+
+      <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,0,12">
+        <TextBlock Text="{loc:T Print.Profile.Width}" Style="{StaticResource FieldLabel}" />
+        <TextBox Style="{StaticResource MonoTextBox}" Text="{Binding WidthText, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{loc:T Print.Profile.Width}" />
+      </StackPanel>
+      <StackPanel Grid.Row="1" Grid.Column="2" Margin="0,0,0,12">
+        <TextBlock Text="{loc:T Print.Profile.Height}" Style="{StaticResource FieldLabel}" />
+        <TextBox Style="{StaticResource MonoTextBox}" Text="{Binding HeightText, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{loc:T Print.Profile.Height}" />
+      </StackPanel>
+
+      <StackPanel Grid.Row="2" Grid.Column="0">
+        <TextBlock Text="{loc:T Print.Profile.Darkness}" Style="{StaticResource FieldLabel}" />
+        <TextBox Style="{StaticResource MonoTextBox}" Text="{Binding DarknessText, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{loc:T Print.Profile.Darkness}" />
+      </StackPanel>
+      <StackPanel Grid.Row="2" Grid.Column="2">
+        <TextBlock Text="{loc:T Print.Profile.Speed}" Style="{StaticResource FieldLabel}" />
+        <TextBox Style="{StaticResource MonoTextBox}" Text="{Binding SpeedText, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{loc:T Print.Profile.Speed}" />
+      </StackPanel>
+    </Grid>
+    <TextBlock Text="{loc:T Print.Profile.Hint}" Style="{StaticResource MutedText}" Margin="0,8,0,0" FontSize="12" />
+  </StackPanel>
+</UserControl>

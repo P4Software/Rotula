@@ -1,0 +1,1034 @@
+using System.Collections.ObjectModel;
+using System.Globalization;
+using System.Text;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using Rotula.App.Editing;
+using Rotula.App.Files;
+using Rotula.App.Localization;
+using Rotula.App.Services;
+using Rotula.Core.Merge;
+using Rotula.Core.Model;
+using Rotula.Core.Validation;
+using Rotula.Core.Zpl;
+using Rotula.Printing;
+
+namespace Rotula.App.ViewModels;
+
+/// <summary>Where the number of copies per record comes from.</summary>
+public enum CopiesSource
+{
+    /// <summary>The label's own print quantity.</summary>
+    LabelDefault,
+    /// <summary>The same number for every record.</summary>
+    Fixed,
+    /// <summary>A column of the data.</summary>
+    Column,
+}
+
+/// <summary>
+/// The Data merge window: open a CSV or Excel file, map its columns to the label's placeholders, walk through the records
+/// (the canvas shows the chosen record), set up serial counters and copies, check every record, and print or export the batch.
+/// Only the settings are saved in the .rotula file; the data itself never is.
+/// </summary>
+public sealed partial class DataMergeViewModel : OperationViewModel
+{
+    private const int PreviewRowLimit = 50;
+    private const int IssueRowLimit = 500;
+
+    private readonly IPrintService _service;
+    private readonly Func<LabelDocument> _document;
+    private readonly Func<string> _documentName;
+    private readonly IFileDialogService _files;
+    private readonly IMessageService _messages;
+    private readonly Dictionary<string, string> _overrides = new(StringComparer.OrdinalIgnoreCase);
+    private readonly List<ColumnChoice> _columnChoices = new();
+    private bool _applying;
+    private bool _rebuildingRows;
+    private char? _detectedDelimiter;
+    private IReadOnlyList<string> _rowPlaceholders = Array.Empty<string>();
+    private IReadOnlyList<string> _rowColumns = Array.Empty<string>();
+
+    /// <summary>Creates the view-model.</summary>
+    /// <param name="service">Printing service.</param>
+    /// <param name="printer">Printer and profile fields (shared with the Print dialog).</param>
+    /// <param name="document">The open label.</param>
+    /// <param name="documentName">Name of the open label, used to suggest file names.</param>
+    /// <param name="files">File dialogs.</param>
+    /// <param name="messages">Message boxes (confirmation before a large print).</param>
+    public DataMergeViewModel(IPrintService service, PrinterSettingsViewModel printer, Func<LabelDocument> document, Func<string> documentName,
+        IFileDialogService files, IMessageService messages)
+    {
+        _service = service;
+        Printer = printer;
+        _document = document;
+        _documentName = documentName;
+        _files = files;
+        _messages = messages;
+
+        DelimiterChoices = new[]
+        {
+            new Choice<string>("auto", "Data.Delimiter.Auto"), new Choice<string>("comma", "Data.Delimiter.Comma"),
+            new Choice<string>("semicolon", "Data.Delimiter.Semicolon"), new Choice<string>("tab", "Data.Delimiter.Tab"),
+        };
+        CopiesSourceChoices = new[]
+        {
+            new Choice<CopiesSource>(CopiesSource.LabelDefault, "Data.Copies.Label"), new Choice<CopiesSource>(CopiesSource.Fixed, "Data.Copies.Fixed"),
+            new Choice<CopiesSource>(CopiesSource.Column, "Data.Copies.Column"),
+        };
+        CopiesModeChoices = new[]
+        {
+            new Choice<CopiesMode>(CopiesMode.PrintQuantity, "Enum.CopiesMode.PrintQuantity"),
+            new Choice<CopiesMode>(CopiesMode.RepeatBlock, "Enum.CopiesMode.RepeatBlock"),
+        };
+        InvalidPolicyChoices = new[]
+        {
+            new Choice<InvalidRecordPolicy>(InvalidRecordPolicy.Skip, "Enum.InvalidRecordPolicy.Skip"),
+            new Choice<InvalidRecordPolicy>(InvalidRecordPolicy.Stop, "Enum.InvalidRecordPolicy.Stop"),
+        };
+        Loc.Instance.LanguageChanged += (_, _) => RefreshLanguage();
+    }
+
+    // ----------------------------------------------------------------------------------- choices
+
+    /// <summary>Printer selection and profile, shared with the Print dialog.</summary>
+    public PrinterSettingsViewModel Printer { get; }
+
+    /// <summary>Delimiter choices for CSV files.</summary>
+    public IReadOnlyList<Choice<string>> DelimiterChoices { get; }
+
+    /// <summary>Copies source choices.</summary>
+    public IReadOnlyList<Choice<CopiesSource>> CopiesSourceChoices { get; }
+
+    /// <summary>How copies are written (^PQ or repeated labels).</summary>
+    public IReadOnlyList<Choice<CopiesMode>> CopiesModeChoices { get; }
+
+    /// <summary>What to do with invalid records.</summary>
+    public IReadOnlyList<Choice<InvalidRecordPolicy>> InvalidPolicyChoices { get; }
+
+    // ----------------------------------------------------------------------------------- events
+
+    /// <summary>Raised when the settings that are saved in the .rotula file were edited by the user (not when they were loaded).</summary>
+    public event EventHandler? SettingsEdited;
+
+    /// <summary>Raised when the values shown on the canvas and in the ZPL view changed (record, mapping, counters, data).</summary>
+    public event EventHandler? PreviewDataChanged;
+
+    /// <summary>Raised when the loaded table changed, so the view can rebuild the preview grid columns.</summary>
+    public event EventHandler? TableChanged;
+
+    private void RaiseSettingsEdited()
+    {
+        if (!_applying) SettingsEdited?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void RaisePreviewChanged() => PreviewDataChanged?.Invoke(this, EventArgs.Empty);
+
+    // ----------------------------------------------------------------------------------- source
+
+    /// <summary>The loaded table, or null when no data is loaded. The data is never saved.</summary>
+    public MergeTable? Table { get; private set; }
+
+    /// <summary>The table bound to the label with the current options.</summary>
+    public MergeDataSet? DataSet { get; private set; }
+
+    /// <summary>True when data is loaded.</summary>
+    public bool HasData => Table is not null;
+
+    /// <summary>True when no data is loaded (shows the empty state).</summary>
+    public bool HasNoData => Table is null;
+
+    /// <summary>The data file path. After opening a .rotula file this is only a hint to where the data was last time.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SourceName), nameof(HasSource), nameof(IsXlsx), nameof(IsCsv), nameof(CanReload))]
+    private string? _sourcePath;
+
+    /// <summary>File name of the data source.</summary>
+    public string SourceName => SourcePath is null ? string.Empty : Path.GetFileName(SourcePath);
+
+    /// <summary>True when a data file is known (loaded or remembered).</summary>
+    public bool HasSource => !string.IsNullOrEmpty(SourcePath);
+
+    /// <summary>True when the source is an Excel workbook.</summary>
+    public bool IsXlsx => SourcePath?.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase) == true;
+
+    /// <summary>True when the source is a text (CSV) file, where the delimiter matters.</summary>
+    public bool IsCsv => !IsXlsx;
+
+    /// <summary>
+    /// True when a remembered file can be offered for reloading. Deliberately does not look at the file system: the path may
+    /// come from a .rotula file, and probing it while the file is merely being opened could reach a remote machine.
+    /// The file is only touched after the user clicks Reload.
+    /// </summary>
+    public bool CanReload => HasSource && !IsBusy;
+
+    /// <summary>True when the .rotula file named a data path that was ignored for safety.</summary>
+    [ObservableProperty]
+    private bool _sourceHintIgnored;
+
+    /// <summary>True when the remembered file is not loaded yet (shows the "reload" hint).</summary>
+    public bool ShowReloadHint => HasSource && Table is null;
+
+    /// <summary>Worksheets of the workbook.</summary>
+    public ObservableCollection<string> Sheets { get; } = new();
+
+    /// <summary>The worksheet to read.</summary>
+    [ObservableProperty]
+    private string? _selectedSheet;
+
+    partial void OnSelectedSheetChanged(string? value) => SourceOptionEdited();
+
+    /// <summary>Delimiter choice for CSV files: "auto", "comma", "semicolon" or "tab".</summary>
+    [ObservableProperty]
+    private string _selectedDelimiter = "auto";
+
+    partial void OnSelectedDelimiterChanged(string value) => SourceOptionEdited();
+
+    /// <summary>True when the first row holds column names.</summary>
+    [ObservableProperty]
+    private bool _hasHeader = true;
+
+    partial void OnHasHeaderChanged(bool value) => SourceOptionEdited();
+
+    /// <summary>Text such as "Delimiter detected: semicolon (;)".</summary>
+    [ObservableProperty]
+    private string _delimiterText = string.Empty;
+
+    /// <summary>Notes from reading the file (for example an unclosed quote).</summary>
+    public ObservableCollection<string> LoadWarnings { get; } = new();
+
+    /// <summary>Column names of the preview grid.</summary>
+    public IReadOnlyList<string> PreviewColumns => Table?.Columns ?? Array.Empty<string>();
+
+    /// <summary>The first rows of the data for the preview grid.</summary>
+    public IReadOnlyList<string[]> PreviewRows => Table is null ? Array.Empty<string[]>() : Table.Rows.Take(PreviewRowLimit).ToList();
+
+    /// <summary>Text such as "120 records, 5 columns".</summary>
+    public string TableSummary => Table is null ? string.Empty : Loc.Get("Data.Summary", Table.RowCount, Table.Columns.Count);
+
+    /// <summary>True when only the first rows are shown.</summary>
+    public bool PreviewTruncated => Table is not null && Table.RowCount > PreviewRowLimit;
+
+    /// <summary>Text for the truncated-preview note.</summary>
+    public string PreviewNote => Loc.Get("Data.PreviewNote", PreviewRowLimit);
+
+    private void SourceOptionEdited()
+    {
+        if (_applying || IsBusy) return;
+        RaiseSettingsEdited();
+        if (Table is not null && HasSource) _ = LoadAsync(SourcePath!);
+    }
+
+    /// <summary>Asks for a data file and loads it.</summary>
+    [RelayCommand]
+    private async Task OpenDataAsync()
+    {
+        if (IsBusy) return;
+        string? path = _files.PickOpenData();
+        if (path is null) return;
+        // A different file starts from its own first sheet and detected delimiter.
+        _applying = true;
+        SelectedSheet = null;
+        SelectedDelimiter = "auto";
+        _applying = false;
+        await LoadAsync(path);
+    }
+
+    /// <summary>Loads the remembered data file again.</summary>
+    [RelayCommand]
+    private async Task ReloadAsync()
+    {
+        if (!HasSource || IsBusy) return;
+        // The user asked for it, so now (and only now) the stored path is looked at. It was already checked to be a local
+        // drive path when it was read; a mapped network drive letter is refused here as well.
+        string? local = SafeLocalPath.TryGetLocalPath(SourcePath);
+        if (local is null || !SafeLocalPath.IsFixedOrRemovableDrive(local))
+        {
+            SetResult(Loc.Get("Data.Reload.NotLocal", SourcePath ?? string.Empty), true);
+            return;
+        }
+        if (!File.Exists(local))
+        {
+            SetResult(Loc.Get("Data.Reload.Missing", local), true);
+            return;
+        }
+        await LoadAsync(local);
+    }
+
+    /// <summary>Forgets the loaded data (the settings stay).</summary>
+    [RelayCommand]
+    private void ClearData()
+    {
+        SetTable(null, Array.Empty<string>(), null);
+        RaiseSettingsEdited();
+        RaisePreviewChanged();
+    }
+
+    /// <summary>Reads a CSV or Excel file off the UI thread and shows it. On failure the previous data stays and the reason is shown.</summary>
+    /// <returns>True when the file was loaded.</returns>
+    public async Task<bool> LoadAsync(string path)
+    {
+        char? delimiter = SelectedDelimiter switch { "comma" => ',', "semicolon" => ';', "tab" => '\t', _ => null };
+        bool header = HasHeader;
+        string? sheet = SelectedSheet;
+        bool xlsx = path.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase);
+        string fileName = Path.GetFileName(path);
+        MergeTable? table = null;
+        IReadOnlyList<string> sheets = Array.Empty<string>();
+        char? detected = null;
+        string? error = null;
+
+        bool finished = await RunAsync(Loc.Get("Data.Busy.Loading", fileName), ct => Task.Run(() =>
+        {
+            try
+            {
+                // FileShare.ReadWrite: Excel keeps a workbook open for reading; the file can still be read while it is.
+                if (xlsx)
+                {
+                    using (var names = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) sheets = XlsxReader.GetSheetNames(names);
+                    using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                    string? useSheet = sheet is not null && sheets.Contains(sheet) ? sheet : null;
+                    table = XlsxReader.Read(stream, new XlsxOptions { SheetName = useSheet, HasHeader = header });
+                    sheet = useSheet ?? sheets.FirstOrDefault();
+                }
+                else
+                {
+                    string text = ReadText(path);
+                    detected = CsvReader.DetectDelimiter(text);
+                    table = CsvReader.Parse(text, new CsvOptions { Delimiter = delimiter, HasHeader = header });
+                }
+                ct.ThrowIfCancellationRequested();
+            }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                error = Loc.Get("Data.Error.Read", fileName);
+            }
+            catch (Exception ex) when (ex is not OutOfMemoryException)
+            {
+                error = Loc.Get("Data.Error.Format", fileName);
+            }
+        }, ct));
+        if (!finished) return false;
+        if (error is null && table is { Columns.Count: 0 }) error = Loc.Get("Data.Error.Empty", fileName);
+        if (error is not null)
+        {
+            SetResult(error, true);
+            return false;
+        }
+
+        // Reloading the same file is not a change to the label; only a different file or sheet is.
+        bool settingsChanged = !string.Equals(SourcePath, path, StringComparison.OrdinalIgnoreCase) || (xlsx && SelectedSheet != sheet);
+        _applying = true;
+        try
+        {
+            SourceHintIgnored = false;
+            SourcePath = path;
+            SelectedSheet = xlsx ? sheet : null;
+        }
+        finally { _applying = false; }
+        SetTable(table, sheets, delimiter ?? detected);
+        CurrentIndex = 0;
+        SetResult(Loc.Get("Data.Loaded", fileName, table!.RowCount), false);
+        if (settingsChanged) RaiseSettingsEdited();
+        Rebind();
+        RaisePreviewChanged();
+        return true;
+    }
+
+    /// <summary>Reads a text file as UTF-8 (or UTF-16 with a byte order mark), falling back to Windows-1252, which is what Excel writes for "CSV".</summary>
+    private static string ReadText(string path)
+    {
+        byte[] bytes;
+        using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+        using (var ms = new MemoryStream())
+        {
+            stream.CopyTo(ms);
+            bytes = ms.ToArray();
+        }
+        try
+        {
+            using var reader = new StreamReader(new MemoryStream(bytes), new UTF8Encoding(false, throwOnInvalidBytes: true), detectEncodingFromByteOrderMarks: true);
+            return reader.ReadToEnd();
+        }
+        catch (DecoderFallbackException)
+        {
+            // Touching ZplEncoding registers the legacy code pages.
+            int page = ZplEncoding.Cp1252.DotNetCodePage ?? 1252;
+            return Encoding.GetEncoding(page).GetString(bytes);
+        }
+    }
+
+    private void SetTable(MergeTable? table, IReadOnlyList<string> sheets, char? delimiter)
+    {
+        Table = table;
+        DataSet = null;
+        _detectedDelimiter = delimiter;
+        Sheets.Clear();
+        foreach (var s in sheets) Sheets.Add(s);
+        LoadWarnings.Clear();
+        if (table is not null)
+            foreach (var issue in table.Issues) LoadWarnings.Add(Loc.FormatIssue(issue));
+        UpdateDelimiterText();
+        _rowColumns = Array.Empty<string>(); // force the mapping rows to be rebuilt for the new columns
+        OnPropertyChanged(nameof(Table));
+        OnPropertyChanged(nameof(HasData));
+        OnPropertyChanged(nameof(HasNoData));
+        OnPropertyChanged(nameof(ShowReloadHint));
+        OnPropertyChanged(nameof(CanReload));
+        OnPropertyChanged(nameof(PreviewColumns));
+        OnPropertyChanged(nameof(PreviewRows));
+        OnPropertyChanged(nameof(TableSummary));
+        OnPropertyChanged(nameof(PreviewTruncated));
+        OnPropertyChanged(nameof(HasLoadWarnings));
+        TableChanged?.Invoke(this, EventArgs.Empty);
+        Rebind();
+    }
+
+    /// <summary>True when reading the file produced notes.</summary>
+    public bool HasLoadWarnings => LoadWarnings.Count > 0;
+
+    private void UpdateDelimiterText()
+    {
+        if (Table is null || IsXlsx || _detectedDelimiter is not { } d) { DelimiterText = string.Empty; return; }
+        string name = d switch { ',' => Loc.Get("Data.Delimiter.Comma"), ';' => Loc.Get("Data.Delimiter.Semicolon"), '\t' => Loc.Get("Data.Delimiter.Tab"), _ => d.ToString() };
+        DelimiterText = Loc.Get(SelectedDelimiter == "auto" ? "Data.Delimiter.Detected" : "Data.Delimiter.Using", name);
+    }
+
+    // ----------------------------------------------------------------------------------- mapping
+
+    /// <summary>The placeholders of the label and the column behind each.</summary>
+    public ObservableCollection<MappingRow> MappingRows { get; } = new();
+
+    /// <summary>Warnings about the mapping (unmapped placeholders, unused columns...), in plain language.</summary>
+    public ObservableCollection<string> MappingWarnings { get; } = new();
+
+    /// <summary>True when there are mapping warnings.</summary>
+    public bool HasMappingWarnings => MappingWarnings.Count > 0;
+
+    /// <summary>True when the label has no placeholders at all (so the mapping list is empty on purpose).</summary>
+    public bool LabelHasNoPlaceholders => MappingRows.Count == 0 && HasData;
+
+    /// <summary>Columns that can feed the "copies" setting.</summary>
+    public IReadOnlyList<string> ColumnNames => Table?.Columns ?? Array.Empty<string>();
+
+    private void OnMappingRowChanged(MappingRow row)
+    {
+        if (_rebuildingRows) return;
+        if (row.Selected.Column is { } col) _overrides[row.Placeholder] = col;
+        else _overrides.Remove(row.Placeholder);
+        RaiseSettingsEdited();
+        Rebind();
+        RaisePreviewChanged();
+    }
+
+    /// <summary>Called when the open label changed; rebuilds the mapping only when the placeholders changed.</summary>
+    public void OnDocumentChanged() => Rebind();
+
+    /// <summary>
+    /// Binds the data to the label again with the current options and refreshes everything derived from it (mapping list,
+    /// warnings, record count). Cheap enough to run on every edit of the label.
+    /// </summary>
+    public void Rebind()
+    {
+        var doc = _document();
+        var placeholders = MergeDataSet.CollectPlaceholders(doc);
+        var options = BuildOptions();
+        if (Table is null)
+        {
+            DataSet = null;
+            RebuildRows(placeholders, Array.Empty<string>());
+            MappingWarnings.Clear();
+            OnPropertyChanged(nameof(HasMappingWarnings));
+            UpdateNavigator();
+            return;
+        }
+        DataSet = new MergeDataSet(doc, Table, options);
+        if (!_rowPlaceholders.SequenceEqual(placeholders) || !_rowColumns.SequenceEqual(Table.Columns))
+            RebuildRows(placeholders, Table.Columns);
+        UpdateRowStatus();
+        MappingWarnings.Clear();
+        foreach (var issue in DataSet.Issues) MappingWarnings.Add(Loc.FormatIssue(issue));
+        OnPropertyChanged(nameof(HasMappingWarnings));
+        OnPropertyChanged(nameof(LabelHasNoPlaceholders));
+        UpdateNavigator();
+    }
+
+    private void RebuildRows(IReadOnlyList<string> placeholders, IReadOnlyList<string> columns)
+    {
+        _rebuildingRows = true;
+        try
+        {
+            _rowPlaceholders = placeholders.ToList();
+            _rowColumns = columns.ToList();
+            _columnChoices.Clear();
+            _columnChoices.Add(new ColumnChoice(null));
+            foreach (var c in columns) _columnChoices.Add(new ColumnChoice(c));
+            MappingRows.Clear();
+            foreach (var p in placeholders)
+            {
+                bool counter = p.StartsWith('#');
+                var choices = _columnChoices.ToList();
+                var selected = choices[0];
+                if (!counter && _overrides.TryGetValue(p, out var col))
+                {
+                    selected = choices.FirstOrDefault(c => string.Equals(c.Column, col, StringComparison.OrdinalIgnoreCase)) ?? new ColumnChoice(col);
+                    if (!choices.Contains(selected)) choices.Add(selected); // a saved column that the file no longer has stays visible (and is warned about)
+                }
+                MappingRows.Add(new MappingRow(p, choices, selected, counter, OnMappingRowChanged));
+            }
+        }
+        finally { _rebuildingRows = false; }
+        OnPropertyChanged(nameof(ColumnNames));
+    }
+
+    private void UpdateRowStatus()
+    {
+        if (DataSet is null || Table is null) return;
+        foreach (var row in MappingRows)
+        {
+            if (row.IsCounter)
+            {
+                bool known = DataSet.Options.Counters.Any(c => string.Equals(c.VirtualColumn, row.Placeholder, StringComparison.OrdinalIgnoreCase));
+                row.SetStatus(known ? Loc.Get("Data.Mapping.FromCounter") : Loc.Get("Data.Mapping.NoCounter"), !known);
+            }
+            else if (DataSet.Mapping.TryGetValue(row.Placeholder, out int idx))
+                row.SetStatus(Loc.Get("Data.Mapping.Uses", Table.Columns[idx]), false);
+            else
+                row.SetStatus(Loc.Get("Data.Mapping.None"), true);
+        }
+    }
+
+    // ----------------------------------------------------------------------------------- navigator
+
+    /// <summary>Zero-based index of the record shown on the canvas.</summary>
+    [ObservableProperty]
+    private int _currentIndex;
+
+    partial void OnCurrentIndexChanged(int value)
+    {
+        UpdateNavigator();
+        RaisePreviewChanged();
+    }
+
+    /// <summary>Number of records.</summary>
+    public int RecordCount => DataSet?.RecordCount ?? 0;
+
+    /// <summary>"Record 3 of 120", or a hint when there is no data.</summary>
+    public string RecordText => RecordCount == 0 ? Loc.Get("Data.Record.None") : Loc.Get("Data.Record.Of", CurrentIndex + 1, RecordCount);
+
+    /// <summary>Record number typed in the "go to" box.</summary>
+    [ObservableProperty]
+    private string _goToText = string.Empty;
+
+    /// <summary>True to show the chosen record on the canvas and in the ZPL view.</summary>
+    [ObservableProperty]
+    private bool _previewEnabled = true;
+
+    partial void OnPreviewEnabledChanged(bool value) => RaisePreviewChanged();
+
+    /// <summary>Values of the shown record, or null when no record is shown (no data, or preview switched off).</summary>
+    public IReadOnlyDictionary<string, string>? CurrentData
+    {
+        get
+        {
+            if (!PreviewEnabled || DataSet is null || RecordCount == 0) return null;
+            return DataSet.GetRecordData(Math.Clamp(CurrentIndex, 0, RecordCount - 1));
+        }
+    }
+
+    private void UpdateNavigator()
+    {
+        if (RecordCount > 0 && (CurrentIndex < 0 || CurrentIndex >= RecordCount))
+        {
+            // A smaller data set (or a record number out of range) never leaves the pointer past the end.
+            int clamped = Math.Clamp(CurrentIndex, 0, RecordCount - 1);
+            if (clamped != CurrentIndex) { CurrentIndex = clamped; return; }
+        }
+        OnPropertyChanged(nameof(RecordCount));
+        OnPropertyChanged(nameof(RecordText));
+        OnPropertyChanged(nameof(HasRecords));
+        OnPropertyChanged(nameof(RecordNumberText));
+        FirstRecordCommand.NotifyCanExecuteChanged();
+        PreviousRecordCommand.NotifyCanExecuteChanged();
+        NextRecordCommand.NotifyCanExecuteChanged();
+        LastRecordCommand.NotifyCanExecuteChanged();
+        GoToRecordCommand.NotifyCanExecuteChanged();
+        OnPropertyChanged(nameof(Ready));
+        PrintAllCommand.NotifyCanExecuteChanged();
+        ExportBatchCommand.NotifyCanExecuteChanged();
+    }
+
+    /// <summary>True when there is at least one record.</summary>
+    public bool HasRecords => RecordCount > 0;
+
+    /// <summary>1-based number of the shown record.</summary>
+    public string RecordNumberText => RecordCount == 0 ? string.Empty : (CurrentIndex + 1).ToString(CultureInfo.CurrentCulture);
+
+    /// <summary>True when data is loaded and records exist (enables the batch buttons).</summary>
+    public bool Ready => HasRecords;
+
+    /// <summary>Goes to the first record.</summary>
+    [RelayCommand(CanExecute = nameof(CanGoBack))]
+    private void FirstRecord() => CurrentIndex = 0;
+
+    /// <summary>Goes to the previous record.</summary>
+    [RelayCommand(CanExecute = nameof(CanGoBack))]
+    private void PreviousRecord() => CurrentIndex = Math.Max(0, CurrentIndex - 1);
+
+    /// <summary>Goes to the next record.</summary>
+    [RelayCommand(CanExecute = nameof(CanGoForward))]
+    private void NextRecord() => CurrentIndex = Math.Min(RecordCount - 1, CurrentIndex + 1);
+
+    /// <summary>Goes to the last record.</summary>
+    [RelayCommand(CanExecute = nameof(CanGoForward))]
+    private void LastRecord() => CurrentIndex = RecordCount - 1;
+
+    private bool CanGoBack() => RecordCount > 0 && CurrentIndex > 0;
+    private bool CanGoForward() => RecordCount > 0 && CurrentIndex < RecordCount - 1;
+
+    /// <summary>Goes to the record number typed in the box.</summary>
+    [RelayCommand(CanExecute = nameof(HasRecords))]
+    private void GoToRecord()
+    {
+        if (int.TryParse(GoToText.Trim(), NumberStyles.None, CultureInfo.CurrentCulture, out int n) && n >= 1 && n <= RecordCount)
+        {
+            CurrentIndex = n - 1;
+            SetResult(string.Empty, false);
+        }
+        else SetResult(Loc.Get("Data.Record.GoToInvalid", RecordCount), true);
+    }
+
+    // ----------------------------------------------------------------------------------- counters
+
+    /// <summary>The serial counters.</summary>
+    public ObservableCollection<CounterEditor> Counters { get; } = new();
+
+    /// <summary>The counter being edited.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasSelectedCounter))]
+    private CounterEditor? _selectedCounter;
+
+    /// <summary>True when a counter is selected.</summary>
+    public bool HasSelectedCounter => SelectedCounter is not null;
+
+    /// <summary>True when no counter exists yet (empty state).</summary>
+    public bool HasNoCounters => Counters.Count == 0;
+
+    private CounterEditor NewCounterEditor(CounterSettings s) => new(s, OnCounterEdited);
+
+    private void OnCounterEdited()
+    {
+        if (_applying) return;
+        RaiseSettingsEdited();
+        Rebind();
+        RaisePreviewChanged();
+    }
+
+    /// <summary>Adds a counter with a free name.</summary>
+    [RelayCommand]
+    private void AddCounter()
+    {
+        string name = "Serial";
+        for (int n = 2; Counters.Any(c => string.Equals(c.Name, name, StringComparison.OrdinalIgnoreCase)); n++) name = "Serial" + n;
+        var editor = NewCounterEditor(new CounterSettings { Name = name, Padding = 4 });
+        Counters.Add(editor);
+        SelectedCounter = editor;
+        OnPropertyChanged(nameof(HasNoCounters));
+        OnCounterEdited();
+    }
+
+    /// <summary>Removes the selected counter.</summary>
+    [RelayCommand(CanExecute = nameof(HasSelectedCounter))]
+    private void RemoveCounter()
+    {
+        if (SelectedCounter is null) return;
+        int index = Counters.IndexOf(SelectedCounter);
+        Counters.Remove(SelectedCounter);
+        SelectedCounter = Counters.Count == 0 ? null : Counters[Math.Min(index, Counters.Count - 1)];
+        OnPropertyChanged(nameof(HasNoCounters));
+        OnCounterEdited();
+    }
+
+    partial void OnSelectedCounterChanged(CounterEditor? value) => RemoveCounterCommand.NotifyCanExecuteChanged();
+
+    // ----------------------------------------------------------------------------------- copies and batch options
+
+    /// <summary>Where the copies per record come from.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsFixedCopies), nameof(IsColumnCopies))]
+    private CopiesSource _copiesSource;
+
+    partial void OnCopiesSourceChanged(CopiesSource value) => OptionsEdited();
+
+    /// <summary>True when the copies are a fixed number.</summary>
+    public bool IsFixedCopies => CopiesSource == CopiesSource.Fixed;
+
+    /// <summary>True when the copies come from a column.</summary>
+    public bool IsColumnCopies => CopiesSource == CopiesSource.Column;
+
+    /// <summary>Fixed copies as typed.</summary>
+    [ObservableProperty]
+    private string _fixedCopiesText = "1";
+
+    partial void OnFixedCopiesTextChanged(string value) => OptionsEdited();
+
+    /// <summary>Column that holds the copies per record.</summary>
+    [ObservableProperty]
+    private string? _copiesColumn;
+
+    partial void OnCopiesColumnChanged(string? value) => OptionsEdited();
+
+    /// <summary>How copies are written.</summary>
+    [ObservableProperty]
+    private CopiesMode _copiesMode = CopiesMode.PrintQuantity;
+
+    partial void OnCopiesModeChanged(CopiesMode value) => OptionsEdited();
+
+    /// <summary>What to do with an invalid record.</summary>
+    [ObservableProperty]
+    private InvalidRecordPolicy _invalidPolicy = InvalidRecordPolicy.Skip;
+
+    partial void OnInvalidPolicyChanged(InvalidRecordPolicy value) => OptionsEdited();
+
+    /// <summary>Records per print job as typed (0 = one job).</summary>
+    [ObservableProperty]
+    private string _maxRecordsText = "0";
+
+    partial void OnMaxRecordsTextChanged(string value) => OptionsEdited();
+
+    /// <summary>Write one file per job when exporting.</summary>
+    [ObservableProperty]
+    private bool _oneFilePerJob;
+
+    partial void OnOneFilePerJobChanged(bool value) => RaiseSettingsEdited();
+
+    /// <summary>What is wrong with the copies or job size, or empty.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasOptionsError))]
+    private string _optionsError = string.Empty;
+
+    /// <summary>True when an option has an invalid value.</summary>
+    public bool HasOptionsError => OptionsError.Length > 0;
+
+    private void OptionsEdited()
+    {
+        if (_applying) return;
+        RaiseSettingsEdited();
+        Rebind();
+        RaisePreviewChanged();
+    }
+
+    /// <summary>
+    /// Builds a fresh <see cref="MergeOptions"/> from the editor fields (never the shared instance, so a background batch
+    /// keeps its own copy while the user keeps editing). Invalid fields set <see cref="OptionsError"/> and fall back to defaults.
+    /// </summary>
+    private MergeOptions BuildOptions()
+    {
+        var o = new MergeOptions { CopiesMode = CopiesMode, OnInvalidRecord = InvalidPolicy };
+        foreach (var ed in Counters)
+            if (ed.TryBuild() is { } counter) o.Counters.Add(counter);
+        foreach (var kv in _overrides) o.ColumnOverrides[kv.Key] = kv.Value;
+
+        string error = string.Empty;
+        switch (CopiesSource)
+        {
+            case CopiesSource.Fixed:
+                if (int.TryParse(FixedCopiesText.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out int copies) && copies is >= 1 and <= 99999999) o.CopiesPerRecord = copies;
+                else error = Loc.Get("Data.Copies.FixedInvalid");
+                break;
+            case CopiesSource.Column:
+                o.CopiesColumn = CopiesColumn;
+                break;
+        }
+        if (int.TryParse(MaxRecordsText.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out int max) && max is >= 0 and <= 1_000_000) o.MaxRecordsPerJob = max;
+        else if (error.Length == 0) error = Loc.Get("Data.MaxRecords.Invalid");
+        OptionsError = error;
+        return o;
+    }
+
+    // ----------------------------------------------------------------------------------- checking and batch
+
+    /// <summary>Problems found by the last check or batch, one line per problem.</summary>
+    public ObservableCollection<RecordIssueRow> Issues { get; } = new();
+
+    /// <summary>Summary of the last check.</summary>
+    [ObservableProperty]
+    private string _issuesSummary = string.Empty;
+
+    /// <summary>True when the issue list has content to show.</summary>
+    [ObservableProperty]
+    private bool _hasIssues;
+
+    /// <summary>
+    /// Takes a private copy of the label and options for a background run, and checks that a run makes sense.
+    /// Why a copy: the user may keep editing the label while the batch runs.
+    /// </summary>
+    /// <returns>Null when ready; otherwise a message saying what to fix.</returns>
+    private string? Snapshot(out LabelDocument doc, out MergeDataSet dataSet)
+    {
+        doc = ElementCloner.CloneDocument(_document());
+        dataSet = null!;
+        if (Table is null) return Loc.Get("Data.Error.NoData");
+        var options = BuildOptions();
+        if (OptionsError.Length > 0) return OptionsError;
+        var bad = Counters.FirstOrDefault(c => c.HasError);
+        if (bad is not null) return bad.Error;
+        dataSet = new MergeDataSet(doc, Table, options);
+        var blocking = dataSet.Issues.FirstOrDefault(i => i.Severity == ValidationSeverity.Error);
+        if (blocking is not null) return Loc.FormatIssue(blocking);
+        if (dataSet.RecordCount == 0) return Loc.Get("Data.Error.NoRecords");
+        return null;
+    }
+
+    private void ShowReport(MergeReport report)
+    {
+        Issues.Clear();
+        foreach (var ri in report.Issues.Take(IssueRowLimit))
+            Issues.Add(new RecordIssueRow(ri.RecordNumber, ri.Issue.Severity == ValidationSeverity.Error, Loc.FormatIssue(ri.Issue)));
+        string summary = Loc.Get("Data.Check.Summary", report.Processed, report.Emitted, report.SkippedRecords.Count);
+        if (report.Issues.Count > IssueRowLimit) summary += " " + Loc.Get("Data.Check.Truncated", IssueRowLimit, report.Issues.Count);
+        IssuesSummary = summary;
+        HasIssues = true;
+    }
+
+    /// <summary>Generates every record in the background and lists the problems, without printing or writing anything.</summary>
+    [RelayCommand]
+    private async Task CheckAllAsync()
+    {
+        if (IsBusy) return;
+        string? error = Snapshot(out var doc, out var ds);
+        if (error is not null) { SetResult(error, true); return; }
+        var report = new MergeReport();
+        var progress = new Progress<double>(p => Progress = p);
+        bool ok = await RunAsync(Loc.Get("Data.Busy.Checking"), ct => Task.Run(() =>
+        {
+            int n = 0;
+            foreach (var _ in MergeBatch.Labels(doc, ds, report))
+            {
+                ct.ThrowIfCancellationRequested();
+                if (++n % 256 == 0) ((IProgress<double>)progress).Report(100.0 * report.Processed / ds.RecordCount);
+            }
+        }, ct));
+        if (!ok) return;
+        ShowReport(report);
+        SetResult(report.HasErrors ? Loc.Get("Data.Check.Problems", report.SkippedRecords.Count) : Loc.Get("Data.Check.Ok", report.Emitted), report.HasErrors);
+    }
+
+    /// <summary>Sends every record to the printer, in jobs of at most the chosen number of records.</summary>
+    [RelayCommand(CanExecute = nameof(Ready))]
+    private async Task PrintAllAsync()
+    {
+        if (IsBusy) return;
+        string? error = Snapshot(out var doc, out var ds);
+        PrinterTarget? target = null;
+        PrinterProfile? profile = null;
+        error ??= Printer.TryBuildTarget(out target);
+        error ??= Printer.TryBuildProfile(out profile, doc.Encoding);
+        if (error is not null) { SetResult(error, true); return; }
+        if (!_messages.Confirm(Loc.Get("Data.PrintAll.Title"), Loc.Get("Data.PrintAll.Confirm", ds.RecordCount, Printer.Summary))) return;
+
+        var report = new MergeReport();
+        int jobs = 0;
+        PrintError? failure = null;
+        bool cancelled = false;
+        // The printer set-up (darkness, speed...) goes out once, in front of the first job.
+        string setup = PrinterSetup.BuildSetupZpl(profile!);
+        var progress = new Progress<double>(p => Progress = p);
+        bool ok = await RunAsync(Loc.Get("Data.Busy.Printing"), async ct =>
+        {
+            try
+            {
+                await Task.Run(async () =>
+                {
+                    foreach (var job in MergeBatch.Jobs(doc, ds, report))
+                    {
+                        ct.ThrowIfCancellationRequested();
+                        var result = await _service.PrintZplAsync(target!, jobs == 0 ? setup + job : job, doc.Encoding, ct);
+                        if (!result.Succeeded) { failure = result.Error; break; }
+                        jobs++;
+                        ((IProgress<double>)progress).Report(100.0 * report.Processed / ds.RecordCount);
+                    }
+                }, ct);
+            }
+            catch (OperationCanceledException) { cancelled = true; }
+        });
+        if (!ok) return;
+        ShowReport(report);
+        if (failure is not null)
+        {
+            SetResult(PrintMessages.Describe(failure) + " " + Loc.Get("Data.Batch.Partial", jobs), failure.Kind != PrintErrorKind.Cancelled);
+            return;
+        }
+        if (cancelled)
+        {
+            SetResult(Loc.Get("Data.Batch.CancelledPartial", jobs), false);
+            return;
+        }
+        Printer.Persist();
+        SetResult(BatchSummary("Data.PrintAll.Done", report, jobs), report.HasErrors || report.Emitted == 0);
+    }
+
+    private static string BatchSummary(string doneKey, MergeReport report, int units)
+    {
+        if (report.Emitted == 0) return Loc.Get("Data.Batch.NothingProduced");
+        string text = Loc.Get(doneKey, report.Emitted, units);
+        if (report.SkippedRecords.Count > 0) text += " " + Loc.Get("Data.Batch.Skipped", report.SkippedRecords.Count);
+        if (report.Stopped) text += " " + Loc.Get("Data.Batch.Stopped", report.SkippedRecords[^1]);
+        return text;
+    }
+
+    /// <summary>Writes the whole batch as ZPL, in one file or one file per job.</summary>
+    [RelayCommand(CanExecute = nameof(Ready))]
+    private async Task ExportBatchAsync()
+    {
+        if (IsBusy) return;
+        string? error = Snapshot(out var doc, out var ds);
+        if (error is not null) { SetResult(error, true); return; }
+        string? path = _files.PickExportFile(ExportKind.Zpl, _documentName() + ".zpl");
+        if (path is null) return;
+
+        int max = ds.Options.MaxRecordsPerJob;
+        bool perJob = OneFilePerJob && max > 0;
+        string dir = Path.GetDirectoryName(Path.GetFullPath(path)) ?? ".";
+        string stem = Path.GetFileNameWithoutExtension(path), ext = Path.GetExtension(path);
+        string NameFor(int job) => Path.Combine(dir, $"{stem}_{job:D3}{ext}");
+        if (perJob)
+        {
+            int possible = (ds.RecordCount + max - 1) / max;
+            int existing = Enumerable.Range(1, possible).Count(i => File.Exists(NameFor(i)));
+            if (existing > 0 && !_messages.Confirm(Loc.Get("Data.Export.ReplaceTitle"), Loc.Get("Data.Export.ReplaceBody", existing)))
+                return;
+        }
+
+        var report = new MergeReport();
+        int files = 0;
+        string? writeError = null;
+        bool encodingFailed = false;
+        var progress = new Progress<double>(p => Progress = p);
+        bool ok = await RunAsync(Loc.Get("Data.Busy.Exporting"), ct => Task.Run(() =>
+        {
+            string temp = path + ".tmp";
+            try
+            {
+                if (perJob)
+                {
+                    int job = 0;
+                    foreach (var zpl in MergeBatch.Jobs(doc, ds, report))
+                    {
+                        ct.ThrowIfCancellationRequested();
+                        var bytes = ZplFiles.TryEncode(zpl, doc.Encoding);
+                        if (bytes is null) { encodingFailed = true; return; }
+                        File.WriteAllBytes(NameFor(++job), bytes);
+                        files++;
+                        ((IProgress<double>)progress).Report(100.0 * report.Processed / ds.RecordCount);
+                    }
+                }
+                else
+                {
+                    // Written to a temp file first, so a cancelled or failed export never destroys an existing file.
+                    using (var fs = new FileStream(temp, FileMode.Create, FileAccess.Write))
+                    {
+                        foreach (var zpl in MergeBatch.Jobs(doc, ds, report))
+                        {
+                            ct.ThrowIfCancellationRequested();
+                            var bytes = ZplFiles.TryEncode(zpl, doc.Encoding);
+                            if (bytes is null) { encodingFailed = true; return; }
+                            fs.Write(bytes);
+                            ((IProgress<double>)progress).Report(100.0 * report.Processed / ds.RecordCount);
+                        }
+                    }
+                    if (report.Emitted > 0) { File.Move(temp, path, overwrite: true); files = 1; }
+                }
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                writeError = Loc.Get("File.Error.Write", path);
+            }
+            finally
+            {
+                try { if (File.Exists(temp)) File.Delete(temp); } catch (IOException) { } catch (UnauthorizedAccessException) { }
+            }
+        }, ct));
+        if (!ok) return;
+        ShowReport(report);
+        if (writeError is not null) { SetResult(writeError, true); return; }
+        if (encodingFailed) { SetResult(Loc.Get("Print.Error.EncodingFailed", doc.Encoding.ToString(), string.Empty), true); return; }
+        SetResult(BatchSummary(perJob ? "Data.Export.DonePerJob" : "Data.Export.Done", report, files), report.HasErrors || report.Emitted == 0);
+    }
+
+    /// <summary>Closes the window (stopping any running batch first).</summary>
+    [RelayCommand]
+    private void Close() => RequestClose();
+
+    // ----------------------------------------------------------------------------------- settings in the .rotula file
+
+    /// <summary>The settings to save in the .rotula file. The data itself is never included.</summary>
+    public DataMergeSettings ToSettings()
+    {
+        var s = new DataMergeSettings
+        {
+            SourcePath = SourcePath, SheetName = SelectedSheet, Delimiter = SelectedDelimiter, HasHeader = HasHeader,
+            CopiesPerRecord = CopiesSource == CopiesSource.Fixed && int.TryParse(FixedCopiesText.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out int c) ? c : null,
+            CopiesColumn = CopiesSource == CopiesSource.Column ? CopiesColumn : null,
+            CopiesMode = CopiesMode, OnInvalidRecord = InvalidPolicy,
+            MaxRecordsPerJob = int.TryParse(MaxRecordsText.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out int m) ? m : 0,
+            OneFilePerJob = OneFilePerJob,
+        };
+        foreach (var kv in _overrides) s.ColumnOverrides[kv.Key] = kv.Value;
+        foreach (var c2 in Counters) s.Counters.Add(c2.ToSettings());
+        return s;
+    }
+
+    /// <summary>Loads settings from a .rotula file (or resets to defaults for null). The data is not loaded; the source path stays a hint.</summary>
+    public void Apply(DataMergeSettings? settings)
+    {
+        settings ??= new DataMergeSettings();
+        _applying = true;
+        try
+        {
+            SourcePath = string.IsNullOrEmpty(settings.SourcePath) ? null : settings.SourcePath;
+            SourceHintIgnored = settings.SourcePathIgnored;
+            SelectedSheet = settings.SheetName;
+            SelectedDelimiter = settings.Delimiter;
+            HasHeader = settings.HasHeader;
+            _overrides.Clear();
+            foreach (var kv in settings.ColumnOverrides) _overrides[kv.Key] = kv.Value;
+            Counters.Clear();
+            foreach (var c in settings.Counters) Counters.Add(NewCounterEditor(c));
+            SelectedCounter = Counters.FirstOrDefault();
+            OnPropertyChanged(nameof(HasNoCounters));
+            CopiesSource = settings.CopiesPerRecord is not null ? CopiesSource.Fixed : !string.IsNullOrEmpty(settings.CopiesColumn) ? CopiesSource.Column : CopiesSource.LabelDefault;
+            FixedCopiesText = (settings.CopiesPerRecord ?? 1).ToString(CultureInfo.InvariantCulture);
+            CopiesColumn = settings.CopiesColumn;
+            CopiesMode = settings.CopiesMode;
+            InvalidPolicy = settings.OnInvalidRecord;
+            MaxRecordsText = settings.MaxRecordsPerJob.ToString(CultureInfo.InvariantCulture);
+            OneFilePerJob = settings.OneFilePerJob;
+            Issues.Clear();
+            IssuesSummary = string.Empty;
+            HasIssues = false;
+            SetResult(string.Empty, false);
+            SetTable(null, Array.Empty<string>(), null);
+            CurrentIndex = 0;
+            OnPropertyChanged(nameof(ShowReloadHint));
+        }
+        finally { _applying = false; }
+        Rebind();
+        RaisePreviewChanged();
+    }
+
+    private void RefreshLanguage()
+    {
+        foreach (var c in DelimiterChoices) c.Refresh();
+        foreach (var c in CopiesSourceChoices) c.Refresh();
+        foreach (var c in CopiesModeChoices) c.Refresh();
+        foreach (var c in InvalidPolicyChoices) c.Refresh();
+        foreach (var c in _columnChoices) c.Refresh();
+        foreach (var c in Counters) c.RefreshLanguage();
+        UpdateDelimiterText();
+        Rebind();
+        OnPropertyChanged(nameof(TableSummary));
+        OnPropertyChanged(nameof(PreviewNote));
+    }
+}

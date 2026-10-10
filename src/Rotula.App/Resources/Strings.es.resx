@@ -924,9 +924,6 @@ Sí guarda, No descarta los cambios, Cancelar vuelve a la etiqueta.</value>
   <data name="Print.Failed" xml:space="preserve">
     <value>No se pudo imprimir la etiqueta. Compruebe la conexión de la impresora e inténtelo de nuevo.</value>
   </data>
-  <data name="Print.NotAvailable" xml:space="preserve">
-    <value>La impresión todavía no está conectada en esta versión. Exporte el ZPL o un PDF e imprímalo desde allí.</value>
-  </data>
   <data name="Prop.BarHeight" xml:space="preserve">
     <value>Altura de las barras (puntos)</value>
   </data>
@@ -1304,5 +1301,680 @@ Sí guarda, No descarta los cambios, Cancelar vuelve a la etiqueta.</value>
   </data>
   <data name="Zpl.Copy" xml:space="preserve">
     <value>Copiar ZPL</value>
+  </data>
+  <data name="Common.Close" xml:space="preserve">
+    <value>Cerrar</value>
+  </data>
+  <data name="Common.StopOperation" xml:space="preserve">
+    <value>Detener</value>
+  </data>
+  <data name="Common.OperationCancelled" xml:space="preserve">
+    <value>Detenido. No se hizo nada más.</value>
+  </data>
+  <data name="Common.OperationFailed" xml:space="preserve">
+    <value>Ocurrió un problema inesperado ({0}). No se cambió nada; inténtelo de nuevo.</value>
+  </data>
+  <data name="Print.Error.PrinterNotFound" xml:space="preserve">
+    <value>Windows no tiene ninguna impresora llamada "{0}". Actualice la lista de impresoras y elija otra, o compruebe que la impresora esté instalada.</value>
+  </data>
+  <data name="Print.Error.AccessDenied" xml:space="preserve">
+    <value>No tiene permiso para imprimir en "{0}". Pida acceso a su administrador o elija otra impresora.</value>
+  </data>
+  <data name="Print.Error.Offline" xml:space="preserve">
+    <value>La impresora "{0}" está fuera de línea. Enciéndala, revise el cable y compruebe que no esté en pausa; luego inténtelo de nuevo.</value>
+  </data>
+  <data name="Print.Error.Timeout" xml:space="preserve">
+    <value>La impresora en {0}:{1} no respondió a tiempo. Compruebe que esté encendida y en la misma red; luego inténtelo de nuevo.</value>
+  </data>
+  <data name="Print.Error.ConnectionRefused" xml:space="preserve">
+    <value>El dispositivo en {0}:{1} rechazó la conexión. Compruebe el puerto (las Zebra usan 9100) y que el puerto de red de la impresora esté activado.</value>
+  </data>
+  <data name="Print.Error.HostUnreachable" xml:space="preserve">
+    <value>No se puede llegar a {0}:{1}. Revise la dirección, el cable de red o el Wi-Fi, y que la impresora esté encendida.</value>
+  </data>
+  <data name="Print.Error.Cancelled" xml:space="preserve">
+    <value>Se canceló la impresión. No se envió nada más.</value>
+  </data>
+  <data name="Print.Error.InvalidLabel" xml:space="preserve">
+    <value>La etiqueta tiene errores, así que no se envió nada. Corrija los problemas indicados y vuelva a intentarlo.</value>
+  </data>
+  <data name="Print.Error.InvalidProfile" xml:space="preserve">
+    <value>Los ajustes de la impresora están fuera de rango, así que no se envió nada. Corrija los valores e inténtelo de nuevo.</value>
+  </data>
+  <data name="Print.Error.EncodingFailed" xml:space="preserve">
+    <value>La etiqueta contiene caracteres que el juego de caracteres {0} no puede imprimir. Cambie el juego de caracteres de la etiqueta a UTF-8 o quite esos caracteres.</value>
+  </data>
+  <data name="Print.Error.Unsupported" xml:space="preserve">
+    <value>Imprimir con impresoras de Windows solo está disponible en Windows. Use una impresora de red o guarde el archivo ZPL.</value>
+  </data>
+  <data name="Print.Error.Unknown" xml:space="preserve">
+    <value>La impresora informó de un problema inesperado ({0}). Revise la conexión e inténtelo de nuevo, o guarde el archivo ZPL y envíelo por otro medio.</value>
+  </data>
+  <data name="Print.Profile.Darkness.Range" xml:space="preserve">
+    <value>La oscuridad debe ser un número de 0 a 30. Cámbiela o déjela vacía para conservar el ajuste de la impresora.</value>
+  </data>
+  <data name="Print.Profile.Speed.Range" xml:space="preserve">
+    <value>La velocidad debe ser un número de 1 a 14 pulgadas por segundo. Cámbiela o déjela vacía para conservar el ajuste de la impresora.</value>
+  </data>
+  <data name="Print.Profile.Width.Range" xml:space="preserve">
+    <value>El ancho de la etiqueta está fuera de rango: debe estar entre 1 y 9999 puntos con la resolución elegida. Revise el ancho y la resolución (DPI).</value>
+  </data>
+  <data name="Print.Profile.Height.Range" xml:space="preserve">
+    <value>El alto de la etiqueta está fuera de rango: debe estar entre 1 y 32000 puntos con la resolución elegida. Revise el alto y la resolución (DPI).</value>
+  </data>
+  <data name="Print.Title" xml:space="preserve">
+    <value>Imprimir</value>
+  </data>
+  <data name="Print.Subtitle" xml:space="preserve">
+    <value>Elija una impresora, revise sus ajustes e imprima la etiqueta.</value>
+  </data>
+  <data name="Print.Section.Printer" xml:space="preserve">
+    <value>Impresora</value>
+  </data>
+  <data name="Print.Section.Setup" xml:space="preserve">
+    <value>Configuración de la impresora</value>
+  </data>
+  <data name="Print.Transport.Windows" xml:space="preserve">
+    <value>Impresora de Windows (USB o instalada)</value>
+  </data>
+  <data name="Print.Transport.Network" xml:space="preserve">
+    <value>Impresora de red (TCP/IP)</value>
+  </data>
+  <data name="Print.Printer.Label" xml:space="preserve">
+    <value>Impresora</value>
+  </data>
+  <data name="Print.Printers.Refresh" xml:space="preserve">
+    <value>Actualizar la lista de impresoras</value>
+  </data>
+  <data name="Print.Printers.Loading" xml:space="preserve">
+    <value>Buscando impresoras</value>
+  </data>
+  <data name="Print.Printers.None" xml:space="preserve">
+    <value>Windows no tiene impresoras instaladas. Instale el controlador de la impresora o cambie a una impresora de red e indique su dirección.</value>
+  </data>
+  <data name="Print.Printers.Missing" xml:space="preserve">
+    <value>La impresora "{0}" que usó la última vez no está instalada en este equipo. Elija otra impresora.</value>
+  </data>
+  <data name="Print.Printers.Default" xml:space="preserve">
+    <value>(predeterminada)</value>
+  </data>
+  <data name="Print.Printers.Offline" xml:space="preserve">
+    <value>(sin conexión)</value>
+  </data>
+  <data name="Print.Host" xml:space="preserve">
+    <value>Nombre de host o dirección IP</value>
+  </data>
+  <data name="Print.Port" xml:space="preserve">
+    <value>Puerto</value>
+  </data>
+  <data name="Print.Profile.Dpi" xml:space="preserve">
+    <value>Resolución</value>
+  </data>
+  <data name="Print.Profile.Media" xml:space="preserve">
+    <value>Detección del papel</value>
+  </data>
+  <data name="Print.Profile.Width" xml:space="preserve">
+    <value>Ancho de la etiqueta (mm)</value>
+  </data>
+  <data name="Print.Profile.Height" xml:space="preserve">
+    <value>Alto de la etiqueta (mm)</value>
+  </data>
+  <data name="Print.Profile.Darkness" xml:space="preserve">
+    <value>Oscuridad (0-30)</value>
+  </data>
+  <data name="Print.Profile.Speed" xml:space="preserve">
+    <value>Velocidad (1-14 pulg/s)</value>
+  </data>
+  <data name="Print.Profile.Hint" xml:space="preserve">
+    <value>Deje la oscuridad y la velocidad vacías para conservar los ajustes guardados en la impresora.</value>
+  </data>
+  <data name="Print.Copies" xml:space="preserve">
+    <value>Copias</value>
+  </data>
+  <data name="Print.Button.Print" xml:space="preserve">
+    <value>Imprimir</value>
+  </data>
+  <data name="Print.Button.SaveZpl" xml:space="preserve">
+    <value>Guardar como ZPL...</value>
+  </data>
+  <data name="Print.Button.Test" xml:space="preserve">
+    <value>Imprimir etiqueta de prueba</value>
+  </data>
+  <data name="Print.Button.Test.Tip" xml:space="preserve">
+    <value>Imprime una etiqueta de muestra para comprobar la conexión, el ancho y las tildes.</value>
+  </data>
+  <data name="Print.LabelHasErrors" xml:space="preserve">
+    <value>La etiqueta tiene errores y todavía no se puede imprimir:</value>
+  </data>
+  <data name="Print.UsesRecord" xml:space="preserve">
+    <value>La etiqueta se imprimirá con los valores del registro de datos que se muestra en el lienzo.</value>
+  </data>
+  <data name="Print.Busy.Printing" xml:space="preserve">
+    <value>Enviando la etiqueta a la impresora...</value>
+  </data>
+  <data name="Print.Busy.Test" xml:space="preserve">
+    <value>Enviando la etiqueta de prueba...</value>
+  </data>
+  <data name="Print.Busy.Saving" xml:space="preserve">
+    <value>Guardando el archivo ZPL...</value>
+  </data>
+  <data name="Print.Done.Label" xml:space="preserve">
+    <value>Enviado a la impresora ({0} copias).</value>
+  </data>
+  <data name="Print.Done.Test" xml:space="preserve">
+    <value>La etiqueta de prueba se envió a la impresora.</value>
+  </data>
+  <data name="Print.Done.Saved" xml:space="preserve">
+    <value>Se guardó {0}.</value>
+  </data>
+  <data name="Print.Field.NoPrinter" xml:space="preserve">
+    <value>No hay ninguna impresora seleccionada. Elija una impresora instalada o cambie a una impresora de red e indique su dirección.</value>
+  </data>
+  <data name="Print.Field.NoHost" xml:space="preserve">
+    <value>Indique el nombre de host o la dirección IP de la impresora de red, por ejemplo 192.168.1.50.</value>
+  </data>
+  <data name="Print.Field.Port" xml:space="preserve">
+    <value>El puerto debe ser un número entero de 1 a 65535 (las Zebra usan 9100).</value>
+  </data>
+  <data name="Print.Field.Number" xml:space="preserve">
+    <value>{0} debe ser un número. Escriba solo dígitos, por ejemplo 12.</value>
+  </data>
+  <data name="Print.Field.Copies" xml:space="preserve">
+    <value>Las copias deben ser un número entero de 1 a 99999999.</value>
+  </data>
+  <data name="Enum.CopiesMode.PrintQuantity" xml:space="preserve">
+    <value>Una etiqueta con cantidad de impresión (^PQ)</value>
+  </data>
+  <data name="Enum.CopiesMode.RepeatBlock" xml:space="preserve">
+    <value>Repetir la etiqueta una vez por copia</value>
+  </data>
+  <data name="Enum.InvalidRecordPolicy.Skip" xml:space="preserve">
+    <value>Omitir el registro y continuar</value>
+  </data>
+  <data name="Enum.InvalidRecordPolicy.Stop" xml:space="preserve">
+    <value>Detenerse en el registro</value>
+  </data>
+  <data name="Enum.CounterKind.Numeric" xml:space="preserve">
+    <value>Números</value>
+  </data>
+  <data name="Enum.CounterKind.Alphanumeric" xml:space="preserve">
+    <value>Letras y dígitos</value>
+  </data>
+  <data name="Enum.CounterOverflow.Wrap" xml:space="preserve">
+    <value>Volver a empezar</value>
+  </data>
+  <data name="Enum.CounterOverflow.Error" xml:space="preserve">
+    <value>Informar de un error</value>
+  </data>
+  <data name="Enum.PrinterTransport.Spooler" xml:space="preserve">
+    <value>Impresora de Windows</value>
+  </data>
+  <data name="Enum.PrinterTransport.Tcp" xml:space="preserve">
+    <value>Impresora de red (TCP/IP)</value>
+  </data>
+  <data name="Filter.Data" xml:space="preserve">
+    <value>Archivos CSV y Excel</value>
+  </data>
+  <data name="Data.Title" xml:space="preserve">
+    <value>Combinar datos</value>
+  </data>
+  <data name="Data.Open" xml:space="preserve">
+    <value>Abrir archivo de datos...</value>
+  </data>
+  <data name="Data.Reload" xml:space="preserve">
+    <value>Recargar</value>
+  </data>
+  <data name="Data.Clear" xml:space="preserve">
+    <value>Quitar los datos</value>
+  </data>
+  <data name="Data.NoFile" xml:space="preserve">
+    <value>Ningún archivo de datos abierto</value>
+  </data>
+  <data name="Data.PrivacyNote" xml:space="preserve">
+    <value>Los datos se quedan en este equipo. En el archivo de la etiqueta solo se guardan los ajustes, nunca los datos.</value>
+  </data>
+  <data name="Data.Empty.Title" xml:space="preserve">
+    <value>Combine una hoja de cálculo con su etiqueta</value>
+  </data>
+  <data name="Data.Empty.Body" xml:space="preserve">
+    <value>Abra un archivo CSV o Excel (.xlsx). Cada fila se convierte en una etiqueta y cada columna puede rellenar una {{variable}} de la etiqueta. Después podrá recorrer los registros e imprimirlos todos.</value>
+  </data>
+  <data name="Data.Empty.Hint" xml:space="preserve">
+    <value>Esta etiqueta recuerda su archivo de datos, pero los datos no están cargados. Elija Recargar para leerlo otra vez, o abra otro archivo.</value>
+  </data>
+  <data name="Data.Tab.Data" xml:space="preserve">
+    <value>Datos</value>
+  </data>
+  <data name="Data.Tab.Mapping" xml:space="preserve">
+    <value>Variables</value>
+  </data>
+  <data name="Data.Tab.Counters" xml:space="preserve">
+    <value>Contadores</value>
+  </data>
+  <data name="Data.Tab.Copies" xml:space="preserve">
+    <value>Copias y trabajos</value>
+  </data>
+  <data name="Data.Tab.Batch" xml:space="preserve">
+    <value>Revisar e imprimir</value>
+  </data>
+  <data name="Data.Sheet" xml:space="preserve">
+    <value>Hoja</value>
+  </data>
+  <data name="Data.Delimiter" xml:space="preserve">
+    <value>Separador</value>
+  </data>
+  <data name="Data.Delimiter.Auto" xml:space="preserve">
+    <value>Detectar automáticamente</value>
+  </data>
+  <data name="Data.Delimiter.Comma" xml:space="preserve">
+    <value>coma (,)</value>
+  </data>
+  <data name="Data.Delimiter.Semicolon" xml:space="preserve">
+    <value>punto y coma (;)</value>
+  </data>
+  <data name="Data.Delimiter.Tab" xml:space="preserve">
+    <value>tabulador</value>
+  </data>
+  <data name="Data.Delimiter.Detected" xml:space="preserve">
+    <value>Separador detectado: {0}</value>
+  </data>
+  <data name="Data.Delimiter.Using" xml:space="preserve">
+    <value>Separador usado: {0}</value>
+  </data>
+  <data name="Data.HasHeader" xml:space="preserve">
+    <value>La primera fila contiene los nombres de las columnas</value>
+  </data>
+  <data name="Data.Summary" xml:space="preserve">
+    <value>{0} registros, {1} columnas</value>
+  </data>
+  <data name="Data.Preview" xml:space="preserve">
+    <value>Vista previa de los datos</value>
+  </data>
+  <data name="Data.PreviewNote" xml:space="preserve">
+    <value>Se muestran los primeros {0} registros.</value>
+  </data>
+  <data name="Data.LoadWarnings" xml:space="preserve">
+    <value>Avisos sobre el archivo de datos</value>
+  </data>
+  <data name="Data.Loaded" xml:space="preserve">
+    <value>Se cargó {0}: {1} registros.</value>
+  </data>
+  <data name="Data.Busy.Loading" xml:space="preserve">
+    <value>Leyendo {0}...</value>
+  </data>
+  <data name="Data.Error.Read" xml:space="preserve">
+    <value>No se pudo abrir {0}. Si está abierto en Excel u otro programa, ciérrelo allí e inténtelo de nuevo; si no, compruebe que el archivo siga existiendo.</value>
+  </data>
+  <data name="Data.Error.Format" xml:space="preserve">
+    <value>No se pudo leer {0} como archivo CSV o Excel (.xlsx). Ábralo en Excel, guárdelo de nuevo como .xlsx o .csv e inténtelo otra vez.</value>
+  </data>
+  <data name="Data.Error.Empty" xml:space="preserve">
+    <value>{0} no tiene columnas. Compruebe que la primera fila contenga los nombres de las columnas o desmarque "La primera fila contiene los nombres de las columnas".</value>
+  </data>
+  <data name="Data.Error.NoData" xml:space="preserve">
+    <value>Primero abra un archivo de datos.</value>
+  </data>
+  <data name="Data.Error.NoRecords" xml:space="preserve">
+    <value>El archivo de datos no tiene registros (filas) para combinar.</value>
+  </data>
+  <data name="Data.Record.First" xml:space="preserve">
+    <value>Primer registro</value>
+  </data>
+  <data name="Data.Record.Previous" xml:space="preserve">
+    <value>Registro anterior</value>
+  </data>
+  <data name="Data.Record.Next" xml:space="preserve">
+    <value>Registro siguiente</value>
+  </data>
+  <data name="Data.Record.Last" xml:space="preserve">
+    <value>Último registro</value>
+  </data>
+  <data name="Data.Record.Current" xml:space="preserve">
+    <value>Registro actual</value>
+  </data>
+  <data name="Data.Record.GoTo" xml:space="preserve">
+    <value>Ir al registro</value>
+  </data>
+  <data name="Data.Record.GoToButton" xml:space="preserve">
+    <value>Ir</value>
+  </data>
+  <data name="Data.Record.GoToInvalid" xml:space="preserve">
+    <value>Escriba un número de registro de 1 a {0}.</value>
+  </data>
+  <data name="Data.Record.None" xml:space="preserve">
+    <value>Sin registros</value>
+  </data>
+  <data name="Data.Record.Of" xml:space="preserve">
+    <value>Registro {0} de {1}</value>
+  </data>
+  <data name="Data.ShowOnCanvas" xml:space="preserve">
+    <value>Mostrar este registro en el lienzo</value>
+  </data>
+  <data name="Data.Mapping.Intro" xml:space="preserve">
+    <value>Cada variable de la etiqueta toma su valor de la columna con el mismo nombre. Elija aquí otra columna si los nombres no coinciden.</value>
+  </data>
+  <data name="Data.Mapping.NoPlaceholders" xml:space="preserve">
+    <value>La etiqueta todavía no tiene variables. Agregue un texto con {{nombre}} (o un campo de datos) y aparecerá aquí.</value>
+  </data>
+  <data name="Data.Mapping.Auto" xml:space="preserve">
+    <value>Mismo nombre (automático)</value>
+  </data>
+  <data name="Data.Mapping.Uses" xml:space="preserve">
+    <value>Se rellena con la columna {0}</value>
+  </data>
+  <data name="Data.Mapping.None" xml:space="preserve">
+    <value>Sin columna coincidente: elija una</value>
+  </data>
+  <data name="Data.Mapping.FromCounter" xml:space="preserve">
+    <value>Se rellena con el contador</value>
+  </data>
+  <data name="Data.Mapping.NoCounter" xml:space="preserve">
+    <value>No hay un contador con este nombre: agréguelo en la pestaña Contadores</value>
+  </data>
+  <data name="Data.Mapping.Warnings" xml:space="preserve">
+    <value>Cosas por revisar</value>
+  </data>
+  <data name="Data.Counter.Add" xml:space="preserve">
+    <value>Agregar contador</value>
+  </data>
+  <data name="Data.Counter.Remove" xml:space="preserve">
+    <value>Quitar</value>
+  </data>
+  <data name="Data.Counter.None" xml:space="preserve">
+    <value>Todavía no hay contadores. Un contador genera un número de serie como 0001, 0002, 0003 para cada registro.</value>
+  </data>
+  <data name="Data.Counter.Unnamed" xml:space="preserve">
+    <value>(sin nombre)</value>
+  </data>
+  <data name="Data.Counter.Name" xml:space="preserve">
+    <value>Nombre</value>
+  </data>
+  <data name="Data.Counter.UseIn" xml:space="preserve">
+    <value>Escriba esto en la etiqueta</value>
+  </data>
+  <data name="Data.Counter.Kind" xml:space="preserve">
+    <value>Cuenta con</value>
+  </data>
+  <data name="Data.Counter.Start" xml:space="preserve">
+    <value>Empieza en</value>
+  </data>
+  <data name="Data.Counter.Step" xml:space="preserve">
+    <value>Incremento</value>
+  </data>
+  <data name="Data.Counter.Padding" xml:space="preserve">
+    <value>Relleno con ceros (dígitos)</value>
+  </data>
+  <data name="Data.Counter.Prefix" xml:space="preserve">
+    <value>Prefijo</value>
+  </data>
+  <data name="Data.Counter.Suffix" xml:space="preserve">
+    <value>Sufijo</value>
+  </data>
+  <data name="Data.Counter.Overflow" xml:space="preserve">
+    <value>Cuando el contador se agota</value>
+  </data>
+  <data name="Data.Counter.Example" xml:space="preserve">
+    <value>Primeros valores</value>
+  </data>
+  <data name="Data.Counter.Invalid" xml:space="preserve">
+    <value>Ajustes del contador: {0}.</value>
+  </data>
+  <data name="Data.Counter.StepInvalid" xml:space="preserve">
+    <value>El incremento debe ser un número entero, por ejemplo 1 o -1.</value>
+  </data>
+  <data name="Data.Counter.PaddingInvalid" xml:space="preserve">
+    <value>El relleno con ceros debe ser un número entero de 0 a 18.</value>
+  </data>
+  <data name="Data.Copies.Heading" xml:space="preserve">
+    <value>Copias de cada registro</value>
+  </data>
+  <data name="Data.Copies.Source" xml:space="preserve">
+    <value>El número de copias viene de</value>
+  </data>
+  <data name="Data.Copies.Label" xml:space="preserve">
+    <value>La cantidad de la propia etiqueta</value>
+  </data>
+  <data name="Data.Copies.Fixed" xml:space="preserve">
+    <value>El mismo número para todos los registros</value>
+  </data>
+  <data name="Data.Copies.Column" xml:space="preserve">
+    <value>Una columna de los datos</value>
+  </data>
+  <data name="Data.Copies.Number" xml:space="preserve">
+    <value>Copias</value>
+  </data>
+  <data name="Data.Copies.FromColumn" xml:space="preserve">
+    <value>Columna con las copias</value>
+  </data>
+  <data name="Data.Copies.FixedInvalid" xml:space="preserve">
+    <value>Las copias deben ser un número entero de 1 a 99999999.</value>
+  </data>
+  <data name="Data.Copies.Mode" xml:space="preserve">
+    <value>Cómo se escriben las copias</value>
+  </data>
+  <data name="Data.Copies.Mode.Hint" xml:space="preserve">
+    <value>Una cantidad de impresión (^PQ) es más pequeña y rápida. Repetir la etiqueta solo hace falta si su impresora ignora ^PQ.</value>
+  </data>
+  <data name="Data.Jobs.Heading" xml:space="preserve">
+    <value>Trabajos y problemas</value>
+  </data>
+  <data name="Data.Invalid.Label" xml:space="preserve">
+    <value>Un registro con errores</value>
+  </data>
+  <data name="Data.MaxRecords.Label" xml:space="preserve">
+    <value>Registros por trabajo de impresión (0 = un solo trabajo)</value>
+  </data>
+  <data name="Data.MaxRecords.Hint" xml:space="preserve">
+    <value>Se cuenta en registros, no en copias. Los trabajos más pequeños son más fáciles para la impresora y permiten parar a la mitad.</value>
+  </data>
+  <data name="Data.MaxRecords.Invalid" xml:space="preserve">
+    <value>Los registros por trabajo deben ser un número entero de 0 a 1000000.</value>
+  </data>
+  <data name="Data.Batch.Heading" xml:space="preserve">
+    <value>Revisar e imprimir todos los registros</value>
+  </data>
+  <data name="Data.Batch.Intro" xml:space="preserve">
+    <value>Revise primero para ver qué registros tienen problemas. Al imprimir se envía cada registro válido a la impresora de la izquierda.</value>
+  </data>
+  <data name="Data.Batch.Check" xml:space="preserve">
+    <value>Revisar todos los registros</value>
+  </data>
+  <data name="Data.Batch.Export" xml:space="preserve">
+    <value>Exportar ZPL...</value>
+  </data>
+  <data name="Data.Batch.PrintAll" xml:space="preserve">
+    <value>Imprimir todo</value>
+  </data>
+  <data name="Data.Batch.OneFilePerJob" xml:space="preserve">
+    <value>Escribir un archivo por trabajo al exportar</value>
+  </data>
+  <data name="Data.Busy.Checking" xml:space="preserve">
+    <value>Revisando todos los registros...</value>
+  </data>
+  <data name="Data.Busy.Printing" xml:space="preserve">
+    <value>Enviando los registros a la impresora...</value>
+  </data>
+  <data name="Data.Busy.Exporting" xml:space="preserve">
+    <value>Escribiendo el ZPL...</value>
+  </data>
+  <data name="Data.Check.Summary" xml:space="preserve">
+    <value>Se revisaron {0} registros: {1} listos, {2} con errores.</value>
+  </data>
+  <data name="Data.Check.Truncated" xml:space="preserve">
+    <value>Se muestran los primeros {0} de {1} problemas.</value>
+  </data>
+  <data name="Data.Check.Ok" xml:space="preserve">
+    <value>Los {0} registros están listos para imprimir.</value>
+  </data>
+  <data name="Data.Check.Problems" xml:space="preserve">
+    <value>{0} registros tienen errores y se dejarían fuera. Vea la lista de cada problema y corrija los datos o la etiqueta.</value>
+  </data>
+  <data name="Data.PrintAll.Title" xml:space="preserve">
+    <value>Imprimir todos los registros</value>
+  </data>
+  <data name="Data.PrintAll.Confirm" xml:space="preserve">
+    <value>¿Enviar {0} registros a {1}? Las etiquetas empezarán a imprimirse de inmediato.</value>
+  </data>
+  <data name="Data.PrintAll.Done" xml:space="preserve">
+    <value>Se enviaron {0} etiquetas a la impresora en {1} trabajo(s).</value>
+  </data>
+  <data name="Data.Export.Done" xml:space="preserve">
+    <value>Se escribieron {0} etiquetas en un archivo.</value>
+  </data>
+  <data name="Data.Export.DonePerJob" xml:space="preserve">
+    <value>Se escribieron {0} etiquetas en {1} archivos.</value>
+  </data>
+  <data name="Data.Export.ReplaceTitle" xml:space="preserve">
+    <value>¿Reemplazar los archivos existentes?</value>
+  </data>
+  <data name="Data.Export.ReplaceBody" xml:space="preserve">
+    <value>Ya existen {0} archivo(s) con los mismos nombres y se reemplazarán.</value>
+  </data>
+  <data name="Data.Batch.Partial" xml:space="preserve">
+    <value>Antes de detenerse ya se enviaron {0} trabajo(s); no los vuelva a imprimir.</value>
+  </data>
+  <data name="Data.Batch.CancelledPartial" xml:space="preserve">
+    <value>Detenido. Ya se enviaron {0} trabajo(s) a la impresora.</value>
+  </data>
+  <data name="Data.Batch.Skipped" xml:space="preserve">
+    <value>Se dejaron fuera {0} registro(s) por errores; vea la lista.</value>
+  </data>
+  <data name="Data.Batch.Stopped" xml:space="preserve">
+    <value>Se detuvo en el registro {0} por el ajuste "detenerse".</value>
+  </data>
+  <data name="Data.Batch.NothingProduced" xml:space="preserve">
+    <value>No se produjo ninguna etiqueta porque todos los registros tienen errores. Revise los registros y la etiqueta.</value>
+  </data>
+  <data name="Data.Issues.List" xml:space="preserve">
+    <value>Problemas por registro</value>
+  </data>
+  <data name="Data.Issues.Record" xml:space="preserve">
+    <value>Registro</value>
+  </data>
+  <data name="Data.Issues.Severity" xml:space="preserve">
+    <value>Tipo</value>
+  </data>
+  <data name="Data.Issues.Message" xml:space="preserve">
+    <value>Qué ocurrió</value>
+  </data>
+  <data name="Data.Issue.Error" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="Data.Issue.Warning" xml:space="preserve">
+    <value>Aviso</value>
+  </data>
+  <data name="Data.Hint.Ignored" xml:space="preserve">
+    <value>Este archivo de etiqueta indicaba un archivo de datos en un lugar que Rotula no sigue automáticamente (una ruta de red, una dirección web o una ruta relativa), así que se ignoró por su seguridad. Elija "Abrir archivo de datos" para seleccionar el archivo usted mismo.</value>
+  </data>
+  <data name="Data.Reload.NotLocal" xml:space="preserve">
+    <value>El archivo de datos recordado ({0}) no está en un disco local, así que Rotula no lo abrirá automáticamente. Elija "Abrir archivo de datos" para seleccionarlo usted mismo.</value>
+  </data>
+  <data name="Data.Reload.Missing" xml:space="preserve">
+    <value>No se encontró el archivo de datos {0}. Puede que se haya movido o renombrado; elija "Abrir archivo de datos" para localizarlo.</value>
+  </data>
+  <data name="Data.Empty.Path" xml:space="preserve">
+    <value>Ruta del archivo de datos recordado</value>
+  </data>
+  <data name="Window.Minimize" xml:space="preserve">
+    <value>Minimizar</value>
+  </data>
+  <data name="Window.Maximize" xml:space="preserve">
+    <value>Maximizar</value>
+  </data>
+  <data name="Window.Restore" xml:space="preserve">
+    <value>Restaurar</value>
+  </data>
+  <data name="Window.Close" xml:space="preserve">
+    <value>Cerrar</value>
+  </data>
+  <data name="Menu.Label" xml:space="preserve">
+    <value>Etiqueta</value>
+  </data>
+  <data name="Menu.LabelProperties" xml:space="preserve">
+    <value>Propiedades de la etiqueta</value>
+  </data>
+  <data name="Menu.Printer" xml:space="preserve">
+    <value>Impresora</value>
+  </data>
+  <data name="Menu.RefreshPrinters" xml:space="preserve">
+    <value>Actualizar la lista de impresoras</value>
+  </data>
+  <data name="Menu.DataMerge" xml:space="preserve">
+    <value>Combinar datos...</value>
+  </data>
+  <data name="Menu.OpenData" xml:space="preserve">
+    <value>Abrir archivo de datos...</value>
+  </data>
+  <data name="Toolbar.Zoom" xml:space="preserve">
+    <value>Zoom</value>
+  </data>
+  <data name="Toolbar.Label" xml:space="preserve">
+    <value>Etiqueta</value>
+  </data>
+  <data name="Toolbar.Printer" xml:space="preserve">
+    <value>Impresora</value>
+  </data>
+  <data name="Toolbar.Printer.Tip" xml:space="preserve">
+    <value>Elija la impresora de esta etiqueta. La configuración está en Impresora &gt; Imprimir.</value>
+  </data>
+  <data name="Toolbar.SelectPrinter" xml:space="preserve">
+    <value>Seleccionar impresora</value>
+  </data>
+  <data name="Toolbar.Preview" xml:space="preserve">
+    <value>Vista previa</value>
+  </data>
+  <data name="Toolbar.Preview.Tip" xml:space="preserve">
+    <value>Mostrar la etiqueta más grande, tal como se dibujará</value>
+  </data>
+  <data name="Toolbar.Print" xml:space="preserve">
+    <value>Imprimir</value>
+  </data>
+  <data name="Toolbar.Print.Tip" xml:space="preserve">
+    <value>Imprimir... (Ctrl+P)</value>
+  </data>
+  <data name="Tool.Select" xml:space="preserve">
+    <value>Seleccionar</value>
+  </data>
+  <data name="Splitter.Properties" xml:space="preserve">
+    <value>Cambiar el tamaño del panel de propiedades</value>
+  </data>
+  <data name="Panel.Objects" xml:space="preserve">
+    <value>Objetos</value>
+  </data>
+  <data name="Panel.TypeTag" xml:space="preserve">
+    <value>Tipo del objeto seleccionado</value>
+  </data>
+  <data name="Zpl.Output" xml:space="preserve">
+    <value>SALIDA ZPL</value>
+  </data>
+  <data name="Zpl.ExportButton" xml:space="preserve">
+    <value>Exportar .zpl</value>
+  </data>
+  <data name="Status.LabelInfo" xml:space="preserve">
+    <value>Tamaño, resolución y formato de la etiqueta</value>
+  </data>
+  <data name="Status.Objects" xml:space="preserve">
+    <value>{0} objetos</value>
+  </data>
+  <data name="Status.ObjectsOne" xml:space="preserve">
+    <value>1 objeto</value>
+  </data>
+  <data name="Status.NoneSelected" xml:space="preserve">
+    <value>ninguno seleccionado</value>
+  </data>
+  <data name="Status.SomeSelected" xml:space="preserve">
+    <value>{0} seleccionado(s)</value>
+  </data>
+  <data name="Preview.Title" xml:space="preserve">
+    <value>Vista previa de la etiqueta</value>
+  </data>
+  <data name="Preview.TitleFor" xml:space="preserve">
+    <value>Vista previa - {0}</value>
+  </data>
+  <data name="Menu.ShowZpl" xml:space="preserve">
+    <value>Mostrar código ZPL</value>
+  </data>
+  <data name="Toolbar.ZplToggle" xml:space="preserve">
+    <value>Mostrar u ocultar el panel de código ZPL</value>
   </data>
 </root>

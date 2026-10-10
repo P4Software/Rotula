@@ -11,6 +11,7 @@ using Rotula.Core.Elements;
 using Rotula.Core.Model;
 using Rotula.Core.Validation;
 using Rotula.Core.Zpl;
+using Rotula.Printing;
 using Rotula.Rendering.Export;
 using Rotula.Rendering.Input;
 using Rotula.Rendering.View;
@@ -20,7 +21,13 @@ namespace Rotula.App.ViewModels;
 /// <summary>An entry of the layers list.</summary>
 /// <param name="Id">Element id.</param>
 /// <param name="Name">Display name.</param>
-public sealed record LayerItem(string Id, string Name);
+/// <param name="TypeTag">Short kind label shown in small monospace type (Text, QR, Line, Code 128...).</param>
+/// <param name="Detail">The text or barcode data of the element, shown under the name (empty for shapes).</param>
+public sealed record LayerItem(string Id, string Name, string TypeTag = "", string Detail = "")
+{
+    /// <summary>What the row shows first: the element's text or data when it has any, otherwise its name.</summary>
+    public string Primary => Detail.Length > 0 ? Detail : Name;
+}
 
 /// <summary>An entry of the recent files menu.</summary>
 /// <param name="Path">Full path.</param>
@@ -49,7 +56,8 @@ public sealed record MainServices(
     INewLabelDialogService NewLabelDialog,
     IZplImporter ZplImporter,
     IPrintService Printing,
-    ISettingsStore Settings);
+    ISettingsStore Settings,
+    IToolDialogService Dialogs);
 
 /// <summary>
 /// View-model of the main window: the open label, its files, editing commands, view settings (zoom, unit, grid),
@@ -81,12 +89,27 @@ public sealed partial class MainViewModel : ObservableObject
         Commands = new EditorCommands(Session);
         Properties = new PropertyPanelViewModel(Session, ChooseImageFor);
         Preview = new PreviewCache(Session);
+        Printer = new PrinterSettingsViewModel(services.Printing, _settings.Print, SaveSettings, () => Session.Document);
+        Data = new DataMergeViewModel(services.Printing, Printer, () => Session.Document, () => DocumentName, services.Files, services.Messages);
+        Data.SettingsEdited += (_, _) => Session.MarkDirty();
+        Data.PreviewDataChanged += (_, _) => OnPreviewDataChanged();
+        Data.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(DataMergeViewModel.RecordCount) or nameof(DataMergeViewModel.CurrentIndex) or nameof(DataMergeViewModel.HasData))
+            {
+                OnPropertyChanged(nameof(DataRecordText));
+                RefreshCommandStates();
+            }
+        };
 
         _unit = Enum.TryParse<LengthUnit>(_settings.Unit, out var u) ? u : LengthUnit.Millimeters;
         _gridVisible = _settings.GridVisible;
         _snapToGrid = _settings.SnapToGrid;
         _snapToGuides = _settings.SnapToGuides;
-        foreach (var p in _settings.RecentFiles.Take(MaxRecent)) RecentFiles.Add(new RecentFileItem(p));
+        _zplPanelVisible = _settings.ZplPanelVisible;
+        // Paths read from settings.json are only kept when they are plain local drive paths (see SafeLocalPath).
+        foreach (var p in _settings.RecentFiles.Select(SafeLocalPath.TryGetLocalPath).OfType<string>().Distinct(StringComparer.OrdinalIgnoreCase).Take(MaxRecent))
+            RecentFiles.Add(new RecentFileItem(p));
 
         FillToolbox();
 
@@ -118,6 +141,12 @@ public sealed partial class MainViewModel : ObservableObject
 
     /// <summary>Cache of the rendered preview.</summary>
     public PreviewCache Preview { get; }
+
+    /// <summary>Printer and printer profile fields (shared by the Print dialog and the Data window).</summary>
+    public PrinterSettingsViewModel Printer { get; }
+
+    /// <summary>The data merge: loaded table, mapping, record navigator, counters and batch actions.</summary>
+    public DataMergeViewModel Data { get; }
 
     /// <summary>The element toolbox. Rebuilt when the language changes so the names are translated.</summary>
     public ObservableCollection<ToolboxItem> Toolbox { get; } = new();
@@ -193,6 +222,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         _settings.Unit = value.ToString();
         SaveSettings();
+        NotifyPresentation();
         OnPropertyChanged(nameof(IsUnitMm));
         OnPropertyChanged(nameof(IsUnitInch));
         OnPropertyChanged(nameof(IsUnitDots));
@@ -216,6 +246,12 @@ public sealed partial class MainViewModel : ObservableObject
     private bool _snapToGrid;
 
     partial void OnSnapToGridChanged(bool value) { _settings.SnapToGrid = value; SaveSettings(); }
+
+    /// <summary>The ZPL code panel is shown under the canvas (hidden by default so the canvas gets the space).</summary>
+    [ObservableProperty]
+    private bool _zplPanelVisible;
+
+    partial void OnZplPanelVisibleChanged(bool value) { _settings.ZplPanelVisible = value; SaveSettings(); }
 
     /// <summary>Dragging snaps to other elements and to the label edges and centre.</summary>
     [ObservableProperty]
@@ -244,17 +280,139 @@ public sealed partial class MainViewModel : ObservableObject
 
     // ----------------------------------------------------------------------------------- derived data
 
+    // The design generated with its sample values: used for export and for the "has errors" gate.
     private ZplGenerationResult? _zplResult;
 
     private void OnDocumentChanged()
     {
+        // The data binding must see the new document first, so the preview data below already matches it.
+        Data.OnDocumentChanged();
+        Preview.Data = Data.CurrentData;
+        RefreshZplView();
+
+        // Rebuilding the list makes the list box report "selection cleared"; that must not reach the real selection.
+        _syncingSelection = true;
+        try
+        {
+            Layers.Clear();
+            foreach (var e in Session.Document.Elements.AsEnumerable().Reverse())
+                Layers.Add(new LayerItem(e.Id, PropertyPanelViewModel.ElementDisplayName(e), TypeTagOf(e), DetailOf(e)));
+        }
+        finally { _syncingSelection = false; }
+        UpdateTitle();
+        NotifyPresentation();
+        RefreshCommandStates();
+    }
+
+    /// <summary>The record shown on the canvas changed (navigator, mapping, counters): redraw and regenerate the ZPL view.</summary>
+    private void OnPreviewDataChanged()
+    {
+        Preview.Data = Data.CurrentData;
+        Session.Touch();
+        RefreshZplView();
+        RefreshCommandStates();
+    }
+
+    // ----------------------------------------------------------------------------------- presentation texts (title bar, toolbar, status bar)
+
+    /// <summary>Short kind of an element in the layers list and the properties heading.</summary>
+    public static string TypeTagOf(LabelElement e) => e switch
+    {
+        DataFieldElement => Loc.Get("Tool.DataField"),
+        TextElement => Loc.Get("Tool.Text"),
+        BarcodeElement { Symbology: BarcodeSymbology.QrCode } => Loc.Get("Tool.QrCode"),
+        BarcodeElement b => Loc.EnumName(b.Symbology),
+        BoxElement => Loc.Get("Tool.Box"),
+        LineElement => Loc.Get("Tool.Line"),
+        CircleElement => Loc.Get("Tool.Circle"),
+        ImageElement => Loc.Get("Tool.Image"),
+        _ => e.GetType().Name,
+    };
+
+    private static string DetailOf(LabelElement e)
+    {
+        string text = e switch { BarcodeElement b => b.Data, TextElement t => t.GetTemplate(), _ => string.Empty };
+        text = text.Replace("\r", " ").Replace("\n", " ");
+        return text.Length > 60 ? text[..60] + "..." : text;
+    }
+
+    /// <summary>Name of the open file with its extension and the program name, for the custom title bar.</summary>
+    public string TitleBarText =>
+        (Session.IsDirty ? "\u2022 " : string.Empty) + (FilePath is null ? Loc.Get("Document.Untitled") : Path.GetFileName(FilePath)) + " \u2014 Rotula";
+
+    private string SizeText()
+    {
+        var d = Session.Document;
+        int dpi = (int)d.Dpi;
+        string format = Unit switch { LengthUnit.Inches => "0.00", LengthUnit.Millimeters => "0.#", _ => "0" };
+        // When the label was defined in the unit being shown, show that number as typed (dots would round 100 mm to 99.97).
+        double Show(Measure m, int dots) => m.Unit == Unit ? m.Value : UnitConverter.Convert(dots, LengthUnit.Dots, Unit, dpi);
+        string w = Show(d.Width, d.WidthDots).ToString(format, CultureInfo.CurrentCulture);
+        string h = Show(d.Height, d.HeightDots).ToString(format, CultureInfo.CurrentCulture);
+        string suffix = Unit switch { LengthUnit.Millimeters => "mm", LengthUnit.Inches => "in", _ => "dots" };
+        return $"{w} x {h} {suffix}";
+    }
+
+    /// <summary>Label size and resolution for the toolbar, for example "4.00 x 3.00 in · 203 dpi".</summary>
+    public string LabelSummaryText => $"{SizeText()} \u00B7 {(int)Session.Document.Dpi} dpi";
+
+    /// <summary>Right side of the status bar, for example "4.00 x 3.00 in · 203 dpi · ZPL".</summary>
+    public string StatusLabelText => LabelSummaryText + " \u00B7 ZPL";
+
+    /// <summary>Left side of the status bar, for example "5 objects · 1 selected".</summary>
+    public string ObjectsText
+    {
+        get
+        {
+            int total = Session.Document.Elements.Count, sel = Session.SelectedIds.Count;
+            return Loc.Get(total == 1 ? "Status.ObjectsOne" : "Status.Objects", total) + " \u00B7 " + Loc.Get(sel == 0 ? "Status.NoneSelected" : "Status.SomeSelected", sel);
+        }
+    }
+
+    /// <summary>Small type tag at the right of the Properties heading ("Barcode", "Text", or "Label" when nothing is selected).</summary>
+    public string SelectionTypeTag
+    {
+        get
+        {
+            var sel = Session.SelectedElements;
+            return sel.Count == 0 ? Loc.Get("Panel.Label") : sel.Count == 1 ? TypeTagOf(sel[0]) : Loc.Get("Status.ManySelected", sel.Count);
+        }
+    }
+
+    /// <summary>Zoom levels offered in the toolbar drop-down (percent).</summary>
+    public IReadOnlyList<int> ZoomPresets { get; } = new[] { 25, 50, 75, 100, 150, 200, 300, 400 };
+
+    /// <summary>Sets the zoom to a preset (percent).</summary>
+    public void SetZoomPercent(int percent) => Zoom = new ZoomModel(Math.Clamp(percent, 5, 1600) / 100.0);
+
+    private void NotifyPresentation()
+    {
+        OnPropertyChanged(nameof(TitleBarText));
+        OnPropertyChanged(nameof(LabelSummaryText));
+        OnPropertyChanged(nameof(StatusLabelText));
+        OnPropertyChanged(nameof(ObjectsText));
+        OnPropertyChanged(nameof(SelectionTypeTag));
+    }
+
+    /// <summary>Opens a larger preview of the label (what the printer will draw, with the shown record's values).</summary>
+    [RelayCommand]
+    private void ShowPreview() => _svc.Dialogs.ShowPreviewDialog(Preview, DocumentName);
+
+    /// <summary>Reads the installed printers again (the toolbar drop-down and the dialogs share the list).</summary>
+    [RelayCommand]
+    private Task RefreshPrintersAsync() => Printer.RefreshPrintersAsync();
+
+    /// <summary>Regenerates the ZPL text and the problem counts. With a data record shown, the view shows that record's ZPL.</summary>
+    private void RefreshZplView()
+    {
         try
         {
             _zplResult = ZplGenerator.Generate(Session.Document);
-            ZplText = _zplResult.Zpl;
-            Properties.SetIssues(_zplResult.Issues);
-            ErrorCount = _zplResult.Issues.Count(i => i.Severity == ValidationSeverity.Error);
-            int warnings = _zplResult.Issues.Count - ErrorCount;
+            var view = Preview.Data is null ? _zplResult : ZplGenerator.Generate(Session.Document, Preview.Data);
+            ZplText = view.Zpl;
+            Properties.SetIssues(view.Issues);
+            ErrorCount = view.Issues.Count(i => i.Severity == ValidationSeverity.Error);
+            int warnings = view.Issues.Count - ErrorCount;
             ProblemsText = ErrorCount == 0 && warnings == 0 ? Loc.Get("Status.NoProblems") : Loc.Get("Status.Problems", ErrorCount, warnings);
         }
         catch (Exception ex) when (ex is not OutOfMemoryException)
@@ -264,24 +422,13 @@ public sealed partial class MainViewModel : ObservableObject
             ZplText = string.Empty;
             ProblemsText = Loc.Get("Status.ZplFailed");
         }
-
-        // Rebuilding the list makes the list box report "selection cleared"; that must not reach the real selection.
-        _syncingSelection = true;
-        try
-        {
-            Layers.Clear();
-            foreach (var e in Session.Document.Elements.AsEnumerable().Reverse())
-                Layers.Add(new LayerItem(e.Id, PropertyPanelViewModel.ElementDisplayName(e)));
-        }
-        finally { _syncingSelection = false; }
-        UpdateTitle();
-        RefreshCommandStates();
     }
 
     private void OnSelectionChanged()
     {
         int n = Session.SelectedIds.Count;
         SelectionText = n == 0 ? Loc.Get("Status.NothingSelected") : n == 1 ? Loc.Get("Status.OneSelected") : Loc.Get("Status.ManySelected", n);
+        NotifyPresentation();
         RefreshCommandStates();
     }
 
@@ -297,6 +444,7 @@ public sealed partial class MainViewModel : ObservableObject
         OnDocumentChanged();
         OnSelectionChanged();
         OnPropertyChanged(nameof(ApproximateNotice));
+        OnPropertyChanged(nameof(DataRecordText));
         OnPropertyChanged(nameof(LanguageSetting));
         OnPropertyChanged(nameof(IsLanguageAuto));
         OnPropertyChanged(nameof(IsLanguageEn));
@@ -310,6 +458,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         Title = (Session.IsDirty ? "* " : string.Empty) + DocumentName + " - Rotula";
         OnPropertyChanged(nameof(DocumentName));
+        OnPropertyChanged(nameof(TitleBarText));
     }
 
     partial void OnFilePathChanged(string? value) => UpdateTitle();
@@ -390,8 +539,8 @@ public sealed partial class MainViewModel : ObservableObject
     {
         try
         {
-            var doc = RotulaFileSerializer.Load(path);
-            OpenDocument(doc, path);
+            var content = RotulaFileSerializer.LoadFile(path);
+            OpenDocument(content.Document, path, merge: content.Merge);
             AddRecent(path);
             StatusMessage = Loc.Get("Status.Opened", Path.GetFileName(path));
             return true;
@@ -408,8 +557,10 @@ public sealed partial class MainViewModel : ObservableObject
         return false;
     }
 
-    private void OpenDocument(LabelDocument doc, string? path, bool markDirty = false)
+    private void OpenDocument(LabelDocument doc, string? path, bool markDirty = false, DataMergeSettings? merge = null)
     {
+        // Data settings are replaced first: the loaded data belonged to the previous label, and only the settings are kept per file.
+        Data.Apply(merge);
         Session.Load(doc, markDirty);
         FilePath = path;
         Zoom = new ZoomModel(1.0);
@@ -436,7 +587,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         try
         {
-            RotulaFileSerializer.Save(Session.Document, path);
+            RotulaFileSerializer.Save(Session.Document, path, Data.ToSettings());
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -572,15 +723,48 @@ public sealed partial class MainViewModel : ObservableObject
             _svc.Messages.ShowInfo(Loc.Get("Dialog.ImportNotes"), string.Join(Environment.NewLine, result.Warnings));
     }
 
-    /// <summary>Prints the label.</summary>
+    /// <summary>Opens the Print dialog (printer, printer profile, copies, test label, save as ZPL).</summary>
     [RelayCommand]
-    private async Task PrintAsync()
+    private void Print()
     {
-        if (!CheckNoErrors()) return;
-        var outcome = await _svc.Printing.PrintAsync(Session.Document, _zplResult!.GetZplOrThrow());
-        if (outcome.Success) StatusMessage = Loc.Get(outcome.MessageKey ?? "Status.Printed");
-        else _svc.Messages.ShowInfo(Loc.Get("Dialog.PrintFailed"), Loc.Get(outcome.MessageKey ?? "Print.Failed"));
+        var vm = new PrintViewModel(_svc.Printing, Printer, () => Session.Document, () => Data.CurrentData, _svc.Files, DocumentName);
+        _svc.Dialogs.ShowPrintDialog(vm);
     }
+
+    /// <summary>Opens the Data merge window.</summary>
+    [RelayCommand]
+    private void ShowData() => _svc.Dialogs.ShowDataWindow(Data);
+
+    /// <summary>Picks a CSV or Excel file, opens the Data merge window and loads the file.</summary>
+    [RelayCommand]
+    private async Task OpenDataFileAsync()
+    {
+        string? path = _svc.Files.PickOpenData();
+        if (path is null) return;
+        _svc.Dialogs.ShowDataWindow(Data);
+        await Data.LoadAsync(path);
+    }
+
+    /// <summary>Shows the first record on the canvas.</summary>
+    [RelayCommand(CanExecute = nameof(HasDataRecords))]
+    private void FirstRecord() => Data.CurrentIndex = 0;
+
+    /// <summary>Shows the previous record.</summary>
+    [RelayCommand(CanExecute = nameof(HasDataRecords))]
+    private void PreviousRecord() => Data.CurrentIndex = Math.Max(0, Data.CurrentIndex - 1);
+
+    /// <summary>Shows the next record.</summary>
+    [RelayCommand(CanExecute = nameof(HasDataRecords))]
+    private void NextRecord() => Data.CurrentIndex = Math.Min(Data.RecordCount - 1, Data.CurrentIndex + 1);
+
+    /// <summary>Shows the last record.</summary>
+    [RelayCommand(CanExecute = nameof(HasDataRecords))]
+    private void LastRecord() => Data.CurrentIndex = Data.RecordCount - 1;
+
+    private bool HasDataRecords() => Data.RecordCount > 0;
+
+    /// <summary>Record navigator text for the toolbar ("Record 3 of 120").</summary>
+    public string DataRecordText => Data.RecordText;
 
     /// <summary>Copies the ZPL text to the clipboard.</summary>
     [RelayCommand]

@@ -1,18 +1,84 @@
 <Window x:Class="Rotula.App.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         xmlns:loc="clr-namespace:Rotula.App.Localization"
         xmlns:ed="clr-namespace:Rotula.App.Editing"
         xmlns:model="clr-namespace:Rotula.Core.Model;assembly=Rotula.Core"
+        xmlns:vms="clr-namespace:Rotula.App.ViewModels"
         xmlns:views="clr-namespace:Rotula.App.Views"
-        Title="{Binding Title}" Width="1280" Height="800" MinWidth="900" MinHeight="560"
+        Title="{Binding Title}" Width="1380" Height="860" MinWidth="1180" MinHeight="640" WindowStyle="None"
         AutomationProperties.Name="Rotula">
+  <shell:WindowChrome.WindowChrome>
+    <!-- The title bar is drawn by the app (warm chrome, app icon, caption buttons) but Windows still handles moving, snapping and resizing. -->
+    <shell:WindowChrome CaptionHeight="40" ResizeBorderThickness="6" GlassFrameThickness="0" CornerRadius="0" UseAeroCaptionButtons="False" />
+  </shell:WindowChrome.WindowChrome>
+
+  <Window.Resources>
+    <BooleanToVisibilityConverter x:Key="B2V" />
+
+    <!-- Small outlined buttons on the dark ZPL strip. -->
+    <Style x:Key="DarkToolButton" TargetType="Button">
+      <Setter Property="Foreground" Value="{StaticResource CodeTextBrush}" />
+      <Setter Property="Padding" Value="12,0" />
+      <Setter Property="MinHeight" Value="28" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Margin" Value="6,0,0,0" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="FocusVisualStyle" Value="{StaticResource FocusRing}" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="Chrome" Background="Transparent" BorderBrush="#4A4D57" BorderThickness="1" CornerRadius="6" Padding="{TemplateBinding Padding}">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" TextElement.Foreground="{TemplateBinding Foreground}" />
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Chrome" Property="Background" Value="#2A2C34" /></Trigger>
+              <Trigger Property="IsPressed" Value="True"><Setter TargetName="Chrome" Property="Background" Value="#363944" /></Trigger>
+              <Trigger Property="IsEnabled" Value="False"><Setter TargetName="Chrome" Property="Opacity" Value="0.4" /></Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="ToolbarLabel" TargetType="TextBlock">
+      <Setter Property="Foreground" Value="{StaticResource MutedBrush}" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Margin" Value="4,0,8,0" />
+    </Style>
+    <Style x:Key="ToolbarDivider" TargetType="Border">
+      <Setter Property="Width" Value="1" />
+      <Setter Property="Height" Value="24" />
+      <Setter Property="Background" Value="{StaticResource BorderBrushLight}" />
+      <Setter Property="Margin" Value="10,0" />
+    </Style>
+
+    <!-- Icon of each toolbox tool, chosen by the kind of element it creates. -->
+    <Style x:Key="ToolIcon" TargetType="Path" BasedOn="{StaticResource Icon}">
+      <Setter Property="Width" Value="22" />
+      <Setter Property="Height" Value="22" />
+      <Style.Triggers>
+        <DataTrigger Binding="{Binding Kind}" Value="Text"><Setter Property="Data" Value="{StaticResource IconText}" /></DataTrigger>
+        <DataTrigger Binding="{Binding Kind}" Value="DataField"><Setter Property="Data" Value="{StaticResource IconDataField}" /></DataTrigger>
+        <DataTrigger Binding="{Binding Kind}" Value="Barcode"><Setter Property="Data" Value="{StaticResource IconBarcode}" /></DataTrigger>
+        <DataTrigger Binding="{Binding Kind}" Value="QrCode"><Setter Property="Data" Value="{StaticResource IconQr}" /></DataTrigger>
+        <DataTrigger Binding="{Binding Kind}" Value="Box"><Setter Property="Data" Value="{StaticResource IconRectangle}" /></DataTrigger>
+        <DataTrigger Binding="{Binding Kind}" Value="Line"><Setter Property="Data" Value="{StaticResource IconLine}" /></DataTrigger>
+        <DataTrigger Binding="{Binding Kind}" Value="Circle"><Setter Property="Data" Value="{StaticResource IconCircle}" /></DataTrigger>
+        <DataTrigger Binding="{Binding Kind}" Value="Image"><Setter Property="Data" Value="{StaticResource IconImage}" /></DataTrigger>
+      </Style.Triggers>
+    </Style>
+  </Window.Resources>
+
   <Window.InputBindings>
     <KeyBinding Key="N" Modifiers="Ctrl" Command="{Binding NewCommand}" />
     <KeyBinding Key="O" Modifiers="Ctrl" Command="{Binding OpenCommand}" />
     <KeyBinding Key="S" Modifiers="Ctrl" Command="{Binding SaveCommand}" />
     <KeyBinding Key="S" Modifiers="Ctrl+Shift" Command="{Binding SaveAsCommand}" />
     <KeyBinding Key="P" Modifiers="Ctrl" Command="{Binding PrintCommand}" />
+    <KeyBinding Key="M" Modifiers="Ctrl" Command="{Binding ShowDataCommand}" />
     <KeyBinding Key="Z" Modifiers="Ctrl" Command="{Binding UndoCommand}" />
     <KeyBinding Key="Y" Modifiers="Ctrl" Command="{Binding RedoCommand}" />
     <KeyBinding Key="Z" Modifiers="Ctrl+Shift" Command="{Binding RedoCommand}" />
@@ -33,22 +99,51 @@
     <KeyBinding Key="D9" Modifiers="Ctrl" Command="{Binding ZoomFitCommand}" />
   </Window.InputBindings>
 
-  <DockPanel>
+  <Grid x:Name="RootGrid">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="40" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="56" />
+      <RowDefinition Height="*" />
+      <RowDefinition Height="28" />
+    </Grid.RowDefinitions>
+
+    <!-- ================================ title bar ================================ -->
+    <Grid Grid.Row="0" Background="{StaticResource WindowBrush}">
+      <StackPanel Orientation="Horizontal" Margin="14,0,0,0" VerticalAlignment="Center">
+        <Border Width="24" Height="24" CornerRadius="6" Background="#1F2023" AutomationProperties.Name="Rotula">
+          <Path Style="{StaticResource Icon}" Data="{StaticResource IconBarcode}" Width="14" Height="14" StrokeThickness="1.8" TextElement.Foreground="White" />
+        </Border>
+        <TextBlock Text="{Binding TitleBarText}" Margin="12,0,0,0" VerticalAlignment="Center" FontSize="13" FontWeight="SemiBold" />
+      </StackPanel>
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" shell:WindowChrome.IsHitTestVisibleInChrome="True">
+        <Button x:Name="MinimizeButton" Style="{StaticResource CaptionButton}" Click="OnMinimize" ToolTip="{loc:T Window.Minimize}" AutomationProperties.Name="{loc:T Window.Minimize}">
+          <Path Style="{StaticResource Icon}" Data="{StaticResource IconMinimize}" Width="12" Height="12" />
+        </Button>
+        <Button x:Name="MaximizeButton" Style="{StaticResource CaptionButton}" Click="OnMaximize" ToolTip="{loc:T Window.Maximize}" AutomationProperties.Name="{loc:T Window.Maximize}">
+          <Path x:Name="MaximizeGlyph" Style="{StaticResource Icon}" Data="{StaticResource IconMaximize}" Width="11" Height="11" />
+        </Button>
+        <Button Style="{StaticResource CaptionCloseButton}" Click="OnCloseWindow" ToolTip="{loc:T Window.Close}" AutomationProperties.Name="{loc:T Window.Close}">
+          <Path Style="{StaticResource Icon}" Data="{StaticResource IconClose}" Width="12" Height="12" />
+        </Button>
+      </StackPanel>
+    </Grid>
+
     <!-- ================================ menu ================================ -->
-    <Menu DockPanel.Dock="Top" AutomationProperties.Name="{loc:T Menu.Main}">
+    <Menu Grid.Row="1" Margin="8,0,8,4" AutomationProperties.Name="{loc:T Menu.Main}" shell:WindowChrome.IsHitTestVisibleInChrome="True">
       <MenuItem Header="{loc:T Menu.File}">
         <MenuItem Header="{loc:T Menu.New}" Command="{Binding NewCommand}" InputGestureText="Ctrl+N" />
         <MenuItem Header="{loc:T Menu.Open}" Command="{Binding OpenCommand}" InputGestureText="Ctrl+O" />
         <MenuItem Header="{loc:T Menu.Recent}" ItemsSource="{Binding RecentFiles}">
           <MenuItem.Style>
-            <Style TargetType="MenuItem">
+            <Style TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
               <Style.Triggers>
                 <Trigger Property="HasItems" Value="False"><Setter Property="IsEnabled" Value="False" /></Trigger>
               </Style.Triggers>
             </Style>
           </MenuItem.Style>
           <MenuItem.ItemContainerStyle>
-            <Style TargetType="MenuItem">
+            <Style TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
               <Setter Property="Header" Value="{Binding Display}" />
               <Setter Property="ToolTip" Value="{Binding Path}" />
               <Setter Property="Command" Value="{Binding DataContext.OpenRecentCommand, RelativeSource={RelativeSource AncestorType=Window}}" />
@@ -66,8 +161,6 @@
           <MenuItem Header="{loc:T Menu.ExportZpl}" Command="{Binding ExportZplCommand}" />
         </MenuItem>
         <MenuItem Header="{loc:T Menu.ImportZpl}" Command="{Binding ImportZplCommand}" />
-        <Separator />
-        <MenuItem Header="{loc:T Menu.Print}" Command="{Binding PrintCommand}" InputGestureText="Ctrl+P" />
         <Separator />
         <MenuItem Header="{loc:T Menu.Exit}" Command="{Binding ExitCommand}" InputGestureText="Alt+F4" />
       </MenuItem>
@@ -87,15 +180,40 @@
         <MenuItem Header="{loc:T Menu.SelectPrevious}" Command="{Binding SelectPreviousCommand}" InputGestureText="Shift+F3" />
       </MenuItem>
 
-      <MenuItem Header="{loc:T Menu.Arrange}">
-        <MenuItem Header="{loc:T Menu.BringToFront}" Command="{Binding BringToFrontCommand}" />
-        <MenuItem Header="{loc:T Menu.BringForward}" Command="{Binding BringForwardCommand}" />
-        <MenuItem Header="{loc:T Menu.SendBackward}" Command="{Binding SendBackwardCommand}" />
-        <MenuItem Header="{loc:T Menu.SendToBack}" Command="{Binding SendToBackCommand}" />
+      <MenuItem Header="{loc:T Menu.View}">
+        <MenuItem Header="{loc:T Menu.ZoomIn}" Command="{Binding ZoomInCommand}" InputGestureText="Ctrl++" />
+        <MenuItem Header="{loc:T Menu.ZoomOut}" Command="{Binding ZoomOutCommand}" InputGestureText="Ctrl+-" />
+        <MenuItem Header="{loc:T Menu.ZoomActual}" Command="{Binding ZoomActualSizeCommand}" InputGestureText="Ctrl+0" />
+        <MenuItem Header="{loc:T Menu.ZoomFit}" Command="{Binding ZoomFitCommand}" InputGestureText="Ctrl+9" />
         <Separator />
+        <MenuItem Header="{loc:T Menu.Units}">
+          <MenuItem Header="{loc:T Menu.UnitMm}" Command="{Binding SetUnitCommand}" CommandParameter="{x:Static model:LengthUnit.Millimeters}" IsChecked="{Binding IsUnitMm, Mode=OneWay}" />
+          <MenuItem Header="{loc:T Menu.UnitInch}" Command="{Binding SetUnitCommand}" CommandParameter="{x:Static model:LengthUnit.Inches}" IsChecked="{Binding IsUnitInch, Mode=OneWay}" />
+          <MenuItem Header="{loc:T Menu.UnitDots}" Command="{Binding SetUnitCommand}" CommandParameter="{x:Static model:LengthUnit.Dots}" IsChecked="{Binding IsUnitDots, Mode=OneWay}" />
+        </MenuItem>
+        <MenuItem Header="{loc:T Menu.ShowZpl}" IsCheckable="True" IsChecked="{Binding ZplPanelVisible, Mode=TwoWay}" />
+        <MenuItem Header="{loc:T Menu.Grid}" IsCheckable="True" IsChecked="{Binding GridVisible, Mode=TwoWay}" />
+        <MenuItem Header="{loc:T Menu.SnapGrid}" IsCheckable="True" IsChecked="{Binding SnapToGrid, Mode=TwoWay}" />
+        <MenuItem Header="{loc:T Menu.SnapGuides}" IsCheckable="True" IsChecked="{Binding SnapToGuides, Mode=TwoWay}" />
+        <Separator />
+        <MenuItem Header="{loc:T Menu.Language}">
+          <MenuItem Header="{loc:T Menu.LanguageAuto}" Command="{Binding SetLanguageCommand}" CommandParameter="auto" IsChecked="{Binding IsLanguageAuto, Mode=OneWay}" />
+          <MenuItem Header="English" Command="{Binding SetLanguageCommand}" CommandParameter="en" IsChecked="{Binding IsLanguageEn, Mode=OneWay}" />
+          <MenuItem Header="Espa&#241;ol" Command="{Binding SetLanguageCommand}" CommandParameter="es" IsChecked="{Binding IsLanguageEs, Mode=OneWay}" />
+        </MenuItem>
+      </MenuItem>
+
+      <MenuItem Header="{loc:T Menu.Label}">
+        <MenuItem Header="{loc:T Menu.LabelProperties}" Command="{Binding SelectNoneCommand}" />
+        <Separator />
+        <MenuItem Header="{loc:T Menu.Arrange}">
+          <MenuItem Header="{loc:T Menu.BringToFront}" Command="{Binding BringToFrontCommand}" />
+          <MenuItem Header="{loc:T Menu.BringForward}" Command="{Binding BringForwardCommand}" />
+          <MenuItem Header="{loc:T Menu.SendBackward}" Command="{Binding SendBackwardCommand}" />
+          <MenuItem Header="{loc:T Menu.SendToBack}" Command="{Binding SendToBackCommand}" />
+        </MenuItem>
         <MenuItem Header="{loc:T Menu.RotateCw}" Command="{Binding RotateClockwiseCommand}" InputGestureText="Ctrl+R" />
         <MenuItem Header="{loc:T Menu.RotateCcw}" Command="{Binding RotateCounterClockwiseCommand}" InputGestureText="Ctrl+Shift+R" />
-        <Separator />
         <MenuItem Header="{loc:T Menu.Align}">
           <MenuItem Header="{loc:T Menu.AlignLeft}" Command="{Binding AlignCommand}" CommandParameter="{x:Static ed:AlignKind.Left}" />
           <MenuItem Header="{loc:T Menu.AlignCenterH}" Command="{Binding AlignCommand}" CommandParameter="{x:Static ed:AlignKind.CenterHorizontal}" />
@@ -110,26 +228,12 @@
         </MenuItem>
       </MenuItem>
 
-      <MenuItem Header="{loc:T Menu.View}">
-        <MenuItem Header="{loc:T Menu.ZoomIn}" Command="{Binding ZoomInCommand}" InputGestureText="Ctrl++" />
-        <MenuItem Header="{loc:T Menu.ZoomOut}" Command="{Binding ZoomOutCommand}" InputGestureText="Ctrl+-" />
-        <MenuItem Header="{loc:T Menu.ZoomActual}" Command="{Binding ZoomActualSizeCommand}" InputGestureText="Ctrl+0" />
-        <MenuItem Header="{loc:T Menu.ZoomFit}" Command="{Binding ZoomFitCommand}" InputGestureText="Ctrl+9" />
+      <MenuItem Header="{loc:T Menu.Printer}">
+        <MenuItem Header="{loc:T Menu.Print}" Command="{Binding PrintCommand}" InputGestureText="Ctrl+P" />
+        <MenuItem Header="{loc:T Menu.RefreshPrinters}" Command="{Binding RefreshPrintersCommand}" />
         <Separator />
-        <MenuItem Header="{loc:T Menu.Units}">
-          <MenuItem Header="{loc:T Menu.UnitMm}" Command="{Binding SetUnitCommand}" CommandParameter="{x:Static model:LengthUnit.Millimeters}" IsChecked="{Binding IsUnitMm, Mode=OneWay}" />
-          <MenuItem Header="{loc:T Menu.UnitInch}" Command="{Binding SetUnitCommand}" CommandParameter="{x:Static model:LengthUnit.Inches}" IsChecked="{Binding IsUnitInch, Mode=OneWay}" />
-          <MenuItem Header="{loc:T Menu.UnitDots}" Command="{Binding SetUnitCommand}" CommandParameter="{x:Static model:LengthUnit.Dots}" IsChecked="{Binding IsUnitDots, Mode=OneWay}" />
-        </MenuItem>
-        <MenuItem Header="{loc:T Menu.Grid}" IsCheckable="True" IsChecked="{Binding GridVisible, Mode=TwoWay}" />
-        <MenuItem Header="{loc:T Menu.SnapGrid}" IsCheckable="True" IsChecked="{Binding SnapToGrid, Mode=TwoWay}" />
-        <MenuItem Header="{loc:T Menu.SnapGuides}" IsCheckable="True" IsChecked="{Binding SnapToGuides, Mode=TwoWay}" />
-        <Separator />
-        <MenuItem Header="{loc:T Menu.Language}">
-          <MenuItem Header="{loc:T Menu.LanguageAuto}" Command="{Binding SetLanguageCommand}" CommandParameter="auto" IsChecked="{Binding IsLanguageAuto, Mode=OneWay}" />
-          <MenuItem Header="English" Command="{Binding SetLanguageCommand}" CommandParameter="en" IsChecked="{Binding IsLanguageEn, Mode=OneWay}" />
-          <MenuItem Header="Espa&#241;ol" Command="{Binding SetLanguageCommand}" CommandParameter="es" IsChecked="{Binding IsLanguageEs, Mode=OneWay}" />
-        </MenuItem>
+        <MenuItem Header="{loc:T Menu.DataMerge}" Command="{Binding ShowDataCommand}" InputGestureText="Ctrl+M" />
+        <MenuItem Header="{loc:T Menu.OpenData}" Command="{Binding OpenDataFileCommand}" />
       </MenuItem>
 
       <MenuItem Header="{loc:T Menu.Help}">
@@ -138,109 +242,191 @@
     </Menu>
 
     <!-- ================================ toolbar ================================ -->
-    <ToolBarTray DockPanel.Dock="Top" Background="{StaticResource WindowBrush}">
-      <ToolBar AutomationProperties.Name="{loc:T Toolbar.Main}">
-        <Button Content="{loc:T Menu.New}" Command="{Binding NewCommand}" ToolTip="{loc:T Menu.New}" AutomationProperties.Name="{loc:T Menu.New}" />
-        <Button Content="{loc:T Menu.Open}" Command="{Binding OpenCommand}" ToolTip="{loc:T Menu.Open}" AutomationProperties.Name="{loc:T Menu.Open}" />
-        <Button Content="{loc:T Menu.Save}" Command="{Binding SaveCommand}" ToolTip="{loc:T Menu.Save}" AutomationProperties.Name="{loc:T Menu.Save}" />
-        <Button Content="{loc:T Menu.Print}" Command="{Binding PrintCommand}" ToolTip="{loc:T Menu.Print}" AutomationProperties.Name="{loc:T Menu.Print}" />
-      </ToolBar>
-      <ToolBar AutomationProperties.Name="{loc:T Toolbar.Edit}">
-        <Button Content="{loc:T Menu.Undo}" Command="{Binding UndoCommand}" ToolTip="{Binding UndoText}" AutomationProperties.Name="{loc:T Menu.Undo}" />
-        <Button Content="{loc:T Menu.Redo}" Command="{Binding RedoCommand}" ToolTip="{Binding RedoText}" AutomationProperties.Name="{loc:T Menu.Redo}" />
-        <Separator />
-        <Button Content="{loc:T Menu.Duplicate}" Command="{Binding DuplicateCommand}" ToolTip="{loc:T Menu.Duplicate}" AutomationProperties.Name="{loc:T Menu.Duplicate}" />
-        <Button Content="{loc:T Menu.Delete}" Command="{Binding DeleteCommand}" ToolTip="{loc:T Menu.Delete}" AutomationProperties.Name="{loc:T Menu.Delete}" />
-        <Button Content="{loc:T Menu.RotateCw}" Command="{Binding RotateClockwiseCommand}" ToolTip="{loc:T Menu.RotateCw}" AutomationProperties.Name="{loc:T Menu.RotateCw}" />
-        <Button Content="{loc:T Menu.BringToFront}" Command="{Binding BringToFrontCommand}" ToolTip="{loc:T Menu.BringToFront}" AutomationProperties.Name="{loc:T Menu.BringToFront}" />
-        <Button Content="{loc:T Menu.SendToBack}" Command="{Binding SendToBackCommand}" ToolTip="{loc:T Menu.SendToBack}" AutomationProperties.Name="{loc:T Menu.SendToBack}" />
-      </ToolBar>
-      <ToolBar AutomationProperties.Name="{loc:T Toolbar.View}">
-        <Button Content="{loc:T Menu.ZoomOut}" Command="{Binding ZoomOutCommand}" ToolTip="{loc:T Menu.ZoomOut}" AutomationProperties.Name="{loc:T Menu.ZoomOut}" />
-        <TextBlock Text="{Binding ZoomText}" VerticalAlignment="Center" MinWidth="48" TextAlignment="Center" AutomationProperties.Name="{loc:T Status.Zoom}" />
-        <Button Content="{loc:T Menu.ZoomIn}" Command="{Binding ZoomInCommand}" ToolTip="{loc:T Menu.ZoomIn}" AutomationProperties.Name="{loc:T Menu.ZoomIn}" />
-        <Button Content="{loc:T Menu.ZoomFit}" Command="{Binding ZoomFitCommand}" ToolTip="{loc:T Menu.ZoomFit}" AutomationProperties.Name="{loc:T Menu.ZoomFit}" />
-        <Button Content="{loc:T Menu.ZoomActual}" Command="{Binding ZoomActualSizeCommand}" ToolTip="{loc:T Menu.ZoomActual}" AutomationProperties.Name="{loc:T Menu.ZoomActual}" />
-      </ToolBar>
-    </ToolBarTray>
+    <Border Grid.Row="2" Background="{StaticResource ToolbarBrush}" BorderBrush="{StaticResource BorderBrushLight}" BorderThickness="0,1">
+      <DockPanel Margin="12,0">
+        <!-- right: printer, preview, print -->
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+          <TextBlock Text="{loc:T Toolbar.Printer}" Style="{StaticResource ToolbarLabel}" />
+          <Grid Width="210">
+            <ComboBox x:Name="PrinterCombo" ItemsSource="{Binding Printer.Printers}" DisplayMemberPath="Display" SelectedValuePath="Name" SelectedValue="{Binding Printer.SelectedPrinterName}"
+                      SelectionChanged="OnPrinterChosen" AutomationProperties.Name="{loc:T Toolbar.Printer}" ToolTip="{loc:T Toolbar.Printer.Tip}" />
+            <Border IsHitTestVisible="False" Margin="2,2,30,2" Background="{StaticResource SurfaceBrush}" CornerRadius="5" Visibility="{Binding Printer.ShowToolbarText, Converter={StaticResource B2V}}">
+              <TextBlock Text="{Binding Printer.ToolbarText}" Margin="9,0,0,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Foreground="{StaticResource MutedBrush}" />
+            </Border>
+          </Grid>
+          <Button Margin="12,0,0,0" Command="{Binding ShowPreviewCommand}" ToolTip="{loc:T Toolbar.Preview.Tip}" AutomationProperties.Name="{loc:T Toolbar.Preview}">
+            <StackPanel Orientation="Horizontal">
+              <Path Style="{StaticResource Icon}" Data="{StaticResource IconEye}" Width="16" Height="16" Margin="0,0,8,0" />
+              <TextBlock Text="{loc:T Toolbar.Preview}" />
+            </StackPanel>
+          </Button>
+          <Button Margin="8,0,0,0" Style="{StaticResource PrimaryButton}" Command="{Binding PrintCommand}" ToolTip="{loc:T Toolbar.Print.Tip}" AutomationProperties.Name="{loc:T Menu.Print}">
+            <StackPanel Orientation="Horizontal">
+              <Path Style="{StaticResource Icon}" Data="{StaticResource IconPrinter}" Width="16" Height="16" Margin="0,0,8,0" />
+              <TextBlock Text="{loc:T Toolbar.Print}" />
+            </StackPanel>
+          </Button>
+        </StackPanel>
+
+        <!-- left: file, history, zoom, label, data -->
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+          <Button Style="{StaticResource IconButton}" Command="{Binding NewCommand}" ToolTip="{loc:T Menu.New}" AutomationProperties.Name="{loc:T Menu.New}">
+            <Path Style="{StaticResource Icon}" Data="{StaticResource IconNew}" />
+          </Button>
+          <Button Style="{StaticResource IconButton}" Command="{Binding OpenCommand}" ToolTip="{loc:T Menu.Open}" AutomationProperties.Name="{loc:T Menu.Open}">
+            <Path Style="{StaticResource Icon}" Data="{StaticResource IconOpen}" />
+          </Button>
+          <Button Style="{StaticResource IconButton}" Command="{Binding SaveCommand}" ToolTip="{loc:T Menu.Save}" AutomationProperties.Name="{loc:T Menu.Save}">
+            <Path Style="{StaticResource Icon}" Data="{StaticResource IconSave}" />
+          </Button>
+          <Border Style="{StaticResource ToolbarDivider}" />
+          <Button Style="{StaticResource IconButton}" Command="{Binding UndoCommand}" ToolTip="{Binding UndoText}" AutomationProperties.Name="{loc:T Menu.Undo}">
+            <Path Style="{StaticResource Icon}" Data="{StaticResource IconUndo}" />
+          </Button>
+          <Button Style="{StaticResource IconButton}" Command="{Binding RedoCommand}" ToolTip="{Binding RedoText}" AutomationProperties.Name="{loc:T Menu.Redo}">
+            <Path Style="{StaticResource Icon}" Data="{StaticResource IconRedo}" />
+          </Button>
+          <Border Style="{StaticResource ToolbarDivider}" />
+          <TextBlock Text="{loc:T Toolbar.Zoom}" Style="{StaticResource ToolbarLabel}" />
+          <Grid Width="96">
+            <ComboBox x:Name="ZoomCombo" ItemsSource="{Binding ZoomPresets}" ItemStringFormat="{}{0} %" SelectionChanged="OnZoomPresetChosen" AutomationProperties.Name="{loc:T Status.Zoom}" />
+            <!-- The box shows the live zoom (which is not always one of the presets); picking a preset applies it. -->
+            <Border IsHitTestVisible="False" Margin="2,2,30,2" Background="{StaticResource SurfaceBrush}" CornerRadius="5">
+              <TextBlock Text="{Binding ZoomText}" Margin="10,0,0,0" VerticalAlignment="Center" FontFamily="{StaticResource MonoFont}" FontSize="12.5" />
+            </Border>
+          </Grid>
+          <TextBlock Text="{loc:T Toolbar.Label}" Style="{StaticResource ToolbarLabel}" Margin="16,0,8,0" />
+          <Button Command="{Binding SelectNoneCommand}" MinWidth="190" ToolTip="{loc:T Menu.LabelProperties}" AutomationProperties.Name="{loc:T Toolbar.Label}" HorizontalContentAlignment="Stretch">
+            <DockPanel>
+              <Path DockPanel.Dock="Right" Style="{StaticResource Icon}" Data="{StaticResource IconChevronDown}" Width="12" Height="12" Margin="10,0,0,0" />
+              <TextBlock Text="{Binding LabelSummaryText}" FontFamily="{StaticResource MonoFont}" FontSize="12.5" VerticalAlignment="Center" />
+            </DockPanel>
+          </Button>
+          <Border Style="{StaticResource ToolbarDivider}" />
+          <ToggleButton Style="{StaticResource RailToolButton}" Width="38" Height="38" Margin="1,0" IsChecked="{Binding ZplPanelVisible, Mode=TwoWay}" ToolTip="{loc:T Toolbar.ZplToggle}"
+                        AutomationProperties.Name="{loc:T Menu.ShowZpl}">
+            <Path Style="{StaticResource Icon}" Data="{StaticResource IconCode}" />
+          </ToggleButton>
+          <Button Style="{StaticResource IconButton}" Command="{Binding ShowDataCommand}" ToolTip="{loc:T Menu.DataMerge}" AutomationProperties.Name="{loc:T Menu.DataMerge}">
+            <Path Style="{StaticResource Icon}" Data="{StaticResource IconDatabase}" />
+          </Button>
+          <StackPanel Orientation="Horizontal" Visibility="{Binding Data.HasData, Converter={StaticResource B2V}}">
+            <Button Style="{StaticResource IconButton}" Width="30" Command="{Binding PreviousRecordCommand}" ToolTip="{loc:T Data.Record.Previous}" AutomationProperties.Name="{loc:T Data.Record.Previous}">
+              <Path Style="{StaticResource Icon}" Data="{StaticResource IconPrevious}" Width="14" Height="14" />
+            </Button>
+            <TextBlock Text="{Binding DataRecordText}" VerticalAlignment="Center" FontFamily="{StaticResource MonoFont}" FontSize="12" MinWidth="100" TextAlignment="Center"
+                       AutomationProperties.Name="{loc:T Data.Record.Current}" />
+            <Button Style="{StaticResource IconButton}" Width="30" Command="{Binding NextRecordCommand}" ToolTip="{loc:T Data.Record.Next}" AutomationProperties.Name="{loc:T Data.Record.Next}">
+              <Path Style="{StaticResource Icon}" Data="{StaticResource IconNext}" Width="14" Height="14" />
+            </Button>
+          </StackPanel>
+        </StackPanel>
+      </DockPanel>
+    </Border>
+
+    <!-- ================================ workspace ================================ -->
+    <Grid Grid.Row="3">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="76" />
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="5" />
+        <ColumnDefinition Width="380" MinWidth="300" />
+      </Grid.ColumnDefinitions>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="*" />
+        <RowDefinition Height="Auto" />
+      </Grid.RowDefinitions>
+
+      <!-- tool rail -->
+      <Border Grid.Column="0" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrushLight}" BorderThickness="0,0,1,0">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False" AutomationProperties.Name="{loc:T Panel.Toolbox}">
+          <StackPanel HorizontalAlignment="Center" Margin="0,12">
+            <ToggleButton x:Name="SelectTool" Style="{StaticResource RailToolButton}" IsChecked="True" Click="OnSelectTool" ToolTip="{loc:T Tool.Select}" AutomationProperties.Name="{loc:T Tool.Select}">
+              <Path Style="{StaticResource Icon}" Data="{StaticResource IconSelect}" Width="22" Height="22" />
+            </ToggleButton>
+            <ItemsControl ItemsSource="{Binding Toolbox}" IsTabStop="False">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Button Style="{StaticResource RailCommandButton}" Command="{Binding DataContext.AddElementCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                          CommandParameter="{Binding Kind}" ToolTip="{Binding Name}" AutomationProperties.Name="{Binding Name}">
+                    <Path Style="{StaticResource ToolIcon}" />
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </ScrollViewer>
+      </Border>
+
+      <!-- canvas -->
+      <views:DesignArea x:Name="Design" Grid.Column="1" Grid.Row="0" />
+
+      <GridSplitter Grid.Column="2" Grid.Row="0" Grid.RowSpan="2" Width="5" HorizontalAlignment="Stretch" Background="Transparent" ResizeBehavior="PreviousAndNext"
+                    AutomationProperties.Name="{loc:T Splitter.Properties}" />
+
+      <!-- right column: properties and objects -->
+      <Grid Grid.Column="3" Grid.Row="0" Grid.RowSpan="2" Background="{StaticResource PanelBrush}">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="*" MinHeight="140" />
+          <RowDefinition Height="5" />
+          <RowDefinition Height="220" MinHeight="110" />
+        </Grid.RowDefinitions>
+        <Border Grid.RowSpan="3" BorderBrush="{StaticResource BorderBrushLight}" BorderThickness="1,0,0,0" />
+        <views:PropertiesPanel Grid.Row="0" AutomationProperties.Name="{loc:T Panel.Properties}" />
+        <GridSplitter Grid.Row="1" HorizontalAlignment="Stretch" Background="{StaticResource BorderBrushLight}" Height="1" Margin="0,2" AutomationProperties.Name="{loc:T Splitter.Layers}" />
+        <DockPanel Grid.Row="2">
+          <TextBlock DockPanel.Dock="Top" Text="{loc:T Panel.Objects}" Style="{StaticResource PanelHeading}" AutomationProperties.HeadingLevel="Level1" />
+          <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="12,4,12,10">
+            <Button Content="{loc:T Layers.Up}" Command="{Binding BringForwardCommand}" Style="{StaticResource ToolButton}" ToolTip="{loc:T Menu.BringForward}" AutomationProperties.Name="{loc:T Menu.BringForward}" />
+            <Button Content="{loc:T Layers.Down}" Command="{Binding SendBackwardCommand}" Style="{StaticResource ToolButton}" ToolTip="{loc:T Menu.SendBackward}" AutomationProperties.Name="{loc:T Menu.SendBackward}" />
+            <Button Content="{loc:T Menu.Delete}" Command="{Binding DeleteCommand}" Style="{StaticResource ToolButton}" AutomationProperties.Name="{loc:T Menu.Delete}" />
+          </StackPanel>
+          <ListBox x:Name="LayersList" ItemsSource="{Binding Layers}" SelectionMode="Extended" SelectionChanged="OnLayersSelectionChanged" KeyDown="OnLayersKeyDown"
+                   AutomationProperties.Name="{loc:T Panel.Objects}">
+            <ListBox.ItemTemplate>
+              <DataTemplate>
+                <DockPanel ToolTip="{Binding Name}" LastChildFill="True">
+                  <TextBlock DockPanel.Dock="Left" Text="{Binding TypeTag}" Width="68" FontFamily="{StaticResource MonoFont}" FontSize="11.5" Foreground="{StaticResource MutedBrush}"
+                             VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Text="{Binding Primary}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" FontWeight="Medium" />
+                </DockPanel>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </DockPanel>
+      </Grid>
+
+      <!-- ZPL output (a dark code surface by design; everything else stays light) -->
+      <Border Grid.Row="1" Grid.Column="1" Height="190" Background="{StaticResource CodeBackgroundBrush}"
+              Visibility="{Binding ZplPanelVisible, Converter={StaticResource B2V}}">
+        <DockPanel>
+          <DockPanel DockPanel.Dock="Top" Margin="16,10,12,4">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+              <Button Content="{loc:T Zpl.Copy}" Command="{Binding CopyZplCommand}" Style="{StaticResource DarkToolButton}" AutomationProperties.Name="{loc:T Zpl.Copy}" />
+              <Button Content="{loc:T Zpl.ExportButton}" Command="{Binding ExportZplCommand}" Style="{StaticResource DarkToolButton}" AutomationProperties.Name="{loc:T Zpl.ExportButton}" />
+            </StackPanel>
+            <TextBlock Text="{loc:T Zpl.Output}" VerticalAlignment="Center" FontWeight="Bold" FontSize="11.5" Foreground="{StaticResource CodeMutedBrush}"
+                       AutomationProperties.HeadingLevel="Level1" />
+          </DockPanel>
+          <TextBox Text="{Binding ZplText, Mode=OneWay}" IsReadOnly="True" FontFamily="{StaticResource MonoFont}" FontSize="12" Background="Transparent" Foreground="{StaticResource CodeTextBrush}"
+                   BorderThickness="0" Padding="12,2" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" AcceptsReturn="True" VerticalContentAlignment="Top"
+                   CaretBrush="White" AutomationProperties.Name="{loc:T Panel.Zpl}" />
+        </DockPanel>
+      </Border>
+    </Grid>
 
     <!-- ================================ status bar ================================ -->
-    <StatusBar DockPanel.Dock="Bottom" AutomationProperties.Name="{loc:T Status.Bar}">
+    <StatusBar Grid.Row="4" AutomationProperties.Name="{loc:T Status.Bar}">
+      <StatusBarItem><TextBlock Text="{Binding ObjectsText}" /></StatusBarItem>
       <StatusBarItem><TextBlock Text="{Binding StatusMessage}" /></StatusBarItem>
-      <Separator />
-      <StatusBarItem><TextBlock Text="{Binding SelectionText}" /></StatusBarItem>
-      <Separator />
       <StatusBarItem><TextBlock Text="{Binding ProblemsText}" /></StatusBarItem>
-      <Separator />
-      <StatusBarItem><TextBlock Text="{Binding CursorText}" MinWidth="150" /></StatusBarItem>
       <StatusBarItem HorizontalAlignment="Right">
         <StackPanel Orientation="Horizontal">
-          <TextBlock Text="{Binding ApproximateNotice}" Foreground="{StaticResource MutedBrush}" FontStyle="Italic" Margin="0,0,16,0"
-                     AutomationProperties.Name="{loc:T Preview.Approximate.Name}" />
-          <TextBlock Text="{Binding ZoomText}" MinWidth="48" TextAlignment="Right" />
+          <TextBlock Text="{Binding ApproximateNotice}" FontStyle="Italic" Margin="0,0,20,0" AutomationProperties.Name="{loc:T Preview.Approximate.Name}" />
+          <TextBlock Text="{Binding CursorText}" MinWidth="130" FontFamily="{StaticResource MonoFont}" FontSize="11.5" Margin="0,0,20,0" />
+          <TextBlock Text="{Binding StatusLabelText}" FontFamily="{StaticResource MonoFont}" FontSize="11.5" AutomationProperties.Name="{loc:T Status.LabelInfo}" />
         </StackPanel>
       </StatusBarItem>
     </StatusBar>
-
-    <!-- ================================ left toolbox ================================ -->
-    <Border DockPanel.Dock="Left" Width="104" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrushLight}" BorderThickness="0,0,1,0">
-      <DockPanel>
-        <TextBlock DockPanel.Dock="Top" Text="{loc:T Panel.Toolbox}" Style="{StaticResource PanelHeading}" AutomationProperties.HeadingLevel="Level1" />
-        <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
-          <ItemsControl ItemsSource="{Binding Toolbox}" IsTabStop="False" Margin="4">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate>
-                <Button Margin="2" Padding="4,6" HorizontalContentAlignment="Stretch"
-                        Command="{Binding DataContext.AddElementCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                        CommandParameter="{Binding Kind}" ToolTip="{Binding Name}" AutomationProperties.Name="{Binding Name}">
-                  <StackPanel>
-                    <TextBlock Text="{Binding Glyph}" FontSize="18" HorizontalAlignment="Center" FontFamily="Segoe UI Symbol" />
-                    <TextBlock Text="{Binding Name}" HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" FontSize="11" />
-                  </StackPanel>
-                </Button>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-        </ScrollViewer>
-      </DockPanel>
-    </Border>
-
-    <!-- ================================ right column ================================ -->
-    <Grid DockPanel.Dock="Right" Width="300" Background="{StaticResource PanelBrush}">
-      <Grid.RowDefinitions>
-        <RowDefinition Height="*" MinHeight="120" />
-        <RowDefinition Height="5" />
-        <RowDefinition Height="190" MinHeight="90" />
-      </Grid.RowDefinitions>
-      <views:PropertiesPanel Grid.Row="0" AutomationProperties.Name="{loc:T Panel.Properties}" />
-      <GridSplitter Grid.Row="1" HorizontalAlignment="Stretch" Background="{StaticResource BorderBrushLight}" AutomationProperties.Name="{loc:T Splitter.Layers}" />
-      <DockPanel Grid.Row="2">
-        <TextBlock DockPanel.Dock="Top" Text="{loc:T Panel.Layers}" Style="{StaticResource PanelHeading}" AutomationProperties.HeadingLevel="Level1" />
-        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="4">
-          <Button Content="{loc:T Layers.Up}" Command="{Binding BringForwardCommand}" Style="{StaticResource ToolButton}" AutomationProperties.Name="{loc:T Menu.BringForward}" />
-          <Button Content="{loc:T Layers.Down}" Command="{Binding SendBackwardCommand}" Style="{StaticResource ToolButton}" AutomationProperties.Name="{loc:T Menu.SendBackward}" />
-          <Button Content="{loc:T Menu.Delete}" Command="{Binding DeleteCommand}" Style="{StaticResource ToolButton}" AutomationProperties.Name="{loc:T Menu.Delete}" />
-        </StackPanel>
-        <ListBox x:Name="LayersList" ItemsSource="{Binding Layers}" DisplayMemberPath="Name" SelectionMode="Extended"
-                 SelectionChanged="OnLayersSelectionChanged" KeyDown="OnLayersKeyDown" BorderThickness="0"
-                 AutomationProperties.Name="{loc:T Panel.Layers}" />
-      </DockPanel>
-    </Grid>
-
-    <!-- ================================ code view (bottom) ================================ -->
-    <Border DockPanel.Dock="Bottom" Height="170" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrushLight}" BorderThickness="0,1,0,0">
-      <DockPanel>
-        <DockPanel DockPanel.Dock="Top">
-          <Button DockPanel.Dock="Right" Content="{loc:T Zpl.Copy}" Command="{Binding CopyZplCommand}" Style="{StaticResource ToolButton}" AutomationProperties.Name="{loc:T Zpl.Copy}" />
-          <TextBlock Text="{loc:T Panel.Zpl}" Style="{StaticResource PanelHeading}" AutomationProperties.HeadingLevel="Level1" />
-        </DockPanel>
-        <TextBox Text="{Binding ZplText, Mode=OneWay}" IsReadOnly="True" FontFamily="Consolas" FontSize="12" BorderThickness="0"
-                 HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" AcceptsReturn="True"
-                 AutomationProperties.Name="{loc:T Panel.Zpl}" />
-      </DockPanel>
-    </Border>
-
-    <!-- ================================ centre ================================ -->
-    <views:DesignArea x:Name="Design" />
-  </DockPanel>
+  </Grid>
 </Window>

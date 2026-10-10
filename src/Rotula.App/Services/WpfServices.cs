@@ -35,6 +35,10 @@ public sealed class WpfFileDialogService : IFileDialogService
     /// <inheritdoc />
     public string? PickOpenImage() => Open(Loc.Get("Tool.Image"), Filter("Filter.Images", "*.png;*.jpg;*.jpeg;*.bmp;*.gif"));
 
+    /// <inheritdoc />
+    public string? PickOpenData() => Open(Loc.Get("Data.Open"),
+        $"{Loc.Get("Filter.Data")} (*.csv;*.txt;*.xlsx)|*.csv;*.txt;*.xlsx|{Loc.Get("Filter.AllFiles")} (*.*)|*.*");
+
     private static string? Open(string title, string filter)
     {
         var dialog = new OpenFileDialog { Title = title, Filter = filter, CheckFileExists = true };
@@ -58,6 +62,10 @@ public sealed class WpfMessageService : IMessageService
     /// <inheritdoc />
     public void ShowInfo(string title, string message) =>
         MessageBox.Show(Application.Current?.MainWindow!, message, title, MessageBoxButton.OK, MessageBoxImage.Information);
+
+    /// <inheritdoc />
+    public bool Confirm(string title, string message) =>
+        MessageBox.Show(Application.Current?.MainWindow!, message, title, MessageBoxButton.OKCancel, MessageBoxImage.Question) == MessageBoxResult.OK;
 
     /// <inheritdoc />
     public SaveChangesAnswer AskSaveChanges(string documentName)
@@ -138,5 +146,39 @@ public sealed class WpfNewLabelDialogService : INewLabelDialogService
     {
         var window = new NewLabelWindow { Owner = Application.Current?.MainWindow };
         return window.ShowDialog() == true ? window.Result : null;
+    }
+}
+
+/// <summary>Shows the print and data merge windows.</summary>
+public sealed class WpfToolDialogService : IToolDialogService
+{
+    private DataWindow? _dataWindow;
+
+    /// <inheritdoc />
+    public void ShowPrintDialog(Rotula.App.ViewModels.PrintViewModel viewModel)
+    {
+        var window = new PrintWindow(viewModel) { Owner = Application.Current?.MainWindow };
+        window.ShowDialog();
+    }
+
+    /// <inheritdoc />
+    public void ShowPreviewDialog(Rotula.App.Editing.PreviewCache preview, string title)
+    {
+        var window = new PreviewWindow(preview, title) { Owner = Application.Current?.MainWindow };
+        window.ShowDialog();
+    }
+
+    /// <inheritdoc />
+    public void ShowDataWindow(Rotula.App.ViewModels.DataMergeViewModel viewModel)
+    {
+        if (_dataWindow is { IsLoaded: true })
+        {
+            if (_dataWindow.WindowState == WindowState.Minimized) _dataWindow.WindowState = WindowState.Normal;
+            _dataWindow.Activate();
+            return;
+        }
+        _dataWindow = new DataWindow(viewModel) { Owner = Application.Current?.MainWindow };
+        _dataWindow.Closed += (_, _) => _dataWindow = null;
+        _dataWindow.Show();
     }
 }

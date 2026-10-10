@@ -21,6 +21,12 @@ public sealed class PreviewCache : IDisposable
     /// <summary>Creates a cache for a session.</summary>
     public PreviewCache(EditorSession session) => _session = session;
 
+    /// <summary>
+    /// Values of the data-merge record shown on the canvas, or null to draw the sample values. Changing it must be followed
+    /// by <see cref="EditorSession.Touch"/> so the cached render is rebuilt.
+    /// </summary>
+    public IReadOnlyDictionary<string, string>? Data { get; set; }
+
     /// <summary>How many times the document was converted to render input (exposed for tests).</summary>
     public int LabelBuildCount { get; private set; }
 
@@ -32,7 +38,7 @@ public sealed class PreviewCache : IDisposable
     {
         if (_label is null || _labelRevision != _session.Revision)
         {
-            _label = LabelDocumentAdapter.ToRenderLabel(_session.Document);
+            _label = LabelDocumentAdapter.ToRenderLabel(_session.Document, Data);
             _labelRevision = _session.Revision;
             LabelBuildCount++;
         }
