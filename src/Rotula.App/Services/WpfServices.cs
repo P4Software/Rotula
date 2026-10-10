@@ -1,0 +1,142 @@
+using System.Runtime.InteropServices;
+using System.Windows;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using Microsoft.Win32;
+using Rotula.App.Localization;
+using Rotula.App.Views;
+using Rotula.Core.Imaging;
+using Rotula.Core.Model;
+
+namespace Rotula.App.Services;
+
+/// <summary>Windows implementations of the service interfaces used by the view-models.</summary>
+public sealed class WpfFileDialogService : IFileDialogService
+{
+    private static string Filter(string nameKey, string pattern) => $"{Loc.Get(nameKey)} ({pattern})|{pattern}|{Loc.Get("Filter.AllFiles")} (*.*)|*.*";
+
+    /// <inheritdoc />
+    public string? PickOpenLabel() => Open(Loc.Get("Menu.Open"), Filter("Filter.Rotula", "*.rotula"));
+
+    /// <inheritdoc />
+    public string? PickSaveLabel(string suggestedFileName) => Save(Loc.Get("Menu.SaveAs"), Filter("Filter.Rotula", "*.rotula"), suggestedFileName, ".rotula");
+
+    /// <inheritdoc />
+    public string? PickExportFile(ExportKind kind, string suggestedFileName) => kind switch
+    {
+        ExportKind.Png => Save(Loc.Get("Menu.ExportPng"), Filter("Filter.Png", "*.png"), suggestedFileName, ".png"),
+        ExportKind.Pdf => Save(Loc.Get("Menu.ExportPdf"), Filter("Filter.Pdf", "*.pdf"), suggestedFileName, ".pdf"),
+        _ => Save(Loc.Get("Menu.ExportZpl"), Filter("Filter.Zpl", "*.zpl;*.txt"), suggestedFileName, ".zpl"),
+    };
+
+    /// <inheritdoc />
+    public string? PickOpenZpl() => Open(Loc.Get("Menu.ImportZpl"), Filter("Filter.Zpl", "*.zpl;*.txt"));
+
+    /// <inheritdoc />
+    public string? PickOpenImage() => Open(Loc.Get("Tool.Image"), Filter("Filter.Images", "*.png;*.jpg;*.jpeg;*.bmp;*.gif"));
+
+    private static string? Open(string title, string filter)
+    {
+        var dialog = new OpenFileDialog { Title = title, Filter = filter, CheckFileExists = true };
+        return dialog.ShowDialog(Application.Current?.MainWindow) == true ? dialog.FileName : null;
+    }
+
+    private static string? Save(string title, string filter, string suggested, string ext)
+    {
+        var dialog = new SaveFileDialog { Title = title, Filter = filter, FileName = suggested, DefaultExt = ext, AddExtension = true, OverwritePrompt = true };
+        return dialog.ShowDialog(Application.Current?.MainWindow) == true ? dialog.FileName : null;
+    }
+}
+
+/// <summary>Message boxes.</summary>
+public sealed class WpfMessageService : IMessageService
+{
+    /// <inheritdoc />
+    public void ShowError(string title, string message) =>
+        MessageBox.Show(Application.Current?.MainWindow!, message, title, MessageBoxButton.OK, MessageBoxImage.Error);
+
+    /// <inheritdoc />
+    public void ShowInfo(string title, string message) =>
+        MessageBox.Show(Application.Current?.MainWindow!, message, title, MessageBoxButton.OK, MessageBoxImage.Information);
+
+    /// <inheritdoc />
+    public SaveChangesAnswer AskSaveChanges(string documentName)
+    {
+        // Yes = save, No = discard, Cancel = stay. The question names the buttons so the mapping is clear.
+        var result = MessageBox.Show(Application.Current?.MainWindow!, Loc.Get("Dialog.SaveChanges.Body", documentName),
+            Loc.Get("Dialog.SaveChanges.Title"), MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+        return result switch
+        {
+            MessageBoxResult.Yes => SaveChangesAnswer.Save,
+            MessageBoxResult.No => SaveChangesAnswer.Discard,
+            _ => SaveChangesAnswer.Cancel,
+        };
+    }
+}
+
+/// <summary>Windows clipboard (text).</summary>
+public sealed class WpfClipboardService : IClipboardService
+{
+    /// <inheritdoc />
+    public string? GetText()
+    {
+        try { return Clipboard.ContainsText() ? Clipboard.GetText() : null; }
+        catch (COMException) { return null; } // another program holds the clipboard; treat as empty
+    }
+
+    /// <inheritdoc />
+    public void SetText(string text)
+    {
+        // The clipboard can be briefly locked by another process; retry a few times before giving up.
+        for (int i = 0; i < 5; i++)
+        {
+            try { Clipboard.SetDataObject(text, true); return; }
+            catch (COMException) { System.Threading.Thread.Sleep(40); }
+        }
+    }
+}
+
+/// <summary>Decodes image files into luminance bitmaps.</summary>
+public sealed class WpfImageLoader : IImageLoader
+{
+    /// <inheritdoc />
+    public GrayscaleBitmap Load(string path)
+    {
+        BitmapSource source;
+        try
+        {
+            var decoder = BitmapDecoder.Create(new Uri(Path.GetFullPath(path)), BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
+            source = decoder.Frames[0];
+        }
+        catch (Exception ex) when (ex is NotSupportedException or FileFormatException or InvalidOperationException)
+        {
+            throw new InvalidDataException("The file is not a supported image.", ex);
+        }
+
+        var converted = new FormatConvertedBitmap(source, PixelFormats.Bgra32, null, 0);
+        int w = converted.PixelWidth, h = converted.PixelHeight;
+        if (w < 1 || h < 1) throw new InvalidDataException("The image is empty.");
+        var pixels = new byte[w * h * 4];
+        converted.CopyPixels(pixels, w * 4, 0);
+        var gray = new byte[w * h];
+        for (int i = 0; i < gray.Length; i++)
+        {
+            double a = pixels[i * 4 + 3] / 255.0;
+            // Transparent areas become white, because paper is white: alpha-blend each channel over 255.
+            double b = pixels[i * 4] * a + 255 * (1 - a), g = pixels[i * 4 + 1] * a + 255 * (1 - a), r = pixels[i * 4 + 2] * a + 255 * (1 - a);
+            gray[i] = (byte)Math.Round(0.299 * r + 0.587 * g + 0.114 * b);
+        }
+        return new GrayscaleBitmap(w, h, gray);
+    }
+}
+
+/// <summary>Shows the New label dialog.</summary>
+public sealed class WpfNewLabelDialogService : INewLabelDialogService
+{
+    /// <inheritdoc />
+    public LabelDocument? ShowNewLabelDialog()
+    {
+        var window = new NewLabelWindow { Owner = Application.Current?.MainWindow };
+        return window.ShowDialog() == true ? window.Result : null;
+    }
+}

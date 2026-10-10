@@ -89,7 +89,7 @@ public class DataMergeTests
     [Fact]
     public void Csv_EmptyInputAndNoTrailingNewline()
     {
-        Assert.Equal(0, CsvReader.Parse("").Columns.Count);
+        Assert.Empty(CsvReader.Parse("").Columns);
         Assert.Equal("2", CsvReader.Parse("A,B\n1,2").Rows[0][1]);
         Assert.Equal("", CsvReader.Parse("A,B\n1,\"\"\n").Rows[0][1]);
     }

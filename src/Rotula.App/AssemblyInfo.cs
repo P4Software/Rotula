@@ -8,3 +8,8 @@ using System.Windows;
                                                 //(used if a resource is not found in the page,
                                                 // app, or any theme specific resource dictionaries)
 )]
+
+// The UI text lives in satellite assemblies (Strings.en.resx / Strings.es.resx) and Loc always asks for "en" or "es"
+// explicitly, so no neutral-language attribute is used: NeutralResourcesLanguage(..., Satellite) would also redirect WPF's
+// own XAML resource lookup to a satellite and the application would fail to start.
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Rotula.Tests")]

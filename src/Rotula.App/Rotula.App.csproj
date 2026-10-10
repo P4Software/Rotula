@@ -1,9 +1,20 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
     <ProjectReference Include="..\Rotula.Core\Rotula.Core.csproj" />
     <ProjectReference Include="..\Rotula.Rendering\Rotula.Rendering.csproj" />
     <ProjectReference Include="..\Rotula.Printing\Rotula.Printing.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- CommunityToolkit.Mvvm: MIT. -->
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The WPF SDK leaves System.IO and System.Threading.Tasks out of the implicit usings. -->
+    <Using Include="System.IO" />
+    <Using Include="System.Threading.Tasks" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -12,6 +23,11 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <RootNamespace>Rotula.App</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- The localized strings live in satellite assemblies (Strings.en / Strings.es); there is no neutral resource. -->
+    <SatelliteResourceLanguages>en;es</SatelliteResourceLanguages>
   </PropertyGroup>
 
 </Project>

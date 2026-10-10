@@ -1,0 +1,1308 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="About.Body" xml:space="preserve">
+    <value>Rotula {0}
+Un diseñador de etiquetas gratuito y sin conexión para impresoras Zebra (ZPL).
+
+Licencia MIT. Sin telemetría ni acceso a la red.</value>
+  </data>
+  <data name="Canvas.Help" xml:space="preserve">
+    <value>Haga clic en un elemento para seleccionarlo. Arrastre para moverlo. Las flechas mueven la selección un punto; con Mayús, ocho puntos. Pulse Supr para eliminarlo.</value>
+  </data>
+  <data name="Canvas.Name" xml:space="preserve">
+    <value>Lienzo de diseño</value>
+  </data>
+  <data name="Common.Cancel" xml:space="preserve">
+    <value>Cancelar</value>
+  </data>
+  <data name="Common.Create" xml:space="preserve">
+    <value>Crear</value>
+  </data>
+  <data name="Crash.Startup" xml:space="preserve">
+    <value>Rotula no pudo iniciarse. No se modificó nada. Los detalles se guardaron en {0}. Informe del problema adjuntando ese archivo.</value>
+  </data>
+  <data name="Crash.Unexpected" xml:space="preserve">
+    <value>Algo inesperado falló en la última acción. Su etiqueta sigue abierta; guárdela con otro nombre por precaución. Los detalles se guardaron en {0}.</value>
+  </data>
+  <data name="Dialog.ExportFailed" xml:space="preserve">
+    <value>No se pudo exportar</value>
+  </data>
+  <data name="Dialog.ExportNotes" xml:space="preserve">
+    <value>La exportación terminó con avisos</value>
+  </data>
+  <data name="Dialog.FixErrors" xml:space="preserve">
+    <value>Corrija primero los errores</value>
+  </data>
+  <data name="Dialog.FixErrors.Body" xml:space="preserve">
+    <value>La etiqueta tiene errores, por lo que todavía no se puede convertir a ZPL ni imprimir. Corrija estos problemas e inténtelo de nuevo:</value>
+  </data>
+  <data name="Dialog.ImageFailed" xml:space="preserve">
+    <value>No se pudo usar la imagen</value>
+  </data>
+  <data name="Dialog.ImportFailed" xml:space="preserve">
+    <value>No se pudo importar el ZPL</value>
+  </data>
+  <data name="Dialog.ImportNotes" xml:space="preserve">
+    <value>Algunas partes no se importaron</value>
+  </data>
+  <data name="Dialog.New.Preset" xml:space="preserve">
+    <value>Tamaño de la etiqueta</value>
+  </data>
+  <data name="Dialog.New.Title" xml:space="preserve">
+    <value>Etiqueta nueva</value>
+  </data>
+  <data name="Dialog.OpenFailed" xml:space="preserve">
+    <value>No se pudo abrir el archivo</value>
+  </data>
+  <data name="Dialog.PrintFailed" xml:space="preserve">
+    <value>La etiqueta no se imprimió</value>
+  </data>
+  <data name="Dialog.SaveChanges.Body" xml:space="preserve">
+    <value>"{0}" tiene cambios sin guardar. ¿Desea guardarlos antes?
+
+Sí guarda, No descarta los cambios, Cancelar vuelve a la etiqueta.</value>
+  </data>
+  <data name="Dialog.SaveChanges.Title" xml:space="preserve">
+    <value>Cambios sin guardar</value>
+  </data>
+  <data name="Dialog.SaveFailed" xml:space="preserve">
+    <value>No se pudo guardar la etiqueta</value>
+  </data>
+  <data name="Document.Untitled" xml:space="preserve">
+    <value>Sin título</value>
+  </data>
+  <data name="Element.Box" xml:space="preserve">
+    <value>Recuadro</value>
+  </data>
+  <data name="Element.Circle" xml:space="preserve">
+    <value>Círculo</value>
+  </data>
+  <data name="Element.DataField" xml:space="preserve">
+    <value>Campo de datos</value>
+  </data>
+  <data name="Element.DefaultSample" xml:space="preserve">
+    <value>Ejemplo</value>
+  </data>
+  <data name="Element.DefaultText" xml:space="preserve">
+    <value>Texto</value>
+  </data>
+  <data name="Element.Image" xml:space="preserve">
+    <value>Imagen</value>
+  </data>
+  <data name="Element.Line" xml:space="preserve">
+    <value>Línea</value>
+  </data>
+  <data name="Element.Text" xml:space="preserve">
+    <value>Texto</value>
+  </data>
+  <data name="Encoding.Cp1252" xml:space="preserve">
+    <value>Windows Latin-1 (1252)</value>
+  </data>
+  <data name="Encoding.Cp850" xml:space="preserve">
+    <value>Página de códigos 850 (impresoras antiguas)</value>
+  </data>
+  <data name="Encoding.Utf8" xml:space="preserve">
+    <value>UTF-8 (recomendado)</value>
+  </data>
+  <data name="Enum.BarcodeSymbology.Code128" xml:space="preserve">
+    <value>Code 128</value>
+  </data>
+  <data name="Enum.BarcodeSymbology.Code39" xml:space="preserve">
+    <value>Code 39</value>
+  </data>
+  <data name="Enum.BarcodeSymbology.Code93" xml:space="preserve">
+    <value>Code 93</value>
+  </data>
+  <data name="Enum.BarcodeSymbology.DataMatrix" xml:space="preserve">
+    <value>Data Matrix</value>
+  </data>
+  <data name="Enum.BarcodeSymbology.Ean13" xml:space="preserve">
+    <value>EAN-13</value>
+  </data>
+  <data name="Enum.BarcodeSymbology.Interleaved2Of5" xml:space="preserve">
+    <value>Intercalado 2 de 5</value>
+  </data>
+  <data name="Enum.BarcodeSymbology.Pdf417" xml:space="preserve">
+    <value>PDF417</value>
+  </data>
+  <data name="Enum.BarcodeSymbology.QrCode" xml:space="preserve">
+    <value>Código QR</value>
+  </data>
+  <data name="Enum.BarcodeSymbology.UpcA" xml:space="preserve">
+    <value>UPC-A</value>
+  </data>
+  <data name="Enum.Code128Mode.Automatic" xml:space="preserve">
+    <value>Automático</value>
+  </data>
+  <data name="Enum.Code128Mode.Ean" xml:space="preserve">
+    <value>EAN-128</value>
+  </data>
+  <data name="Enum.Code128Mode.None" xml:space="preserve">
+    <value>Ninguno</value>
+  </data>
+  <data name="Enum.Code128Mode.Ucc" xml:space="preserve">
+    <value>Modo UCC</value>
+  </data>
+  <data name="Enum.FieldOriginKind.Origin" xml:space="preserve">
+    <value>Esquina superior izquierda (^FO)</value>
+  </data>
+  <data name="Enum.FieldOriginKind.Typeset" xml:space="preserve">
+    <value>Línea base / inferior izquierda (^FT)</value>
+  </data>
+  <data name="Enum.FieldRotation.Inverted180" xml:space="preserve">
+    <value>180° (invertido)</value>
+  </data>
+  <data name="Enum.FieldRotation.Normal" xml:space="preserve">
+    <value>0° (normal)</value>
+  </data>
+  <data name="Enum.FieldRotation.Rotated270" xml:space="preserve">
+    <value>270° a la derecha</value>
+  </data>
+  <data name="Enum.FieldRotation.Rotated90" xml:space="preserve">
+    <value>90° a la derecha</value>
+  </data>
+  <data name="Enum.GraphicColor.Black" xml:space="preserve">
+    <value>Negro</value>
+  </data>
+  <data name="Enum.GraphicColor.White" xml:space="preserve">
+    <value>Blanco</value>
+  </data>
+  <data name="Enum.HumanReadablePosition.Above" xml:space="preserve">
+    <value>Encima de las barras</value>
+  </data>
+  <data name="Enum.HumanReadablePosition.Below" xml:space="preserve">
+    <value>Debajo de las barras</value>
+  </data>
+  <data name="Enum.ImageDitherMode.FloydSteinberg" xml:space="preserve">
+    <value>Floyd-Steinberg (fotos)</value>
+  </data>
+  <data name="Enum.ImageDitherMode.Ordered" xml:space="preserve">
+    <value>Tramado ordenado</value>
+  </data>
+  <data name="Enum.ImageDitherMode.Threshold" xml:space="preserve">
+    <value>Umbral fijo</value>
+  </data>
+  <data name="Enum.LabelOrientation.Inverted" xml:space="preserve">
+    <value>Invertida</value>
+  </data>
+  <data name="Enum.LabelOrientation.Normal" xml:space="preserve">
+    <value>Normal</value>
+  </data>
+  <data name="Enum.LengthUnit.Dots" xml:space="preserve">
+    <value>Puntos</value>
+  </data>
+  <data name="Enum.LengthUnit.Inches" xml:space="preserve">
+    <value>Pulgadas</value>
+  </data>
+  <data name="Enum.LengthUnit.Millimeters" xml:space="preserve">
+    <value>Milímetros</value>
+  </data>
+  <data name="Enum.LineDirection.Horizontal" xml:space="preserve">
+    <value>Horizontal</value>
+  </data>
+  <data name="Enum.LineDirection.Vertical" xml:space="preserve">
+    <value>Vertical</value>
+  </data>
+  <data name="Enum.MediaTracking.Continuous" xml:space="preserve">
+    <value>Continuo</value>
+  </data>
+  <data name="Enum.MediaTracking.Mark" xml:space="preserve">
+    <value>Marca negra</value>
+  </data>
+  <data name="Enum.MediaTracking.Web" xml:space="preserve">
+    <value>Sensor de separación</value>
+  </data>
+  <data name="Enum.MediaType.DirectThermal" xml:space="preserve">
+    <value>Térmica directa</value>
+  </data>
+  <data name="Enum.MediaType.ThermalTransfer" xml:space="preserve">
+    <value>Transferencia térmica (cinta)</value>
+  </data>
+  <data name="Enum.PrinterDpi.Dpi203" xml:space="preserve">
+    <value>203 DPI</value>
+  </data>
+  <data name="Enum.PrinterDpi.Dpi300" xml:space="preserve">
+    <value>300 DPI</value>
+  </data>
+  <data name="Enum.PrinterDpi.Dpi600" xml:space="preserve">
+    <value>600 DPI</value>
+  </data>
+  <data name="Enum.QrErrorCorrection.High" xml:space="preserve">
+    <value>Alta (30%)</value>
+  </data>
+  <data name="Enum.QrErrorCorrection.Low" xml:space="preserve">
+    <value>Baja (7%)</value>
+  </data>
+  <data name="Enum.QrErrorCorrection.Medium" xml:space="preserve">
+    <value>Media (15%)</value>
+  </data>
+  <data name="Enum.QrErrorCorrection.Quartile" xml:space="preserve">
+    <value>Cuartil (25%)</value>
+  </data>
+  <data name="Enum.TextAlignment.Center" xml:space="preserve">
+    <value>Centro</value>
+  </data>
+  <data name="Enum.TextAlignment.Justified" xml:space="preserve">
+    <value>Justificado</value>
+  </data>
+  <data name="Enum.TextAlignment.Left" xml:space="preserve">
+    <value>Izquierda</value>
+  </data>
+  <data name="Enum.TextAlignment.Right" xml:space="preserve">
+    <value>Derecha</value>
+  </data>
+  <data name="File.Error.Corrupt" xml:space="preserve">
+    <value>{0} está dañado o fue editado a mano y no se puede leer. Abra una copia de seguridad si la tiene.</value>
+  </data>
+  <data name="File.Error.NewerVersion" xml:space="preserve">
+    <value>{0} se guardó con una versión más reciente de Rotula (formato {1}). Actualice Rotula para abrirlo.</value>
+  </data>
+  <data name="File.Error.NotRotula" xml:space="preserve">
+    <value>{0} no es un archivo de etiqueta de Rotula. Elija un archivo que termine en .rotula.</value>
+  </data>
+  <data name="File.Error.Read" xml:space="preserve">
+    <value>No se pudo leer {0}. Compruebe que el archivo sigue existiendo y que tiene permiso para abrirlo.</value>
+  </data>
+  <data name="File.Error.Write" xml:space="preserve">
+    <value>No se pudo escribir el archivo {0}. Compruebe que la carpeta existe, que hay espacio libre en el disco y que tiene permiso para escribir ahí; luego inténtelo de nuevo o elija otro lugar.</value>
+  </data>
+  <data name="Filter.AllFiles" xml:space="preserve">
+    <value>Todos los archivos</value>
+  </data>
+  <data name="Filter.Images" xml:space="preserve">
+    <value>Imágenes</value>
+  </data>
+  <data name="Filter.Pdf" xml:space="preserve">
+    <value>Documento PDF</value>
+  </data>
+  <data name="Filter.Png" xml:space="preserve">
+    <value>Imagen PNG</value>
+  </data>
+  <data name="Filter.Rotula" xml:space="preserve">
+    <value>Etiquetas de Rotula</value>
+  </data>
+  <data name="Filter.Zpl" xml:space="preserve">
+    <value>Archivos ZPL</value>
+  </data>
+  <data name="Image.Error.Read" xml:space="preserve">
+    <value>{0} no es una imagen que Rotula pueda leer. Elija un archivo PNG, JPG, BMP o GIF.</value>
+  </data>
+  <data name="Import.Failed" xml:space="preserve">
+    <value>No se pudo interpretar el ZPL. Compruebe que el archivo contiene una etiqueta que empieza con ^XA y termina con ^XZ.</value>
+  </data>
+  <data name="Import.NotAvailable" xml:space="preserve">
+    <value>La importación de ZPL todavía no está disponible en esta versión. Puede diseñar la etiqueta aquí y exportar su ZPL.</value>
+  </data>
+  <data name="Import.Warning.Line" xml:space="preserve">
+    <value>Línea {0}: {1}</value>
+  </data>
+  <data name="Issue.Arg.Merge.Counter.Name" xml:space="preserve">
+    <value>el nombre del contador falta o no es válido (use letras, dígitos y guiones bajos)</value>
+  </data>
+  <data name="Issue.Arg.Merge.Counter.Padding" xml:space="preserve">
+    <value>el relleno con ceros debe estar entre 0 y 18</value>
+  </data>
+  <data name="Issue.Arg.Merge.Counter.Start" xml:space="preserve">
+    <value>el valor inicial no es válido</value>
+  </data>
+  <data name="Issue.Arg.even" xml:space="preserve">
+    <value>par</value>
+  </data>
+  <data name="Issue.Arg.odd" xml:space="preserve">
+    <value>impar</value>
+  </data>
+  <data name="Issue.Barcode.Code128.Charset" xml:space="preserve">
+    <value>Code 128 solo puede codificar caracteres normales del teclado. Quite los acentos y símbolos especiales de los datos.</value>
+  </data>
+  <data name="Issue.Barcode.Code128.ReservedChar" xml:space="preserve">
+    <value>El carácter {0} no se puede usar en los datos de Code 128 porque la impresora lo interpreta como un comando. Quítelo.</value>
+  </data>
+  <data name="Issue.Barcode.Code39.Charset" xml:space="preserve">
+    <value>Code 39 solo admite letras mayúsculas, dígitos y - . espacio $ / + %. Cambie los datos para usar solo esos.</value>
+  </data>
+  <data name="Issue.Barcode.Code93.Charset" xml:space="preserve">
+    <value>Code 93 solo puede codificar caracteres normales del teclado. Quite los acentos y símbolos especiales de los datos.</value>
+  </data>
+  <data name="Issue.Barcode.Columns.Range" xml:space="preserve">
+    <value>El número de columnas debe estar entre {0} y {1}.</value>
+  </data>
+  <data name="Issue.Barcode.Data.Empty" xml:space="preserve">
+    <value>El código de barras no tiene datos. Escriba el texto o número que desea codificar.</value>
+  </data>
+  <data name="Issue.Barcode.DataMatrix.TooLong" xml:space="preserve">
+    <value>Los datos del Data Matrix son demasiado largos (máximo {0} caracteres). Acorte el texto.</value>
+  </data>
+  <data name="Issue.Barcode.Digits.Only" xml:space="preserve">
+    <value>Este tipo de código solo admite dígitos (0 a 9). Quite las letras o símbolos.</value>
+  </data>
+  <data name="Issue.Barcode.Ean13.CheckDigit" xml:space="preserve">
+    <value>El último dígito no es el dígito de control correcto de EAN-13. Debería ser {0}; o quite el último dígito y deje que la impresora lo añada.</value>
+  </data>
+  <data name="Issue.Barcode.Ean13.Length" xml:space="preserve">
+    <value>EAN-13 necesita {0} dígitos (el dígito de control se añade solo) o {1} dígitos incluyendo el dígito de control.</value>
+  </data>
+  <data name="Issue.Barcode.Height.Range" xml:space="preserve">
+    <value>La altura de las barras debe estar entre {0} y {1} puntos.</value>
+  </data>
+  <data name="Issue.Barcode.I25.Length" xml:space="preserve">
+    <value>Intercalado 2 de 5 necesita una cantidad {0} de dígitos con esta opción de dígito de control. Añada o quite un dígito, o cambie la opción de dígito de control.</value>
+  </data>
+  <data name="Issue.Barcode.ModuleSize.Range" xml:space="preserve">
+    <value>El tamaño del módulo debe estar entre {0} y {1} puntos.</value>
+  </data>
+  <data name="Issue.Barcode.ModuleWidth.Range" xml:space="preserve">
+    <value>El ancho de la barra fina debe estar entre {0} y {1} puntos.</value>
+  </data>
+  <data name="Issue.Barcode.Pdf417.Security" xml:space="preserve">
+    <value>El nivel de seguridad de PDF417 debe estar entre {0} y {1}.</value>
+  </data>
+  <data name="Issue.Barcode.Pdf417.TooLong" xml:space="preserve">
+    <value>Los datos del PDF417 son demasiado largos (máximo {0} caracteres). Acorte el texto.</value>
+  </data>
+  <data name="Issue.Barcode.Qr.Model" xml:space="preserve">
+    <value>El modelo QR debe ser 1 o 2. Elija 2 salvo que su lector necesite el modelo antiguo.</value>
+  </data>
+  <data name="Issue.Barcode.Qr.TooLong" xml:space="preserve">
+    <value>Los datos del código QR son demasiado largos (máximo {0} caracteres). Acorte el texto.</value>
+  </data>
+  <data name="Issue.Barcode.Rows.Range" xml:space="preserve">
+    <value>El número de filas debe ser 0 (automático) o estar entre {0} y {1}.</value>
+  </data>
+  <data name="Issue.Barcode.Symbology.Unknown" xml:space="preserve">
+    <value>Este tipo de código no es compatible. Elija otro tipo.</value>
+  </data>
+  <data name="Issue.Barcode.UpcA.CheckDigit" xml:space="preserve">
+    <value>El último dígito no es el dígito de control correcto de UPC-A. Debería ser {0}; o quite el último dígito y deje que la impresora lo añada.</value>
+  </data>
+  <data name="Issue.Barcode.UpcA.Length" xml:space="preserve">
+    <value>UPC-A necesita {0} dígitos (el dígito de control se añade solo) o {1} dígitos incluyendo el dígito de control.</value>
+  </data>
+  <data name="Issue.Barcode.WideBarRatio.Range" xml:space="preserve">
+    <value>La proporción entre barra ancha y fina debe estar entre {0} y {1}.</value>
+  </data>
+  <data name="Issue.Element.OutsideLabel" xml:space="preserve">
+    <value>Este elemento sobresale de la etiqueta, por lo que una parte no se imprimirá. Muévalo dentro de la etiqueta.</value>
+  </data>
+  <data name="Issue.Element.Position.Range" xml:space="preserve">
+    <value>La posición debe estar entre {0} y {1} puntos. Mueva el elemento dentro de la etiqueta.</value>
+  </data>
+  <data name="Issue.Element.Unsupported" xml:space="preserve">
+    <value>El tipo de elemento {0} no se puede convertir a ZPL. Elimínelo.</value>
+  </data>
+  <data name="Issue.ErrorPrefix" xml:space="preserve">
+    <value>Error:</value>
+  </data>
+  <data name="Issue.Font.Size.Range" xml:space="preserve">
+    <value>La altura de la fuente debe estar entre {0} y {1} puntos.</value>
+  </data>
+  <data name="Issue.Graphic.Circle.Range" xml:space="preserve">
+    <value>El diámetro del círculo debe estar entre {0} y {1} puntos.</value>
+  </data>
+  <data name="Issue.Graphic.Rounding.Range" xml:space="preserve">
+    <value>El redondeo de esquinas debe estar entre {0} y {1}.</value>
+  </data>
+  <data name="Issue.Graphic.Size.Range" xml:space="preserve">
+    <value>El tamaño y el grosor deben estar entre {0} y {1} puntos.</value>
+  </data>
+  <data name="Issue.Image.Size.Range" xml:space="preserve">
+    <value>El tamaño de la imagen no es válido (ancho hasta {0}, alto hasta {1} puntos). Reduzca la imagen.</value>
+  </data>
+  <data name="Issue.Image.Source.Missing" xml:space="preserve">
+    <value>Esta imagen no tiene ningún dibujo. Elija un archivo de imagen en las propiedades.</value>
+  </data>
+  <data name="Issue.Image.Threshold.Range" xml:space="preserve">
+    <value>El umbral debe estar entre {0} y {1}.</value>
+  </data>
+  <data name="Issue.Import.BarPattern.Detected" xml:space="preserve">
+    <value>Unas barras parecen un código de barras dibujado con líneas. Revise esa parte de la etiqueta.</value>
+  </data>
+  <data name="Issue.Import.Barcode.Code128.Invocation" xml:space="preserve">
+    <value>Este Code 128 usa códigos de invocación (&gt;) que se conservan tal como están escritos.</value>
+  </data>
+  <data name="Issue.Import.Barcode.DataMatrix.Quality" xml:space="preserve">
+    <value>El nivel de calidad {0} del Data Matrix no es compatible y se ignoró.</value>
+  </data>
+  <data name="Issue.Import.Barcode.Qr.ManualMode" xml:space="preserve">
+    <value>Este código QR usa el modo manual de caracteres, que se conserva tal como está escrito.</value>
+  </data>
+  <data name="Issue.Import.Command.Unknown" xml:space="preserve">
+    <value>El comando {0} no lo entiende el diseñador. Se conservó como ZPL sin procesar y se imprimirá sin cambios.</value>
+  </data>
+  <data name="Issue.Import.Encoding.Changed" xml:space="preserve">
+    <value>La codificación de caracteres cambia a ^CI{0} a mitad de la etiqueta. El texto posterior se lee con esa codificación.</value>
+  </data>
+  <data name="Issue.Import.Encoding.NationalSet" xml:space="preserve">
+    <value>El juego de caracteres ^CI{0} es nacional y solo se aproximó.</value>
+  </data>
+  <data name="Issue.Import.Encoding.RemapIgnored" xml:space="preserve">
+    <value>El reemplazo de caracteres de ^CI se ignora.</value>
+  </data>
+  <data name="Issue.Import.Encoding.Unsupported" xml:space="preserve">
+    <value>El juego de caracteres ^CI{0} no es compatible, por lo que algunos caracteres pueden verse mal.</value>
+  </data>
+  <data name="Issue.Import.Field.MissingEnd" xml:space="preserve">
+    <value>Un campo no tiene ^FS al final. Se cerró automáticamente.</value>
+  </data>
+  <data name="Issue.Import.File.Unreadable" xml:space="preserve">
+    <value>No se pudo leer el archivo ({0}). Compruebe que existe y que tiene permiso para abrirlo.</value>
+  </data>
+  <data name="Issue.Import.Font.Custom" xml:space="preserve">
+    <value>La etiqueta usa una fuente personalizada (^A@). La vista previa usa una fuente de sustitución.</value>
+  </data>
+  <data name="Issue.Import.Graphic.Format.Unsupported" xml:space="preserve">
+    <value>Un gráfico usa el formato {0}, que no es compatible. Se conservó como ZPL sin procesar.</value>
+  </data>
+  <data name="Issue.Import.Graphic.Invalid" xml:space="preserve">
+    <value>Un gráfico tiene datos no válidos (total {0} bytes). Se conservó como ZPL sin procesar.</value>
+  </data>
+  <data name="Issue.Import.Graphic.Truncated" xml:space="preserve">
+    <value>Un gráfico tiene menos datos de los que declara. Se importó hasta donde llegan los datos.</value>
+  </data>
+  <data name="Issue.Import.ImageSave.Unsupported" xml:space="preserve">
+    <value>Guardar una imagen en la impresora (^IS {0}) no es compatible. Se conservó como ZPL sin procesar.</value>
+  </data>
+  <data name="Issue.Import.Internal.Error" xml:space="preserve">
+    <value>No se pudo interpretar una parte del archivo ({0}). El resto se importó.</value>
+  </data>
+  <data name="Issue.Import.Label.HomeLate" xml:space="preserve">
+    <value>El origen de la etiqueta (^LH) aparece después de algunos campos, por lo que solo afecta a lo que sigue.</value>
+  </data>
+  <data name="Issue.Import.Label.Multiple" xml:space="preserve">
+    <value>El archivo contiene {0} etiquetas. Solo se abrió la primera.</value>
+  </data>
+  <data name="Issue.Import.Label.NestedStart" xml:space="preserve">
+    <value>Un segundo ^XA empieza antes de que termine la etiqueta anterior.</value>
+  </data>
+  <data name="Issue.Import.Label.NoEnd" xml:space="preserve">
+    <value>La etiqueta no tiene ^XZ al final. Se cerró automáticamente.</value>
+  </data>
+  <data name="Issue.Import.Label.NoLength" xml:space="preserve">
+    <value>Falta el largo de la etiqueta (^LL), por lo que se estimó. Revíselo en las propiedades de la etiqueta.</value>
+  </data>
+  <data name="Issue.Import.Label.NoStart" xml:space="preserve">
+    <value>El archivo no empieza con ^XA. Se leyó como una sola etiqueta de todos modos.</value>
+  </data>
+  <data name="Issue.Import.Label.NoWidth" xml:space="preserve">
+    <value>Falta el ancho de la etiqueta (^PW), por lo que se estimó. Revíselo en las propiedades de la etiqueta.</value>
+  </data>
+  <data name="Issue.Import.Label.StrayEnd" xml:space="preserve">
+    <value>Se ignoró un ^XZ sin su ^XA correspondiente.</value>
+  </data>
+  <data name="Issue.Import.Parameter.Invalid" xml:space="preserve">
+    <value>{0} tiene un valor no válido ({1}), por lo que se usó el valor por defecto.</value>
+  </data>
+  <data name="Issue.Import.Parameter.OutOfRange" xml:space="preserve">
+    <value>{0} tiene un valor fuera de rango ({1}), por lo que se ignoró.</value>
+  </data>
+  <data name="Issue.Import.Raw.NonAscii" xml:space="preserve">
+    <value>Un comando sin procesar contiene caracteres que no son ASCII simple. Compruebe que se imprime bien.</value>
+  </data>
+  <data name="Issue.Import.Recall.Format.Unavailable" xml:space="preserve">
+    <value>El archivo recupera el formato almacenado {0}, que está en la impresora y no se puede mostrar aquí.</value>
+  </data>
+  <data name="Issue.Import.Recall.Graphic.Unavailable" xml:space="preserve">
+    <value>El archivo recupera el gráfico almacenado {0}, que está en la impresora y no se puede mostrar aquí.</value>
+  </data>
+  <data name="Issue.Import.Recall.Image.Unavailable" xml:space="preserve">
+    <value>El archivo recupera la imagen almacenada {0}, que está en la impresora y no se puede mostrar aquí.</value>
+  </data>
+  <data name="Issue.Import.Setting.Approximated" xml:space="preserve">
+    <value>{0} se aproximó como {1}.</value>
+  </data>
+  <data name="Issue.Import.Setting.Unsupported" xml:space="preserve">
+    <value>El ajuste {0} no es compatible con el diseñador. Se conservó como ZPL sin procesar.</value>
+  </data>
+  <data name="Issue.Import.StoredFormat.Unsupported" xml:space="preserve">
+    <value>Guardar un formato en la impresora (^DF {0}) no es compatible. Se conservó como ZPL sin procesar.</value>
+  </data>
+  <data name="Issue.Import.Text.DecodeFailed" xml:space="preserve">
+    <value>No se pudo decodificar parte del texto con {0}. Revise las letras con acento.</value>
+  </data>
+  <data name="Issue.Import.Text.Stray" xml:space="preserve">
+    <value>Se ignoró texto fuera de cualquier campo: {0}</value>
+  </data>
+  <data name="Issue.Import.Units.Converted" xml:space="preserve">
+    <value>Las posiciones se convirtieron desde unidades {0} (factor {1}).</value>
+  </data>
+  <data name="Issue.Label.Height.Range" xml:space="preserve">
+    <value>El alto de la etiqueta debe estar entre {0} y {1} puntos. Cambie el alto en las propiedades de la etiqueta.</value>
+  </data>
+  <data name="Issue.Label.Width.Range" xml:space="preserve">
+    <value>El ancho de la etiqueta debe estar entre {0} y {1} puntos. Cambie el ancho en las propiedades de la etiqueta.</value>
+  </data>
+  <data name="Issue.Merge.Column.Unused" xml:space="preserve">
+    <value>La columna de datos {0} no se usa en la etiqueta.</value>
+  </data>
+  <data name="Issue.Merge.Copies.ColumnNotFound" xml:space="preserve">
+    <value>No se encontró la columna de copias {0} en los datos. Elija una columna existente.</value>
+  </data>
+  <data name="Issue.Merge.Copies.Invalid" xml:space="preserve">
+    <value>El número de copias ({0}) no es válido. Use un número entero desde 0.</value>
+  </data>
+  <data name="Issue.Merge.Counter.Invalid" xml:space="preserve">
+    <value>El contador {0} tiene un ajuste no válido ({1}).</value>
+  </data>
+  <data name="Issue.Merge.Counter.Name" xml:space="preserve">
+    <value>el nombre del contador falta o no es válido (use letras, dígitos y guiones bajos)</value>
+  </data>
+  <data name="Issue.Merge.Counter.Overflow" xml:space="preserve">
+    <value>El contador {0} superó su valor máximo.</value>
+  </data>
+  <data name="Issue.Merge.Counter.Padding" xml:space="preserve">
+    <value>el relleno con ceros debe estar entre 0 y 18</value>
+  </data>
+  <data name="Issue.Merge.Counter.Start" xml:space="preserve">
+    <value>el valor inicial no es válido</value>
+  </data>
+  <data name="Issue.Merge.Csv.UnterminatedQuote" xml:space="preserve">
+    <value>Un valor entre comillas del archivo de datos tiene comilla de apertura pero no de cierre, por lo que los últimos valores pueden ser incorrectos. Corrija las comillas en el archivo y cárguelo de nuevo.</value>
+  </data>
+  <data name="Issue.Merge.Mapping.ColumnNotFound" xml:space="preserve">
+    <value>La variable {0} está asignada a la columna {1}, que no está en los datos.</value>
+  </data>
+  <data name="Issue.Merge.Placeholder.Unmapped" xml:space="preserve">
+    <value>La variable {0} de la etiqueta no tiene una columna correspondiente en los datos.</value>
+  </data>
+  <data name="Issue.Merge.Record.Failed" xml:space="preserve">
+    <value>No se pudo combinar una fila de datos ({0}). Revise esa fila del archivo de datos.</value>
+  </data>
+  <data name="Issue.Print.Pause.Range" xml:space="preserve">
+    <value>La cantidad para pausar debe estar entre {0} y {1}.</value>
+  </data>
+  <data name="Issue.Print.Quantity.Range" xml:space="preserve">
+    <value>El número de copias debe estar entre {0} y {1}.</value>
+  </data>
+  <data name="Issue.Print.Replicates.Range" xml:space="preserve">
+    <value>El número de réplicas debe estar entre {0} y {1}.</value>
+  </data>
+  <data name="Issue.Text.Block.MaxLines.Range" xml:space="preserve">
+    <value>El número máximo de líneas debe estar entre {0} y {1}.</value>
+  </data>
+  <data name="Issue.Text.Block.Width.Range" xml:space="preserve">
+    <value>El ancho del bloque de texto debe estar entre {0} y {1} puntos.</value>
+  </data>
+  <data name="Issue.Text.UnmappableChar" xml:space="preserve">
+    <value>El carácter {0} no se puede imprimir con la codificación elegida. Elija UTF-8 en las propiedades de la etiqueta o quite el carácter.</value>
+  </data>
+  <data name="Issue.Unknown" xml:space="preserve">
+    <value>Se encontró un problema ({0}). Revise los ajustes de este elemento.</value>
+  </data>
+  <data name="Issue.Variable.Missing" xml:space="preserve">
+    <value>La variable {0} no está declarada. Añádala a las variables de la etiqueta o corrija el nombre.</value>
+  </data>
+  <data name="Issue.WarningPrefix" xml:space="preserve">
+    <value>Aviso:</value>
+  </data>
+  <data name="Layers.Down" xml:space="preserve">
+    <value>Bajar</value>
+  </data>
+  <data name="Layers.Up" xml:space="preserve">
+    <value>Subir</value>
+  </data>
+  <data name="Menu.About" xml:space="preserve">
+    <value>Acerca de Rotula</value>
+  </data>
+  <data name="Menu.Align" xml:space="preserve">
+    <value>Alinear</value>
+  </data>
+  <data name="Menu.AlignBottom" xml:space="preserve">
+    <value>Abajo</value>
+  </data>
+  <data name="Menu.AlignCenterH" xml:space="preserve">
+    <value>Centrar horizontalmente</value>
+  </data>
+  <data name="Menu.AlignCenterV" xml:space="preserve">
+    <value>Centrar verticalmente</value>
+  </data>
+  <data name="Menu.AlignLeft" xml:space="preserve">
+    <value>Izquierda</value>
+  </data>
+  <data name="Menu.AlignRight" xml:space="preserve">
+    <value>Derecha</value>
+  </data>
+  <data name="Menu.AlignTop" xml:space="preserve">
+    <value>Arriba</value>
+  </data>
+  <data name="Menu.Arrange" xml:space="preserve">
+    <value>_Organizar</value>
+  </data>
+  <data name="Menu.BringForward" xml:space="preserve">
+    <value>Subir un nivel</value>
+  </data>
+  <data name="Menu.BringToFront" xml:space="preserve">
+    <value>Traer al frente</value>
+  </data>
+  <data name="Menu.Copy" xml:space="preserve">
+    <value>Copiar</value>
+  </data>
+  <data name="Menu.Cut" xml:space="preserve">
+    <value>Cortar</value>
+  </data>
+  <data name="Menu.Delete" xml:space="preserve">
+    <value>Eliminar</value>
+  </data>
+  <data name="Menu.Distribute" xml:space="preserve">
+    <value>Distribuir</value>
+  </data>
+  <data name="Menu.DistributeH" xml:space="preserve">
+    <value>Horizontalmente</value>
+  </data>
+  <data name="Menu.DistributeV" xml:space="preserve">
+    <value>Verticalmente</value>
+  </data>
+  <data name="Menu.Duplicate" xml:space="preserve">
+    <value>Duplicar</value>
+  </data>
+  <data name="Menu.Edit" xml:space="preserve">
+    <value>_Edición</value>
+  </data>
+  <data name="Menu.Exit" xml:space="preserve">
+    <value>Salir</value>
+  </data>
+  <data name="Menu.Export" xml:space="preserve">
+    <value>Exportar</value>
+  </data>
+  <data name="Menu.ExportPdf" xml:space="preserve">
+    <value>Documento PDF...</value>
+  </data>
+  <data name="Menu.ExportPng" xml:space="preserve">
+    <value>Imagen PNG...</value>
+  </data>
+  <data name="Menu.ExportZpl" xml:space="preserve">
+    <value>Archivo ZPL...</value>
+  </data>
+  <data name="Menu.File" xml:space="preserve">
+    <value>_Archivo</value>
+  </data>
+  <data name="Menu.Grid" xml:space="preserve">
+    <value>Mostrar cuadrícula</value>
+  </data>
+  <data name="Menu.Help" xml:space="preserve">
+    <value>_Ayuda</value>
+  </data>
+  <data name="Menu.ImportZpl" xml:space="preserve">
+    <value>Importar ZPL...</value>
+  </data>
+  <data name="Menu.Language" xml:space="preserve">
+    <value>Idioma</value>
+  </data>
+  <data name="Menu.LanguageAuto" xml:space="preserve">
+    <value>Igual que Windows</value>
+  </data>
+  <data name="Menu.Main" xml:space="preserve">
+    <value>Menú principal</value>
+  </data>
+  <data name="Menu.New" xml:space="preserve">
+    <value>Nueva...</value>
+  </data>
+  <data name="Menu.Open" xml:space="preserve">
+    <value>Abrir...</value>
+  </data>
+  <data name="Menu.Paste" xml:space="preserve">
+    <value>Pegar</value>
+  </data>
+  <data name="Menu.Print" xml:space="preserve">
+    <value>Imprimir...</value>
+  </data>
+  <data name="Menu.Recent" xml:space="preserve">
+    <value>Abrir reciente</value>
+  </data>
+  <data name="Menu.Redo" xml:space="preserve">
+    <value>Rehacer</value>
+  </data>
+  <data name="Menu.RedoWhat" xml:space="preserve">
+    <value>Rehacer {0}</value>
+  </data>
+  <data name="Menu.RotateCcw" xml:space="preserve">
+    <value>Girar 90° a la izquierda</value>
+  </data>
+  <data name="Menu.RotateCw" xml:space="preserve">
+    <value>Girar 90° a la derecha</value>
+  </data>
+  <data name="Menu.Save" xml:space="preserve">
+    <value>Guardar</value>
+  </data>
+  <data name="Menu.SaveAs" xml:space="preserve">
+    <value>Guardar como...</value>
+  </data>
+  <data name="Menu.SelectAll" xml:space="preserve">
+    <value>Seleccionar todo</value>
+  </data>
+  <data name="Menu.SelectNext" xml:space="preserve">
+    <value>Seleccionar elemento siguiente</value>
+  </data>
+  <data name="Menu.SelectPrevious" xml:space="preserve">
+    <value>Seleccionar elemento anterior</value>
+  </data>
+  <data name="Menu.SendBackward" xml:space="preserve">
+    <value>Bajar un nivel</value>
+  </data>
+  <data name="Menu.SendToBack" xml:space="preserve">
+    <value>Enviar al fondo</value>
+  </data>
+  <data name="Menu.SnapGrid" xml:space="preserve">
+    <value>Ajustar a la cuadrícula</value>
+  </data>
+  <data name="Menu.SnapGuides" xml:space="preserve">
+    <value>Ajustar a las guías</value>
+  </data>
+  <data name="Menu.Undo" xml:space="preserve">
+    <value>Deshacer</value>
+  </data>
+  <data name="Menu.UndoWhat" xml:space="preserve">
+    <value>Deshacer {0}</value>
+  </data>
+  <data name="Menu.UnitDots" xml:space="preserve">
+    <value>Puntos</value>
+  </data>
+  <data name="Menu.UnitInch" xml:space="preserve">
+    <value>Pulgadas</value>
+  </data>
+  <data name="Menu.UnitMm" xml:space="preserve">
+    <value>Milímetros</value>
+  </data>
+  <data name="Menu.Units" xml:space="preserve">
+    <value>Unidades de las reglas</value>
+  </data>
+  <data name="Menu.View" xml:space="preserve">
+    <value>_Ver</value>
+  </data>
+  <data name="Menu.ZoomActual" xml:space="preserve">
+    <value>Tamaño real (100%)</value>
+  </data>
+  <data name="Menu.ZoomFit" xml:space="preserve">
+    <value>Ajustar etiqueta a la ventana</value>
+  </data>
+  <data name="Menu.ZoomIn" xml:space="preserve">
+    <value>Acercar</value>
+  </data>
+  <data name="Menu.ZoomOut" xml:space="preserve">
+    <value>Alejar</value>
+  </data>
+  <data name="Panel.Barcode" xml:space="preserve">
+    <value>Código de barras</value>
+  </data>
+  <data name="Panel.Defaults" xml:space="preserve">
+    <value>Valores por defecto e impresora</value>
+  </data>
+  <data name="Panel.Element" xml:space="preserve">
+    <value>{0}</value>
+  </data>
+  <data name="Panel.Image" xml:space="preserve">
+    <value>Imagen</value>
+  </data>
+  <data name="Panel.Label" xml:space="preserve">
+    <value>Etiqueta</value>
+  </data>
+  <data name="Panel.Layers" xml:space="preserve">
+    <value>Capas</value>
+  </data>
+  <data name="Panel.Margins" xml:space="preserve">
+    <value>Márgenes (puntos)</value>
+  </data>
+  <data name="Panel.MultiHint" xml:space="preserve">
+    <value>Hay {0} elementos seleccionados. Puede moverlos, alinearlos u organizarlos juntos, o seleccionar un solo elemento para editar sus propiedades.</value>
+  </data>
+  <data name="Panel.Position" xml:space="preserve">
+    <value>Posición</value>
+  </data>
+  <data name="Panel.PrintJob" xml:space="preserve">
+    <value>Trabajo de impresión</value>
+  </data>
+  <data name="Panel.Properties" xml:space="preserve">
+    <value>Propiedades</value>
+  </data>
+  <data name="Panel.Selection" xml:space="preserve">
+    <value>Selección</value>
+  </data>
+  <data name="Panel.Shape" xml:space="preserve">
+    <value>Forma</value>
+  </data>
+  <data name="Panel.Size" xml:space="preserve">
+    <value>Tamaño de la etiqueta</value>
+  </data>
+  <data name="Panel.Text" xml:space="preserve">
+    <value>Texto</value>
+  </data>
+  <data name="Panel.Toolbox" xml:space="preserve">
+    <value>Elementos</value>
+  </data>
+  <data name="Panel.Variables" xml:space="preserve">
+    <value>Variables</value>
+  </data>
+  <data name="Panel.Zpl" xml:space="preserve">
+    <value>Código ZPL (solo lectura)</value>
+  </data>
+  <data name="Preset.100x150mm" xml:space="preserve">
+    <value>100 x 150 mm</value>
+  </data>
+  <data name="Preset.100x50mm" xml:space="preserve">
+    <value>100 x 50 mm</value>
+  </data>
+  <data name="Preset.2x1in" xml:space="preserve">
+    <value>2 x 1 pulgadas</value>
+  </data>
+  <data name="Preset.4x3in" xml:space="preserve">
+    <value>4 x 3 pulgadas</value>
+  </data>
+  <data name="Preset.4x6in" xml:space="preserve">
+    <value>4 x 6 pulgadas</value>
+  </data>
+  <data name="Preset.Custom" xml:space="preserve">
+    <value>Tamaño personalizado</value>
+  </data>
+  <data name="Preview.Approximate" xml:space="preserve">
+    <value>La vista previa es aproximada: el texto se dibuja con una fuente de sustitución, por lo que las letras y los saltos de línea pueden diferir un poco en la etiqueta impresa.</value>
+  </data>
+  <data name="Preview.Approximate.Name" xml:space="preserve">
+    <value>Nota: la vista previa es aproximada</value>
+  </data>
+  <data name="Preview.InvalidSize" xml:space="preserve">
+    <value>La etiqueta no tiene un tamaño válido y no se puede dibujar. Indique un ancho y un alto mayores que cero en las propiedades de la etiqueta.</value>
+  </data>
+  <data name="Preview.TooLarge" xml:space="preserve">
+    <value>La etiqueta es demasiado grande para dibujarla con este zoom. Aleje el zoom e inténtelo de nuevo.</value>
+  </data>
+  <data name="Print.Failed" xml:space="preserve">
+    <value>No se pudo imprimir la etiqueta. Compruebe la conexión de la impresora e inténtelo de nuevo.</value>
+  </data>
+  <data name="Print.NotAvailable" xml:space="preserve">
+    <value>La impresión todavía no está conectada en esta versión. Exporte el ZPL o un PDF e imprímalo desde allí.</value>
+  </data>
+  <data name="Prop.BarHeight" xml:space="preserve">
+    <value>Altura de las barras (puntos)</value>
+  </data>
+  <data name="Prop.Block" xml:space="preserve">
+    <value>Ajustar el texto en un bloque</value>
+  </data>
+  <data name="Prop.Block.Alignment" xml:space="preserve">
+    <value>Alineación</value>
+  </data>
+  <data name="Prop.Block.HangingIndent" xml:space="preserve">
+    <value>Sangría francesa (puntos)</value>
+  </data>
+  <data name="Prop.Block.LineSpacing" xml:space="preserve">
+    <value>Espacio extra entre líneas (puntos)</value>
+  </data>
+  <data name="Prop.Block.MaxLines" xml:space="preserve">
+    <value>Líneas máximas</value>
+  </data>
+  <data name="Prop.Block.Width" xml:space="preserve">
+    <value>Ancho del bloque (puntos)</value>
+  </data>
+  <data name="Prop.CheckDigit" xml:space="preserve">
+    <value>Añadir dígito de control</value>
+  </data>
+  <data name="Prop.ChooseImage" xml:space="preserve">
+    <value>Elegir otra imagen...</value>
+  </data>
+  <data name="Prop.Code128Mode" xml:space="preserve">
+    <value>Modo Code 128</value>
+  </data>
+  <data name="Prop.Color" xml:space="preserve">
+    <value>Color</value>
+  </data>
+  <data name="Prop.Columns" xml:space="preserve">
+    <value>Columnas (0 = automático)</value>
+  </data>
+  <data name="Prop.CornerRounding" xml:space="preserve">
+    <value>Redondeo de esquinas (0 a 8)</value>
+  </data>
+  <data name="Prop.Data" xml:space="preserve">
+    <value>Datos (use {{nombre}} para variables)</value>
+  </data>
+  <data name="Prop.DefaultFontHeight" xml:space="preserve">
+    <value>Altura de fuente por defecto (puntos)</value>
+  </data>
+  <data name="Prop.DefaultFontWidth" xml:space="preserve">
+    <value>Ancho de fuente por defecto (puntos)</value>
+  </data>
+  <data name="Prop.DefaultRotation" xml:space="preserve">
+    <value>Rotación por defecto</value>
+  </data>
+  <data name="Prop.Diameter" xml:space="preserve">
+    <value>Diámetro (puntos)</value>
+  </data>
+  <data name="Prop.Direction" xml:space="preserve">
+    <value>Dirección</value>
+  </data>
+  <data name="Prop.Dither" xml:space="preserve">
+    <value>Conversión a blanco y negro</value>
+  </data>
+  <data name="Prop.Dpi" xml:space="preserve">
+    <value>Resolución de la impresora (DPI)</value>
+  </data>
+  <data name="Prop.Encoding" xml:space="preserve">
+    <value>Codificación de caracteres</value>
+  </data>
+  <data name="Prop.FontHeight" xml:space="preserve">
+    <value>Altura de la fuente (puntos)</value>
+  </data>
+  <data name="Prop.FontId" xml:space="preserve">
+    <value>Fuente (vacío para usar la de la etiqueta)</value>
+  </data>
+  <data name="Prop.FontId.Hint" xml:space="preserve">
+    <value>Una letra o dígito. 0 es la fuente escalable.</value>
+  </data>
+  <data name="Prop.FontWidth" xml:space="preserve">
+    <value>Ancho de la fuente (puntos, 0 = automático)</value>
+  </data>
+  <data name="Prop.Height" xml:space="preserve">
+    <value>Alto (puntos)</value>
+  </data>
+  <data name="Prop.HumanReadable" xml:space="preserve">
+    <value>Imprimir el texto junto a las barras</value>
+  </data>
+  <data name="Prop.HumanReadablePosition" xml:space="preserve">
+    <value>Posición del texto</value>
+  </data>
+  <data name="Prop.Inherit.Hint" xml:space="preserve">
+    <value>Déjelo vacío para usar el valor de la etiqueta.</value>
+  </data>
+  <data name="Prop.Invert" xml:space="preserve">
+    <value>Invertir blanco y negro</value>
+  </data>
+  <data name="Prop.LabelHeight" xml:space="preserve">
+    <value>Alto</value>
+  </data>
+  <data name="Prop.LabelUnit" xml:space="preserve">
+    <value>Unidad</value>
+  </data>
+  <data name="Prop.LabelWidth" xml:space="preserve">
+    <value>Ancho</value>
+  </data>
+  <data name="Prop.Length" xml:space="preserve">
+    <value>Longitud (puntos)</value>
+  </data>
+  <data name="Prop.MarginBottom" xml:space="preserve">
+    <value>Inferior</value>
+  </data>
+  <data name="Prop.MarginLeft" xml:space="preserve">
+    <value>Izquierdo</value>
+  </data>
+  <data name="Prop.MarginRight" xml:space="preserve">
+    <value>Derecho</value>
+  </data>
+  <data name="Prop.MarginTop" xml:space="preserve">
+    <value>Superior</value>
+  </data>
+  <data name="Prop.MediaTracking" xml:space="preserve">
+    <value>Seguimiento del medio</value>
+  </data>
+  <data name="Prop.MediaType" xml:space="preserve">
+    <value>Tipo de medio</value>
+  </data>
+  <data name="Prop.ModuleSize" xml:space="preserve">
+    <value>Tamaño del módulo (puntos)</value>
+  </data>
+  <data name="Prop.ModuleWidth" xml:space="preserve">
+    <value>Ancho de la barra fina (puntos)</value>
+  </data>
+  <data name="Prop.Name" xml:space="preserve">
+    <value>Nombre</value>
+  </data>
+  <data name="Prop.Orientation" xml:space="preserve">
+    <value>Orientación de impresión</value>
+  </data>
+  <data name="Prop.OriginKind" xml:space="preserve">
+    <value>La posición se refiere a</value>
+  </data>
+  <data name="Prop.OriginKind.Hint" xml:space="preserve">
+    <value>Esquina superior izquierda, o línea base del texto / esquina inferior izquierda.</value>
+  </data>
+  <data name="Prop.PauseEvery" xml:space="preserve">
+    <value>Pausar cada N etiquetas (0 = nunca)</value>
+  </data>
+  <data name="Prop.Pdf417Security" xml:space="preserve">
+    <value>Nivel de seguridad (1 a 8)</value>
+  </data>
+  <data name="Prop.Pdf417Truncate" xml:space="preserve">
+    <value>PDF417 compacto (truncado)</value>
+  </data>
+  <data name="Prop.QrErrorCorrection" xml:space="preserve">
+    <value>Corrección de errores</value>
+  </data>
+  <data name="Prop.QrModel" xml:space="preserve">
+    <value>Modelo QR (1 o 2)</value>
+  </data>
+  <data name="Prop.Quantity" xml:space="preserve">
+    <value>Copias</value>
+  </data>
+  <data name="Prop.Replicates" xml:space="preserve">
+    <value>Réplicas de cada número de serie</value>
+  </data>
+  <data name="Prop.Reverse" xml:space="preserve">
+    <value>Impresión inversa (invierte lo que hay debajo)</value>
+  </data>
+  <data name="Prop.Rotation" xml:space="preserve">
+    <value>Rotación</value>
+  </data>
+  <data name="Prop.Rotation.Inherit" xml:space="preserve">
+    <value>Valor de la etiqueta</value>
+  </data>
+  <data name="Prop.Rows" xml:space="preserve">
+    <value>Filas (0 = automático)</value>
+  </data>
+  <data name="Prop.Symbology" xml:space="preserve">
+    <value>Tipo de código</value>
+  </data>
+  <data name="Prop.Text" xml:space="preserve">
+    <value>Texto</value>
+  </data>
+  <data name="Prop.Thickness" xml:space="preserve">
+    <value>Grosor de línea (puntos)</value>
+  </data>
+  <data name="Prop.Threshold" xml:space="preserve">
+    <value>Umbral (0 a 255)</value>
+  </data>
+  <data name="Prop.Variable" xml:space="preserve">
+    <value>Nombre de la variable</value>
+  </data>
+  <data name="Prop.Variables" xml:space="preserve">
+    <value>Variables (una por línea: nombre=valor de ejemplo)</value>
+  </data>
+  <data name="Prop.Variables.Hint" xml:space="preserve">
+    <value>Use una variable en un texto o código escribiendo {{nombre}}.</value>
+  </data>
+  <data name="Prop.WideBarRatio" xml:space="preserve">
+    <value>Proporción ancha/fina (2,0 a 3,0)</value>
+  </data>
+  <data name="Prop.Width" xml:space="preserve">
+    <value>Ancho (puntos)</value>
+  </data>
+  <data name="Prop.X" xml:space="preserve">
+    <value>X (puntos desde la izquierda)</value>
+  </data>
+  <data name="Prop.Y" xml:space="preserve">
+    <value>Y (puntos desde arriba)</value>
+  </data>
+  <data name="Ruler.Horizontal" xml:space="preserve">
+    <value>Regla horizontal</value>
+  </data>
+  <data name="Ruler.Vertical" xml:space="preserve">
+    <value>Regla vertical</value>
+  </data>
+  <data name="Splitter.Layers" xml:space="preserve">
+    <value>Cambiar tamaño del panel de capas</value>
+  </data>
+  <data name="Status.Added" xml:space="preserve">
+    <value>Se añadió {0}</value>
+  </data>
+  <data name="Status.Bar" xml:space="preserve">
+    <value>Barra de estado</value>
+  </data>
+  <data name="Status.Exported" xml:space="preserve">
+    <value>Se exportó {0}</value>
+  </data>
+  <data name="Status.Imported" xml:space="preserve">
+    <value>Se importó {0}. Guárdela para conservarla.</value>
+  </data>
+  <data name="Status.ManySelected" xml:space="preserve">
+    <value>{0} elementos seleccionados</value>
+  </data>
+  <data name="Status.NewCreated" xml:space="preserve">
+    <value>Etiqueta nueva creada</value>
+  </data>
+  <data name="Status.NoProblems" xml:space="preserve">
+    <value>No se encontraron problemas</value>
+  </data>
+  <data name="Status.NothingSelected" xml:space="preserve">
+    <value>Nada seleccionado</value>
+  </data>
+  <data name="Status.NothingToPaste" xml:space="preserve">
+    <value>No hay nada que pegar. Copie primero un elemento.</value>
+  </data>
+  <data name="Status.OneSelected" xml:space="preserve">
+    <value>1 elemento seleccionado</value>
+  </data>
+  <data name="Status.Opened" xml:space="preserve">
+    <value>Se abrió {0}</value>
+  </data>
+  <data name="Status.Printed" xml:space="preserve">
+    <value>Enviado a la impresora</value>
+  </data>
+  <data name="Status.Problems" xml:space="preserve">
+    <value>{0} errores, {1} avisos</value>
+  </data>
+  <data name="Status.Saved" xml:space="preserve">
+    <value>Se guardó {0}</value>
+  </data>
+  <data name="Status.Selected" xml:space="preserve">
+    <value>Seleccionado {0}</value>
+  </data>
+  <data name="Status.Zoom" xml:space="preserve">
+    <value>Zoom</value>
+  </data>
+  <data name="Status.ZplCopied" xml:space="preserve">
+    <value>ZPL copiado al portapapeles</value>
+  </data>
+  <data name="Status.ZplFailed" xml:space="preserve">
+    <value>No se pudo crear el código ZPL</value>
+  </data>
+  <data name="Tool.Barcode" xml:space="preserve">
+    <value>Código de barras</value>
+  </data>
+  <data name="Tool.Box" xml:space="preserve">
+    <value>Recuadro</value>
+  </data>
+  <data name="Tool.Circle" xml:space="preserve">
+    <value>Círculo</value>
+  </data>
+  <data name="Tool.DataField" xml:space="preserve">
+    <value>Campo de datos</value>
+  </data>
+  <data name="Tool.Image" xml:space="preserve">
+    <value>Imagen</value>
+  </data>
+  <data name="Tool.Line" xml:space="preserve">
+    <value>Línea</value>
+  </data>
+  <data name="Tool.QrCode" xml:space="preserve">
+    <value>Código QR</value>
+  </data>
+  <data name="Tool.Text" xml:space="preserve">
+    <value>Texto</value>
+  </data>
+  <data name="Toolbar.Edit" xml:space="preserve">
+    <value>Barra de edición</value>
+  </data>
+  <data name="Toolbar.Main" xml:space="preserve">
+    <value>Barra de archivo</value>
+  </data>
+  <data name="Toolbar.View" xml:space="preserve">
+    <value>Barra de vista</value>
+  </data>
+  <data name="Undo.Add" xml:space="preserve">
+    <value>añadir</value>
+  </data>
+  <data name="Undo.Align" xml:space="preserve">
+    <value>alinear</value>
+  </data>
+  <data name="Undo.BringForward" xml:space="preserve">
+    <value>subir un nivel</value>
+  </data>
+  <data name="Undo.BringToFront" xml:space="preserve">
+    <value>traer al frente</value>
+  </data>
+  <data name="Undo.Delete" xml:space="preserve">
+    <value>eliminar</value>
+  </data>
+  <data name="Undo.Distribute" xml:space="preserve">
+    <value>distribuir</value>
+  </data>
+  <data name="Undo.Duplicate" xml:space="preserve">
+    <value>duplicar</value>
+  </data>
+  <data name="Undo.LabelSettings" xml:space="preserve">
+    <value>ajustes de la etiqueta</value>
+  </data>
+  <data name="Undo.Move" xml:space="preserve">
+    <value>mover</value>
+  </data>
+  <data name="Undo.Paste" xml:space="preserve">
+    <value>pegar</value>
+  </data>
+  <data name="Undo.Property" xml:space="preserve">
+    <value>cambio de propiedad</value>
+  </data>
+  <data name="Undo.Reorder" xml:space="preserve">
+    <value>reordenar</value>
+  </data>
+  <data name="Undo.Resize" xml:space="preserve">
+    <value>cambiar tamaño</value>
+  </data>
+  <data name="Undo.Rotate" xml:space="preserve">
+    <value>girar</value>
+  </data>
+  <data name="Undo.SendBackward" xml:space="preserve">
+    <value>bajar un nivel</value>
+  </data>
+  <data name="Undo.SendToBack" xml:space="preserve">
+    <value>enviar al fondo</value>
+  </data>
+  <data name="Validation.FontId" xml:space="preserve">
+    <value>La fuente debe ser una sola letra o dígito.</value>
+  </data>
+  <data name="Validation.LabelSize" xml:space="preserve">
+    <value>El tamaño de la etiqueta no es válido. El ancho puede ser como máximo {0} puntos y el alto {1} puntos. Escriba un tamaño menor.</value>
+  </data>
+  <data name="Validation.NotInteger" xml:space="preserve">
+    <value>Eso no es un número entero. Escriba solo dígitos, por ejemplo 120.</value>
+  </data>
+  <data name="Validation.NotNumber" xml:space="preserve">
+    <value>Eso no es un número. Escriba un número como 12,5.</value>
+  </data>
+  <data name="Validation.Range" xml:space="preserve">
+    <value>El valor debe estar entre {0} y {1}. Escriba un valor dentro de ese rango.</value>
+  </data>
+  <data name="Validation.Required" xml:space="preserve">
+    <value>Este campo no puede estar vacío. Escriba un número.</value>
+  </data>
+  <data name="Validation.TooLong" xml:space="preserve">
+    <value>El texto es demasiado largo. Use como máximo {0} caracteres.</value>
+  </data>
+  <data name="Validation.Variables" xml:space="preserve">
+    <value>Cada línea debe tener la forma nombre=valor. Los nombres pueden usar letras, dígitos y guiones bajos, y no pueden repetirse.</value>
+  </data>
+  <data name="Zpl.Copy" xml:space="preserve">
+    <value>Copiar ZPL</value>
+  </data>
+</root>

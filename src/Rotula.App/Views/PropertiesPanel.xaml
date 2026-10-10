@@ -1,0 +1,98 @@
+<UserControl x:Class="Rotula.App.Views.PropertiesPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:Rotula.App.Localization"
+             xmlns:vm="clr-namespace:Rotula.App.ViewModels">
+  <UserControl.Resources>
+    <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+    <Style x:Key="RowLabel" TargetType="TextBlock">
+      <Setter Property="Margin" Value="0,6,0,2" />
+      <Setter Property="Foreground" Value="{StaticResource MutedBrush}" />
+    </Style>
+
+    <DataTemplate DataType="{x:Type vm:HeadingRow}">
+      <TextBlock Text="{Binding Label}" FontWeight="SemiBold" Margin="0,12,0,2"
+                 AutomationProperties.HeadingLevel="Level2" />
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type vm:IntRow}">
+      <StackPanel ToolTip="{Binding Hint}">
+        <TextBlock Text="{Binding Label}" Style="{StaticResource RowLabel}" />
+        <TextBox Text="{Binding Text, UpdateSourceTrigger=LostFocus}" IsUndoEnabled="False"
+                 AutomationProperties.Name="{Binding Label}" />
+        <TextBlock Text="{Binding Error}" Style="{StaticResource ErrorText}">
+          <TextBlock.Visibility><Binding Path="HasError" Converter="{StaticResource BoolToVisibility}" /></TextBlock.Visibility>
+        </TextBlock>
+      </StackPanel>
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type vm:DoubleRow}">
+      <StackPanel ToolTip="{Binding Hint}">
+        <TextBlock Text="{Binding Label}" Style="{StaticResource RowLabel}" />
+        <TextBox Text="{Binding Text, UpdateSourceTrigger=LostFocus}" IsUndoEnabled="False"
+                 AutomationProperties.Name="{Binding Label}" />
+        <TextBlock Text="{Binding Error}" Style="{StaticResource ErrorText}">
+          <TextBlock.Visibility><Binding Path="HasError" Converter="{StaticResource BoolToVisibility}" /></TextBlock.Visibility>
+        </TextBlock>
+      </StackPanel>
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type vm:TextRow}">
+      <StackPanel ToolTip="{Binding Hint}">
+        <TextBlock Text="{Binding Label}" Style="{StaticResource RowLabel}" />
+        <TextBox Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}" IsUndoEnabled="False"
+                 AutomationProperties.Name="{Binding Label}" TextWrapping="Wrap" AcceptsReturn="{Binding IsMultiline}">
+          <TextBox.Style>
+            <Style TargetType="TextBox">
+              <Style.Triggers>
+                <DataTrigger Binding="{Binding IsMultiline}" Value="True">
+                  <Setter Property="MinHeight" Value="64" />
+                  <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
+                </DataTrigger>
+              </Style.Triggers>
+            </Style>
+          </TextBox.Style>
+        </TextBox>
+        <TextBlock Text="{Binding Error}" Style="{StaticResource ErrorText}">
+          <TextBlock.Visibility><Binding Path="HasError" Converter="{StaticResource BoolToVisibility}" /></TextBlock.Visibility>
+        </TextBlock>
+      </StackPanel>
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type vm:BoolRow}">
+      <CheckBox Content="{Binding Label}" IsChecked="{Binding Value}" Margin="0,6,0,0" ToolTip="{Binding Hint}"
+                AutomationProperties.Name="{Binding Label}" />
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type vm:ChoiceRow}">
+      <StackPanel ToolTip="{Binding Hint}">
+        <TextBlock Text="{Binding Label}" Style="{StaticResource RowLabel}" />
+        <ComboBox ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" DisplayMemberPath="Display"
+                  AutomationProperties.Name="{Binding Label}" />
+      </StackPanel>
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type vm:ActionRow}">
+      <Button Content="{Binding Label}" Command="{Binding RunCommand}" Margin="0,8,0,0" Padding="8,3" HorizontalAlignment="Left"
+              AutomationProperties.Name="{Binding Label}" />
+    </DataTemplate>
+  </UserControl.Resources>
+
+  <DockPanel Background="{StaticResource PanelBrush}">
+    <TextBlock DockPanel.Dock="Top" Text="{Binding Properties.Title}" Style="{StaticResource PanelHeading}" TextTrimming="CharacterEllipsis"
+               AutomationProperties.HeadingLevel="Level1" />
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8,0,8,8" Focusable="False">
+      <StackPanel>
+        <TextBlock Text="{Binding Properties.Hint}" TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" />
+        <ItemsControl ItemsSource="{Binding Properties.Rows}" IsTabStop="False" />
+        <ItemsControl ItemsSource="{Binding Properties.IssueMessages}" Margin="0,12,0,0" IsTabStop="False">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding}" TextWrapping="Wrap" Foreground="{StaticResource WarningBrush}" Margin="0,2" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

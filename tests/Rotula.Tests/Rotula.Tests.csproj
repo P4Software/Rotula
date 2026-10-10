@@ -1,7 +1,8 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <!-- net10.0-windows so the tests can reference the WPF application (Rotula.App); everything else still runs unchanged. -->
+    <TargetFramework>net10.0-windows</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
@@ -23,6 +24,7 @@
     <ProjectReference Include="..\..\src\Rotula.Core\Rotula.Core.csproj" />
     <ProjectReference Include="..\..\src\Rotula.Rendering\Rotula.Rendering.csproj" />
     <ProjectReference Include="..\..\src\Rotula.Printing\Rotula.Printing.csproj" />
+    <ProjectReference Include="..\..\src\Rotula.App\Rotula.App.csproj" />
   </ItemGroup>
 
 </Project>
