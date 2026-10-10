@@ -24,6 +24,20 @@ public interface IPrintService
     /// <summary>Prints ready-made ZPL, encoding it with <paramref name="encoding"/>.</summary>
     Task<PrintResult> PrintZplAsync(PrinterTarget target, string zpl, ZplEncoding encoding, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Prints ready-made ZPL like the plain overload, but writes every occurrence of a block in <paramref name="byteExactBlocks"/>
+    /// as Latin-1 (one byte per char) so imported raw ZPL with bytes above 0x7F reaches the printer unchanged.
+    /// Use it for data-merge batches: collect the blocks once with <see cref="ByteExactBlocks.From(LabelDocument)"/>.
+    /// The default implementation ignores the blocks and behaves like the plain overload; <see cref="PrintService"/> honours them.
+    /// </summary>
+    /// <param name="target">Destination printer.</param>
+    /// <param name="zpl">The ZPL text of one job.</param>
+    /// <param name="encoding">Encoding for everything outside the byte-exact blocks.</param>
+    /// <param name="byteExactBlocks">Raw ZPL texts to send byte for byte.</param>
+    /// <param name="cancellationToken">Cancellation.</param>
+    Task<PrintResult> PrintZplAsync(PrinterTarget target, string zpl, ZplEncoding encoding, IReadOnlyCollection<string> byteExactBlocks,
+        CancellationToken cancellationToken = default) => PrintZplAsync(target, zpl, encoding, cancellationToken);
+
     /// <summary>Sends only the profile set-up commands (darkness, speed, media, width).</summary>
     Task<PrintResult> ApplyProfileAsync(PrinterTarget target, PrinterProfile profile, CancellationToken cancellationToken = default);
 
@@ -73,8 +87,7 @@ public sealed class PrintService : IPrintService
         ArgumentNullException.ThrowIfNull(target);
         // Raw blocks imported from bytes hold bytes above 0x7F as the Latin-1 character with the same value, so they
         // must go out as those exact bytes; the rest of the label follows the document encoding.
-        var rawBlocks = document.Elements.OfType<RawZplElement>().Select(r => r.Zpl).Where(NeedsByteExactEncoding).Distinct().ToArray();
-        if (!TryEncode(zpl, document.Encoding, rawBlocks, out var bytes))
+        if (!TryEncode(zpl, document.Encoding, ByteExactBlocks.From(document), out var bytes))
             return Task.FromResult(PrintResult.Fail(PrintErrorKind.EncodingFailed, document.Encoding.ToString()));
         return SendAsync(target, bytes, cancellationToken);
     }
@@ -86,6 +99,19 @@ public sealed class PrintService : IPrintService
         ArgumentNullException.ThrowIfNull(zpl);
         ArgumentNullException.ThrowIfNull(encoding);
         if (!TryEncode(zpl, encoding, out var bytes))
+            return Task.FromResult(PrintResult.Fail(PrintErrorKind.EncodingFailed, encoding.ToString()));
+        return SendAsync(target, bytes, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task<PrintResult> PrintZplAsync(PrinterTarget target, string zpl, ZplEncoding encoding, IReadOnlyCollection<string> byteExactBlocks,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        ArgumentNullException.ThrowIfNull(zpl);
+        ArgumentNullException.ThrowIfNull(encoding);
+        ArgumentNullException.ThrowIfNull(byteExactBlocks);
+        if (!TryEncode(zpl, encoding, byteExactBlocks, out var bytes))
             return Task.FromResult(PrintResult.Fail(PrintErrorKind.EncodingFailed, encoding.ToString()));
         return SendAsync(target, bytes, cancellationToken);
     }
@@ -114,16 +140,7 @@ public sealed class PrintService : IPrintService
     internal static bool TryEncode(string zpl, ZplEncoding encoding, out byte[] bytes) => TryEncode(zpl, encoding, [], out bytes);
 
     /// <summary>True for a raw ZPL block whose characters are all Latin-1 and at least one is above 0x7F (a byte kept as a char).</summary>
-    internal static bool NeedsByteExactEncoding(string rawZpl)
-    {
-        bool high = false;
-        foreach (char c in rawZpl)
-        {
-            if (c > 0xFF) return false; // a real Unicode character: not a stored byte, so the document encoding applies
-            if (c > 0x7F) high = true;
-        }
-        return high;
-    }
+    internal static bool NeedsByteExactEncoding(string rawZpl) => ByteExactBlocks.Needs(rawZpl);
 
     /// <summary>
     /// Like the plain overload, but every occurrence of a block in <paramref name="byteExactBlocks"/> is written as
@@ -191,6 +208,32 @@ public sealed class PrintService : IPrintService
         PrinterTransport.Tcp => _network.SendAsync(target.Host, target.Port, bytes, target.Network, ct),
         _ => Task.FromResult(PrintResult.Fail(PrintErrorKind.Unknown, target.Transport.ToString())),
     };
+}
+
+/// <summary>Finds the raw ZPL blocks of a label that must be sent byte for byte (single source for every print path).</summary>
+public static class ByteExactBlocks
+{
+    /// <summary>
+    /// Returns the distinct raw ZPL texts of <paramref name="document"/> that hold bytes above 0x7F as Latin-1 chars.
+    /// Pass the result to <see cref="IPrintService.PrintZplAsync(PrinterTarget, string, ZplEncoding, IReadOnlyCollection{string}, CancellationToken)"/>.
+    /// </summary>
+    public static IReadOnlyCollection<string> From(LabelDocument document)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        return document.Elements.OfType<RawZplElement>().Select(r => r.Zpl).Where(Needs).Distinct().ToArray();
+    }
+
+    /// <summary>True when all chars are Latin-1 and at least one is above 0x7F; a real Unicode char means it is text, not stored bytes.</summary>
+    internal static bool Needs(string rawZpl)
+    {
+        bool high = false;
+        foreach (char c in rawZpl)
+        {
+            if (c > 0xFF) return false;
+            if (c > 0x7F) high = true;
+        }
+        return high;
+    }
 }
 
 /// <summary>Builds the small label used by "print test label".</summary>

@@ -317,6 +317,34 @@ public class PrintingRawBytesTests
     public void Only_latin1_blocks_with_high_chars_need_byte_exact_encoding(string raw, bool expected) =>
         Assert.Equal(expected, PrintService.NeedsByteExactEncoding(raw));
 
+    [Fact]
+    public async Task Merge_path_sends_raw_high_bytes_as_two_bytes_not_four()
+    {
+        var fake = new FakeSpooler();
+        var svc = new PrintService(fake, new TcpRawPrinter(), fake);
+        var doc = new LabelDocument { Width = Measure.Millimeters(50), Height = Measure.Millimeters(30), Encoding = ZplEncoding.Utf8 };
+        doc.Elements.Add(new RawZplElement { Zpl = "^FO5,5^FDéÿ^FS", IsVisual = true });
+        var blocks = ByteExactBlocks.From(doc);
+        string job = "^XA" + "^FO5,5^FDéÿ^FS" + "^FDNiño^FS^XZ";
+
+        var r = await svc.PrintZplAsync(PrinterTarget.Spooler("Zebra ZD420"), job, ZplEncoding.Utf8, blocks);
+
+        Assert.True(r.Succeeded);
+        var bytes = Assert.Single(fake.Jobs).Data;
+        Assert.Equal(1, Count(bytes, [0x44, 0xE9, 0xFF, 0x5E]));
+        Assert.Equal(0, Count(bytes, [0xC3, 0xA9]));
+        Assert.Equal(1, Count(bytes, [0xC3, 0xB1])); // text outside the block still follows UTF-8
+    }
+
+    [Fact]
+    public async Task Plain_overload_is_unchanged_and_reencodes()
+    {
+        var fake = new FakeSpooler();
+        var svc = new PrintService(fake, new TcpRawPrinter(), fake);
+        await svc.PrintZplAsync(PrinterTarget.Spooler("Z"), "éÿ", ZplEncoding.Utf8);
+        Assert.Equal([0xC3, 0xA9, 0xC3, 0xBF], Assert.Single(fake.Jobs).Data);
+    }
+
     private static int Count(byte[] hay, byte[] needle)
     {
         int n = 0;
