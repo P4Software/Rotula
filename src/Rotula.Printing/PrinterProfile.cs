@@ -25,6 +25,29 @@ public sealed record PrinterProfile
     /// <summary>Character encoding used for the bytes sent when printing the test label.</summary>
     public ZplEncoding Encoding { get; init; } = ZplEncoding.Utf8;
 
+    /// <summary>
+    /// When true, <see cref="IPrintService.PrintTestLabelAsync"/> replaces <see cref="Dpi"/> and (if reported) the
+    /// label size with what the printer driver reports. Default false so a resolution the user chose explicitly
+    /// is never overridden; the UI sets it when the user picks "detect from driver".
+    /// </summary>
+    public bool UseDetectedSettings { get; init; }
+
+    /// <summary>
+    /// Applies detected driver values to a profile: <see cref="Dpi"/> when the driver resolution maps to a supported
+    /// one, and <see cref="Width"/>/<see cref="Height"/> when the driver reports a current paper size. Unknown values
+    /// leave the base profile untouched.
+    /// </summary>
+    /// <param name="info">Detection result (may be unknown).</param>
+    /// <param name="baseProfile">Profile to start from; a default profile when null.</param>
+    public static PrinterProfile FromInfo(PrinterCapabilities info, PrinterProfile? baseProfile = null)
+    {
+        ArgumentNullException.ThrowIfNull(info);
+        var p = baseProfile ?? new PrinterProfile();
+        if (info.Dpi is { } dpi) p = p with { Dpi = dpi };
+        if (info.PaperWidth is { } w && info.PaperHeight is { } h) p = p with { Width = w, Height = h };
+        return p;
+    }
+
     /// <summary>Returns message keys (<c>Print.Profile.*</c>) for every out-of-range value; empty when valid.</summary>
     public IReadOnlyList<string> Validate()
     {

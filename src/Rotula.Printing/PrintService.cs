@@ -41,8 +41,18 @@ public interface IPrintService
     /// <summary>Sends only the profile set-up commands (darkness, speed, media, width).</summary>
     Task<PrintResult> ApplyProfileAsync(PrinterTarget target, PrinterProfile profile, CancellationToken cancellationToken = default);
 
-    /// <summary>Builds a small test label for the profile and prints it.</summary>
+    /// <summary>
+    /// Builds a small test label for the profile and prints it. When <see cref="PrinterProfile.UseDetectedSettings"/>
+    /// is set and the target is a Windows queue, the driver's resolution and paper size replace the profile's.
+    /// </summary>
     Task<PrintResult> PrintTestLabelAsync(PrinterTarget target, PrinterProfile profile, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Reads resolution and paper size from the driver of a Windows queue. TCP targets return unknown info (no network
+    /// probing). Never throws. The default implementation returns unknown info so existing fakes keep compiling.
+    /// </summary>
+    Task<PrinterCapabilities> GetPrinterInfoAsync(PrinterTarget target, CancellationToken ct = default) =>
+        Task.FromResult(PrinterCapabilities.Unknown(target?.PrinterName ?? string.Empty));
 }
 
 /// <summary>Default <see cref="IPrintService"/>: ZPL from Core, bytes from <see cref="ZplEncoding"/>, transport by target.</summary>
@@ -127,10 +137,31 @@ public sealed class PrintService : IPrintService
     }
 
     /// <inheritdoc />
-    public Task<PrintResult> PrintTestLabelAsync(PrinterTarget target, PrinterProfile profile, CancellationToken cancellationToken = default)
+    public async Task<PrintResult> PrintTestLabelAsync(PrinterTarget target, PrinterProfile profile, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(profile);
-        return PrintAsync(target, TestLabel.Build(profile), null, profile, cancellationToken);
+        ArgumentNullException.ThrowIfNull(target);
+        if (profile.UseDetectedSettings)
+        {
+            // Never throws; unknown info leaves the profile as it was.
+            var info = await GetPrinterInfoAsync(target, cancellationToken).ConfigureAwait(false);
+            profile = PrinterProfile.FromInfo(info, profile);
+        }
+        return await PrintAsync(target, TestLabel.Build(profile), null, profile, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public Task<PrinterCapabilities> GetPrinterInfoAsync(PrinterTarget target, CancellationToken ct = default)
+    {
+        if (target is null || target.Transport != PrinterTransport.Spooler || string.IsNullOrWhiteSpace(target.PrinterName))
+            return Task.FromResult(PrinterCapabilities.Unknown(target?.PrinterName ?? string.Empty));
+        return SafeInfoAsync(target.PrinterName, ct);
+    }
+
+    private async Task<PrinterCapabilities> SafeInfoAsync(string name, CancellationToken ct)
+    {
+        try { return await _discovery.GetPrinterInfoAsync(name, ct).ConfigureAwait(false); }
+        catch { return PrinterCapabilities.Unknown(name); }
     }
 
     /// <summary>
@@ -252,14 +283,32 @@ public static class TestLabel
             Encoding = profile.Encoding,
         };
         int w = doc.WidthDots, h = doc.HeightDots;
-        int margin = Math.Max(4, w / 40);
+        double dotsPerMm = (int)profile.Dpi / 25.4;
+        int margin = Math.Max(4, Math.Min(w, h) / 25);
+        int pad = margin + 6;
+
+        // Text is sized from physical size (7 mm) so it looks the same on 203, 300 and 600 dpi, then limited by the
+        // label height and by the widest line (22 chars at roughly 0.6 em each) so it never runs off a narrow label.
+        int fontH = (int)Math.Min(7 * dotsPerMm, Math.Min(h / 6.0, (w - 2.0 * pad) / 14.0));
+        fontH = Math.Max(10, fontH); // Core rejects fonts under 10 dots
+
+        int line1 = pad;
+        int line2 = line1 + (int)(fontH * 1.3);
+        int qrY = line2 + (int)(fontH * 1.5);
+
+        // A QR code of this short payload is at most ~29 modules wide with its quiet zone; budget 33 so the symbol
+        // always fits. Core only accepts a module size of 1-10, so clamp to that range.
+        int availableH = h - qrY - pad;
+        int availableW = w - 2 * pad;
+        int module = Math.Clamp(Math.Min(availableH, availableW) / 33, 1, 10);
+
         doc.Elements.Add(new BoxElement { X = 0, Y = 0, WidthDots = Math.Max(1, w), HeightDots = Math.Max(1, h), ThicknessDots = 3 });
         // Accents in the sample text prove that the code page and ^CI setting match the printer.
-        doc.Elements.Add(new TextElement { X = margin + 6, Y = margin + 6, Text = "Rotula - prueba / test", FontHeight = Math.Max(20, h / 8), FontWidth = Math.Max(20, h / 8) });
-        doc.Elements.Add(new TextElement { X = margin + 6, Y = margin + 6 + Math.Max(24, h / 7), Text = "áéíóú ñ ¿?", FontHeight = Math.Max(20, h / 8), FontWidth = Math.Max(20, h / 8) });
+        doc.Elements.Add(new TextElement { X = pad, Y = line1, Text = "Rotula - prueba / test", FontHeight = fontH, FontWidth = fontH });
+        doc.Elements.Add(new TextElement { X = pad, Y = line2, Text = "áéíóú ñ ¿?", FontHeight = fontH, FontWidth = fontH });
         doc.Elements.Add(new BarcodeElement
         {
-            X = margin + 6, Y = h / 2, Symbology = BarcodeSymbology.QrCode, Data = "ROTULA-TEST", ModuleSize = Math.Max(2, h / 60),
+            X = pad, Y = qrY, Symbology = BarcodeSymbology.QrCode, Data = "ROTULA-TEST", ModuleSize = module,
         });
         return doc;
     }

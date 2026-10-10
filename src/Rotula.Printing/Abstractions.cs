@@ -13,6 +13,16 @@ public interface IPrinterDiscovery
 {
     /// <summary>Enumerates installed printers (local and connections). Returns an empty list when none or unsupported.</summary>
     Task<IReadOnlyList<PrinterInfo>> GetPrintersAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Reads resolution and paper size of one queue from its Windows driver (no job, no printing, no network).
+    /// Never throws; any failure yields <see cref="PrinterCapabilities.Unknown"/>. The default implementation returns
+    /// unknown info so existing fakes keep compiling.
+    /// </summary>
+    /// <param name="printerName">Windows queue name.</param>
+    /// <param name="ct">Cancellation (observed before the query starts).</param>
+    Task<PrinterCapabilities> GetPrinterInfoAsync(string printerName, CancellationToken ct = default) =>
+        Task.FromResult(PrinterCapabilities.Unknown(printerName));
 }
 
 /// <summary>

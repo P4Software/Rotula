@@ -11,6 +11,22 @@ namespace Rotula.Printing;
 public sealed class WinspoolRawPrinter : IRawPrinter, IPrinterDiscovery
 {
     private const int WriteChunk = 64 * 1024;
+    private readonly IPrinterCapsReader _capsReader;
+
+    /// <summary>Creates the printer using the real Win32 capability queries.</summary>
+    public WinspoolRawPrinter() : this(new Win32PrinterCapsReader()) { }
+
+    /// <summary>Creates the printer with an injected capability reader (tests).</summary>
+    internal WinspoolRawPrinter(IPrinterCapsReader capsReader) => _capsReader = capsReader ?? throw new ArgumentNullException(nameof(capsReader));
+
+    /// <inheritdoc />
+    public Task<PrinterCapabilities> GetPrinterInfoAsync(string printerName, CancellationToken ct = default)
+    {
+        string name = printerName ?? string.Empty;
+        if (!OperatingSystem.IsWindows() || ct.IsCancellationRequested) return Task.FromResult(PrinterCapabilities.Unknown(name));
+        // Off the UI thread: DocumentProperties can take a second or more on a network queue. Detect never throws.
+        return Task.Run(() => PrinterInfoDetector.Detect(name, _capsReader), CancellationToken.None);
+    }
 
     /// <inheritdoc />
     public Task<PrintResult> SendAsync(string printerName, string documentName, byte[] data, CancellationToken cancellationToken = default)
@@ -236,6 +252,22 @@ internal static class NativeMethods
     [DllImport("winspool.drv", EntryPoint = "EnumPrintersW", SetLastError = true, CharSet = CharSet.Unicode)]
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static extern bool EnumPrinters(uint flags, string? name, int level, IntPtr pPrinterEnum, int cbBuf, out int pcbNeeded, out int pcReturned);
+
+    [DllImport("winspool.drv", EntryPoint = "DocumentPropertiesW", SetLastError = true, CharSet = CharSet.Unicode)]
+    internal static extern int DocumentProperties(IntPtr hwnd, IntPtr hPrinter, string pDeviceName, IntPtr pDevModeOutput, IntPtr pDevModeInput, int fMode);
+
+    [DllImport("winspool.drv", EntryPoint = "DeviceCapabilitiesW", SetLastError = true, CharSet = CharSet.Unicode)]
+    internal static extern int DeviceCapabilities(string pDevice, string? pPort, ushort fwCapability, IntPtr pOutput, IntPtr pDevMode);
+
+    [DllImport("gdi32.dll", EntryPoint = "CreateICW", SetLastError = true, CharSet = CharSet.Unicode)]
+    internal static extern IntPtr CreateIC(string? pwszDriver, string? pwszDevice, string? pszPort, IntPtr pdm);
+
+    [DllImport("gdi32.dll")]
+    internal static extern int GetDeviceCaps(IntPtr hdc, int index);
+
+    [DllImport("gdi32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool DeleteDC(IntPtr hdc);
 
     [DllImport("winspool.drv", EntryPoint = "GetDefaultPrinterW", SetLastError = true, CharSet = CharSet.Unicode)]
     [return: MarshalAs(UnmanagedType.Bool)]
