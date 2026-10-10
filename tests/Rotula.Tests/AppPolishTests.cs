@@ -238,7 +238,7 @@ public class AppPolishTests : IDisposable
         vm.SelectedPrinterName = "ZD621";
         await vm.DetectAsync();
         Assert.True(vm.HasDpiMismatch);
-        Assert.Equal("Switch label to 300 dpi", vm.SwitchLabelDpiText);
+        Assert.Equal("Switch the label to 300 dpi", vm.SwitchLabelDpiText);
         vm.SwitchLabelDpiCommand.Execute(null);
         Assert.Equal(new[] { PrinterDpi.Dpi300 }, applied);
         Assert.Equal(PrinterDpi.Dpi300, doc.Dpi);

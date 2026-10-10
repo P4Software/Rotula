@@ -33,4 +33,16 @@ public static class PrintMessages
     /// <summary>Lists the error-level problems of a label as short sentences (at most <paramref name="max"/>).</summary>
     public static string DescribeIssues(IEnumerable<ValidationIssue> issues, int max = 6) =>
         string.Join(Environment.NewLine, issues.Where(i => i.Severity == ValidationSeverity.Error).Take(max).Select(Loc.FormatIssue));
+
+    /// <summary>
+    /// Describes a note raised by the automatic resolution conversion. A <c>Dpi.*</c> key this version has no text for still gets a
+    /// safe sentence, so a newer Core never shows a raw key to the user.
+    /// </summary>
+    public static string DescribeDpiIssue(ValidationIssue issue)
+    {
+        ArgumentNullException.ThrowIfNull(issue);
+        return Loc.Instance.HasKey("Issue." + issue.MessageKey)
+            ? Loc.FormatIssue(issue)
+            : Loc.Get("Print.DpiIssue.Generic");
+    }
 }

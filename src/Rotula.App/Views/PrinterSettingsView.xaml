@@ -99,11 +99,22 @@
     <TextBlock Text="{loc:T Print.Profile.Hint}" Style="{StaticResource MutedText}" Margin="0,8,0,0" FontSize="12" />
     <Button Content="{Binding DetectedSizeText}" Command="{Binding UseDetectedSizeCommand}" HorizontalAlignment="Left" Margin="0,12,0,0" Style="{StaticResource ToolButton}"
             Visibility="{Binding HasDetectedSize, Converter={StaticResource B2V}}" ToolTip="{loc:T Print.UsePrinterSize.Tip}" AutomationProperties.Name="{Binding DetectedSizeText}" />
-    <Border Style="{StaticResource WarningBanner}" Margin="0,12,0,0" Visibility="{Binding HasDpiMismatch, Converter={StaticResource B2V}}" AutomationProperties.LiveSetting="Assertive">
+    <!-- Informative note, not a warning: the label is converted to the printer resolution automatically. -->
+    <Border Style="{StaticResource InfoBanner}" Margin="0,12,0,0" Visibility="{Binding HasDpiMismatch, Converter={StaticResource B2V}}" AutomationProperties.LiveSetting="Polite">
       <StackPanel>
-        <TextBlock Text="{Binding DpiMismatchText}" TextWrapping="Wrap" Foreground="{StaticResource WarningBrush}" />
+        <TextBlock Text="{Binding DpiMismatchText}" TextWrapping="Wrap" AutomationProperties.Name="{Binding DpiMismatchText}" />
+        <Expander Header="{Binding ConversionIssuesHeader}" Margin="0,8,0,0" Visibility="{Binding HasConversionIssues, Converter={StaticResource B2V}}"
+                  AutomationProperties.Name="{Binding ConversionIssuesHeader}">
+          <ItemsControl ItemsSource="{Binding ConversionIssues}" Margin="16,8,0,0">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <TextBlock Text="{Binding}" TextWrapping="Wrap" Margin="0,0,0,8" Style="{StaticResource MutedText}" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </Expander>
         <Button Content="{Binding SwitchLabelDpiText}" Command="{Binding SwitchLabelDpiCommand}" HorizontalAlignment="Left" Margin="0,8,0,0" Style="{StaticResource ToolButton}"
-                AutomationProperties.Name="{Binding SwitchLabelDpiText}" />
+                AutomationProperties.Name="{Binding SwitchLabelDpiText}" ToolTip="{loc:T Print.SwitchLabelDpi.Tip}" />
       </StackPanel>
     </Border>
   </StackPanel>

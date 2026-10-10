@@ -107,6 +107,10 @@ public sealed partial class PrintViewModel : OperationViewModel
         // Print a copy so the dialog's copy count never alters the open label.
         var doc = ElementCloner.CloneDocument(_document());
         doc.Print.Quantity = copies;
+        // A label designed for another resolution is converted to the printer's, so it prints at the same physical size.
+        var converted = Printer.ConvertForPrinter(doc, out _, out string? convertError);
+        if (converted is null) { SetResult(convertError!, true); return; }
+        doc = converted;
         var data = _data();
         await SendAsync(Loc.Get("Print.Busy.Printing"), ct => _service.PrintAsync(target!, doc, data, profile, ct),
             Loc.Get("Print.Done.Label", copies));
@@ -142,6 +146,13 @@ public sealed partial class PrintViewModel : OperationViewModel
         if (!TryCopies(out int copies) || !TryPrepare(out _, out var profile, needTarget: false)) return;
         var doc = ElementCloner.CloneDocument(_document());
         doc.Print.Quantity = copies;
+        // Same conversion as printing, so the saved file matches what the chosen printer would receive.
+        if (Printer.PrinterChosen)
+        {
+            var converted = Printer.ConvertForPrinter(doc, out _, out string? convertError);
+            if (converted is null) { SetResult(convertError!, true); return; }
+            doc = converted;
+        }
         var gen = ZplGenerator.Generate(doc, _data());
         if (gen.HasErrors)
         {

@@ -765,9 +765,19 @@ public sealed partial class DataMergeViewModel : OperationViewModel
     /// Why a copy: the user may keep editing the label while the batch runs.
     /// </summary>
     /// <returns>Null when ready; otherwise a message saying what to fix.</returns>
-    private string? Snapshot(out LabelDocument doc, out MergeDataSet dataSet)
+    /// <param name="doc">The private copy of the label.</param>
+    /// <param name="dataSet">The merge data set built on that copy.</param>
+    /// <param name="convertToPrinter">True to convert the copy to the chosen printer resolution (printing, or exporting for a chosen printer).</param>
+    private string? Snapshot(out LabelDocument doc, out MergeDataSet dataSet, bool convertToPrinter = false)
     {
         doc = ElementCloner.CloneDocument(_document());
+        dataSet = null!;
+        if (convertToPrinter)
+        {
+            var converted = Printer.ConvertForPrinter(doc, out _, out string? convertError);
+            if (converted is null) return convertError;
+            doc = converted;
+        }
         dataSet = null!;
         if (Table is null) return Loc.Get("Data.Error.NoData");
         var options = BuildOptions();
@@ -820,7 +830,7 @@ public sealed partial class DataMergeViewModel : OperationViewModel
     private async Task PrintAllAsync()
     {
         if (IsBusy) return;
-        string? error = Snapshot(out var doc, out var ds);
+        string? error = Snapshot(out var doc, out var ds, convertToPrinter: true);
         PrinterTarget? target = null;
         PrinterProfile? profile = null;
         error ??= Printer.TryBuildTarget(out target);
@@ -885,7 +895,8 @@ public sealed partial class DataMergeViewModel : OperationViewModel
     private async Task ExportBatchAsync()
     {
         if (IsBusy) return;
-        string? error = Snapshot(out var doc, out var ds);
+        // With no printer chosen the file keeps the design's own resolution; with one, it matches what that printer would receive.
+        string? error = Snapshot(out var doc, out var ds, convertToPrinter: Printer.PrinterChosen);
         if (error is not null) { SetResult(error, true); return; }
         string? path = _files.PickExportFile(ExportKind.Zpl, _documentName() + ".zpl");
         if (path is null) return;

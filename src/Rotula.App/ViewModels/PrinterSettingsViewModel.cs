@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using Rotula.App.Localization;
 using Rotula.App.Services;
 using Rotula.Core.Model;
+using Rotula.Core.Validation;
 using Rotula.Core.Zpl;
 using Rotula.Printing;
 using Rotula.Rendering.View;
@@ -89,18 +90,27 @@ public sealed partial class PrinterSettingsViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(UseWindowsPrinter));
         NotifyToolbar();
+        RefreshDpiMismatch();
     }
+
+    partial void OnSelectedDpiChanged(PrinterDpi value) => RefreshDpiMismatch();
+    partial void OnIsDetectingChanged(bool value) => RefreshDpiMismatch();
 
     partial void OnSelectedPrinterNameChanged(string? value)
     {
         NotifyToolbar();
         _ = DetectAsync();
     }
-    partial void OnHostChanged(string value) => NotifyToolbar();
+    partial void OnHostChanged(string value)
+    {
+        NotifyToolbar();
+        RefreshDpiMismatch();
+    }
     partial void OnPortTextChanged(string value) => NotifyToolbar();
 
     private void NotifyToolbar()
     {
+        OnPropertyChanged(nameof(PrinterChosen));
         OnPropertyChanged(nameof(ToolbarText));
         OnPropertyChanged(nameof(ShowToolbarText));
     }
@@ -187,17 +197,63 @@ public sealed partial class PrinterSettingsViewModel : ObservableObject
     /// <summary>True when the paper size of the printer is known and can be offered.</summary>
     public bool HasDetectedSize => DetectedSizeText.Length > 0;
 
-    /// <summary>Warning shown when the open label resolution differs from the printer one; empty when they match or nothing was detected.</summary>
+    /// <summary>
+    /// Informative note shown when the open label resolution differs from the printer one. Printing converts a copy of the label
+    /// to the printer resolution, so this is not a warning about wrong output. Empty when the resolutions match or no printer is chosen.
+    /// </summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasDpiMismatch))]
     private string _dpiMismatchText = string.Empty;
 
-    /// <summary>True when the label and printer resolutions differ.</summary>
+    /// <summary>True when the label and printer resolutions differ (the note is shown and a converted copy is printed).</summary>
     public bool HasDpiMismatch => DpiMismatchText.Length > 0;
 
-    /// <summary>Text of the one-click fix for a resolution mismatch ("Switch label to 300 dpi").</summary>
+    /// <summary>Text of the secondary action of the note ("Switch the label to 300 dpi").</summary>
     [ObservableProperty]
     private string _switchLabelDpiText = string.Empty;
+
+    /// <summary>Plain-language sentences about what the automatic conversion cannot do exactly (barcode module rounding, raw ZPL not scaled).</summary>
+    public ObservableCollection<string> ConversionIssues { get; } = new();
+
+    /// <summary>True when the conversion raised notes worth reading.</summary>
+    public bool HasConversionIssues => ConversionIssues.Count > 0;
+
+    /// <summary>Header of the expandable list of conversion notes ("2 things to check after conversion").</summary>
+    [ObservableProperty]
+    private string _conversionIssuesHeader = string.Empty;
+
+    /// <summary>
+    /// True when a printer is chosen (a Windows queue, or a network host). Only then is the label converted to the printer
+    /// resolution; a ZPL export with no printer keeps the design resolution.
+    /// </summary>
+    public bool PrinterChosen => UseNetwork ? !string.IsNullOrWhiteSpace(Host) : !string.IsNullOrWhiteSpace(SelectedPrinterName);
+
+    /// <summary>
+    /// Returns the label to send to the printer: the same object when its resolution already equals the chosen one, otherwise a
+    /// converted copy that keeps the physical size and layout. The source is never modified.
+    /// </summary>
+    /// <param name="source">The label (or a private copy of it).</param>
+    /// <param name="issues">Notes raised by the conversion; empty when nothing was converted.</param>
+    /// <param name="error">Plain-language message when the label cannot be converted (the caller must stop); null otherwise.</param>
+    /// <returns>The label to send, or null when <paramref name="error"/> is set.</returns>
+    public LabelDocument? ConvertForPrinter(LabelDocument source, out IReadOnlyList<ValidationIssue> issues, out string? error)
+    {
+        issues = Array.Empty<ValidationIssue>();
+        error = null;
+        if (!LabelDpiConverter.NeedsConversion(source, SelectedDpi)) return source;
+        try
+        {
+            var result = LabelDpiConverter.Convert(source, SelectedDpi);
+            issues = result.Issues;
+            return result.Document;
+        }
+        catch (NotSupportedException)
+        {
+            // Core refuses element kinds it does not know how to rescale; say so instead of crashing.
+            error = Loc.Get("Print.DpiConvert.Failed", (int)source.Dpi, (int)SelectedDpi);
+            return null;
+        }
+    }
 
     /// <summary>
     /// Reads the selected Windows printer driver without blocking the window: sets the resolution box to what the driver reports and keeps
@@ -258,29 +314,39 @@ public sealed partial class PrinterSettingsViewModel : ObservableObject
         HeightText = FormatMm(UnitConverter.Convert(h.Value, h.Unit, LengthUnit.Millimeters, dpi));
     }
 
-    /// <summary>Switches the open label to the printer resolution (one undo step).</summary>
+    /// <summary>Converts the open label to the chosen printer resolution (one undo step).</summary>
     [RelayCommand]
     private void SwitchLabelDpi()
     {
-        if (_detected.Dpi is not { } dpi || _applyLabelDpi is null) return;
-        _applyLabelDpi(dpi);
+        if (_applyLabelDpi is null || !HasDpiMismatch) return;
+        _applyLabelDpi(SelectedDpi);
         RefreshDpiMismatch();
     }
 
-    /// <summary>Compares the open label resolution with the detected printer resolution and updates the warning. Call it when the label may have changed.</summary>
+    /// <summary>Compares the open label resolution with the chosen printer resolution and updates the note. Call it when the label may have changed.</summary>
     public void RefreshDpiMismatch()
     {
-        var labelDpi = _document().Dpi;
-        if (_detected.Dpi is { } printer && printer != labelDpi && _applyLabelDpi is not null)
+        var doc = _document();
+        // While the driver is still being read the resolution box may hold a stale value, so say nothing yet.
+        if (PrinterChosen && !IsDetecting && LabelDpiConverter.NeedsConversion(doc, SelectedDpi))
         {
-            DpiMismatchText = Loc.Get("Print.DpiMismatch", (int)labelDpi, (int)printer);
-            SwitchLabelDpiText = Loc.Get("Print.SwitchLabelDpi", (int)printer);
+            DpiMismatchText = Loc.Get("Print.DpiConvert", (int)doc.Dpi, (int)SelectedDpi);
+            SwitchLabelDpiText = _applyLabelDpi is null ? string.Empty : Loc.Get("Print.SwitchLabelDpi", (int)SelectedDpi);
+            // Convert a throw-away copy only to learn what would be approximated; the real print converts again from the live label.
+            ConvertForPrinter(doc, out var issues, out string? failure);
+            ConversionIssues.Clear();
+            if (failure is not null) ConversionIssues.Add(failure);
+            foreach (var i in issues) ConversionIssues.Add(PrintMessages.DescribeDpiIssue(i));
+            ConversionIssuesHeader = Loc.Get("Print.DpiIssues.Header", ConversionIssues.Count);
         }
         else
         {
             DpiMismatchText = string.Empty;
             SwitchLabelDpiText = string.Empty;
+            ConversionIssues.Clear();
+            ConversionIssuesHeader = string.Empty;
         }
+        OnPropertyChanged(nameof(HasConversionIssues));
     }
 
     /// <summary>Sets the width and height boxes to the open label size, so a test label or a ^PW set-up matches the design and not an old stored size.</summary>

@@ -416,11 +416,29 @@ public sealed partial class MainViewModel : ObservableObject
         });
     }
 
-    /// <summary>Changes the printer resolution of the open label (one undo step; nothing happens when it is already that resolution).</summary>
+    /// <summary>
+    /// Converts the open label to another printer resolution (one undo step; nothing happens when it is already that resolution).
+    /// Dot-based sizes and positions are rescaled so the label keeps its physical size and layout.
+    /// </summary>
     public void SetLabelDpi(PrinterDpi dpi)
     {
-        if (Session.Document.Dpi == dpi) return;
-        Session.Edit("Undo.LabelSettings", d => d.Dpi = dpi);
+        if (!LabelDpiConverter.NeedsConversion(Session.Document, dpi)) return;
+        DpiConversionResult result;
+        try { result = LabelDpiConverter.Convert(Session.Document, dpi); }
+        catch (NotSupportedException)
+        {
+            // An element kind Core cannot rescale: leave the design untouched and say why.
+            _svc.Messages.ShowError(Loc.Get("Print.DpiConvert.Failed.Title"), Loc.Get("Print.DpiConvert.Failed", (int)Session.Document.Dpi, (int)dpi));
+            return;
+        }
+        Session.Edit("Undo.LabelSettings", d =>
+        {
+            // Why copy back into the live object: the editor and undo history hold this very document instance.
+            var converted = result.Document;
+            ElementCloner.CopySettings(converted, d);
+            d.Elements.Clear();
+            d.Elements.AddRange(converted.Elements);
+        });
     }
 
     /// <summary>The share of the right-hand column used by the Properties panel; setting it saves it in settings.json.</summary>

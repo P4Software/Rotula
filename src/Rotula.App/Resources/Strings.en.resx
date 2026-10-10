@@ -2052,10 +2052,34 @@ Yes saves, No discards the changes, Cancel goes back to the label.</value>
   <data name="Print.UsePrinterSize.Tip" xml:space="preserve">
     <value>Fill the label width and height with the paper size reported by the printer driver</value>
   </data>
-  <data name="Print.DpiMismatch" xml:space="preserve">
-    <value>This label is designed for {0} dpi, but the printer prints at {1} dpi. Barcodes and text would print at the wrong size.</value>
+  <data name="Print.DpiConvert" xml:space="preserve">
+    <value>This label was designed at {0} dpi. It will be converted to {1} dpi automatically so it prints at the same size.</value>
   </data>
   <data name="Print.SwitchLabelDpi" xml:space="preserve">
-    <value>Switch label to {0} dpi</value>
+    <value>Switch the label to {0} dpi</value>
+  </data>
+  <data name="Print.SwitchLabelDpi.Tip" xml:space="preserve">
+    <value>Convert the open design to the printer resolution. You can undo it with Ctrl+Z.</value>
+  </data>
+  <data name="Print.DpiIssues.Header" xml:space="preserve">
+    <value>Things to check after conversion ({0})</value>
+  </data>
+  <data name="Print.DpiIssue.Generic" xml:space="preserve">
+    <value>Part of the label could not be converted exactly. Check the printed result, or switch the label to the printer resolution and review it.</value>
+  </data>
+  <data name="Issue.Dpi.Barcode.ModuleRounded" xml:space="preserve">
+    <value>The barcode "{0}" has a bar width of {1} dots, which becomes {2} dots at the new resolution. The barcode is slightly wider or narrower than before. Check that it still scans.</value>
+  </data>
+  <data name="Issue.Dpi.Value.Clamped" xml:space="preserve">
+    <value>In "{0}", the value "{1}" would be {2} dots at the new resolution, but the printer allows {3}. It was set to {3}. Check the element.</value>
+  </data>
+  <data name="Issue.Dpi.Raw.NotScaled" xml:space="preserve">
+    <value>"{0}" contains raw ZPL, which cannot be resized automatically. It keeps its original dot positions and may print smaller or larger than the rest. Edit it or replace it with regular elements.</value>
+  </data>
+  <data name="Print.DpiConvert.Failed" xml:space="preserve">
+    <value>This label contains an element that cannot be converted from {0} dpi to {1} dpi automatically. Nothing was changed.</value>
+  </data>
+  <data name="Print.DpiConvert.Failed.Title" xml:space="preserve">
+    <value>Cannot switch the label</value>
   </data>
 </root>

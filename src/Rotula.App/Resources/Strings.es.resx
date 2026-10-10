@@ -2052,10 +2052,34 @@ Sí guarda, No descarta los cambios, Cancelar vuelve a la etiqueta.</value>
   <data name="Print.UsePrinterSize.Tip" xml:space="preserve">
     <value>Rellena el ancho y el alto de la etiqueta con el tamaño de papel que indica el controlador de la impresora</value>
   </data>
-  <data name="Print.DpiMismatch" xml:space="preserve">
-    <value>Esta etiqueta está diseñada para {0} dpi, pero la impresora imprime a {1} dpi. Los códigos de barras y el texto saldrían con un tamaño incorrecto.</value>
+  <data name="Print.DpiConvert" xml:space="preserve">
+    <value>Esta etiqueta se diseñó a {0} dpi. Se convertirá automáticamente a {1} dpi para que se imprima del mismo tamaño.</value>
   </data>
   <data name="Print.SwitchLabelDpi" xml:space="preserve">
     <value>Cambiar la etiqueta a {0} dpi</value>
+  </data>
+  <data name="Print.SwitchLabelDpi.Tip" xml:space="preserve">
+    <value>Convierte el diseño abierto a la resolución de la impresora. Puede deshacerlo con Ctrl+Z.</value>
+  </data>
+  <data name="Print.DpiIssues.Header" xml:space="preserve">
+    <value>Cosas por revisar tras la conversión ({0})</value>
+  </data>
+  <data name="Print.DpiIssue.Generic" xml:space="preserve">
+    <value>Una parte de la etiqueta no se pudo convertir con exactitud. Revise el resultado impreso, o cambie la etiqueta a la resolución de la impresora y revísela.</value>
+  </data>
+  <data name="Issue.Dpi.Barcode.ModuleRounded" xml:space="preserve">
+    <value>El código de barras "{0}" tiene un ancho de barra de {1} puntos, que pasa a {2} puntos con la nueva resolución. El código queda algo más ancho o más estrecho que antes. Compruebe que se sigue leyendo.</value>
+  </data>
+  <data name="Issue.Dpi.Value.Clamped" xml:space="preserve">
+    <value>En "{0}", el valor "{1}" sería de {2} puntos con la nueva resolución, pero la impresora admite {3}. Se ajustó a {3}. Revise el elemento.</value>
+  </data>
+  <data name="Issue.Dpi.Raw.NotScaled" xml:space="preserve">
+    <value>"{0}" contiene ZPL sin procesar, que no se puede redimensionar automáticamente. Conserva sus posiciones originales en puntos y puede imprimirse más pequeño o más grande que el resto. Edítelo o sustitúyalo por elementos normales.</value>
+  </data>
+  <data name="Print.DpiConvert.Failed" xml:space="preserve">
+    <value>Esta etiqueta contiene un elemento que no se puede convertir automáticamente de {0} dpi a {1} dpi. No se cambió nada.</value>
+  </data>
+  <data name="Print.DpiConvert.Failed.Title" xml:space="preserve">
+    <value>No se puede cambiar la etiqueta</value>
   </data>
 </root>

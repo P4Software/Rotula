@@ -81,6 +81,7 @@ public class AppLocalizationTests : IDisposable
     public void EveryMessageKeyEmittedByCore_HasALocalizedIssueMessage()
     {
         var en = ReadResx("en");
+        var es = ReadResx("es");
         var core = Path.Combine(RepoRoot(), "src", "Rotula.Core");
         var keys = new HashSet<string>();
         foreach (var file in Directory.EnumerateFiles(core, "*.cs", SearchOption.AllDirectories).Where(f => !f.Contains(@"\obj\") && !f.Contains(@"\bin\")))
@@ -89,6 +90,9 @@ public class AppLocalizationTests : IDisposable
             foreach (Match m in Regex.Matches(text, @"ValidationIssue\(\s*ValidationSeverity\.\w+,\s*""([A-Za-z0-9.]+)"""))
                 keys.Add(m.Groups[1].Value);
             foreach (Match m in Regex.Matches(text, @"\bErr\(""([A-Za-z0-9.]+)"""))
+                keys.Add(m.Groups[1].Value);
+            // The resolution converter builds its issues with a literal Dpi.* key.
+            foreach (Match m in Regex.Matches(text, @"""(Dpi\.[A-Za-z0-9]+(?:\.[A-Za-z0-9]+)*)"""))
                 keys.Add(m.Groups[1].Value);
             // The importer and the merge engine report through helper methods, so their keys are found by shape.
             foreach (Match m in Regex.Matches(text, @"""((?:Import|Merge)\.[A-Za-z0-9]+(?:\.[A-Za-z0-9]+)*)"""))
@@ -102,6 +106,9 @@ public class AppLocalizationTests : IDisposable
         }
         Assert.True(keys.Count > 30, "expected to find Core message keys, found " + keys.Count);
         Assert.Empty(keys.Where(k => !en.ContainsKey("Issue." + k)).OrderBy(k => k));
+        Assert.Empty(keys.Where(k => !es.ContainsKey("Issue." + k)).OrderBy(k => k));
+        Assert.Contains("Dpi.Barcode.ModuleRounded", keys);
+        Assert.Contains("Dpi.Raw.NotScaled", keys);
     }
 
     [Fact]
