@@ -39,6 +39,9 @@ public sealed partial class PrintViewModel : OperationViewModel
         _files = files;
         _documentName = documentName;
         _copiesText = Math.Max(1, document().Print.Quantity).ToString(CultureInfo.InvariantCulture);
+        // The test label and the set-up width follow the open design (not a size stored by an earlier session); the user can still change them here.
+        printer.UseDesignSize();
+        printer.RefreshDpiMismatch();
         RefreshLabelProblems();
     }
 
@@ -148,7 +151,7 @@ public sealed partial class PrintViewModel : OperationViewModel
         string? path = _files.PickExportFile(ExportKind.Zpl, _documentName + ".zpl");
         if (path is null) return;
         string zpl = (profile is null ? string.Empty : PrinterSetup.BuildSetupZpl(profile)) + gen.Zpl;
-        byte[]? bytes = ZplFiles.TryEncode(zpl, doc.Encoding);
+        byte[]? bytes = ZplFiles.TryEncode(zpl, doc.Encoding, ByteExactBlocks.From(doc));
         if (bytes is null)
         {
             SetResult(Loc.Get("Print.Error.EncodingFailed", doc.Encoding.ToString(), string.Empty), true);

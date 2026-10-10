@@ -7,6 +7,7 @@ using Rotula.App.ViewModels;
 using Rotula.Core.Elements;
 using Rotula.Core.Merge;
 using Rotula.Core.Model;
+using Rotula.Core.Zpl;
 using Rotula.Printing;
 
 namespace Rotula.Tests;
@@ -413,6 +414,29 @@ public class AppDataMergeTests : IDisposable
         for (int i = 1; i <= records; i++) sb.Append(i).Append('\n');
         await Data.LoadAsync(Csv(sb.ToString()));
         Data.MaxRecordsText = maxPerJob.ToString();
+    }
+
+    [Fact]
+    public async Task PrintAll_PassesTheByteExactRawBlocksToEveryJob()
+    {
+        await Ready(3, 1);
+        const string raw = "^FO10,10^FDéÿ^FS"; // Latin-1 chars above 0x7F: stored bytes, not text
+        _main.Session.Edit("Undo.Property", d => d.Elements.Add(new RawZplElement { Zpl = raw }));
+        await Data.PrintAllCommand.ExecuteAsync(null);
+
+        Assert.Equal(3, _fake.Printer.ZplJobs.Count);
+        Assert.All(_fake.Printer.RawBlockArgs, blocks => Assert.Equal(new[] { raw }, blocks));
+    }
+
+    [Fact]
+    public void ZplFiles_WritesRawBlocksAsLatin1_AndTheRestWithTheDocumentEncoding()
+    {
+        const string raw = "^FDé^FS";
+        byte[]? bytes = ZplFiles.TryEncode("^XAñ" + raw + "^XZ", ZplEncoding.Utf8, new[] { raw });
+        Assert.NotNull(bytes);
+        // The text outside the block is UTF-8 (two bytes for the n with tilde); the block keeps one byte per char.
+        Assert.Equal(new byte[] { 0xC3, 0xB1 }, bytes!.Skip(3).Take(2).ToArray());
+        Assert.Equal(0xE9, bytes[bytes.Length - 7]);
     }
 
     [Fact]

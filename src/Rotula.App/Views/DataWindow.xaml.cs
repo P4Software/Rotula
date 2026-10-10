@@ -11,7 +11,7 @@ namespace Rotula.App.Views;
 /// The Data merge window. It is not modal, so the canvas behind it can be watched while moving through the records.
 /// Behaviour lives in <see cref="DataMergeViewModel"/>; this class builds the preview grid columns and connects window events.
 /// </summary>
-public partial class DataWindow : Window
+public partial class DataWindow : DialogWindow
 {
     private readonly DataMergeViewModel _vm;
 

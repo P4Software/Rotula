@@ -43,8 +43,11 @@ public static class RotulaFileSerializer
     /// <summary>Version 2: adds the optional "merge" object (data-merge settings, never the data).</summary>
     public const int DataMergeFormatVersion = 2;
 
+    /// <summary>Version 3: adds the "rawZpl" and "recall" element types that an imported ZPL file can contain.</summary>
+    public const int RawZplFormatVersion = 3;
+
     /// <summary>The newest format version this build can read. Files are written with the lowest version that can hold their content.</summary>
-    public const int CurrentFormatVersion = DataMergeFormatVersion;
+    public const int CurrentFormatVersion = RawZplFormatVersion;
 
     private const string ClipboardMarker = "rotulaElements";
 
@@ -73,6 +76,9 @@ public static class RotulaFileSerializer
             dto.Merge = MergeSettingsMapper.ToDto(merge);
             dto.FormatVersion = DataMergeFormatVersion;
         }
+        // Older builds do not know the raw/recall element types, so only labels that contain them are marked version 3.
+        if (document.Elements.Any(e => e is RawZplElement or RecallPlaceholderElement))
+            dto.FormatVersion = RawZplFormatVersion;
         return JsonSerializer.Serialize(dto, Options);
     }
 
@@ -232,6 +238,11 @@ public static class RotulaFileSerializer
             LineElement l => new LineElementDto { LengthDots = l.LengthDots, ThicknessDots = l.ThicknessDots, Direction = l.Direction.ToString(), Color = l.Color.ToString() },
             CircleElement c => new CircleElementDto { DiameterDots = c.DiameterDots, ThicknessDots = c.ThicknessDots, Color = c.Color.ToString() },
             ImageElement i => ImageToDto(i),
+            RawZplElement r => new RawZplElementDto { Zpl = r.Zpl, IsVisual = r.IsVisual },
+            RecallPlaceholderElement p => new RecallPlaceholderElementDto
+            {
+                Command = p.Command, Reference = p.Reference, Zpl = p.Zpl, EmitAsField = p.EmitAsField, WidthDots = p.WidthDots, HeightDots = p.HeightDots,
+            },
             _ => throw new NotSupportedException($"Element type {e.GetType().Name} cannot be saved."),
         };
         if (e is TextElement t && dto is TextElementDto td)
@@ -342,6 +353,12 @@ public static class RotulaFileSerializer
                     WidthDots = i.WidthDots, HeightDots = i.HeightDots, Dither = Parse<ImageDitherMode>(i.Dither), Threshold = i.Threshold, Invert = i.Invert,
                     Source = i.SourcePixels is null ? null : new GrayscaleBitmap(i.SourceWidth, i.SourceHeight, Convert.FromBase64String(i.SourcePixels)),
                 };
+                break;
+            case RawZplElementDto raw:
+                e = new RawZplElement { Zpl = raw.Zpl, IsVisual = raw.IsVisual };
+                break;
+            case RecallPlaceholderElementDto rp:
+                e = new RecallPlaceholderElement { Command = rp.Command, Reference = rp.Reference, Zpl = rp.Zpl, EmitAsField = rp.EmitAsField, WidthDots = rp.WidthDots, HeightDots = rp.HeightDots };
                 break;
             default:
                 throw new ArgumentException("Unknown element type.");

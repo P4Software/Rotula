@@ -834,6 +834,8 @@ public sealed partial class DataMergeViewModel : OperationViewModel
         bool cancelled = false;
         // The printer set-up (darkness, speed...) goes out once, in front of the first job.
         string setup = PrinterSetup.BuildSetupZpl(profile!);
+        // Raw ZPL imported from bytes must reach the printer byte for byte; collected once, not per record.
+        var rawBlocks = ByteExactBlocks.From(doc);
         var progress = new Progress<double>(p => Progress = p);
         bool ok = await RunAsync(Loc.Get("Data.Busy.Printing"), async ct =>
         {
@@ -844,7 +846,7 @@ public sealed partial class DataMergeViewModel : OperationViewModel
                     foreach (var job in MergeBatch.Jobs(doc, ds, report))
                     {
                         ct.ThrowIfCancellationRequested();
-                        var result = await _service.PrintZplAsync(target!, jobs == 0 ? setup + job : job, doc.Encoding, ct);
+                        var result = await _service.PrintZplAsync(target!, jobs == 0 ? setup + job : job, doc.Encoding, rawBlocks, ct);
                         if (!result.Succeeded) { failure = result.Error; break; }
                         jobs++;
                         ((IProgress<double>)progress).Report(100.0 * report.Processed / ds.RecordCount);
@@ -905,6 +907,7 @@ public sealed partial class DataMergeViewModel : OperationViewModel
         int files = 0;
         string? writeError = null;
         bool encodingFailed = false;
+        var rawBlocks = ByteExactBlocks.From(doc);
         var progress = new Progress<double>(p => Progress = p);
         bool ok = await RunAsync(Loc.Get("Data.Busy.Exporting"), ct => Task.Run(() =>
         {
@@ -917,7 +920,7 @@ public sealed partial class DataMergeViewModel : OperationViewModel
                     foreach (var zpl in MergeBatch.Jobs(doc, ds, report))
                     {
                         ct.ThrowIfCancellationRequested();
-                        var bytes = ZplFiles.TryEncode(zpl, doc.Encoding);
+                        var bytes = ZplFiles.TryEncode(zpl, doc.Encoding, rawBlocks);
                         if (bytes is null) { encodingFailed = true; return; }
                         File.WriteAllBytes(NameFor(++job), bytes);
                         files++;
@@ -932,7 +935,7 @@ public sealed partial class DataMergeViewModel : OperationViewModel
                         foreach (var zpl in MergeBatch.Jobs(doc, ds, report))
                         {
                             ct.ThrowIfCancellationRequested();
-                            var bytes = ZplFiles.TryEncode(zpl, doc.Encoding);
+                            var bytes = ZplFiles.TryEncode(zpl, doc.Encoding, rawBlocks);
                             if (bytes is null) { encodingFailed = true; return; }
                             fs.Write(bytes);
                             ((IProgress<double>)progress).Report(100.0 * report.Processed / ds.RecordCount);

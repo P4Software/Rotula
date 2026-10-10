@@ -45,6 +45,14 @@ public sealed partial class PropertyPanelViewModel : ObservableObject
     [ObservableProperty]
     private string _title = string.Empty;
 
+    /// <summary>Second line under the "Properties" heading: what the panel is showing (the label, or the selected element).</summary>
+    [ObservableProperty]
+    private string _subtitle = string.Empty;
+
+    /// <summary>True while nothing is selected and the panel shows the settings of the label itself (the view adds an explanation).</summary>
+    [ObservableProperty]
+    private bool _showsLabel;
+
     /// <summary>Text shown when several elements are selected.</summary>
     [ObservableProperty]
     private string _hint = string.Empty;
@@ -67,7 +75,8 @@ public sealed partial class PropertyPanelViewModel : ObservableObject
     private string SelectionKey()
     {
         var sel = _session.SelectedIds;
-        if (sel.Count != 1) return sel.Count == 0 ? "doc" : "multi" + sel.Count;
+        // The label's size unit is part of the key because it appears in the Width/Height labels ("Width (mm)").
+        if (sel.Count != 1) return sel.Count == 0 ? "doc:" + _session.Document.Width.Unit : "multi" + sel.Count;
         var e = _session.Document.Elements.FirstOrDefault(x => x.Id == sel[0]);
         // The symbology decides which barcode rows exist, so it is part of the key.
         return sel[0] + ":" + (e is BarcodeElement b ? b.Symbology.ToString() : e?.GetType().Name) + ":" + (e is TextElement t && t.Block is not null);
@@ -81,19 +90,24 @@ public sealed partial class PropertyPanelViewModel : ObservableObject
         Rows.Clear();
         Hint = string.Empty;
         var sel = _session.SelectedElements;
+        ShowsLabel = sel.Count == 0;
         if (sel.Count == 0)
         {
             Title = Loc.Get("Panel.Label");
+            Subtitle = Loc.Get("Panel.LabelSubtitle");
             BuildDocumentRows();
         }
         else if (sel.Count > 1)
         {
             Title = Loc.Get("Panel.Selection");
+            Subtitle = Title;
             Hint = Loc.Get("Panel.MultiHint", sel.Count);
         }
         else
         {
             Title = Loc.Get("Panel.Element", ElementDisplayName(sel[0]));
+            // The tag at the top right already says what kind of element it is; the subtitle only adds the user's own name for it.
+            Subtitle = sel[0].Name ?? string.Empty;
             BuildElementRows(sel[0]);
         }
         RefreshIssues();
@@ -302,10 +316,11 @@ public sealed partial class PropertyPanelViewModel : ObservableObject
     {
         var doc = () => _session.Document;
         Rows.Add(new HeadingRow("Panel.Size"));
+        string unit = Loc.Get(doc().Width.Unit switch { LengthUnit.Inches => "Unit.Short.Inches", LengthUnit.Dots => "Unit.Short.Dots", _ => "Unit.Short.Millimeters" });
         Rows.Add(new DoubleRow("Prop.LabelWidth", () => doc().Width.Value,
-            v => EditDoc("w", d => d.Width = new Measure(v, d.Width.Unit)), 0.1, 100000));
+            v => EditDoc("w", d => d.Width = new Measure(v, d.Width.Unit)), 0.1, 100000) { Label = Loc.Get("Prop.LabelWidth.Unit", unit) });
         Rows.Add(new DoubleRow("Prop.LabelHeight", () => doc().Height.Value,
-            v => EditDoc("h", d => d.Height = new Measure(v, d.Height.Unit)), 0.1, 100000));
+            v => EditDoc("h", d => d.Height = new Measure(v, d.Height.Unit)), 0.1, 100000) { Label = Loc.Get("Prop.LabelHeight.Unit", unit) });
         Rows.Add(new ChoiceRow("Prop.LabelUnit", ChoiceRow.ForEnum<LengthUnit>(), () => doc().Width.Unit, v =>
             EditDoc("unit", d => ConvertSizeUnit(d, (LengthUnit)v!))) { RebuildOnChange = true });
         Rows.Add(new ChoiceRow("Prop.Dpi", ChoiceRow.ForEnum<PrinterDpi>(), () => doc().Dpi, v => EditDoc("dpi", d => d.Dpi = (PrinterDpi)v!)));

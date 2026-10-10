@@ -1,51 +1,47 @@
-<Window x:Class="Rotula.App.Views.NewLabelWindow"
+<views:DialogWindow x:Class="Rotula.App.Views.NewLabelWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:Rotula.App.Views"
         xmlns:loc="clr-namespace:Rotula.App.Localization"
-        Title="{loc:T Dialog.New.Title}" Width="420" SizeToContent="Height" ResizeMode="NoResize"
+        Title="{loc:T Dialog.New.Title}" Width="480" SizeToContent="Height" ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
         AutomationProperties.Name="{loc:T Dialog.New.Title}">
-  <Grid Margin="16">
-    <Grid.RowDefinitions>
-      <RowDefinition Height="Auto" />
-      <RowDefinition Height="Auto" />
-      <RowDefinition Height="Auto" />
-      <RowDefinition Height="Auto" />
-      <RowDefinition Height="Auto" />
-      <RowDefinition Height="Auto" />
-    </Grid.RowDefinitions>
-    <Grid.ColumnDefinitions>
-      <ColumnDefinition Width="*" />
-      <ColumnDefinition Width="12" />
-      <ColumnDefinition Width="*" />
-    </Grid.ColumnDefinitions>
+  <!-- Spacing scale 4 / 8 / 12 / 16 / 24: 24 around the card, 12 between field rows, 16 before the buttons. -->
+  <StackPanel Margin="24">
+    <TextBlock Text="{loc:T Dialog.New.Title}" FontSize="20" FontWeight="SemiBold" AutomationProperties.HeadingLevel="Level1" />
+    <TextBlock Text="{loc:T Dialog.New.Preset}" Style="{StaticResource FieldLabel}" Margin="0,16,0,4" />
+    <ComboBox ItemsSource="{Binding Presets}" SelectedItem="{Binding SelectedPreset}" DisplayMemberPath="Name" AutomationProperties.Name="{loc:T Dialog.New.Preset}" />
 
-    <TextBlock Grid.Row="0" Grid.ColumnSpan="3" Text="{loc:T Dialog.New.Preset}" Margin="0,0,0,4" />
-    <ComboBox Grid.Row="1" Grid.ColumnSpan="3" ItemsSource="{Binding Presets}" SelectedItem="{Binding SelectedPreset}"
-              DisplayMemberPath="Name" AutomationProperties.Name="{loc:T Dialog.New.Preset}" />
+    <Grid Margin="0,12,0,0">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="12" />
+        <ColumnDefinition Width="*" />
+      </Grid.ColumnDefinitions>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+      </Grid.RowDefinitions>
+      <TextBlock Grid.Row="0" Grid.Column="0" Text="{loc:T Prop.LabelWidth}" Style="{StaticResource FieldLabel}" />
+      <TextBlock Grid.Row="0" Grid.Column="2" Text="{loc:T Prop.LabelHeight}" Style="{StaticResource FieldLabel}" />
+      <TextBox Grid.Row="1" Grid.Column="0" Style="{StaticResource MonoTextBox}" Text="{Binding WidthText, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsCustom}"
+               AutomationProperties.Name="{loc:T Prop.LabelWidth}" />
+      <TextBox Grid.Row="1" Grid.Column="2" Style="{StaticResource MonoTextBox}" Text="{Binding HeightText, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsCustom}"
+               AutomationProperties.Name="{loc:T Prop.LabelHeight}" />
+      <TextBlock Grid.Row="2" Grid.Column="0" Text="{loc:T Prop.LabelUnit}" Style="{StaticResource FieldLabel}" Margin="0,12,0,4" />
+      <TextBlock Grid.Row="2" Grid.Column="2" Text="{loc:T Prop.Dpi}" Style="{StaticResource FieldLabel}" Margin="0,12,0,4" />
+      <ComboBox Grid.Row="3" Grid.Column="0" ItemsSource="{Binding Units}" DisplayMemberPath="Display" SelectedValuePath="Value" SelectedValue="{Binding Unit}"
+                IsEnabled="{Binding IsCustom}" AutomationProperties.Name="{loc:T Prop.LabelUnit}" />
+      <ComboBox Grid.Row="3" Grid.Column="2" ItemsSource="{Binding Dpis}" DisplayMemberPath="Display" SelectedValuePath="Value" SelectedValue="{Binding Dpi}"
+                AutomationProperties.Name="{loc:T Prop.Dpi}" />
+    </Grid>
 
-    <TextBlock Grid.Row="2" Grid.Column="0" Text="{loc:T Prop.LabelWidth}" Margin="0,12,0,4" />
-    <TextBlock Grid.Row="2" Grid.Column="2" Text="{loc:T Prop.LabelHeight}" Margin="0,12,0,4" />
-    <TextBox Grid.Row="3" Grid.Column="0" Text="{Binding WidthText, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsCustom}"
-             AutomationProperties.Name="{loc:T Prop.LabelWidth}" />
-    <TextBox Grid.Row="3" Grid.Column="2" Text="{Binding HeightText, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsCustom}"
-             AutomationProperties.Name="{loc:T Prop.LabelHeight}" />
-
-    <StackPanel Grid.Row="4" Grid.ColumnSpan="3" Orientation="Horizontal" Margin="0,12,0,0">
-      <TextBlock Text="{loc:T Prop.LabelUnit}" VerticalAlignment="Center" Margin="0,0,8,0" />
-      <ComboBox ItemsSource="{Binding Units}" SelectedItem="{Binding Unit}" IsEnabled="{Binding IsCustom}" MinWidth="110" Margin="0,0,16,0"
-                AutomationProperties.Name="{loc:T Prop.LabelUnit}" />
-      <TextBlock Text="{loc:T Prop.Dpi}" VerticalAlignment="Center" Margin="0,0,8,0" />
-      <ComboBox ItemsSource="{Binding Dpis}" SelectedItem="{Binding Dpi}" MinWidth="90" AutomationProperties.Name="{loc:T Prop.Dpi}" />
+    <TextBlock Text="{Binding Error}" Style="{StaticResource ErrorText}" AutomationProperties.LiveSetting="Polite" />
+    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,24,0,0">
+      <Button Content="{loc:T Common.Cancel}" IsCancel="True" MinWidth="96" Margin="0,0,8,0" AutomationProperties.Name="{loc:T Common.Cancel}" />
+      <Button Content="{loc:T Common.Create}" IsDefault="True" Style="{StaticResource PrimaryButton}" MinWidth="96" Click="OnCreate" AutomationProperties.Name="{loc:T Common.Create}" />
     </StackPanel>
-
-    <StackPanel Grid.Row="5" Grid.ColumnSpan="3" Margin="0,16,0,0">
-      <TextBlock Text="{Binding Error}" Style="{StaticResource ErrorText}" />
-      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
-        <Button Content="{loc:T Common.Create}" IsDefault="True" MinWidth="88" Padding="8,3" Margin="0,0,8,0" Click="OnCreate"
-                AutomationProperties.Name="{loc:T Common.Create}" />
-        <Button Content="{loc:T Common.Cancel}" IsCancel="True" MinWidth="88" Padding="8,3" AutomationProperties.Name="{loc:T Common.Cancel}" />
-      </StackPanel>
-    </StackPanel>
-  </Grid>
-</Window>
+  </StackPanel>
+</views:DialogWindow>

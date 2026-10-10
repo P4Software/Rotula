@@ -1,9 +1,10 @@
-<Window x:Class="Rotula.App.Views.PrintWindow"
+<views:DialogWindow x:Class="Rotula.App.Views.PrintWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ctl="clr-namespace:Rotula.App.Controls"
         xmlns:loc="clr-namespace:Rotula.App.Localization"
         xmlns:views="clr-namespace:Rotula.App.Views"
-        Title="{loc:T Print.Title}" Width="560" Height="800" MinWidth="480" MinHeight="520"
+        Title="{loc:T Print.Title}" Width="660" Height="800" MinWidth="520" MinHeight="520"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
         AutomationProperties.Name="{loc:T Print.Title}">
   <Window.Resources>
@@ -19,11 +20,12 @@
           <Button Content="{loc:T Print.Button.Print}" IsDefault="True" Style="{StaticResource PrimaryButton}" MinWidth="110" Command="{Binding PrintCommand}"
                   IsEnabled="{Binding IsIdle}" AutomationProperties.Name="{loc:T Print.Button.Print}" />
         </StackPanel>
-        <StackPanel Orientation="Horizontal" IsEnabled="{Binding IsIdle}">
-          <Button Content="{loc:T Print.Button.SaveZpl}" Command="{Binding SaveZplCommand}" Margin="0,0,8,0" AutomationProperties.Name="{loc:T Print.Button.SaveZpl}" />
-          <Button Content="{loc:T Print.Button.Test}" Command="{Binding PrintTestCommand}" AutomationProperties.Name="{loc:T Print.Button.Test}"
+        <!-- A WrapPanel: in Spanish the two secondary buttons are long, and in a narrow window they drop to a second line instead of overlapping Close/Print. -->
+        <WrapPanel IsEnabled="{Binding IsIdle}" VerticalAlignment="Center" Margin="0,0,12,0">
+          <Button Content="{loc:T Print.Button.SaveZpl}" Command="{Binding SaveZplCommand}" Margin="0,2,8,2" AutomationProperties.Name="{loc:T Print.Button.SaveZpl}" />
+          <Button Content="{loc:T Print.Button.Test}" Command="{Binding PrintTestCommand}" Margin="0,2,0,2" AutomationProperties.Name="{loc:T Print.Button.Test}"
                   ToolTip="{loc:T Print.Button.Test.Tip}" />
-        </StackPanel>
+        </WrapPanel>
       </DockPanel>
     </Border>
 
@@ -71,10 +73,10 @@
           <StackPanel>
             <TextBlock Text="{loc:T Print.Copies}" Style="{StaticResource FieldLabel}" />
             <TextBox Style="{StaticResource MonoTextBox}" Width="140" HorizontalAlignment="Left" Text="{Binding CopiesText, UpdateSourceTrigger=PropertyChanged}"
-                     AutomationProperties.Name="{loc:T Print.Copies}" />
+                     AutomationProperties.Name="{loc:T Print.Copies}"  ctl:FieldState.HasError="{Binding Text, RelativeSource={RelativeSource Self}, Converter={StaticResource FieldInvalid}, ConverterParameter=int:1:99999999}" />
           </StackPanel>
         </Border>
       </StackPanel>
     </ScrollViewer>
   </DockPanel>
-</Window>
+</views:DialogWindow>

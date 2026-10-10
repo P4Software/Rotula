@@ -5,7 +5,7 @@ using Rotula.Core.Model;
 namespace Rotula.App.Views;
 
 /// <summary>The New label dialog.</summary>
-public partial class NewLabelWindow : Window
+public partial class NewLabelWindow : DialogWindow
 {
     private readonly NewLabelViewModel _vm = new();
 

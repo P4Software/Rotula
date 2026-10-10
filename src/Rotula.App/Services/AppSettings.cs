@@ -23,6 +23,9 @@ public sealed class AppSettings
     /// <summary>Show the ZPL code panel under the canvas. Hidden by default; the choice is remembered.</summary>
     public bool ZplPanelVisible { get; set; }
 
+    /// <summary>Share of the right-hand column's height given to the Properties panel (the Objects list gets the rest). 0.2 to 0.8.</summary>
+    public double PropertiesPanelShare { get; set; } = 0.55;
+
     /// <summary>Grid spacing in millimetres.</summary>
     public double GridSpacingMm { get; set; } = 2.0;
 

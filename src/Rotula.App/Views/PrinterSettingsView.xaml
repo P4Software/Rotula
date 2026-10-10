@@ -1,6 +1,7 @@
 <UserControl x:Class="Rotula.App.Views.PrinterSettingsView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ctl="clr-namespace:Rotula.App.Controls"
              xmlns:loc="clr-namespace:Rotula.App.Localization">
   <UserControl.Resources>
     <BooleanToVisibilityConverter x:Key="B2V" />
@@ -44,7 +45,7 @@
       </StackPanel>
       <StackPanel Grid.Column="2">
         <TextBlock Text="{loc:T Print.Port}" Style="{StaticResource FieldLabel}" />
-        <TextBox Style="{StaticResource MonoTextBox}" Text="{Binding PortText, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{loc:T Print.Port}" />
+        <TextBox Style="{StaticResource MonoTextBox}" Text="{Binding PortText, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{loc:T Print.Port}"  ctl:FieldState.HasError="{Binding Text, RelativeSource={RelativeSource Self}, Converter={StaticResource FieldInvalid}, ConverterParameter=int:1:65535}" />
       </StackPanel>
     </Grid>
 
@@ -66,6 +67,10 @@
         <TextBlock Text="{loc:T Print.Profile.Dpi}" Style="{StaticResource FieldLabel}" />
         <ComboBox ItemsSource="{Binding DpiChoices}" DisplayMemberPath="Name" SelectedValuePath="Value" SelectedValue="{Binding SelectedDpi}"
                   AutomationProperties.Name="{loc:T Print.Profile.Dpi}" />
+        <!-- Result of reading the driver: a small progress bar while it runs, then a plain-language note. -->
+        <ProgressBar IsIndeterminate="True" Margin="0,6,0,0" Visibility="{Binding IsDetecting, Converter={StaticResource B2V}}" AutomationProperties.Name="{loc:T Print.Dpi.Detecting}" />
+        <TextBlock Text="{Binding DpiNote}" Style="{StaticResource MutedText}" FontSize="12" Margin="0,6,0,0" Visibility="{Binding HasDpiNote, Converter={StaticResource B2V}}"
+                   AutomationProperties.LiveSetting="Polite" />
       </StackPanel>
       <StackPanel Grid.Row="0" Grid.Column="2" Margin="0,0,0,12">
         <TextBlock Text="{loc:T Print.Profile.Media}" Style="{StaticResource FieldLabel}" />
@@ -75,22 +80,31 @@
 
       <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,0,12">
         <TextBlock Text="{loc:T Print.Profile.Width}" Style="{StaticResource FieldLabel}" />
-        <TextBox Style="{StaticResource MonoTextBox}" Text="{Binding WidthText, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{loc:T Print.Profile.Width}" />
+        <TextBox Style="{StaticResource MonoTextBox}" Text="{Binding WidthText, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{loc:T Print.Profile.Width}"  ctl:FieldState.HasError="{Binding Text, RelativeSource={RelativeSource Self}, Converter={StaticResource FieldInvalid}, ConverterParameter=double:0.01:100000}" />
       </StackPanel>
       <StackPanel Grid.Row="1" Grid.Column="2" Margin="0,0,0,12">
         <TextBlock Text="{loc:T Print.Profile.Height}" Style="{StaticResource FieldLabel}" />
-        <TextBox Style="{StaticResource MonoTextBox}" Text="{Binding HeightText, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{loc:T Print.Profile.Height}" />
+        <TextBox Style="{StaticResource MonoTextBox}" Text="{Binding HeightText, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{loc:T Print.Profile.Height}"  ctl:FieldState.HasError="{Binding Text, RelativeSource={RelativeSource Self}, Converter={StaticResource FieldInvalid}, ConverterParameter=double:0.01:100000}" />
       </StackPanel>
 
       <StackPanel Grid.Row="2" Grid.Column="0">
         <TextBlock Text="{loc:T Print.Profile.Darkness}" Style="{StaticResource FieldLabel}" />
-        <TextBox Style="{StaticResource MonoTextBox}" Text="{Binding DarknessText, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{loc:T Print.Profile.Darkness}" />
+        <TextBox Style="{StaticResource MonoTextBox}" Text="{Binding DarknessText, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{loc:T Print.Profile.Darkness}"  ctl:FieldState.HasError="{Binding Text, RelativeSource={RelativeSource Self}, Converter={StaticResource FieldInvalid}, ConverterParameter=int:0:30:opt}" />
       </StackPanel>
       <StackPanel Grid.Row="2" Grid.Column="2">
         <TextBlock Text="{loc:T Print.Profile.Speed}" Style="{StaticResource FieldLabel}" />
-        <TextBox Style="{StaticResource MonoTextBox}" Text="{Binding SpeedText, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{loc:T Print.Profile.Speed}" />
+        <TextBox Style="{StaticResource MonoTextBox}" Text="{Binding SpeedText, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{loc:T Print.Profile.Speed}"  ctl:FieldState.HasError="{Binding Text, RelativeSource={RelativeSource Self}, Converter={StaticResource FieldInvalid}, ConverterParameter=int:1:14:opt}" />
       </StackPanel>
     </Grid>
     <TextBlock Text="{loc:T Print.Profile.Hint}" Style="{StaticResource MutedText}" Margin="0,8,0,0" FontSize="12" />
+    <Button Content="{Binding DetectedSizeText}" Command="{Binding UseDetectedSizeCommand}" HorizontalAlignment="Left" Margin="0,12,0,0" Style="{StaticResource ToolButton}"
+            Visibility="{Binding HasDetectedSize, Converter={StaticResource B2V}}" ToolTip="{loc:T Print.UsePrinterSize.Tip}" AutomationProperties.Name="{Binding DetectedSizeText}" />
+    <Border Style="{StaticResource WarningBanner}" Margin="0,12,0,0" Visibility="{Binding HasDpiMismatch, Converter={StaticResource B2V}}" AutomationProperties.LiveSetting="Assertive">
+      <StackPanel>
+        <TextBlock Text="{Binding DpiMismatchText}" TextWrapping="Wrap" Foreground="{StaticResource WarningBrush}" />
+        <Button Content="{Binding SwitchLabelDpiText}" Command="{Binding SwitchLabelDpiCommand}" HorizontalAlignment="Left" Margin="0,8,0,0" Style="{StaticResource ToolButton}"
+                AutomationProperties.Name="{Binding SwitchLabelDpiText}" />
+      </StackPanel>
+    </Border>
   </StackPanel>
 </UserControl>

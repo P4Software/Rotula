@@ -394,7 +394,7 @@ public class AppViewModelTests : IDisposable
         Assert.Equal(0, vm.ErrorCount);
         vm.Session.Edit("Undo.Property", d => ((BarcodeElement)d.Elements[0]).Data = "");
         Assert.Equal(1, vm.ErrorCount);
-        Assert.Contains("1 errors", vm.ProblemsText);
+        Assert.Contains("1 error", vm.ProblemsText);
     }
 
     // ------------------------------------------------------------------------------- view state

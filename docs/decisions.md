@@ -27,6 +27,27 @@ Rotula.Rendering exposes no measurements. Box/line/circle/image bounds come from
 drawing the element alone with the real renderer and scanning for ink (cached until the element's size-relevant content
 changes). Request to Rendering: a public `Measure(RenderElement)` returning the layout size would replace the probe.
 
+### Visual language (polish pass)
+Warm off-white chrome, white surfaces, one burnt-orange accent, spacing scale 4/8/12/16/24, radius 6 (controls) and 8 (cards, popups).
+Everything shared lives in `Resources/Theme.xaml`: one field look (40 px, constant 1 px border, focus and error rings drawn as an overlay so
+the text never shifts), thin scrollbars without arrows (the dark ZPL strip overrides only the thumb brushes), styled DataGrid, tabs,
+tooltips (warm card, wrapped at 340 px, 450 ms delay set once in `App.xaml.cs`), context menus and splitters (wide grab area, hairline).
+Secondary windows derive from `Views.DialogWindow`: the same custom title bar as the main window (WindowChrome), size clamped to the work
+area, centred on the main window. Button hierarchy: solid accent for the one primary action, outlined for everything else, icon buttons
+with tooltips for tool actions.
+- **Field errors**: property rows keep their own `HasError`/`Error`, so the red border comes from the attached `FieldState.HasError`.
+- **Right column**: Properties 55 % / Objects 45 % by default, both with minimum heights; the splitter position is stored as a share
+  (`propertiesPanelShare` in settings.json), so it survives resizing and other DPI settings.
+- **Status bar** is a Grid (a `StatusBar` panel cannot ellipsise): message and notice shrink with an ellipsis, counts, problems, pointer
+  and label size stay readable. The long "preview is approximate" text is the tooltip of the short notice.
+- **Label size picker** (toolbar): a ContextMenu built on click (keyboard accessible by default): common sizes (the current one ticked),
+  "Custom size..." (shows the label settings and focuses the width box) and the print resolution. One undo step per change.
+- **Narrow windows / scaling**: WPF scales uniformly, so a layout at N % on a W x H screen equals the 100 % layout at W/N x H/N. The
+  toolbar drops its text captions below 1460 DIP, the "Preview" word below 1200 and the printer box below 1060; the window minimum is
+  960 x 560 DIP (a 1080p screen at 200 %) and every window is clamped to the work area.
+- **Bounds while a record is previewed**: text and barcode frames are now measured with the shown record's values (the cache key includes
+  them); Rotula.Rendering still has no public `Measure`, so the probe render remains.
+
 ### Undo/redo
 Memento command: each edit stores the whole document before/after (documents are small; image pixels are shared). Unlimited.
 Arrow nudges and typing in one property merge into one step within one second. Drags are gestures: one undo step per drag.

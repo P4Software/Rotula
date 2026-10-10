@@ -1126,10 +1126,10 @@ Yes saves, No discards the changes, Cancel goes back to the label.</value>
     <value>Width (dots)</value>
   </data>
   <data name="Prop.X" xml:space="preserve">
-    <value>X (dots from left)</value>
+    <value>X (dots)</value>
   </data>
   <data name="Prop.Y" xml:space="preserve">
-    <value>Y (dots from top)</value>
+    <value>Y (dots)</value>
   </data>
   <data name="Ruler.Horizontal" xml:space="preserve">
     <value>Horizontal ruler</value>
@@ -1976,5 +1976,86 @@ Yes saves, No discards the changes, Cancel goes back to the label.</value>
   </data>
   <data name="Toolbar.ZplToggle" xml:space="preserve">
     <value>Show or hide the ZPL code panel</value>
+  </data>
+  <data name="Status.Errors.One" xml:space="preserve">
+    <value>1 error</value>
+  </data>
+  <data name="Status.Errors.Many" xml:space="preserve">
+    <value>{0} errors</value>
+  </data>
+  <data name="Status.Warnings.One" xml:space="preserve">
+    <value>1 warning</value>
+  </data>
+  <data name="Status.Warnings.Many" xml:space="preserve">
+    <value>{0} warnings</value>
+  </data>
+  <data name="Preview.Approximate.Short" xml:space="preserve">
+    <value>Preview is approximate</value>
+  </data>
+  <data name="Layers.Empty.Title" xml:space="preserve">
+    <value>No objects yet</value>
+  </data>
+  <data name="Layers.Empty.Hint" xml:space="preserve">
+    <value>Pick a tool on the left to add text, a barcode or a shape.</value>
+  </data>
+  <data name="Picker.Custom" xml:space="preserve">
+    <value>Custom size...</value>
+  </data>
+  <data name="Picker.Sizes" xml:space="preserve">
+    <value>Common sizes</value>
+  </data>
+  <data name="Picker.Resolution" xml:space="preserve">
+    <value>Print resolution</value>
+  </data>
+  <data name="Picker.Tip" xml:space="preserve">
+    <value>Choose the label size and print resolution</value>
+  </data>
+  <data name="Undo.LabelSize" xml:space="preserve">
+    <value>label size</value>
+  </data>
+  <data name="Panel.LabelSubtitle" xml:space="preserve">
+    <value>Size, margins and printer defaults</value>
+  </data>
+  <data name="Panel.LabelHint" xml:space="preserve">
+    <value>Nothing is selected, so these are the settings of the whole label. Click an object on the canvas or in the list to edit it.</value>
+  </data>
+  <data name="Layers.Count" xml:space="preserve">
+    <value>{0} total</value>
+  </data>
+  <data name="Prop.LabelWidth.Unit" xml:space="preserve">
+    <value>Width ({0})</value>
+  </data>
+  <data name="Prop.LabelHeight.Unit" xml:space="preserve">
+    <value>Height ({0})</value>
+  </data>
+  <data name="Unit.Short.Millimeters" xml:space="preserve">
+    <value>mm</value>
+  </data>
+  <data name="Unit.Short.Inches" xml:space="preserve">
+    <value>in</value>
+  </data>
+  <data name="Unit.Short.Dots" xml:space="preserve">
+    <value>dots</value>
+  </data>
+  <data name="Print.Dpi.Detected" xml:space="preserve">
+    <value>Detected {0} dpi from the printer driver</value>
+  </data>
+  <data name="Print.Dpi.NotDetected" xml:space="preserve">
+    <value>Could not read the resolution from the driver, choose it manually.</value>
+  </data>
+  <data name="Print.Dpi.Detecting" xml:space="preserve">
+    <value>Reading the printer driver...</value>
+  </data>
+  <data name="Print.UsePrinterSize" xml:space="preserve">
+    <value>Use the printer size ({0})</value>
+  </data>
+  <data name="Print.UsePrinterSize.Tip" xml:space="preserve">
+    <value>Fill the label width and height with the paper size reported by the printer driver</value>
+  </data>
+  <data name="Print.DpiMismatch" xml:space="preserve">
+    <value>This label is designed for {0} dpi, but the printer prints at {1} dpi. Barcodes and text would print at the wrong size.</value>
+  </data>
+  <data name="Print.SwitchLabelDpi" xml:space="preserve">
+    <value>Switch label to {0} dpi</value>
   </data>
 </root>

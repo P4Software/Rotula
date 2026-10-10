@@ -168,6 +168,8 @@ internal sealed class FakePrintService : IPrintService
     public readonly List<(PrinterTarget Target, LabelDocument Doc, IReadOnlyDictionary<string, string>? Data, PrinterProfile? Profile)> Printed = new();
     public readonly List<(PrinterTarget Target, string Zpl, ZplEncoding Encoding)> ZplJobs = new();
     public readonly List<(PrinterTarget Target, PrinterProfile Profile)> TestLabels = new();
+    /// <summary>The byte-exact blocks passed with each ZPL job (same order as <see cref="ZplJobs"/>; empty for the overload without blocks).</summary>
+    public readonly List<IReadOnlyCollection<string>> RawBlockArgs = new();
     public IReadOnlyList<PrinterInfo> Printers = Array.Empty<PrinterInfo>();
     public Exception? DiscoveryFailure;
     /// <summary>The result for the next calls; a function so a test can fail only the n-th job.</summary>
@@ -200,6 +202,15 @@ internal sealed class FakePrintService : IPrintService
     public Task<PrintResult> PrintZplAsync(PrinterTarget target, string zpl, ZplEncoding encoding, CancellationToken cancellationToken = default)
     {
         ZplJobs.Add((target, zpl, encoding));
+        RawBlockArgs.Add(Array.Empty<string>());
+        return Respond(cancellationToken);
+    }
+
+    public Task<PrintResult> PrintZplAsync(PrinterTarget target, string zpl, ZplEncoding encoding, IReadOnlyCollection<string> byteExactBlocks,
+        CancellationToken cancellationToken = default)
+    {
+        ZplJobs.Add((target, zpl, encoding));
+        RawBlockArgs.Add(byteExactBlocks);
         return Respond(cancellationToken);
     }
 

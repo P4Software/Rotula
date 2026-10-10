@@ -7,7 +7,7 @@ using Rotula.App.Localization;
 namespace Rotula.App.Views;
 
 /// <summary>A larger preview of the label, drawn by Rotula.Rendering at one pixel per printer dot.</summary>
-public partial class PreviewWindow : Window
+public partial class PreviewWindow : DialogWindow
 {
     /// <summary>Creates the window and draws the label once.</summary>
     /// <param name="preview">The preview cache of the open label (its current record data is used).</param>

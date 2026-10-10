@@ -22,8 +22,8 @@ public abstract partial class PropertyRow : ObservableObject
     /// <summary>Resource key of the label (also used as the automation name).</summary>
     public string LabelKey { get; }
 
-    /// <summary>Translated label.</summary>
-    public string Label { get; }
+    /// <summary>Translated label (a row can override it with an object initializer, for example to add the unit: "Width (mm)").</summary>
+    public string Label { get; init; }
 
     /// <summary>Optional translated hint shown as tool tip.</summary>
     public string? Hint { get; }

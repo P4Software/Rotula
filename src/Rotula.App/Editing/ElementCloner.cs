@@ -43,6 +43,16 @@ public static class ElementCloner
                 // GrayscaleBitmap is immutable, so the pixels can be shared between copies.
                 c = new ImageElement { Source = im.Source, WidthDots = im.WidthDots, HeightDots = im.HeightDots, Dither = im.Dither, Threshold = im.Threshold, Invert = im.Invert };
                 break;
+            case RawZplElement raw:
+                // Imported ZPL that the designer cannot interpret; it must survive copies and undo snapshots untouched.
+                c = new RawZplElement { Zpl = raw.Zpl, IsVisual = raw.IsVisual };
+                break;
+            case RecallPlaceholderElement rp:
+                c = new RecallPlaceholderElement
+                {
+                    Command = rp.Command, Reference = rp.Reference, Zpl = rp.Zpl, EmitAsField = rp.EmitAsField, WidthDots = rp.WidthDots, HeightDots = rp.HeightDots,
+                };
+                break;
             default:
                 throw new NotSupportedException($"Element type {e.GetType().Name} is not supported.");
         }

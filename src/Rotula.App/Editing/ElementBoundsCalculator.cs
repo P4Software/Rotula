@@ -49,7 +49,7 @@ public readonly record struct RectD(double X, double Y, double Width, double Hei
 /// <summary>
 /// Works out where each element sits on the label. Rotula.Rendering does not expose element measurements, so:
 /// boxes, lines, circles and images are computed from the model (exact), while text and barcodes are measured by
-/// drawing the element alone with the real renderer and finding the ink. Results are cached until the element's
+/// drawing the element alone with the real renderer and finding the ink (using the shown record's values when a data record is previewed). Results are cached until the element's
 /// size-relevant content changes (moving an element never re-measures it).
 /// </summary>
 public sealed class ElementBoundsCalculator
@@ -63,6 +63,27 @@ public sealed class ElementBoundsCalculator
 
     /// <summary>Creates a calculator that reads the current document through <paramref name="document"/>.</summary>
     public ElementBoundsCalculator(Func<LabelDocument> document) => _document = document;
+
+    /// <summary>
+    /// Supplies the values of the data-merge record currently shown on the canvas (or null for the label's sample values).
+    /// Text and barcodes are measured with these values, so the selection frame matches what is drawn for the record.
+    /// </summary>
+    public Func<IReadOnlyDictionary<string, string>?>? DataProvider { get; set; }
+
+    // The key text of the last data dictionary seen; rebuilt only when the dictionary object changes (one per record), not on every call.
+    private IReadOnlyDictionary<string, string>? _keyedData;
+    private string _dataKey = string.Empty;
+
+    private string DataKey(IReadOnlyDictionary<string, string>? data)
+    {
+        if (data is null) return string.Empty;
+        if (!ReferenceEquals(data, _keyedData))
+        {
+            _keyedData = data;
+            _dataKey = string.Join('', data.OrderBy(kv => kv.Key, StringComparer.Ordinal).Select(kv => kv.Key + "=" + kv.Value));
+        }
+        return _dataKey;
+    }
 
     /// <summary>How many times the renderer was used to measure an element; exposed so tests can verify caching.</summary>
     public int ProbeCount { get; private set; }
@@ -129,10 +150,12 @@ public sealed class ElementBoundsCalculator
 
     private RectD MeasureInk(LabelElement e, LabelDocument doc)
     {
-        string key = MeasureKey(e, doc);
+        var data = DataProvider?.Invoke();
+        // A record's values change the text width, so they are part of the cache key (empty when no record is shown).
+        string key = DataKey(data) + "" + MeasureKey(e, doc);
         if (!_cache.TryGetValue(key, out var m))
         {
-            m = Probe(e, doc);
+            m = Probe(e, doc, data);
             if (_cache.Count > 2000) _cache.Clear();
             _cache[key] = m;
         }
@@ -148,7 +171,7 @@ public sealed class ElementBoundsCalculator
         return $"{(int)doc.Dpi}|{doc.DefaultRotation}|{f?.FontId}{f?.Height}x{f?.Width}|{vars}|{content}";
     }
 
-    private (int W, int H, int OffX, int OffY) Probe(LabelElement e, LabelDocument doc)
+    private (int W, int H, int OffX, int OffY) Probe(LabelElement e, LabelDocument doc, IReadOnlyDictionary<string, string>? data)
     {
         ProbeCount++;
         var temp = new LabelDocument
@@ -169,7 +192,7 @@ public sealed class ElementBoundsCalculator
 
         try
         {
-            using var result = LabelRenderer.RenderBitmap(LabelDocumentAdapter.ToRenderLabel(temp));
+            using var result = LabelRenderer.RenderBitmap(LabelDocumentAdapter.ToRenderLabel(temp, data));
             var (x0, y0, x1, y1) = FindInk(result.Bitmap);
             if (x1 < x0) return (FallbackSize, FallbackSize, 0, e.OriginKind == FieldOriginKind.Typeset ? -FallbackSize : 0);
             return (x1 - x0 + 1, y1 - y0 + 1, x0 - ProbePad, y0 - ProbePad);

@@ -23,8 +23,12 @@ namespace Rotula.App.ViewModels;
 /// <param name="Name">Display name.</param>
 /// <param name="TypeTag">Short kind label shown in small monospace type (Text, QR, Line, Code 128...).</param>
 /// <param name="Detail">The text or barcode data of the element, shown under the name (empty for shapes).</param>
-public sealed record LayerItem(string Id, string Name, string TypeTag = "", string Detail = "")
+/// <param name="FullText">The complete text or barcode data (the row shows <paramref name="Detail"/>, which is cut short); used for the tooltip.</param>
+public sealed record LayerItem(string Id, string Name, string TypeTag = "", string Detail = "", string FullText = "")
 {
+    /// <summary>Tooltip of the row: the full text when the element has one, otherwise its name.</summary>
+    public string ToolTipText => FullText.Length > 0 ? FullText : Name;
+
     /// <summary>What the row shows first: the element's text or data when it has any, otherwise its name.</summary>
     public string Primary => Detail.Length > 0 ? Detail : Name;
 }
@@ -89,7 +93,9 @@ public sealed partial class MainViewModel : ObservableObject
         Commands = new EditorCommands(Session);
         Properties = new PropertyPanelViewModel(Session, ChooseImageFor);
         Preview = new PreviewCache(Session);
-        Printer = new PrinterSettingsViewModel(services.Printing, _settings.Print, SaveSettings, () => Session.Document);
+        // Handles and selection frames are measured with the record shown on the canvas, not only the sample values.
+        Session.Bounds.DataProvider = () => Preview.Data;
+        Printer = new PrinterSettingsViewModel(services.Printing, _settings.Print, SaveSettings, () => Session.Document, applyLabelDpi: SetLabelDpi);
         Data = new DataMergeViewModel(services.Printing, Printer, () => Session.Document, () => DocumentName, services.Files, services.Messages);
         Data.SettingsEdited += (_, _) => Session.MarkDirty();
         Data.PreviewDataChanged += (_, _) => OnPreviewDataChanged();
@@ -205,6 +211,9 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>The notice that the on-screen text preview is approximate.</summary>
     public string ApproximateNotice => Loc.Get("Preview.Approximate");
 
+    /// <summary>Short wording of the approximate-preview notice for the status bar (the full text is its tooltip).</summary>
+    public string ApproximateNoticeShort => Loc.Get("Preview.Approximate.Short");
+
     /// <summary>Current zoom.</summary>
     [ObservableProperty]
     private ZoomModel _zoom = new(1.0);
@@ -296,7 +305,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             Layers.Clear();
             foreach (var e in Session.Document.Elements.AsEnumerable().Reverse())
-                Layers.Add(new LayerItem(e.Id, PropertyPanelViewModel.ElementDisplayName(e), TypeTagOf(e), DetailOf(e)));
+                Layers.Add(new LayerItem(e.Id, PropertyPanelViewModel.ElementDisplayName(e), TypeTagOf(e), DetailOf(e), FullTextOf(e)));
         }
         finally { _syncingSelection = false; }
         UpdateTitle();
@@ -329,10 +338,12 @@ public sealed partial class MainViewModel : ObservableObject
         _ => e.GetType().Name,
     };
 
+    private static string FullTextOf(LabelElement e) =>
+        (e switch { BarcodeElement b => b.Data, TextElement t => t.GetTemplate(), _ => string.Empty }).Replace("\r", " ").Replace("\n", " ");
+
     private static string DetailOf(LabelElement e)
     {
-        string text = e switch { BarcodeElement b => b.Data, TextElement t => t.GetTemplate(), _ => string.Empty };
-        text = text.Replace("\r", " ").Replace("\n", " ");
+        string text = FullTextOf(e);
         return text.Length > 60 ? text[..60] + "..." : text;
     }
 
@@ -382,6 +393,49 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Zoom levels offered in the toolbar drop-down (percent).</summary>
     public IReadOnlyList<int> ZoomPresets { get; } = new[] { 25, 50, 75, 100, 150, 200, 300, 400 };
 
+    /// <summary>Sizes offered by the toolbar's label picker (the New dialog's presets without the "custom" entry).</summary>
+    public IReadOnlyList<LabelPreset> SizePresets { get; } = LabelPreset.All.Where(p => p.NameKey != "Preset.Custom").ToArray();
+
+    /// <summary>True when the open label already has the size of <paramref name="preset"/> (compared in printer dots, whatever the unit).</summary>
+    public bool IsCurrentSize(LabelPreset preset)
+    {
+        var d = Session.Document;
+        var w = new Measure(preset.Width, preset.Unit);
+        var h = new Measure(preset.Height, preset.Unit);
+        return w.ToDots(d.Dpi) == d.WidthDots && h.ToDots(d.Dpi) == d.HeightDots;
+    }
+
+    /// <summary>Gives the open label the size of a preset. One undo step; does nothing when the label already has that size.</summary>
+    public void ApplyLabelSize(LabelPreset preset)
+    {
+        if (IsCurrentSize(preset)) return;
+        Session.Edit("Undo.LabelSize", d =>
+        {
+            d.Width = new Measure(preset.Width, preset.Unit);
+            d.Height = new Measure(preset.Height, preset.Unit);
+        });
+    }
+
+    /// <summary>Changes the printer resolution of the open label (one undo step; nothing happens when it is already that resolution).</summary>
+    public void SetLabelDpi(PrinterDpi dpi)
+    {
+        if (Session.Document.Dpi == dpi) return;
+        Session.Edit("Undo.LabelSettings", d => d.Dpi = dpi);
+    }
+
+    /// <summary>The share of the right-hand column used by the Properties panel; setting it saves it in settings.json.</summary>
+    public double PropertiesPanelShare
+    {
+        get => Math.Clamp(_settings.PropertiesPanelShare, 0.2, 0.8);
+        set
+        {
+            double v = Math.Clamp(value, 0.2, 0.8);
+            if (Math.Abs(v - _settings.PropertiesPanelShare) < 0.005) return;
+            _settings.PropertiesPanelShare = v;
+            SaveSettings();
+        }
+    }
+
     /// <summary>Sets the zoom to a preset (percent).</summary>
     public void SetZoomPercent(int percent) => Zoom = new ZoomModel(Math.Clamp(percent, 5, 1600) / 100.0);
 
@@ -413,7 +467,7 @@ public sealed partial class MainViewModel : ObservableObject
             Properties.SetIssues(view.Issues);
             ErrorCount = view.Issues.Count(i => i.Severity == ValidationSeverity.Error);
             int warnings = view.Issues.Count - ErrorCount;
-            ProblemsText = ErrorCount == 0 && warnings == 0 ? Loc.Get("Status.NoProblems") : Loc.Get("Status.Problems", ErrorCount, warnings);
+            ProblemsText = ErrorCount == 0 && warnings == 0 ? Loc.Get("Status.NoProblems") : DescribeProblems(ErrorCount, warnings);
         }
         catch (Exception ex) when (ex is not OutOfMemoryException)
         {
@@ -422,6 +476,15 @@ public sealed partial class MainViewModel : ObservableObject
             ZplText = string.Empty;
             ProblemsText = Loc.Get("Status.ZplFailed");
         }
+    }
+
+    /// <summary>"1 error, 3 warnings": each count in the singular or plural form of the current language; a zero count is left out.</summary>
+    private static string DescribeProblems(int errors, int warnings)
+    {
+        var parts = new List<string>(2);
+        if (errors > 0) parts.Add(errors == 1 ? Loc.Get("Status.Errors.One") : Loc.Get("Status.Errors.Many", errors));
+        if (warnings > 0) parts.Add(warnings == 1 ? Loc.Get("Status.Warnings.One") : Loc.Get("Status.Warnings.Many", warnings));
+        return string.Join(", ", parts);
     }
 
     private void OnSelectionChanged()
@@ -444,6 +507,7 @@ public sealed partial class MainViewModel : ObservableObject
         OnDocumentChanged();
         OnSelectionChanged();
         OnPropertyChanged(nameof(ApproximateNotice));
+        OnPropertyChanged(nameof(ApproximateNoticeShort));
         OnPropertyChanged(nameof(DataRecordText));
         OnPropertyChanged(nameof(LanguageSetting));
         OnPropertyChanged(nameof(IsLanguageAuto));

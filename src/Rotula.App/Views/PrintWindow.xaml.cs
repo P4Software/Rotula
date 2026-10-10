@@ -5,7 +5,7 @@ using Rotula.App.ViewModels;
 namespace Rotula.App.Views;
 
 /// <summary>The Print dialog. All behaviour is in <see cref="PrintViewModel"/>; this class only connects window events.</summary>
-public partial class PrintWindow : Window
+public partial class PrintWindow : DialogWindow
 {
     private readonly PrintViewModel _vm;
 

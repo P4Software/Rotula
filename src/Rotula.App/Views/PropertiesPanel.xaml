@@ -10,21 +10,24 @@
       <Setter Property="Margin" Value="0,0,0,4" />
       <Setter Property="FontSize" Value="12" />
       <Setter Property="Foreground" Value="{StaticResource MutedBrush}" />
+      <Setter Property="TextTrimming" Value="CharacterEllipsis" />
     </Style>
 
+    <!-- Section heading: hairline above, bold title below. -->
     <DataTemplate DataType="{x:Type vm:HeadingRow}">
-      <StackPanel Margin="0,16,0,10">
-        <Border Height="1" Background="{StaticResource BorderBrushLight}" Margin="0,0,0,12" />
-        <TextBlock Text="{Binding Label}" FontWeight="SemiBold" AutomationProperties.HeadingLevel="Level2" />
+      <StackPanel Margin="0,12,0,10">
+        <Border Height="1" Background="{StaticResource BorderBrushLight}" Margin="0,0,0,14" />
+        <TextBlock Text="{Binding Label}" FontWeight="SemiBold" FontSize="13" AutomationProperties.HeadingLevel="Level2" />
       </StackPanel>
     </DataTemplate>
 
+    <!-- Number fields: left-aligned monospace text, the unit is part of the label ("Width (dots)"), red border and a plain message when rejected. -->
     <DataTemplate DataType="{x:Type vm:IntRow}">
       <StackPanel ToolTip="{Binding Hint}" Margin="0,0,0,12">
         <TextBlock Text="{Binding Label}" Style="{StaticResource RowLabel}" />
-        <TextBox Text="{Binding Text, UpdateSourceTrigger=LostFocus}" IsUndoEnabled="False"
-                 AutomationProperties.Name="{Binding Label}" />
-        <TextBlock Text="{Binding Error}" Style="{StaticResource ErrorText}">
+        <TextBox Style="{StaticResource MonoTextBox}" Text="{Binding Text, UpdateSourceTrigger=LostFocus}" IsUndoEnabled="False"
+                 ctl:FieldState.HasError="{Binding HasError}" AutomationProperties.Name="{Binding Label}" />
+        <TextBlock Text="{Binding Error}" Style="{StaticResource ErrorText}" AutomationProperties.LiveSetting="Polite">
           <TextBlock.Visibility><Binding Path="HasError" Converter="{StaticResource BoolToVisibility}" /></TextBlock.Visibility>
         </TextBlock>
       </StackPanel>
@@ -33,9 +36,9 @@
     <DataTemplate DataType="{x:Type vm:DoubleRow}">
       <StackPanel ToolTip="{Binding Hint}" Margin="0,0,0,12">
         <TextBlock Text="{Binding Label}" Style="{StaticResource RowLabel}" />
-        <TextBox Text="{Binding Text, UpdateSourceTrigger=LostFocus}" IsUndoEnabled="False"
-                 AutomationProperties.Name="{Binding Label}" />
-        <TextBlock Text="{Binding Error}" Style="{StaticResource ErrorText}">
+        <TextBox Style="{StaticResource MonoTextBox}" Text="{Binding Text, UpdateSourceTrigger=LostFocus}" IsUndoEnabled="False"
+                 ctl:FieldState.HasError="{Binding HasError}" AutomationProperties.Name="{Binding Label}" />
+        <TextBlock Text="{Binding Error}" Style="{StaticResource ErrorText}" AutomationProperties.LiveSetting="Polite">
           <TextBlock.Visibility><Binding Path="HasError" Converter="{StaticResource BoolToVisibility}" /></TextBlock.Visibility>
         </TextBlock>
       </StackPanel>
@@ -44,20 +47,22 @@
     <DataTemplate DataType="{x:Type vm:TextRow}">
       <StackPanel ToolTip="{Binding Hint}" Margin="0,0,0,12">
         <TextBlock Text="{Binding Label}" Style="{StaticResource RowLabel}" />
-        <TextBox Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}" IsUndoEnabled="False"
+        <TextBox Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}" IsUndoEnabled="False" ctl:FieldState.HasError="{Binding HasError}"
                  AutomationProperties.Name="{Binding Label}" TextWrapping="Wrap" AcceptsReturn="{Binding IsMultiline}">
           <TextBox.Style>
-            <Style TargetType="TextBox">
+            <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
               <Style.Triggers>
                 <DataTrigger Binding="{Binding IsMultiline}" Value="True">
-                  <Setter Property="MinHeight" Value="64" />
+                  <Setter Property="MinHeight" Value="76" />
+                  <Setter Property="Padding" Value="12,9" />
+                  <Setter Property="VerticalContentAlignment" Value="Top" />
                   <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
                 </DataTrigger>
               </Style.Triggers>
             </Style>
           </TextBox.Style>
         </TextBox>
-        <TextBlock Text="{Binding Error}" Style="{StaticResource ErrorText}">
+        <TextBlock Text="{Binding Error}" Style="{StaticResource ErrorText}" AutomationProperties.LiveSetting="Polite">
           <TextBlock.Visibility><Binding Path="HasError" Converter="{StaticResource BoolToVisibility}" /></TextBlock.Visibility>
         </TextBlock>
       </StackPanel>
@@ -83,14 +88,28 @@
   </UserControl.Resources>
 
   <DockPanel Background="{StaticResource PanelBrush}">
-    <DockPanel DockPanel.Dock="Top" Margin="0,0,16,0">
-      <TextBlock DockPanel.Dock="Right" Text="{Binding SelectionTypeTag}" FontFamily="{StaticResource MonoFont}" FontSize="12" FontWeight="SemiBold"
-                 Foreground="{StaticResource AccentBrush}" VerticalAlignment="Center" AutomationProperties.Name="{loc:T Panel.TypeTag}" />
-      <TextBlock Text="{loc:T Panel.Properties}" Style="{StaticResource PanelHeading}" AutomationProperties.HeadingLevel="Level1" />
+    <!-- Heading with the kind of the selection as a small tag at the top right. -->
+    <DockPanel DockPanel.Dock="Top" Margin="16,14,16,0">
+      <Border DockPanel.Dock="Right" Background="{StaticResource AccentTintBrush}" CornerRadius="4" Padding="8,2" VerticalAlignment="Center" MaxWidth="150">
+        <TextBlock Text="{Binding SelectionTypeTag}" FontFamily="{StaticResource MonoFont}" FontSize="11.5" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
+                   Foreground="{StaticResource AccentBrush}" AutomationProperties.Name="{loc:T Panel.TypeTag}" />
+      </Border>
+      <TextBlock Text="{loc:T Panel.Properties}" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" AutomationProperties.HeadingLevel="Level1" />
     </DockPanel>
-    <TextBlock DockPanel.Dock="Top" Text="{Binding Properties.Title}" Foreground="{StaticResource MutedBrush}" FontSize="12" Margin="16,0,16,8" TextTrimming="CharacterEllipsis" />
-    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16,4,16,8" Focusable="False">
-      <StackPanel>
+    <TextBlock DockPanel.Dock="Top" Text="{Binding Properties.Subtitle}" Foreground="{StaticResource MutedBrush}" FontSize="12" Margin="16,2,16,10" TextTrimming="CharacterEllipsis"
+               ToolTip="{Binding Properties.Subtitle}">
+      <TextBlock.Style>
+        <Style TargetType="TextBlock">
+          <Style.Triggers><Trigger Property="Text" Value=""><Setter Property="Visibility" Value="Collapsed" /></Trigger></Style.Triggers>
+        </Style>
+      </TextBlock.Style>
+    </TextBlock>
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16,0,4,8" Focusable="False">
+      <StackPanel Margin="0,0,8,0">
+        <!-- Empty state: nothing selected, so the panel shows the label's own settings; say so. -->
+        <Border Style="{StaticResource InfoBanner}" Margin="0,0,0,4" Visibility="{Binding Properties.ShowsLabel, Converter={StaticResource BoolToVisibility}}">
+          <TextBlock Text="{loc:T Panel.LabelHint}" TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" FontSize="12" />
+        </Border>
         <TextBlock Text="{Binding Properties.Hint}" TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" Margin="0,0,0,12">
           <TextBlock.Style>
             <Style TargetType="TextBlock">
@@ -103,10 +122,12 @@
             <ItemsPanelTemplate><ctl:PropertyGridPanel /></ItemsPanelTemplate>
           </ItemsControl.ItemsPanel>
         </ItemsControl>
-        <ItemsControl ItemsSource="{Binding Properties.IssueMessages}" Margin="0,12,0,0" IsTabStop="False">
+        <ItemsControl ItemsSource="{Binding Properties.IssueMessages}" Margin="0,4,0,0" IsTabStop="False">
           <ItemsControl.ItemTemplate>
             <DataTemplate>
-              <TextBlock Text="{Binding}" TextWrapping="Wrap" Foreground="{StaticResource WarningBrush}" Margin="0,2" />
+              <Border Style="{StaticResource WarningBanner}" Margin="0,0,0,6">
+                <TextBlock Text="{Binding}" TextWrapping="Wrap" Foreground="{StaticResource WarningBrush}" FontSize="12" />
+              </Border>
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>

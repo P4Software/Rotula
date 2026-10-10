@@ -1,9 +1,11 @@
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using Rotula.App.Localization;
 using Rotula.App.ViewModels;
+using Rotula.Core.Model;
 
 namespace Rotula.App;
 
@@ -23,8 +25,15 @@ public partial class MainWindow : Window
         viewModel.Layers.CollectionChanged += (_, _) => SyncLayersFromSession();
         viewModel.ExitRequested += (_, _) => Close();
         StateChanged += (_, _) => UpdateMaximizeGlyph();
+        // The window must fit the screen it opens on (a 1380 x 860 window is larger than a 1280 x 800 display or a 150 % scaled 1080p one).
+        var area = SystemParameters.WorkArea;
+        MinWidth = Math.Min(MinWidth, area.Width);
+        MinHeight = Math.Min(MinHeight, area.Height);
+        Width = Math.Min(Width, area.Width);
+        Height = Math.Min(Height, area.Height);
         Loaded += async (_, _) =>
         {
+            RestorePanelSplit();
             viewModel.ZoomFitCommand.Execute(null);
             // Printer discovery is async; the window is already usable while Windows lists its printers.
             await viewModel.Printer.RefreshPrintersAsync();
@@ -35,6 +44,8 @@ public partial class MainWindow : Window
     protected override void OnClosing(CancelEventArgs e)
     {
         base.OnClosing(e);
+        // A keyboard resize of the splitter raises no DragCompleted, so the position is saved here as well.
+        SavePanelSplit();
         // Never lose work silently: ask first, and let the user cancel the close.
         if (!_vm.ConfirmClose()) e.Cancel = true;
         else _vm.OnClosing();
@@ -87,6 +98,103 @@ public partial class MainWindow : Window
         SelectTool.IsChecked = true;
         _vm.SelectNoneCommand.Execute(null);
         Design.FocusCanvas();
+    }
+
+    // ------------------------------------------------------------------------------- toolbar fit
+
+    /// <summary>
+    /// The toolbar has to fit at 1280 DIP wide in Spanish (about 1320 DIP of content with every caption). Below the thresholds the text
+    /// captions in front of the drop-downs go first (their tooltips and automation names remain), then the "Preview" word goes and the
+    /// printer box shrinks (and disappears below about 1060 DIP). The icons and controls themselves never move.
+    /// </summary>
+    private void OnWindowSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        double w = e.NewSize.Width;
+        var captions = w >= 1460 ? Visibility.Visible : Visibility.Collapsed;
+        ZoomCaption.Visibility = LabelCaption.Visibility = PrinterCaption.Visibility = captions;
+        PreviewText.Visibility = w >= 1200 ? Visibility.Visible : Visibility.Collapsed;
+        PreviewIcon.Margin = w >= 1200 ? new Thickness(0, 0, 8, 0) : new Thickness(0);
+        PrinterBox.Width = w >= 1300 ? 220 : w >= 1200 ? 190 : 150;
+        // On a very small work area (1080p at 200 % is only 960 DIP wide) the printer box goes too; the printer is still chosen in the Print dialog.
+        PrinterBox.Visibility = w >= 1060 ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    // ------------------------------------------------------------------------------- label size picker
+
+    /// <summary>
+    /// Opens the label size menu under the toolbar button: the common sizes (the current one is ticked), "Custom size..." and the print
+    /// resolution. A ContextMenu gives arrow-key navigation, Escape and focus return for free, which keeps the picker keyboard accessible.
+    /// </summary>
+    private void OnLabelPickerClick(object sender, RoutedEventArgs e)
+    {
+        var menu = new ContextMenu
+        {
+            PlacementTarget = LabelPickerButton,
+            Placement = PlacementMode.Bottom,
+            // A ContextMenu is outside the visual tree, so it does not inherit the window's data context or the language.
+            DataContext = _vm,
+            MinWidth = LabelPickerButton.ActualWidth,
+        };
+        menu.Items.Add(Caption(Loc.Get("Picker.Sizes")));
+        foreach (var preset in _vm.SizePresets)
+        {
+            var captured = preset;
+            var item = new MenuItem { Header = preset.Name, IsCheckable = true, IsChecked = _vm.IsCurrentSize(preset) };
+            item.Click += (_, _) => _vm.ApplyLabelSize(captured);
+            menu.Items.Add(item);
+        }
+        var custom = new MenuItem { Header = Loc.Get("Picker.Custom") };
+        custom.Click += (_, _) => ShowLabelSettings();
+        menu.Items.Add(new Separator());
+        menu.Items.Add(custom);
+        menu.Items.Add(new Separator());
+        menu.Items.Add(Caption(Loc.Get("Picker.Resolution")));
+        foreach (var dpi in Enum.GetValues<PrinterDpi>())
+        {
+            var captured = dpi;
+            var item = new MenuItem { Header = Loc.EnumName(dpi), IsCheckable = true, IsChecked = _vm.Session.Document.Dpi == dpi };
+            item.Click += (_, _) => _vm.SetLabelDpi(captured);
+            menu.Items.Add(item);
+        }
+        menu.IsOpen = true;
+    }
+
+    private static MenuItem Caption(string text) => new()
+    {
+        Header = new TextBlock { Text = text, Style = (Style)Application.Current.FindResource("MenuCaption"), Margin = new Thickness(0, 6, 0, 4) },
+        IsEnabled = false,
+        Focusable = false,
+    };
+
+    /// <summary>Shows the label's own settings in the Properties panel and puts the cursor in the first field (the width).</summary>
+    private void ShowLabelSettings()
+    {
+        SelectTool.IsChecked = true;
+        _vm.SelectNoneCommand.Execute(null);
+        PropertiesPanelView.FocusFirstField();
+    }
+
+    // ------------------------------------------------------------------------------- right column split
+
+    private bool _restoringSplit;
+
+    /// <summary>Applies the remembered Properties / Objects proportion (a share of the column, so it survives resizing and other DPI settings).</summary>
+    private void RestorePanelSplit()
+    {
+        _restoringSplit = true;
+        double share = _vm.PropertiesPanelShare;
+        PropertiesRow.Height = new GridLength(share, GridUnitType.Star);
+        ObjectsRow.Height = new GridLength(1 - share, GridUnitType.Star);
+        _restoringSplit = false;
+    }
+
+    private void OnPanelSplitterDragCompleted(object sender, DragCompletedEventArgs e) => SavePanelSplit();
+
+    private void SavePanelSplit()
+    {
+        if (_restoringSplit) return;
+        double total = PropertiesRow.ActualHeight + ObjectsRow.ActualHeight;
+        if (total > 0) _vm.PropertiesPanelShare = PropertiesRow.ActualHeight / total;
     }
 
     // ------------------------------------------------------------------------------- layers

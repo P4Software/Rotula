@@ -69,11 +69,11 @@ public sealed partial class NewLabelViewModel : ObservableObject
     /// <summary>True when the size boxes can be edited (the Custom preset).</summary>
     public bool IsCustom => SelectedPreset.NameKey == "Preset.Custom";
 
-    /// <summary>Printer resolutions to choose from.</summary>
-    public IReadOnlyList<PrinterDpi> Dpis { get; } = Enum.GetValues<PrinterDpi>();
+    /// <summary>Printer resolutions to choose from (translated names; bind SelectedValue to <see cref="Dpi"/>).</summary>
+    public IReadOnlyList<ChoiceItem> Dpis { get; } = ChoiceRow.ForEnum<PrinterDpi>();
 
     /// <summary>Units to choose from.</summary>
-    public IReadOnlyList<LengthUnit> Units { get; } = new[] { LengthUnit.Millimeters, LengthUnit.Inches };
+    public IReadOnlyList<ChoiceItem> Units { get; } = ChoiceRow.ForEnum(new[] { LengthUnit.Millimeters, LengthUnit.Inches });
 
     partial void OnSelectedPresetChanged(LabelPreset value)
     {

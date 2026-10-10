@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Rotula.App.Localization;
 using Rotula.App.Services;
 using Rotula.Core.Model;
@@ -26,6 +27,10 @@ public sealed partial class PrinterSettingsViewModel : ObservableObject
     private readonly PrintSettings _settings;
     private readonly Action _save;
     private readonly Func<LabelDocument> _document;
+    private readonly Func<string, CancellationToken, Task<PrinterDetection>> _detect;
+    private readonly Action<PrinterDpi>? _applyLabelDpi;
+    private CancellationTokenSource? _detectCts;
+    private PrinterDetection _detected = PrinterDetection.None;
     private IReadOnlyList<PrinterInfo> _printers = Array.Empty<PrinterInfo>();
 
     /// <summary>Creates the view-model.</summary>
@@ -33,8 +38,13 @@ public sealed partial class PrinterSettingsViewModel : ObservableObject
     /// <param name="settings">The persisted settings object this view-model reads and updates.</param>
     /// <param name="save">Writes settings.json.</param>
     /// <param name="document">The open label; its size and resolution seed the profile the first time.</param>
-    public PrinterSettingsViewModel(IPrintService service, PrintSettings settings, Action save, Func<LabelDocument> document)
+    /// <param name="detect">Reads the driver resolution and paper size of a printer; null uses <see cref="PrinterDetector"/> (tests pass a fake).</param>
+    /// <param name="applyLabelDpi">Switches the open label to a resolution (one undo step); null disables the "Switch label" action.</param>
+    public PrinterSettingsViewModel(IPrintService service, PrintSettings settings, Action save, Func<LabelDocument> document,
+        Func<string, CancellationToken, Task<PrinterDetection>>? detect = null, Action<PrinterDpi>? applyLabelDpi = null)
     {
+        _detect = detect ?? ((name, ct) => PrinterDetector.DetectAsync(service, name, ct));
+        _applyLabelDpi = applyLabelDpi;
         _service = service;
         _settings = settings;
         _save = save;
@@ -81,7 +91,11 @@ public sealed partial class PrinterSettingsViewModel : ObservableObject
         NotifyToolbar();
     }
 
-    partial void OnSelectedPrinterNameChanged(string? value) => NotifyToolbar();
+    partial void OnSelectedPrinterNameChanged(string? value)
+    {
+        NotifyToolbar();
+        _ = DetectAsync();
+    }
     partial void OnHostChanged(string value) => NotifyToolbar();
     partial void OnPortTextChanged(string value) => NotifyToolbar();
 
@@ -150,6 +164,138 @@ public sealed partial class PrinterSettingsViewModel : ObservableObject
     /// <summary>Note about the printer list (none installed, last printer missing).</summary>
     [ObservableProperty]
     private string _printersNote = string.Empty;
+
+    // ------------------------------------------------------------------------------- driver detection
+
+    /// <summary>True while the driver is being read (the view shows a small progress bar).</summary>
+    [ObservableProperty]
+    private bool _isDetecting;
+
+    /// <summary>Plain-language result under the resolution box ("Detected 300 dpi from the printer driver", or why nothing was detected).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasDpiNote))]
+    private string _dpiNote = string.Empty;
+
+    /// <summary>True when <see cref="DpiNote"/> has text.</summary>
+    public bool HasDpiNote => DpiNote.Length > 0;
+
+    /// <summary>Text of the "Use printer size (4 x 6 in)" action, or empty when the driver reported no paper size.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasDetectedSize))]
+    private string _detectedSizeText = string.Empty;
+
+    /// <summary>True when the paper size of the printer is known and can be offered.</summary>
+    public bool HasDetectedSize => DetectedSizeText.Length > 0;
+
+    /// <summary>Warning shown when the open label resolution differs from the printer one; empty when they match or nothing was detected.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasDpiMismatch))]
+    private string _dpiMismatchText = string.Empty;
+
+    /// <summary>True when the label and printer resolutions differ.</summary>
+    public bool HasDpiMismatch => DpiMismatchText.Length > 0;
+
+    /// <summary>Text of the one-click fix for a resolution mismatch ("Switch label to 300 dpi").</summary>
+    [ObservableProperty]
+    private string _switchLabelDpiText = string.Empty;
+
+    /// <summary>
+    /// Reads the selected Windows printer driver without blocking the window: sets the resolution box to what the driver reports and keeps
+    /// the paper size as an offer. A newer selection cancels an older read, so a slow driver can never overwrite a later choice.
+    /// </summary>
+    public async Task DetectAsync()
+    {
+        // Cancel and drop the previous read; the field must be cleared too, or the next call would touch a disposed source.
+        var previous = _detectCts;
+        _detectCts = null;
+        previous?.Cancel();
+        previous?.Dispose();
+        _detected = PrinterDetection.None;
+        DetectedSizeText = string.Empty;
+        string? name = SelectedPrinterName;
+        if (UseNetwork || string.IsNullOrEmpty(name))
+        {
+            IsDetecting = false;
+            DpiNote = string.Empty;
+            RefreshDpiMismatch();
+            return;
+        }
+        var cts = _detectCts = new CancellationTokenSource();
+        IsDetecting = true;
+        DpiNote = Loc.Get("Print.Dpi.Detecting");
+        PrinterDetection result;
+        try { result = await _detect(name, cts.Token); }
+        catch (OperationCanceledException) { return; }
+        catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception or IOException or NotSupportedException)
+        {
+            result = PrinterDetection.None;
+        }
+        // Another printer was chosen while this one was read: that read owns the state now.
+        if (cts.IsCancellationRequested) return;
+        IsDetecting = false;
+        _detected = result;
+        if (result.Dpi is { } dpi)
+        {
+            SelectedDpi = dpi;
+            DpiNote = Loc.Get("Print.Dpi.Detected", (int)dpi);
+        }
+        else
+        {
+            DpiNote = Loc.Get("Print.Dpi.NotDetected");
+        }
+        if (result.PaperWidth is { } w && result.PaperHeight is { } h)
+            DetectedSizeText = Loc.Get("Print.UsePrinterSize", FormatMeasure(w, h));
+        RefreshDpiMismatch();
+    }
+
+    /// <summary>Fills the label width and height boxes with the paper size the driver reported (an explicit user action; nothing is overridden silently).</summary>
+    [RelayCommand]
+    private void UseDetectedSize()
+    {
+        if (_detected.PaperWidth is not { } w || _detected.PaperHeight is not { } h) return;
+        int dpi = (int)(_detected.Dpi ?? SelectedDpi);
+        WidthText = FormatMm(UnitConverter.Convert(w.Value, w.Unit, LengthUnit.Millimeters, dpi));
+        HeightText = FormatMm(UnitConverter.Convert(h.Value, h.Unit, LengthUnit.Millimeters, dpi));
+    }
+
+    /// <summary>Switches the open label to the printer resolution (one undo step).</summary>
+    [RelayCommand]
+    private void SwitchLabelDpi()
+    {
+        if (_detected.Dpi is not { } dpi || _applyLabelDpi is null) return;
+        _applyLabelDpi(dpi);
+        RefreshDpiMismatch();
+    }
+
+    /// <summary>Compares the open label resolution with the detected printer resolution and updates the warning. Call it when the label may have changed.</summary>
+    public void RefreshDpiMismatch()
+    {
+        var labelDpi = _document().Dpi;
+        if (_detected.Dpi is { } printer && printer != labelDpi && _applyLabelDpi is not null)
+        {
+            DpiMismatchText = Loc.Get("Print.DpiMismatch", (int)labelDpi, (int)printer);
+            SwitchLabelDpiText = Loc.Get("Print.SwitchLabelDpi", (int)printer);
+        }
+        else
+        {
+            DpiMismatchText = string.Empty;
+            SwitchLabelDpiText = string.Empty;
+        }
+    }
+
+    /// <summary>Sets the width and height boxes to the open label size, so a test label or a ^PW set-up matches the design and not an old stored size.</summary>
+    public void UseDesignSize()
+    {
+        var doc = _document();
+        WidthText = FormatMm(ToMm(doc.Width, doc.Dpi));
+        HeightText = FormatMm(ToMm(doc.Height, doc.Dpi));
+    }
+
+    private static string FormatMeasure(Measure w, Measure h)
+    {
+        string unit = Loc.Get(w.Unit switch { LengthUnit.Inches => "Unit.Short.Inches", LengthUnit.Dots => "Unit.Short.Dots", _ => "Unit.Short.Millimeters" });
+        return $"{Math.Round(w.Value, 2).ToString("0.##", CultureInfo.CurrentCulture)} x {Math.Round(h.Value, 2).ToString("0.##", CultureInfo.CurrentCulture)} {unit}";
+    }
 
     /// <summary>Short description of the chosen printer for summaries, for example "Zebra ZD420" or "192.168.1.50:9100".</summary>
     public string Summary => UseNetwork ? $"{Host}:{PortText}" : (SelectedPrinterName ?? string.Empty);

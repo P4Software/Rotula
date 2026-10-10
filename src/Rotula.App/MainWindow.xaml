@@ -7,7 +7,7 @@
         xmlns:model="clr-namespace:Rotula.Core.Model;assembly=Rotula.Core"
         xmlns:vms="clr-namespace:Rotula.App.ViewModels"
         xmlns:views="clr-namespace:Rotula.App.Views"
-        Title="{Binding Title}" Width="1380" Height="860" MinWidth="1180" MinHeight="640" WindowStyle="None"
+        Title="{Binding Title}" Width="1380" Height="860" MinWidth="960" MinHeight="560" WindowStyle="None" SizeChanged="OnWindowSizeChanged"
         AutomationProperties.Name="Rotula">
   <shell:WindowChrome.WindowChrome>
     <!-- The title bar is drawn by the app (warm chrome, app icon, caption buttons) but Windows still handles moving, snapping and resizing. -->
@@ -40,6 +40,12 @@
           </ControlTemplate>
         </Setter.Value>
       </Setter>
+    </Style>
+
+    <!-- Rows of the Objects list: 48 px tall. -->
+    <Style x:Key="LayerRowStyle" TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
+      <Setter Property="MinHeight" Value="48" />
+      <Setter Property="Padding" Value="12,0" />
     </Style>
 
     <Style x:Key="ToolbarLabel" TargetType="TextBlock">
@@ -105,7 +111,7 @@
       <RowDefinition Height="Auto" />
       <RowDefinition Height="56" />
       <RowDefinition Height="*" />
-      <RowDefinition Height="28" />
+      <RowDefinition Height="30" />
     </Grid.RowDefinitions>
 
     <!-- ================================ title bar ================================ -->
@@ -246,18 +252,23 @@
       <DockPanel Margin="12,0">
         <!-- right: printer, preview, print -->
         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-          <TextBlock Text="{loc:T Toolbar.Printer}" Style="{StaticResource ToolbarLabel}" />
-          <Grid Width="210">
-            <ComboBox x:Name="PrinterCombo" ItemsSource="{Binding Printer.Printers}" DisplayMemberPath="Display" SelectedValuePath="Name" SelectedValue="{Binding Printer.SelectedPrinterName}"
-                      SelectionChanged="OnPrinterChosen" AutomationProperties.Name="{loc:T Toolbar.Printer}" ToolTip="{loc:T Toolbar.Printer.Tip}" />
+          <TextBlock x:Name="PrinterCaption" Text="{loc:T Toolbar.Printer}" Style="{StaticResource ToolbarLabel}" />
+          <Grid x:Name="PrinterBox" Width="210">
+            <ComboBox x:Name="PrinterCombo" ItemsSource="{Binding Printer.Printers}" SelectedValuePath="Name" SelectedValue="{Binding Printer.SelectedPrinterName}"
+                      SelectionChanged="OnPrinterChosen" AutomationProperties.Name="{loc:T Toolbar.Printer}" ToolTip="{loc:T Toolbar.Printer.Tip}">
+              <ComboBox.ItemTemplate>
+                <!-- Long printer names (and the longer Spanish suffixes) get an ellipsis instead of being cut off. -->
+                <DataTemplate><TextBlock Text="{Binding Display}" TextTrimming="CharacterEllipsis" /></DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
             <Border IsHitTestVisible="False" Margin="2,2,30,2" Background="{StaticResource SurfaceBrush}" CornerRadius="5" Visibility="{Binding Printer.ShowToolbarText, Converter={StaticResource B2V}}">
               <TextBlock Text="{Binding Printer.ToolbarText}" Margin="9,0,0,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Foreground="{StaticResource MutedBrush}" />
             </Border>
           </Grid>
           <Button Margin="12,0,0,0" Command="{Binding ShowPreviewCommand}" ToolTip="{loc:T Toolbar.Preview.Tip}" AutomationProperties.Name="{loc:T Toolbar.Preview}">
             <StackPanel Orientation="Horizontal">
-              <Path Style="{StaticResource Icon}" Data="{StaticResource IconEye}" Width="16" Height="16" Margin="0,0,8,0" />
-              <TextBlock Text="{loc:T Toolbar.Preview}" />
+              <Path x:Name="PreviewIcon" Style="{StaticResource Icon}" Data="{StaticResource IconEye}" Width="16" Height="16" Margin="0,0,8,0" />
+              <TextBlock x:Name="PreviewText" Text="{loc:T Toolbar.Preview}" />
             </StackPanel>
           </Button>
           <Button Margin="8,0,0,0" Style="{StaticResource PrimaryButton}" Command="{Binding PrintCommand}" ToolTip="{loc:T Toolbar.Print.Tip}" AutomationProperties.Name="{loc:T Menu.Print}">
@@ -287,7 +298,7 @@
             <Path Style="{StaticResource Icon}" Data="{StaticResource IconRedo}" />
           </Button>
           <Border Style="{StaticResource ToolbarDivider}" />
-          <TextBlock Text="{loc:T Toolbar.Zoom}" Style="{StaticResource ToolbarLabel}" />
+          <TextBlock x:Name="ZoomCaption" Text="{loc:T Toolbar.Zoom}" Style="{StaticResource ToolbarLabel}" />
           <Grid Width="96">
             <ComboBox x:Name="ZoomCombo" ItemsSource="{Binding ZoomPresets}" ItemStringFormat="{}{0} %" SelectionChanged="OnZoomPresetChosen" AutomationProperties.Name="{loc:T Status.Zoom}" />
             <!-- The box shows the live zoom (which is not always one of the presets); picking a preset applies it. -->
@@ -295,8 +306,10 @@
               <TextBlock Text="{Binding ZoomText}" Margin="10,0,0,0" VerticalAlignment="Center" FontFamily="{StaticResource MonoFont}" FontSize="12.5" />
             </Border>
           </Grid>
-          <TextBlock Text="{loc:T Toolbar.Label}" Style="{StaticResource ToolbarLabel}" Margin="16,0,8,0" />
-          <Button Command="{Binding SelectNoneCommand}" MinWidth="190" ToolTip="{loc:T Menu.LabelProperties}" AutomationProperties.Name="{loc:T Toolbar.Label}" HorizontalContentAlignment="Stretch">
+          <TextBlock x:Name="LabelCaption" Text="{loc:T Toolbar.Label}" Style="{StaticResource ToolbarLabel}" Margin="16,0,8,0" />
+          <!-- Size picker: opens a menu with the common sizes, "Custom size..." and the print resolution (built in code so it is always current and translated). -->
+          <Button x:Name="LabelPickerButton" Click="OnLabelPickerClick" MinWidth="190" ToolTip="{loc:T Picker.Tip}" AutomationProperties.Name="{loc:T Panel.Size}"
+                  AutomationProperties.HelpText="{loc:T Picker.Tip}" HorizontalContentAlignment="Stretch">
             <DockPanel>
               <Path DockPanel.Dock="Right" Style="{StaticResource Icon}" Data="{StaticResource IconChevronDown}" Width="12" Height="12" Margin="10,0,0,0" />
               <TextBlock Text="{Binding LabelSummaryText}" FontFamily="{StaticResource MonoFont}" FontSize="12.5" VerticalAlignment="Center" />
@@ -329,7 +342,7 @@
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="76" />
         <ColumnDefinition Width="*" />
-        <ColumnDefinition Width="5" />
+        <ColumnDefinition Width="9" />
         <ColumnDefinition Width="380" MinWidth="300" />
       </Grid.ColumnDefinitions>
       <Grid.RowDefinitions>
@@ -361,44 +374,87 @@
       <!-- canvas -->
       <views:DesignArea x:Name="Design" Grid.Column="1" Grid.Row="0" />
 
-      <GridSplitter Grid.Column="2" Grid.Row="0" Grid.RowSpan="2" Width="5" HorizontalAlignment="Stretch" Background="Transparent" ResizeBehavior="PreviousAndNext"
+      <GridSplitter Grid.Column="2" Grid.Row="0" Grid.RowSpan="2" Style="{StaticResource SplitterVerticalStyle}" ResizeBehavior="PreviousAndNext"
                     AutomationProperties.Name="{loc:T Splitter.Properties}" />
 
       <!-- right column: properties and objects -->
-      <Grid Grid.Column="3" Grid.Row="0" Grid.RowSpan="2" Background="{StaticResource PanelBrush}">
+      <Grid x:Name="RightColumn" Grid.Column="3" Grid.Row="0" Grid.RowSpan="2" Background="{StaticResource PanelBrush}">
+        <!-- Properties about 55 % / Objects about 45 % by default; the splitter position is remembered (as a share) in settings.json. -->
         <Grid.RowDefinitions>
-          <RowDefinition Height="*" MinHeight="140" />
-          <RowDefinition Height="5" />
-          <RowDefinition Height="220" MinHeight="110" />
+          <RowDefinition x:Name="PropertiesRow" Height="55*" MinHeight="200" />
+          <RowDefinition Height="Auto" />
+          <RowDefinition x:Name="ObjectsRow" Height="45*" MinHeight="170" />
         </Grid.RowDefinitions>
         <Border Grid.RowSpan="3" BorderBrush="{StaticResource BorderBrushLight}" BorderThickness="1,0,0,0" />
-        <views:PropertiesPanel Grid.Row="0" AutomationProperties.Name="{loc:T Panel.Properties}" />
-        <GridSplitter Grid.Row="1" HorizontalAlignment="Stretch" Background="{StaticResource BorderBrushLight}" Height="1" Margin="0,2" AutomationProperties.Name="{loc:T Splitter.Layers}" />
+        <views:PropertiesPanel x:Name="PropertiesPanelView" Grid.Row="0" AutomationProperties.Name="{loc:T Panel.Properties}" />
+        <GridSplitter x:Name="PanelSplitter" Grid.Row="1" Style="{StaticResource SplitterHorizontalStyle}" DragCompleted="OnPanelSplitterDragCompleted"
+                      AutomationProperties.Name="{loc:T Splitter.Layers}" />
         <DockPanel Grid.Row="2">
-          <TextBlock DockPanel.Dock="Top" Text="{loc:T Panel.Objects}" Style="{StaticResource PanelHeading}" AutomationProperties.HeadingLevel="Level1" />
-          <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="12,4,12,10">
-            <Button Content="{loc:T Layers.Up}" Command="{Binding BringForwardCommand}" Style="{StaticResource ToolButton}" ToolTip="{loc:T Menu.BringForward}" AutomationProperties.Name="{loc:T Menu.BringForward}" />
-            <Button Content="{loc:T Layers.Down}" Command="{Binding SendBackwardCommand}" Style="{StaticResource ToolButton}" ToolTip="{loc:T Menu.SendBackward}" AutomationProperties.Name="{loc:T Menu.SendBackward}" />
-            <Button Content="{loc:T Menu.Delete}" Command="{Binding DeleteCommand}" Style="{StaticResource ToolButton}" AutomationProperties.Name="{loc:T Menu.Delete}" />
-          </StackPanel>
-          <ListBox x:Name="LayersList" ItemsSource="{Binding Layers}" SelectionMode="Extended" SelectionChanged="OnLayersSelectionChanged" KeyDown="OnLayersKeyDown"
-                   AutomationProperties.Name="{loc:T Panel.Objects}">
-            <ListBox.ItemTemplate>
-              <DataTemplate>
-                <DockPanel ToolTip="{Binding Name}" LastChildFill="True">
-                  <TextBlock DockPanel.Dock="Left" Text="{Binding TypeTag}" Width="68" FontFamily="{StaticResource MonoFont}" FontSize="11.5" Foreground="{StaticResource MutedBrush}"
-                             VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                  <TextBlock Text="{Binding Primary}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" FontWeight="Medium" />
-                </DockPanel>
-              </DataTemplate>
-            </ListBox.ItemTemplate>
-          </ListBox>
+          <!-- Objects header: title, count and the icon buttons that act on the selected objects. -->
+          <DockPanel DockPanel.Dock="Top" Margin="16,8,12,6">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+              <Button Style="{StaticResource PanelIconButton}" Command="{Binding BringForwardCommand}" ToolTip="{loc:T Menu.BringForward}" AutomationProperties.Name="{loc:T Menu.BringForward}">
+                <Path Style="{StaticResource Icon}" Data="{StaticResource IconArrowUp}" Width="16" Height="16" />
+              </Button>
+              <Button Style="{StaticResource PanelIconButton}" Command="{Binding SendBackwardCommand}" ToolTip="{loc:T Menu.SendBackward}" AutomationProperties.Name="{loc:T Menu.SendBackward}">
+                <Path Style="{StaticResource Icon}" Data="{StaticResource IconArrowDown}" Width="16" Height="16" />
+              </Button>
+              <Button Style="{StaticResource PanelIconButton}" Command="{Binding DeleteCommand}" ToolTip="{loc:T Menu.Delete}" AutomationProperties.Name="{loc:T Menu.Delete}">
+                <Path Style="{StaticResource Icon}" Data="{StaticResource IconTrash}" Width="16" Height="16" />
+              </Button>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+              <TextBlock Text="{loc:T Panel.Objects}" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" AutomationProperties.HeadingLevel="Level1" />
+              <Border Background="{StaticResource HoverBrush}" CornerRadius="9" Padding="7,1" Margin="8,1,0,0" VerticalAlignment="Center">
+                <TextBlock Text="{Binding Layers.Count}" FontFamily="{StaticResource MonoFont}" FontSize="11.5" Foreground="{StaticResource MutedBrush}" />
+              </Border>
+            </StackPanel>
+          </DockPanel>
+          <Grid>
+            <ListBox x:Name="LayersList" ItemsSource="{Binding Layers}" SelectionMode="Extended" SelectionChanged="OnLayersSelectionChanged" KeyDown="OnLayersKeyDown"
+                     Grid.IsSharedSizeScope="True" AutomationProperties.Name="{loc:T Panel.Objects}" ItemContainerStyle="{StaticResource LayerRowStyle}" Padding="0,0,0,8">
+              <ListBox.ItemTemplate>
+                <DataTemplate>
+                  <!-- Type tag in a column shared by all rows (so the names line up); the text is trimmed with an ellipsis and the tooltip shows it in full. -->
+                  <Grid ToolTip="{Binding ToolTipText}">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="Auto" MinWidth="64" SharedSizeGroup="LayerTag" />
+                      <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="{Binding TypeTag}" MaxWidth="104" Margin="0,0,12,0" FontFamily="{StaticResource MonoFont}" FontSize="11.5" Foreground="{StaticResource MutedBrush}"
+                               VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Grid.Column="1" Text="{Binding Primary}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" FontWeight="Medium" />
+                  </Grid>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+            <!-- Empty state: shown only while the list has no objects. -->
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="24,0,24,16" IsHitTestVisible="False">
+              <StackPanel.Style>
+                <Style TargetType="StackPanel">
+                  <Setter Property="Visibility" Value="Collapsed" />
+                  <Style.Triggers>
+                    <DataTrigger Binding="{Binding Layers.Count}" Value="0"><Setter Property="Visibility" Value="Visible" /></DataTrigger>
+                  </Style.Triggers>
+                </Style>
+              </StackPanel.Style>
+              <Path Style="{StaticResource Icon}" Data="{StaticResource IconLayers}" Width="32" Height="32" StrokeThickness="1.3" TextElement.Foreground="{StaticResource DisabledTextBrush}" HorizontalAlignment="Center" />
+              <TextBlock Text="{loc:T Layers.Empty.Title}" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,10,0,4" />
+              <TextBlock Text="{loc:T Layers.Empty.Hint}" Style="{StaticResource MutedText}" TextAlignment="Center" FontSize="12" MaxWidth="260" />
+            </StackPanel>
+          </Grid>
         </DockPanel>
       </Grid>
 
       <!-- ZPL output (a dark code surface by design; everything else stays light) -->
       <Border Grid.Row="1" Grid.Column="1" Height="190" Background="{StaticResource CodeBackgroundBrush}"
               Visibility="{Binding ZplPanelVisible, Converter={StaticResource B2V}}">
+        <Border.Resources>
+          <!-- The only dark surface: lighter scrollbar thumbs so they show on the charcoal background. -->
+          <SolidColorBrush x:Key="ScrollThumbBrush" Color="#4B4E59" />
+          <SolidColorBrush x:Key="ScrollThumbHoverBrush" Color="#6A6E7B" />
+          <SolidColorBrush x:Key="ScrollThumbDragBrush" Color="#8A8E9B" />
+        </Border.Resources>
         <DockPanel>
           <DockPanel DockPanel.Dock="Top" Margin="16,10,12,4">
             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
@@ -416,16 +472,60 @@
     </Grid>
 
     <!-- ================================ status bar ================================ -->
-    <StatusBar Grid.Row="4" AutomationProperties.Name="{loc:T Status.Bar}">
-      <StatusBarItem><TextBlock Text="{Binding ObjectsText}" /></StatusBarItem>
-      <StatusBarItem><TextBlock Text="{Binding StatusMessage}" /></StatusBarItem>
-      <StatusBarItem><TextBlock Text="{Binding ProblemsText}" /></StatusBarItem>
-      <StatusBarItem HorizontalAlignment="Right">
+    <!--
+      A grid, not a StatusBar: only a star column can shrink, so the message and the notice are the parts that get an ellipsis when the window
+      is narrow, while counts, problems, pointer and label size always stay readable. Segments are divided by hairlines.
+    -->
+    <StatusBar Grid.Row="4" Background="{StaticResource StatusBarBrush}" BorderBrush="{StaticResource BorderBrushLight}" BorderThickness="0,1,0,0" Padding="16,0"
+               AutomationProperties.Name="{loc:T Status.Bar}">
+      <StatusBarItem HorizontalContentAlignment="Stretch" Padding="0">
+      <Grid>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="*" MinWidth="0" />
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <!-- left: counts, then the transient message -->
         <StackPanel Orientation="Horizontal">
-          <TextBlock Text="{Binding ApproximateNotice}" FontStyle="Italic" Margin="0,0,20,0" AutomationProperties.Name="{loc:T Preview.Approximate.Name}" />
-          <TextBlock Text="{Binding CursorText}" MinWidth="130" FontFamily="{StaticResource MonoFont}" FontSize="11.5" Margin="0,0,20,0" />
-          <TextBlock Text="{Binding StatusLabelText}" FontFamily="{StaticResource MonoFont}" FontSize="11.5" AutomationProperties.Name="{loc:T Status.LabelInfo}" />
+          <TextBlock Text="{Binding ObjectsText}" Style="{StaticResource StatusText}" TextTrimming="None" />
+          <Border Style="{StaticResource StatusSeparator}" />
         </StackPanel>
+        <TextBlock Grid.Column="1" Text="{Binding StatusMessage}" Style="{StaticResource StatusText}" ToolTip="{Binding StatusMessage}" />
+        <!-- right: problems, notice (short; the full explanation is the tooltip), pointer, label size -->
+        <StackPanel Grid.Column="2" Orientation="Horizontal">
+          <Border Style="{StaticResource StatusSeparator}" />
+          <TextBlock Text="{Binding ProblemsText}" Style="{StaticResource StatusText}" TextTrimming="None" />
+        </StackPanel>
+        <StackPanel Grid.Column="3" Orientation="Horizontal" ToolTip="{Binding ApproximateNotice}" Background="Transparent">
+          <Border Style="{StaticResource StatusSeparator}" />
+          <TextBlock Text="{Binding ApproximateNoticeShort}" Style="{StaticResource StatusText}" TextTrimming="None" FontStyle="Italic" AutomationProperties.Name="{loc:T Preview.Approximate.Name}"
+                     AutomationProperties.HelpText="{Binding ApproximateNotice}" />
+        </StackPanel>
+        <StackPanel Grid.Column="4" Orientation="Horizontal">
+          <StackPanel.Resources>
+            <Style TargetType="TextBlock" BasedOn="{StaticResource StatusText}">
+              <Setter Property="FontFamily" Value="{StaticResource MonoFont}" />
+              <Setter Property="FontSize" Value="11.5" />
+              <Setter Property="TextTrimming" Value="None" />
+            </Style>
+          </StackPanel.Resources>
+          <StackPanel Orientation="Horizontal">
+            <StackPanel.Style>
+              <Style TargetType="StackPanel">
+                <Style.Triggers>
+                  <DataTrigger Binding="{Binding CursorText}" Value=""><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
+                </Style.Triggers>
+              </Style>
+            </StackPanel.Style>
+            <Border Style="{StaticResource StatusSeparator}" />
+            <TextBlock Text="{Binding CursorText}" MinWidth="120" />
+          </StackPanel>
+          <Border Style="{StaticResource StatusSeparator}" />
+          <TextBlock Text="{Binding StatusLabelText}" AutomationProperties.Name="{loc:T Status.LabelInfo}" />
+        </StackPanel>
+      </Grid>
       </StatusBarItem>
     </StatusBar>
   </Grid>

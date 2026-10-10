@@ -149,6 +149,8 @@ public sealed class TextBlockDto
 [JsonDerivedType(typeof(LineElementDto), "line")]
 [JsonDerivedType(typeof(CircleElementDto), "circle")]
 [JsonDerivedType(typeof(ImageElementDto), "image")]
+[JsonDerivedType(typeof(RawZplElementDto), "rawZpl")]
+[JsonDerivedType(typeof(RecallPlaceholderElementDto), "recall")]
 public abstract class ElementDto
 {
     /// <summary>Stable element id (preserved so references survive a save/load cycle).</summary>
@@ -284,4 +286,30 @@ public sealed class ImageElementDto : ElementDto
     public int Threshold { get; set; } = 128;
     /// <summary>Invert.</summary>
     public bool Invert { get; set; }
+}
+
+/// <summary>Serialized raw ZPL (imported commands the designer does not interpret, kept verbatim). Needs format version 3.</summary>
+public sealed class RawZplElementDto : ElementDto
+{
+    /// <summary>The original ZPL text (bytes above 0x7F are held as the Latin-1 char with the same value).</summary>
+    public string Zpl { get; set; } = string.Empty;
+    /// <summary>True when the block draws something on the label.</summary>
+    public bool IsVisual { get; set; }
+}
+
+/// <summary>Serialized placeholder for an object stored on the printer (^XG, ^IL, ^XF recalls). Needs format version 3.</summary>
+public sealed class RecallPlaceholderElementDto : ElementDto
+{
+    /// <summary>Command without prefix, upper case.</summary>
+    public string Command { get; set; } = string.Empty;
+    /// <summary>The recalled object.</summary>
+    public string Reference { get; set; } = string.Empty;
+    /// <summary>The full original command.</summary>
+    public string Zpl { get; set; } = string.Empty;
+    /// <summary>True when the command lives inside a positioned field.</summary>
+    public bool EmitAsField { get; set; }
+    /// <summary>Placeholder width in dots.</summary>
+    public int WidthDots { get; set; } = 120;
+    /// <summary>Placeholder height in dots.</summary>
+    public int HeightDots { get; set; } = 80;
 }
