@@ -4,7 +4,7 @@ namespace Rotula.Data;
 
 /// <summary>
 /// Structured, password-free description of a database connection. The password is deliberately NOT a member:
-/// it is passed separately to <see cref="DatabaseSource.Create"/> or kept by an <see cref="IConnectionStore"/>,
+/// it is passed separately to <see cref="DatabaseSource.Create(DatabaseConnectionSettings, string?)"/> or kept by an <see cref="IConnectionStore"/>,
 /// so settings can be logged, compared, serialised or shown without leaking it.
 /// </summary>
 public sealed record DatabaseConnectionSettings
@@ -20,6 +20,24 @@ public sealed record DatabaseConnectionSettings
 
     /// <summary>The engine.</summary>
     public DatabaseProvider Provider { get; init; } = DatabaseProvider.Sqlite;
+
+    /// <summary>
+    /// String id of the provider (see <see cref="ProviderIds"/>). Null means "derive it from <see cref="Provider"/>", which is what every
+    /// file saved before provider packs existed does. Required when <see cref="Provider"/> is <see cref="DatabaseProvider.Custom"/>.
+    /// </summary>
+    public string? ProviderId { get; init; }
+
+    /// <summary>Id of the preset (for example <c>supabase</c>) the user picked, kept so the UI can show it and apply its hints.</summary>
+    public string? PresetId { get; init; }
+
+    /// <summary>Path of a CA certificate file (PEM) used to verify the server, for servers whose certificate chain is private or not in the Windows store.</summary>
+    public string? CaCertificatePath { get; init; }
+
+    /// <summary>Provider-specific options without a dedicated property; keys are defined by the provider's option schema.</summary>
+    public ProviderExtras Extras { get; init; } = ProviderExtras.Empty;
+
+    /// <summary>The provider id after resolving <see cref="Provider"/>: <see cref="ProviderId"/> when set, otherwise the stable id of the enum value.</summary>
+    public string GetEffectiveProviderId() => ProviderId ?? ProviderIds.For(Provider);
 
     /// <summary>Server host name or address (SQL Server also accepts <c>host\instance</c> and <c>(localdb)\name</c>). Not used by SQLite or ODBC.</summary>
     public string? Host { get; init; }
@@ -73,6 +91,11 @@ public sealed record DatabaseConnectionSettings
     private bool PrintMembers(StringBuilder sb)
     {
         sb.Append("Name = ").Append(Name).Append(", Provider = ").Append(Provider);
+        if (ProviderId is not null) sb.Append(", ProviderId = ").Append(ProviderId);
+        if (PresetId is not null) sb.Append(", PresetId = ").Append(PresetId);
+        if (CaCertificatePath is not null) sb.Append(", CaCertificatePath = ").Append(CaCertificatePath);
+        // Extras never hold secrets (secrets go through the password slot), so listing them is safe and helps diagnostics.
+        if (Extras.Count > 0) sb.Append(", Extras = [").Append(Extras).Append(']');
         if (Host is not null) sb.Append(", Host = ").Append(Host);
         if (Port is not null) sb.Append(", Port = ").Append(Port);
         if (Database is not null) sb.Append(", Database = ").Append(Database);

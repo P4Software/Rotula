@@ -22,13 +22,25 @@ public static class ElementCloner
                 c = CopyText(new TextElement(), t);
                 break;
             case BarcodeElement b:
-                c = new BarcodeElement
+                var bc = new BarcodeElement
                 {
                     Symbology = b.Symbology, Data = b.Data, Height = b.Height, ModuleWidth = b.ModuleWidth, WideBarRatio = b.WideBarRatio,
                     HumanReadable = b.HumanReadable, HumanReadablePosition = b.HumanReadablePosition, CheckDigit = b.CheckDigit,
                     Code128Mode = b.Code128Mode, QrErrorCorrection = b.QrErrorCorrection, QrModel = b.QrModel, ModuleSize = b.ModuleSize,
                     Columns = b.Columns, Rows = b.Rows, Pdf417SecurityLevel = b.Pdf417SecurityLevel, Pdf417Truncate = b.Pdf417Truncate,
                 };
+                // The options of the later symbologies travel through Core's own export/import so a new option can never be forgotten here.
+                bc.ImportExtraOptions(b.ExportExtraOptions());
+                c = bc;
+                break;
+            case DiagonalLineElement dg:
+                c = new DiagonalLineElement { WidthDots = dg.WidthDots, HeightDots = dg.HeightDots, ThicknessDots = dg.ThicknessDots, Color = dg.Color, Lean = dg.Lean };
+                break;
+            case EllipseElement el:
+                c = new EllipseElement { WidthDots = el.WidthDots, HeightDots = el.HeightDots, ThicknessDots = el.ThicknessDots, Color = el.Color };
+                break;
+            case SymbolElement sy:
+                c = new SymbolElement { Symbol = sy.Symbol, HeightDots = sy.HeightDots, WidthDots = sy.WidthDots };
                 break;
             case BoxElement x:
                 c = new BoxElement { WidthDots = x.WidthDots, HeightDots = x.HeightDots, ThicknessDots = x.ThicknessDots, Color = x.Color, CornerRounding = x.CornerRounding };
@@ -56,6 +68,7 @@ public static class ElementCloner
             default:
                 throw new NotSupportedException($"Element type {e.GetType().Name} is not supported.");
         }
+        if (e is FieldDataElement fromField && c is FieldDataElement toField) CopyFieldData(fromField, toField);
         if (!newId) c.Id = e.Id;
         c.Name = e.Name;
         c.X = e.X;
@@ -66,8 +79,25 @@ public static class ElementCloner
         return c;
     }
 
+    /// <summary>Copies the options every data field has (field number, embedding, clock, printer serialization).</summary>
+    private static void CopyFieldData(FieldDataElement from, FieldDataElement to)
+    {
+        to.FieldNumber = from.FieldNumber;
+        to.FieldPrompt = from.FieldPrompt;
+        to.EmbedCharacter = from.EmbedCharacter;
+        to.Clock = from.Clock is null ? null : new FieldClockOptions { Primary = from.Clock.Primary, Secondary = from.Clock.Secondary, Third = from.Clock.Third };
+        to.Serial = from.Serial is null ? null : new PrinterSerialOptions
+        {
+            Kind = from.Serial.Kind, Increment = from.Serial.Increment, LeadingZeros = from.Serial.LeadingZeros,
+            Mask = from.Serial.Mask, IncrementText = from.Serial.IncrementText,
+        };
+    }
+
     private static TextElement CopyText(TextElement target, TextElement s)
     {
+        target.TextBox = s.TextBox is null ? null : new TextBoxOptions { WidthDots = s.TextBox.WidthDots, HeightDots = s.TextBox.HeightDots };
+        target.Direction = s.Direction;
+        target.InterCharacterGap = s.InterCharacterGap;
         target.Text = s.Text;
         target.FontId = s.FontId;
         target.FontHeight = s.FontHeight;
@@ -97,6 +127,19 @@ public static class ElementCloner
         {
             Quantity = from.Print.Quantity, PauseEvery = from.Print.PauseEvery, Replicates = from.Print.Replicates, OverridePause = from.Print.OverridePause,
         };
+        to.StockId = from.StockId;
+        to.LabelShift = from.LabelShift;
+        to.LabelTop = from.LabelTop;
+        to.PrintMode = from.PrintMode;
+        to.PrePeel = from.PrePeel;
+        to.MirrorImage = from.MirrorImage;
+        to.PrintRate = from.PrintRate is null ? null : new PrintRateOptions { Speed = from.PrintRate.Speed, SlewSpeed = from.PrintRate.SlewSpeed, BackfeedSpeed = from.PrintRate.BackfeedSpeed };
+        to.MediaDarkness = from.MediaDarkness;
+        to.FontAliases.Clear();
+        foreach (var a in from.FontAliases) to.FontAliases.Add(new FontAlias(a.Letter, a.Path));
+        // StoredGraphic is immutable (its data is never changed in place), so the same objects can be shared between snapshots.
+        to.StoredGraphics.Clear();
+        to.StoredGraphics.AddRange(from.StoredGraphics);
         to.Variables.Clear();
         foreach (var v in from.Variables) to.Variables.Add(new LabelVariable(v.Name, v.SampleValue));
     }

@@ -23,7 +23,16 @@ public partial class DataWindow : DialogWindow
         InitializeComponent();
         viewModel.CloseRequested += (_, _) => Close();
         viewModel.TableChanged += (_, _) => BuildColumns();
-        Loaded += (_, _) => BuildColumns();
+        // The database view fills the window when it is tall enough and scrolls when it is not; a view with a star row cannot
+        // do that by itself inside a ScrollViewer, so its height is set from the viewport.
+        DbScroll.SizeChanged += (_, _) => FitDatabaseView();
+        DbScroll.IsVisibleChanged += (_, _) => FitDatabaseView();
+        Loaded += (_, _) =>
+        {
+            BuildColumns();
+            // Reading the list of saved connections is a local file read; no database is contacted by opening this window.
+            if (_vm.IsDatabaseMode) _ = _vm.Database.RefreshConnectionsAsync();
+        };
     }
 
     /// <summary>
@@ -47,6 +56,15 @@ public partial class DataWindow : DialogWindow
         if (PreviewGrid.Columns.Count > 0) PreviewGrid.Columns[^1].Width = new DataGridLength(1, DataGridLengthUnitType.Star);
     }
 
+    /// <summary>Smallest height of the database view: room for the connection card, the tabs, a few result rows and the "Use this data" bar.</summary>
+    private const double DatabaseViewMinHeight = 520;
+
+    private void FitDatabaseView()
+    {
+        if (DbScroll.ViewportHeight > 0)
+            DbView.Height = Math.Max(DbScroll.ViewportHeight - DbView.Margin.Top - DbView.Margin.Bottom, DatabaseViewMinHeight);
+    }
+
     private void OnGoToKeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key != Key.Enter) return;
@@ -58,8 +76,9 @@ public partial class DataWindow : DialogWindow
     protected override void OnClosing(CancelEventArgs e)
     {
         base.OnClosing(e);
-        // A batch that is still running stops when the window closes, instead of continuing invisibly.
+        // A batch (or database read) that is still running stops when the window closes, instead of continuing invisibly.
         _vm.CancelOperation();
+        _vm.Database.CancelOperation();
     }
 
     /// <inheritdoc />

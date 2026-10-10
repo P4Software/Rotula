@@ -55,6 +55,8 @@ public static class DataKeys
     public const string RejectUnterminated = "Data.Query.Rejected.Unterminated";
     /// <summary>Reason: the query text is longer than the allowed maximum.</summary>
     public const string RejectTooLong = "Data.Query.Rejected.TooLong";
+    /// <summary>Reason: the text could be read in more than one way (a backslash or quote the database might treat differently), so it is refused rather than guessed.</summary>
+    public const string RejectAmbiguous = "Data.Query.Rejected.Ambiguous";
     /// <summary>Reason: a @parameter used by the query has no value; args[0] is the name.</summary>
     public const string RejectMissingParameter = "Data.Query.Rejected.MissingParameter";
 

@@ -16,8 +16,12 @@ namespace Rotula.Data;
 /// </summary>
 internal static class DatabaseErrorMapper
 {
-    /// <summary>The pure classification: returns a <see cref="DataKeys"/> error key.</summary>
+    /// <summary>The pure classification for a built-in provider: returns a <see cref="DataKeys"/> error key.</summary>
     public static string Classify(DatabaseProvider provider, int? number, string? sqlState, bool connecting)
+        => Classify(ProviderRegistry.Default.TryGet(ProviderIds.For(provider))?.Errors, number, sqlState, connecting);
+
+    /// <summary>The pure classification with the provider's own error mapper (null for none): returns a <see cref="DataKeys"/> error key.</summary>
+    public static string Classify(IProviderErrorMapper? mapper, int? number, string? sqlState, bool connecting)
     {
         string fallback = connecting ? DataKeys.ConnectionFailed : DataKeys.QueryFailed;
 
@@ -35,57 +39,19 @@ internal static class DatabaseErrorMapper
                 case "08001" or "08S01" or "08003": return connecting ? DataKeys.HostUnreachable : DataKeys.ConnectionFailed;
             }
         }
-
-        switch (provider)
-        {
-            case DatabaseProvider.SqlServer:
-                return number switch
-                {
-                    18456 or 18452 or 18451 or 18487 or 18488 => DataKeys.AuthenticationFailed,
-                    4060 or 911 => DataKeys.DatabaseNotFound,
-                    -2 => DataKeys.Timeout,
-                    53 or 2 or 40 or 1326 or 10060 or 10061 or 11001 or 10065 or 258 => DataKeys.HostUnreachable,
-                    229 or 230 or 262 or 297 or 300 or 916 => DataKeys.PermissionDenied,
-                    _ => fallback,
-                };
-            case DatabaseProvider.MySql:
-                return number switch
-                {
-                    1045 or 1698 or 1251 => DataKeys.AuthenticationFailed,
-                    1044 or 1142 or 1143 or 1227 or 1370 => DataKeys.PermissionDenied,
-                    1049 => DataKeys.DatabaseNotFound,
-                    1042 or 2002 or 2003 or 2005 or 2013 => DataKeys.HostUnreachable,
-                    1205 or 3024 => DataKeys.Timeout,
-                    _ => fallback,
-                };
-            case DatabaseProvider.Sqlite:
-                return number switch
-                {
-                    14 => DataKeys.DatabaseNotFound,           // SQLITE_CANTOPEN
-                    8 or 23 or 3 => DataKeys.PermissionDenied, // READONLY, AUTH, PERM
-                    5 or 6 => DataKeys.Timeout,                // BUSY, LOCKED
-                    26 => DataKeys.ConnectionFailed,           // NOTADB: not a database file
-                    _ => fallback,
-                };
-            case DatabaseProvider.Odbc:
-                // Native codes of SQL Server ODBC drivers are the SQL Server numbers.
-                return number switch
-                {
-                    18456 => DataKeys.AuthenticationFailed,
-                    4060 => DataKeys.DatabaseNotFound,
-                    229 or 230 => DataKeys.PermissionDenied,
-                    _ => fallback,
-                };
-            default:
-                return fallback;
-        }
+        return mapper?.ClassifyNumber(number, connecting) ?? fallback;
     }
 
     /// <summary>
-    /// Converts any exception raised while connecting or running a command. The caller's cancellation wins over whatever
-    /// the provider wrapped it into; secrets are scrubbed from the detail.
+    /// Converts any exception raised while connecting or running a command (built-in provider). The caller's cancellation wins over
+    /// whatever the provider wrapped it into; secrets are scrubbed from the detail.
     /// </summary>
     public static DatabaseException Map(DatabaseProvider provider, Exception ex, bool connecting, CancellationToken cancellation,
+        bool timedOutByUs, string? password, string? connectionString)
+        => Map(ProviderRegistry.Default.TryGet(ProviderIds.For(provider)), ex, connecting, cancellation, timedOutByUs, password, connectionString);
+
+    /// <summary>As above, with the provider's own error mapper (null for none).</summary>
+    public static DatabaseException Map(IProviderDescriptor? provider, Exception ex, bool connecting, CancellationToken cancellation,
         bool timedOutByUs, string? password, string? connectionString)
     {
         if (ex is DatabaseException de) return de;
@@ -93,8 +59,8 @@ internal static class DatabaseErrorMapper
         if (timedOutByUs) return new DatabaseException(DataKeys.Timeout);
 
         string detail = SecretRedactor.RedactText(FirstLine(ex), password, connectionString);
-        var (number, state) = Extract(ex);
-        string key = Classify(provider, number, state, connecting);
+        var (number, state) = provider?.Errors.Extract(ex) ?? Extract(ex);
+        string key = Classify(provider?.Errors, number, state, connecting);
 
         if (key == DataKeys.ConnectionFailed || key == DataKeys.QueryFailed)
         {

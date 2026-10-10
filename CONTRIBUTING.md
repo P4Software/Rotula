@@ -67,6 +67,15 @@ dotnet test  Rotula.sln -c Release
   "generated with" footer. Run it before you push: `bash scripts/check-hygiene.sh origin/main..HEAD`.
 - Never commit secrets, signing keys or personal data. Sample files must be free of real customer data.
 
+## Label stock library
+
+Rotula ships a catalogue of label stocks (part numbers and label sizes). Corrections and new entries are welcome as pull
+requests that edit `src/Rotula.Core/Stocks/stocks.json`. Every entry needs a public source (an `https` page in
+`sourceUrl`, or a source id declared in the file's metadata), the size in millimetres and inches, and no prices or other
+data than physical facts. CI runs the catalogue validator on the file (`dotnet test --filter "FullyQualifiedName~Stock"`
+runs it locally). The format, the rules, how to rebuild the file and how users add their own stocks are in
+[docs/stock-catalog.md](docs/stock-catalog.md). Brand and product names belong to their owners; Rotula is not affiliated.
+
 ## Reporting bugs and asking for features
 
 Use the issue templates. For ZPL import problems, attach the smallest ZPL that shows the issue (remove private data) and say

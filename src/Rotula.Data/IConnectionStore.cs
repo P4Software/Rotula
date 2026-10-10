@@ -54,6 +54,30 @@ public interface IConnectionStore
     /// <summary>Creates a ready-to-use source from a saved connection, unprotecting its password internally.</summary>
     /// <exception cref="DatabaseException"><see cref="DataKeys.ConnectionNotFound"/> or <see cref="DataKeys.StorePasswordUnreadable"/>.</exception>
     Task<IDatabaseSource> OpenAsync(string name, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Creates a source from EDITED (not yet saved) settings so the connection manager can test them. The password used is
+    /// <paramref name="newPassword"/> when it is not null (an empty string means "no password"); otherwise the password already
+    /// saved under <c>edited.Name</c>. The password is unprotected inside the store and handed only to the returned source; it
+    /// is never returned, logged or placed in an exception. Nothing is written to the store.
+    /// </summary>
+    /// <param name="edited">The settings as currently typed. Its <see cref="DatabaseConnectionSettings.Name"/> picks the saved password.</param>
+    /// <param name="newPassword">A password typed in this session, or null to reuse the saved one.</param>
+    /// <param name="cancellationToken">Cancellation.</param>
+    /// <exception cref="DatabaseException">
+    /// <see cref="DataKeys.InvalidSettings"/> for bad settings; <see cref="DataKeys.ConnectionNotFound"/> when no password is supplied
+    /// and no connection with that name is saved; <see cref="DataKeys.StorePasswordUnreadable"/> when the saved password cannot be unprotected.
+    /// </exception>
+    /// <remarks>
+    /// The default implementation throws <see cref="NotSupportedException"/> so older fakes keep compiling; real stores override it.
+    /// Note that the saved password is sent to whatever host the edited settings name: the caller (UI) is responsible for the user having chosen it.
+    /// </remarks>
+    Task<IDatabaseSource> OpenWithSettingsAsync(DatabaseConnectionSettings edited, string? newPassword, CancellationToken cancellationToken = default)
+        => throw new NotSupportedException();
+
+    /// <summary>Same as the three-argument overload, always reusing the saved password of <c>edited.Name</c>.</summary>
+    Task<IDatabaseSource> OpenWithSettingsAsync(DatabaseConnectionSettings edited, CancellationToken cancellationToken = default)
+        => OpenWithSettingsAsync(edited, null, cancellationToken);
 }
 
 /// <summary>Protects small secrets so only the current user on this machine can read them back.</summary>
@@ -76,14 +100,6 @@ public sealed class DpapiSecretProtector : ISecretProtector
     /// <inheritdoc />
     public byte[] Unprotect(byte[] protectedData, byte[] entropy) => ProtectedData.Unprotect(protectedData, entropy, DataProtectionScope.CurrentUser);
 }
-
-/// <summary>
-/// What a .rotula file may store about a database data source: the NAME of a saved connection and the query text. It has
-/// no member that can hold host, user, password or connection string, so none can leak into a document.
-/// </summary>
-/// <param name="ConnectionName">Name of a connection in the <see cref="IConnectionStore"/>.</param>
-/// <param name="Query">The SELECT text (or empty when a whole table is used).</param>
-public sealed record DatabaseQueryReference(string ConnectionName, string Query);
 
 internal static class StoreEntropy
 {

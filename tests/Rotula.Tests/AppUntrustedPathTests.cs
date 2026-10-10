@@ -1,5 +1,5 @@
 using System.Text.Json;
-using Rotula.App.Files;
+using Rotula.Files;
 using Rotula.App.Localization;
 using Rotula.App.ViewModels;
 
@@ -134,8 +134,8 @@ public class AppUntrustedPathTests : IDisposable
     {
         string root = AppRoot();
         string vmSource = File.ReadAllText(Path.Combine(root, "ViewModels", "DataMergeViewModel.cs"));
-        string mapper = File.ReadAllText(Path.Combine(root, "Files", "DataMergeSettings.cs"));
-        string serializer = File.ReadAllText(Path.Combine(root, "Files", "RotulaFileSerializer.cs"));
+        string mapper = File.ReadAllText(Path.Combine(FilesRoot(), "DataMergeSettings.cs"));
+        string serializer = File.ReadAllText(Path.Combine(FilesRoot(), "RotulaFileSerializer.cs"));
 
         Assert.DoesNotContain("File.Exists", mapper);
         Assert.DoesNotContain("File.Exists", serializer);
@@ -148,6 +148,13 @@ public class AppUntrustedPathTests : IDisposable
         Assert.DoesNotContain("File.Exists(SourcePath", vmSource);
         int canReload = vmSource.IndexOf("public bool CanReload", StringComparison.Ordinal);
         Assert.DoesNotContain("File.", vmSource[canReload..vmSource.IndexOf('\n', canReload)]);
+    }
+
+    private static string FilesRoot()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Rotula.sln"))) dir = dir.Parent;
+        return Path.Combine(dir!.FullName, "src", "Rotula.Files");
     }
 
     private static string AppRoot()

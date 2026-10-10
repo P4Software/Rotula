@@ -13,6 +13,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The tests check internal encoder entry points (for example the DataBar value encoder) against published vectors. -->
+    <InternalsVisibleTo Include="Rotula.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- SkiaSharp: MIT. Pulls the Windows native assets transitively. -->
     <PackageReference Include="SkiaSharp" Version="4.153.1" />
     <!-- ZXing.Net: Apache-2.0. Used only as a barcode ENCODER (bit matrices); drawing is done by us. -->

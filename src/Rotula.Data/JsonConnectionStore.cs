@@ -70,6 +70,10 @@ public sealed class JsonConnectionStore : IConnectionStore
         public string? FilePath { get; set; }
         public string? OdbcConnectionString { get; set; }
         public string? Dsn { get; set; }
+        public string? ProviderId { get; set; }
+        public string? PresetId { get; set; }
+        public string? CaCertificatePath { get; set; }
+        public Dictionary<string, string>? Extras { get; set; }
         public int CommandTimeoutSeconds { get; set; } = DatabaseConnectionSettings.DefaultCommandTimeoutSeconds;
         public int ConnectTimeoutSeconds { get; set; } = DatabaseConnectionSettings.DefaultConnectTimeoutSeconds;
         /// <summary>Base64 of the DPAPI blob. The only place a password ever appears, and never in clear.</summary>
@@ -121,7 +125,9 @@ public sealed class JsonConnectionStore : IConnectionStore
                 Name = settings.Name, Provider = settings.Provider, Host = settings.Host, Port = settings.Port,
                 Database = settings.Database, Authentication = settings.Authentication, UserName = settings.UserName,
                 Encrypt = settings.Encrypt, TrustServerCertificate = settings.TrustServerCertificate, FilePath = settings.FilePath,
-                OdbcConnectionString = odbc, Dsn = settings.Dsn, CommandTimeoutSeconds = settings.CommandTimeoutSeconds,
+                OdbcConnectionString = odbc, Dsn = settings.Dsn, ProviderId = settings.ProviderId, PresetId = settings.PresetId,
+                CaCertificatePath = settings.CaCertificatePath, Extras = settings.Extras.Count == 0 ? null : new Dictionary<string, string>(settings.Extras),
+                CommandTimeoutSeconds = settings.CommandTimeoutSeconds,
                 ConnectTimeoutSeconds = settings.ConnectTimeoutSeconds, ProtectedPassword = blob,
             };
             if (at >= 0) entries[at] = entry;
@@ -163,20 +169,56 @@ public sealed class JsonConnectionStore : IConnectionStore
         finally { _gate.Release(); }
 
         if (entry is null) throw new DatabaseException(DataKeys.ConnectionNotFound, null, new[] { name });
-        string? password = null;
-        if (!string.IsNullOrEmpty(entry.ProtectedPassword))
+        string? password = UnprotectPassword(entry);
+        return DatabaseSource.Create(ToSettings(entry), password);
+    }
+
+    /// <inheritdoc />
+    public async Task<IDatabaseSource> OpenWithSettingsAsync(DatabaseConnectionSettings edited, string? newPassword, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(edited);
+        ConnectionStrings.Validate(edited);
+
+        string? password = newPassword;
+        // A raw ODBC string typed by the user may carry its own PWD=; it is used as is (the builder keeps it), never saved here.
+        if (password is null)
         {
+            EntryModel? entry;
+            await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
-                if (_protector is null) throw new DatabaseException(DataKeys.StoreProtectionUnavailable);
-                password = Encoding.UTF8.GetString(_protector.Unprotect(Convert.FromBase64String(entry.ProtectedPassword), StoreEntropy.For(entry.Name!)));
+                var read = await ReadAsync(cancellationToken).ConfigureAwait(false);
+                entry = read.Entries.FirstOrDefault(e => string.Equals(e.Name, edited.Name, StringComparison.OrdinalIgnoreCase));
             }
-            catch (Exception ex) when (ex is CryptographicException or FormatException)
-            {
-                throw new DatabaseException(DataKeys.StorePasswordUnreadable, null, new[] { name });
-            }
+            finally { _gate.Release(); }
+            if (entry is null) throw new DatabaseException(DataKeys.ConnectionNotFound, null, new[] { edited.Name });
+            // The saved password may only travel to the destination it was saved for. Otherwise a caller that can name a saved
+            // connection (a UI bug, an injected tool call) could point it at a server it controls and read the password there.
+            if (!SavedPasswordPolicy.CanReuse(ToSettings(entry), edited))
+                throw new DatabaseException(ProviderKeys.PasswordReenterRequired, null, new[] { edited.Name });
+            password = UnprotectPassword(entry);
         }
-        return DatabaseSource.Create(ToSettings(entry), password);
+        // Empty means "explicitly no password"; the source expects null for that.
+        return DatabaseSource.Create(edited, string.IsNullOrEmpty(password) ? null : password);
+    }
+
+    /// <summary>Same as the three-argument overload, always reusing the saved password of <c>edited.Name</c> (when the edit allows it).</summary>
+    public Task<IDatabaseSource> OpenWithSettingsAsync(DatabaseConnectionSettings edited, CancellationToken cancellationToken = default)
+        => OpenWithSettingsAsync(edited, null, cancellationToken);
+
+    /// <summary>Returns the clear password of an entry for immediate hand-off to a source; null when none is saved.</summary>
+    private string? UnprotectPassword(EntryModel entry)
+    {
+        if (string.IsNullOrEmpty(entry.ProtectedPassword)) return null;
+        try
+        {
+            if (_protector is null) throw new DatabaseException(DataKeys.StoreProtectionUnavailable);
+            return Encoding.UTF8.GetString(_protector.Unprotect(Convert.FromBase64String(entry.ProtectedPassword), StoreEntropy.For(entry.Name!)));
+        }
+        catch (Exception ex) when (ex is CryptographicException or FormatException)
+        {
+            throw new DatabaseException(DataKeys.StorePasswordUnreadable, null, new[] { entry.Name! });
+        }
     }
 
     // ---------------------------------------------------------------- file handling
@@ -226,7 +268,8 @@ public sealed class JsonConnectionStore : IConnectionStore
             var e = el.Deserialize<EntryModel>(Json);
             if (e?.Name is null) return null;
             if (e.ProtectedPassword is { } p && (p.Length > MaxProtectedBase64 || !IsBase64(p))) return null;
-            ConnectionStrings.Validate(ToSettings(e));
+            // A pack provider that is not loaded right now must not make the entry vanish (the next save would delete it).
+            ConnectionStrings.Validate(ToSettings(e), null, allowUnknownProvider: true);
             // Defence against a hand-edited file: a clear password must never be tolerated inside the ODBC string.
             if (e.OdbcConnectionString is { } o && SecretRedactor.ExtractPassword(o).Password is not null) return null;
             return e;
@@ -275,6 +318,8 @@ public sealed class JsonConnectionStore : IConnectionStore
         Name = e.Name ?? string.Empty, Provider = e.Provider, Host = e.Host, Port = e.Port, Database = e.Database,
         Authentication = e.Authentication, UserName = e.UserName, Encrypt = e.Encrypt, TrustServerCertificate = e.TrustServerCertificate,
         FilePath = e.FilePath, OdbcConnectionString = e.OdbcConnectionString, Dsn = e.Dsn,
+        ProviderId = e.ProviderId, PresetId = e.PresetId, CaCertificatePath = e.CaCertificatePath,
+        Extras = e.Extras is null ? ProviderExtras.Empty : new ProviderExtras(e.Extras),
         CommandTimeoutSeconds = e.CommandTimeoutSeconds, ConnectTimeoutSeconds = e.ConnectTimeoutSeconds,
     };
 }

@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The few database-related types that file-format and host code need without dragging in any database driver.
+       Rotula.Data references this project; Rotula.Files references only this one. Keep it dependency-free. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <RootNamespace>Rotula.Data</RootNamespace>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Headless Model Context Protocol server over stdio. net10.0-windows because it reuses Rotula.Data (DPAPI-protected saved
+    connections) and Rotula.Printing (Windows spooler). It has no WPF dependency.
+    The publish flags (self-contained, single file) are passed on the command line, never set here: a self-contained
+    executable project cannot be referenced by the test project.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <RootNamespace>Rotula.Mcp</RootNamespace>
+    <AssemblyName>Rotula.Mcp</AssemblyName>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <!-- Only the executable is the deliverable of a publish; the XML documentation file stays out of the publish folder. -->
+    <PublishDocumentationFile>false</PublishDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Rotula.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Rotula.Core\Rotula.Core.csproj" />
+    <ProjectReference Include="..\Rotula.Files\Rotula.Files.csproj" />
+    <ProjectReference Include="..\Rotula.Rendering\Rotula.Rendering.csproj" />
+    <ProjectReference Include="..\Rotula.Printing\Rotula.Printing.csproj" />
+    <ProjectReference Include="..\Rotula.Data\Rotula.Data.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The app's English texts, embedded as plain XML so validation and print messages read the same in both. Read-only link. -->
+    <EmbeddedResource Include="..\Rotula.App\Resources\Strings.en.resx" Link="Strings.en.xml" LogicalName="Rotula.Mcp.Strings.en.xml" Type="Non-Resx" WithCulture="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Official C# MCP SDK: MIT. -->
+    <PackageReference Include="ModelContextProtocol" Version="2.2.0" />
+    <!-- Generic host (MIT): runs the MCP stdio transport and gives dependency injection. -->
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.10" />
+  </ItemGroup>
+
+</Project>

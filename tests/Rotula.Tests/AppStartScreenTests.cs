@@ -57,7 +57,7 @@ public class AppStartScreenTests : IDisposable
             Assert.Single(_fake.Errors);
 
             string good = Path.Combine(dir, "good.rotula");
-            Rotula.App.Files.RotulaFileSerializer.Save(AppTestSupport.RichDocument(), good, null);
+            Rotula.Files.RotulaFileSerializer.Save(AppTestSupport.RichDocument(), good, null);
             Assert.True(vm.LoadFile(good));
             Assert.False(vm.ShowStartScreen);
         }

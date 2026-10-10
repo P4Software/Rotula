@@ -113,6 +113,11 @@ public sealed record RenderText : RenderElement
 
     /// <summary>Extra space between lines in dots (may be negative), like ZPL's ^FB line spacing.</summary>
     public double LineSpacingDots { get; init; }
+
+    /// <summary>
+    /// Height of a fixed-size text box in dots (ZPL ^TB): lines that do not fit are not drawn. 0 means no height limit.
+    /// </summary>
+    public double HeightDots { get; init; }
 }
 
 /// <summary>
@@ -158,6 +163,44 @@ public sealed record RenderCircle : RenderElement
 
     /// <summary>Border thickness in dots; at or above half the diameter makes a solid disc.</summary>
     public double ThicknessDots { get; init; } = 2;
+
+    /// <summary>Paint in white instead of black.</summary>
+    public bool White { get; init; }
+}
+
+/// <summary>An ellipse outline (ZPL ^GE) whose bounding box starts at (X, Y).</summary>
+public sealed record RenderEllipse : RenderElement
+{
+    /// <summary>Outer width in dots.</summary>
+    public double WidthDots { get; init; }
+
+    /// <summary>Outer height in dots.</summary>
+    public double HeightDots { get; init; }
+
+    /// <summary>Border thickness in dots; at or above half the smaller side makes a solid ellipse.</summary>
+    public double ThicknessDots { get; init; } = 2;
+
+    /// <summary>Paint in white instead of black.</summary>
+    public bool White { get; init; }
+}
+
+/// <summary>
+/// A diagonal bar (ZPL ^GD) across a box of the given size. The thickness is measured horizontally, the way the printer
+/// draws it, so a thick diagonal looks like a slanted bar rather than a rotated one.
+/// </summary>
+public sealed record RenderDiagonal : RenderElement
+{
+    /// <summary>Box width in dots.</summary>
+    public double WidthDots { get; init; }
+
+    /// <summary>Box height in dots.</summary>
+    public double HeightDots { get; init; }
+
+    /// <summary>Horizontal thickness of the bar in dots.</summary>
+    public double ThicknessDots { get; init; } = 2;
+
+    /// <summary>True when the line rises to the right (bottom-left to top-right), false when it falls to the right.</summary>
+    public bool LeansRight { get; init; } = true;
 
     /// <summary>Paint in white instead of black.</summary>
     public bool White { get; init; }
@@ -210,6 +253,42 @@ public sealed record RenderBarcode : RenderElement
 
     /// <summary>PDF417 truncated variant.</summary>
     public bool Pdf417Truncate { get; init; }
+
+    /// <summary>Code 11: number of check digits (1 or 2).</summary>
+    public int Code11CheckDigits { get; init; } = 2;
+
+    /// <summary>MSI check digit scheme.</summary>
+    public Core.Model.MsiCheckDigitMode MsiCheckDigit { get; init; } = Core.Model.MsiCheckDigitMode.Mod10;
+
+    /// <summary>MSI: write the check digits in the text line.</summary>
+    public bool MsiCheckDigitInText { get; init; }
+
+    /// <summary>Codabar start character (A-D).</summary>
+    public char CodabarStart { get; init; } = 'A';
+
+    /// <summary>Codabar stop character (A-D).</summary>
+    public char CodabarStop { get; init; } = 'A';
+
+    /// <summary>GS1 DataBar variant.</summary>
+    public Core.Model.DataBarType DataBarType { get; init; } = Core.Model.DataBarType.Omnidirectional;
+
+    /// <summary>GS1 DataBar Expanded: segments per row.</summary>
+    public int DataBarSegmentsPerRow { get; init; } = 22;
+
+    /// <summary>GS1 DataBar: separator height between stacked rows in modules.</summary>
+    public int DataBarSeparatorHeight { get; init; } = 1;
+
+    /// <summary>Aztec error control and symbol size/type.</summary>
+    public int AztecErrorControl { get; init; }
+
+    /// <summary>MaxiCode mode, 2 to 6.</summary>
+    public int MaxiCodeMode { get; init; } = 2;
+
+    /// <summary>MaxiCode structured append: number of this symbol.</summary>
+    public int MaxiCodeSymbolNumber { get; init; } = 1;
+
+    /// <summary>MaxiCode structured append: total number of symbols.</summary>
+    public int MaxiCodeSymbolTotal { get; init; } = 1;
 }
 
 /// <summary>A bitmap image, already decoded to an encoded PNG/JPEG byte array.</summary>

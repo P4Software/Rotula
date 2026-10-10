@@ -66,8 +66,10 @@ public class AppLocalizationTests : IDisposable
                 used.Add(m.Groups[1].Value);
 
         // Literals in code that look like resource keys. Comment lines are skipped (they quote member names).
-        var keyShape = new Regex("\"((?:Prop|Panel|Menu|Tool|Status|Dialog|File|Undo|Element|Validation|Preview|Preset|Import|Print|Image|Issue|Document|Encoding|Layers|About|Ruler|Zpl|Toolbar|Canvas|Common|Crash|Filter|Splitter|Data)(?:\\.[A-Za-z0-9]+)+)\"");
-        foreach (var cs in Directory.EnumerateFiles(src, "*.cs", SearchOption.AllDirectories).Where(f => !f.Contains(@"\obj\") && !f.Contains(@"\bin\")))
+        var keyShape = new Regex("\"((?:Prop|Panel|Menu|Tool|Status|Dialog|File|Undo|Element|Validation|Preview|Preset|Import|Print|Image|Issue|Document|Encoding|Layers|About|Ruler|Zpl|Toolbar|Canvas|Common|Crash|Filter|Splitter|Data|Conn)(?:\\.[A-Za-z0-9]+)+)\"");
+        // The .rotula serializer lives in Rotula.Files (moved out of the app); its File.Error.* keys must stay covered.
+        var filesLib = Path.Combine(RepoRoot(), "src", "Rotula.Files");
+        foreach (var cs in Directory.EnumerateFiles(src, "*.cs", SearchOption.AllDirectories).Concat(Directory.EnumerateFiles(filesLib, "*.cs", SearchOption.AllDirectories)).Where(f => !f.Contains(@"\obj\") && !f.Contains(@"\bin\")))
             foreach (var line in File.ReadAllLines(cs).Where(l => !l.TrimStart().StartsWith("//")))
                 foreach (Match m in keyShape.Matches(line))
                     used.Add(m.Groups[1].Value);
@@ -96,6 +98,9 @@ public class AppLocalizationTests : IDisposable
                 keys.Add(m.Groups[1].Value);
             // The importer and the merge engine report through helper methods, so their keys are found by shape.
             foreach (Match m in Regex.Matches(text, @"""((?:Import|Merge)\.[A-Za-z0-9]+(?:\.[A-Za-z0-9]+)*)"""))
+                keys.Add(m.Groups[1].Value);
+            // The stock library builds its keys through a helper, so they are found by shape too.
+            foreach (Match m in Regex.Matches(text, @"""(Stocks\.[A-Za-z0-9]+(?:\.[A-Za-z0-9]+)*)"""))
                 keys.Add(m.Groups[1].Value);
             // BarcodeValidator builds EAN-13 / UPC-A keys from a name: Barcode.{name}.Length / CheckDigit.
             foreach (Match m in Regex.Matches(text, @"ValidateGtin\(data, \d+, \d+, ""(\w+)"""))
@@ -149,8 +154,35 @@ public class AppLocalizationTests : IDisposable
         Check<FieldOriginKind>(); Check<FieldRotation>(); Check<GraphicColor>(); Check<LineDirection>(); Check<BarcodeSymbology>();
         Check<HumanReadablePosition>(); Check<Code128Mode>(); Check<QrErrorCorrection>(); Check<TextAlignment>(); Check<ImageDitherMode>();
         Check<LengthUnit>(); Check<PrinterDpi>(); Check<LabelOrientation>(); Check<MediaType>(); Check<MediaTracking>();
+        Check<Rotula.Core.Model.DataBarType>(); Check<DiagonalLean>(); Check<GraphicSymbol>(); Check<FieldDirection>(); Check<MsiCheckDigitMode>(); Check<CodablockMode>(); Check<Rotula.Core.Barcodes.BarcodeCategory>();
         Check<Rotula.Core.Merge.CopiesMode>(); Check<Rotula.Core.Merge.InvalidRecordPolicy>(); Check<Rotula.Core.Merge.CounterKind>();
         Check<Rotula.Core.Merge.CounterOverflow>(); Check<Rotula.Printing.PrinterTransport>();
+    }
+
+    [Fact]
+    public void EveryBarcodeOption_HasALabel_AndEveryPreviewNote_HasATranslation()
+    {
+        var en = ReadResx("en");
+        var es = ReadResx("es");
+        // Option rows are built from the catalogue by option name, so a new BarcodeOption without a label would show a missing-key text.
+        var directLabels = new Dictionary<Rotula.Core.Barcodes.BarcodeOption, string>
+        {
+            [Rotula.Core.Barcodes.BarcodeOption.Height] = "Prop.BarHeight", [Rotula.Core.Barcodes.BarcodeOption.Pdf417SecurityLevel] = "Prop.Pdf417Security",
+        };
+        foreach (var option in Enum.GetValues<Rotula.Core.Barcodes.BarcodeOption>())
+        {
+            string key = directLabels.TryGetValue(option, out var k) ? k : "Prop." + option;
+            Assert.True(en.ContainsKey(key), key);
+            Assert.True(es.ContainsKey(key), key);
+        }
+        foreach (var info in Rotula.Core.Barcodes.BarcodeCatalog.All.Where(i => i.PreviewNote is not null))
+        {
+            string? key = Rotula.App.Editing.BarcodePreviewNotes.KeyFor(info.Symbology);
+            Assert.NotNull(key);
+            Assert.True(en.ContainsKey(key!), key);
+            Assert.True(es.ContainsKey(key!), key);
+        }
+        Assert.True(en.ContainsKey("Preview.Note.AztecSpecial") && es.ContainsKey("Preview.Note.AztecSpecial"));
     }
 
     [Fact]

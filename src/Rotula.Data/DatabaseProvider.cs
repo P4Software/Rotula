@@ -20,6 +20,12 @@ public enum DatabaseProvider
     /// The backing engine is unknown, so the query guard applies the union of every dialect's rules.
     /// </summary>
     Odbc,
+
+    /// <summary>
+    /// A provider that is not one of the five built-in engines (it comes from a provider pack). Such settings must also carry
+    /// <see cref="DatabaseConnectionSettings.ProviderId"/>. Appended last so the persisted names and values of the others never change.
+    /// </summary>
+    Custom,
 }
 
 /// <summary>How the user signs in to the server.</summary>

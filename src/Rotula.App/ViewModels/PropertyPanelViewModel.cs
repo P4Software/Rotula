@@ -3,6 +3,7 @@ using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Rotula.App.Editing;
 using Rotula.App.Localization;
+using Rotula.Core.Barcodes;
 using Rotula.Core.Elements;
 using Rotula.Core.Model;
 using Rotula.Core.Validation;
@@ -79,7 +80,12 @@ public sealed partial class PropertyPanelViewModel : ObservableObject
         if (sel.Count != 1) return sel.Count == 0 ? "doc:" + _session.Document.Width.Unit : "multi" + sel.Count;
         var e = _session.Document.Elements.FirstOrDefault(x => x.Id == sel[0]);
         // The symbology decides which barcode rows exist, so it is part of the key.
-        return sel[0] + ":" + (e is BarcodeElement b ? b.Symbology.ToString() : e?.GetType().Name) + ":" + (e is TextElement t && t.Block is not null);
+        // For a barcode the key also holds what changes which rows exist besides the symbology: the DataBar variant (segments per row
+        // only exist for Expanded) and whether a rotation that the symbology cannot print is still set (its row must stay until cleared).
+        string barcodeLayout = e is BarcodeElement b
+            ? $"{b.Symbology}/{b.DataBarType == DataBarType.Expanded}/{Enum.IsDefined(b.Symbology) && !BarcodeCatalog.Get(b.Symbology).SupportsRotation && b.Rotation is not null}"
+            : e?.GetType().Name ?? string.Empty;
+        return sel[0] + ":" + barcodeLayout + ":" + (e is TextElement t && t.Block is not null);
     }
 
     private void Rebuild(bool force = false)
@@ -135,6 +141,9 @@ public sealed partial class PropertyPanelViewModel : ObservableObject
             BoxElement => Loc.Get("Element.Box"),
             LineElement => Loc.Get("Element.Line"),
             CircleElement => Loc.Get("Element.Circle"),
+            EllipseElement => Loc.Get("Element.Ellipse"),
+            DiagonalLineElement => Loc.Get("Element.DiagonalLine"),
+            SymbolElement => Loc.Get("Element.Symbol"),
             ImageElement => Loc.Get("Element.Image"),
             _ => e.GetType().Name,
         };
@@ -148,8 +157,8 @@ public sealed partial class PropertyPanelViewModel : ObservableObject
     private void Edit<T>(string id, string prop, Action<T> change) where T : LabelElement =>
         _session.Edit("Undo.Property", d => change((T)d.Elements.First(x => x.Id == id)), mergeKey: $"prop:{id}:{prop}");
 
-    private void AddInt<T>(string id, string labelKey, Func<T, int> get, Action<T, int> set, int min, int max) where T : LabelElement =>
-        Rows.Add(new IntRow(labelKey, () => get(El<T>(id)), v => Edit<T>(id, labelKey, e => set(e, v!.Value)), min, max));
+    private void AddInt<T>(string id, string labelKey, Func<T, int> get, Action<T, int> set, int min, int max, string? rangeIssueKey = null, string? hintKey = null) where T : LabelElement =>
+        Rows.Add(new IntRow(labelKey, () => get(El<T>(id)), v => Edit<T>(id, labelKey, e => set(e, v!.Value)), min, max, hintKey: hintKey, rangeIssueKey: rangeIssueKey));
 
     private void AddNullableInt<T>(string id, string labelKey, Func<T, int?> get, Action<T, int?> set, int min, int max, string? hint = null) where T : LabelElement =>
         Rows.Add(new IntRow(labelKey, () => get(El<T>(id)), v => Edit<T>(id, labelKey, e => set(e, v)), min, max, nullable: true, hintKey: hint));
@@ -173,12 +182,17 @@ public sealed partial class PropertyPanelViewModel : ObservableObject
         AddInt<LabelElement>(id, "Prop.Y", e => e.Y, (e, v) => e.Y = v, 0, 32000);
         Rows.Add(new ChoiceRow("Prop.OriginKind", ChoiceRow.ForEnum<FieldOriginKind>(),
             () => El<LabelElement>(id).OriginKind, v => Edit<LabelElement>(id, "origin", e => e.OriginKind = (FieldOriginKind)v!), "Prop.OriginKind.Hint"));
-        if (element is not CircleElement)
+        // A barcode whose ZPL command has no orientation parameter (MaxiCode) cannot be rotated, so the control is hidden. It stays
+        // visible only while such an element still carries a rotation (from an older file), so the user can clear it.
+        bool rotationUnsupported = element is BarcodeElement { Symbology: var rs } && Enum.IsDefined(rs) && !BarcodeCatalog.Get(rs).SupportsRotation;
+        // Graphics without an orientation parameter in ZPL (circle, ellipse, diagonal line) cannot be rotated.
+        if (element is not (CircleElement or EllipseElement or DiagonalLineElement) && (!rotationUnsupported || element.Rotation is not null))
         {
             // Null means "use the label default (^FW)".
             var items = new List<ChoiceItem> { new(null, Loc.Get("Prop.Rotation.Inherit")) };
             items.AddRange(ChoiceRow.ForEnum<FieldRotation>());
-            Rows.Add(new ChoiceRow("Prop.Rotation", items, () => El<LabelElement>(id).Rotation, v => Edit<LabelElement>(id, "rotation", e => e.Rotation = (FieldRotation?)v)));
+            Rows.Add(new ChoiceRow(rotationUnsupported ? "Prop.Rotation.Unsupported" : "Prop.Rotation", items, () => El<LabelElement>(id).Rotation,
+                v => Edit<LabelElement>(id, "rotation", e => e.Rotation = (FieldRotation?)v)));
         }
         AddBool<LabelElement>(id, "Prop.Reverse", e => e.ReverseField, (e, v) => e.ReverseField = v);
         Rows.Add(new TextRow("Prop.Name", () => El<LabelElement>(id).Name ?? string.Empty,
@@ -212,6 +226,27 @@ public sealed partial class PropertyPanelViewModel : ObservableObject
                 AddInt<CircleElement>(id, "Prop.Diameter", e => e.DiameterDots, (e, v) => e.DiameterDots = v, 3, 4095);
                 AddInt<CircleElement>(id, "Prop.Thickness", e => e.ThicknessDots, (e, v) => e.ThicknessDots = v, 1, 4095);
                 AddEnum<CircleElement, GraphicColor>(id, "Prop.Color", e => e.Color, (e, v) => e.Color = v);
+                break;
+            case EllipseElement:
+                Rows.Add(new HeadingRow("Panel.Shape"));
+                AddInt<EllipseElement>(id, "Prop.Width", e => e.WidthDots, (e, v) => e.WidthDots = v, 3, 4095, "Graphic.Ellipse.Range");
+                AddInt<EllipseElement>(id, "Prop.Height", e => e.HeightDots, (e, v) => e.HeightDots = v, 3, 4095, "Graphic.Ellipse.Range");
+                AddInt<EllipseElement>(id, "Prop.Thickness", e => e.ThicknessDots, (e, v) => e.ThicknessDots = v, 1, 4095);
+                AddEnum<EllipseElement, GraphicColor>(id, "Prop.Color", e => e.Color, (e, v) => e.Color = v);
+                break;
+            case DiagonalLineElement:
+                Rows.Add(new HeadingRow("Panel.Shape"));
+                AddInt<DiagonalLineElement>(id, "Prop.Width", e => e.WidthDots, (e, v) => e.WidthDots = v, 3, 32000, "Graphic.Diagonal.Range");
+                AddInt<DiagonalLineElement>(id, "Prop.Height", e => e.HeightDots, (e, v) => e.HeightDots = v, 3, 32000, "Graphic.Diagonal.Range");
+                AddInt<DiagonalLineElement>(id, "Prop.Thickness", e => e.ThicknessDots, (e, v) => e.ThicknessDots = v, 1, 32000);
+                AddEnum<DiagonalLineElement, DiagonalLean>(id, "Prop.Lean", e => e.Lean, (e, v) => e.Lean = v);
+                AddEnum<DiagonalLineElement, GraphicColor>(id, "Prop.Color", e => e.Color, (e, v) => e.Color = v);
+                break;
+            case SymbolElement:
+                Rows.Add(new HeadingRow("Panel.Symbol"));
+                AddEnum<SymbolElement, GraphicSymbol>(id, "Prop.Symbol", e => e.Symbol, (e, v) => e.Symbol = v);
+                AddInt<SymbolElement>(id, "Prop.Symbol.Height", e => e.HeightDots, (e, v) => e.HeightDots = v, 0, 32000, "Graphic.Symbol.Range");
+                AddInt<SymbolElement>(id, "Prop.Symbol.Width", e => e.WidthDots, (e, v) => e.WidthDots = v, 0, 32000, "Graphic.Symbol.Range");
                 break;
             case ImageElement:
                 Rows.Add(new HeadingRow("Panel.Image"));
@@ -255,57 +290,198 @@ public sealed partial class PropertyPanelViewModel : ObservableObject
         }
     }
 
+    /// <summary>
+    /// Data that nobody typed on purpose: empty, or one of the example values the designer itself puts in. Only such data is
+    /// swapped for the new symbology's example when the symbology changes, so text the user wrote is never overwritten.
+    /// </summary>
+    private static bool IsSampleData(string data) =>
+        data.Length == 0 || data == "123456789" || data == "https://example.com" || BarcodeCatalog.All.Any(i => i.ExampleData == data);
+
+    /// <summary>
+    /// Switches the symbology and repairs what the old settings would break: sample data that is wrong for the new code, a
+    /// rotation or text switch the new ZPL command cannot honour, and the columns/rows that mean something else per symbology.
+    /// It runs inside one undoable edit, so a single Undo restores everything.
+    /// </summary>
+    internal static void ApplySymbology(BarcodeElement e, BarcodeSymbology symbology)
+    {
+        var info = BarcodeCatalog.Get(symbology);
+        bool replaceData = IsSampleData(e.Data);
+        e.Symbology = symbology;
+        if (replaceData) e.Data = info.ExampleData;
+        if (!info.SupportsRotation) e.Rotation = null;
+        if (info.AlwaysPrintsHumanReadable) e.HumanReadable = true;
+        // Columns and rows mean different things (or nothing) per symbology, so a value from the old one is never carried over.
+        e.Columns = 0;
+        e.Rows = 0;
+    }
+
+    /// <summary>The symbology picker entries: grouped by family, each showing its ZPL command.</summary>
+    private static List<ChoiceItem> SymbologyItems() =>
+        BarcodeCatalog.All.OrderBy(i => (int)i.Category)
+            .Select(i => new ChoiceItem(i.Symbology, $"{Loc.EnumName(i.Symbology)}  ({i.ZplCommand})", Loc.EnumName(i.Category))).ToList();
+
     private void BuildBarcodeRows(BarcodeElement element)
     {
         string id = element.Id;
-        var sym = element.Symbology;
-        bool linear = sym is BarcodeSymbology.Code128 or BarcodeSymbology.Code39 or BarcodeSymbology.Code93
-            or BarcodeSymbology.Ean13 or BarcodeSymbology.UpcA or BarcodeSymbology.Interleaved2Of5;
-        bool pdf = sym == BarcodeSymbology.Pdf417;
-        bool twoD = sym is BarcodeSymbology.QrCode or BarcodeSymbology.DataMatrix;
+        var info = BarcodeCatalog.Get(element.Symbology);
 
         Rows.Add(new HeadingRow("Panel.Barcode"));
-        Rows.Add(new ChoiceRow("Prop.Symbology", ChoiceRow.ForEnum<BarcodeSymbology>(),
-            () => El<BarcodeElement>(id).Symbology, v => Edit<BarcodeElement>(id, "symbology", e => e.Symbology = (BarcodeSymbology)v!)) { RebuildOnChange = true });
+        Rows.Add(new ChoiceRow("Prop.Symbology", SymbologyItems(),
+            () => El<BarcodeElement>(id).Symbology, v => Edit<BarcodeElement>(id, "symbology", e => ApplySymbology(e, (BarcodeSymbology)v!))) { RebuildOnChange = true });
+        Rows.Add(new NoteRow("Prop.PreviewNote", () => BarcodePreviewNotes.For(El<BarcodeElement>(id))));
         // Barcode data is validated by Core (BarcodeValidator); the messages appear below the rows while the user types,
         // instead of blocking the typing, because half-typed data is normally invalid.
         AddText<BarcodeElement>(id, "Prop.Data", e => e.Data, (e, v) => e.Data = v, multiline: false);
-        if (linear || pdf)
+        foreach (var option in info.Options)
+            AddBarcodeOption(id, element, info, option);
+    }
+
+    /// <summary>
+    /// Adds the row of one catalogue option. The option names equal the <see cref="BarcodeElement"/> property names, so the catalogue
+    /// alone decides which rows a symbology gets. Ranges mirror the ones Core validates (Core still reports the exact problem).
+    /// </summary>
+    private void AddBarcodeOption(string id, BarcodeElement element, BarcodeSymbologyInfo info, BarcodeOption option)
+    {
+        var sym = info.Symbology;
+        switch (option)
         {
-            AddInt<BarcodeElement>(id, "Prop.BarHeight", e => e.Height, (e, v) => e.Height = v, 1, 32000);
-            AddInt<BarcodeElement>(id, "Prop.ModuleWidth", e => e.ModuleWidth, (e, v) => e.ModuleWidth = v, 1, 10);
-        }
-        if (linear)
-        {
-            Rows.Add(new DoubleRow("Prop.WideBarRatio", () => El<BarcodeElement>(id).WideBarRatio,
-                v => Edit<BarcodeElement>(id, "ratio", e => e.WideBarRatio = v), 2.0, 3.0));
-            AddBool<BarcodeElement>(id, "Prop.HumanReadable", e => e.HumanReadable, (e, v) => e.HumanReadable = v);
-            AddEnum<BarcodeElement, HumanReadablePosition>(id, "Prop.HumanReadablePosition", e => e.HumanReadablePosition, (e, v) => e.HumanReadablePosition = v);
-        }
-        if (sym is BarcodeSymbology.Code39 or BarcodeSymbology.Code93 or BarcodeSymbology.Interleaved2Of5 or BarcodeSymbology.UpcA)
-            AddBool<BarcodeElement>(id, "Prop.CheckDigit", e => e.CheckDigit, (e, v) => e.CheckDigit = v);
-        if (sym == BarcodeSymbology.Code128)
-            AddEnum<BarcodeElement, Code128Mode>(id, "Prop.Code128Mode", e => e.Code128Mode, (e, v) => e.Code128Mode = v);
-        if (sym == BarcodeSymbology.QrCode)
-        {
-            AddEnum<BarcodeElement, QrErrorCorrection>(id, "Prop.QrErrorCorrection", e => e.QrErrorCorrection, (e, v) => e.QrErrorCorrection = v);
-            AddInt<BarcodeElement>(id, "Prop.QrModel", e => e.QrModel, (e, v) => e.QrModel = v, 1, 2);
-        }
-        if (twoD)
-            AddInt<BarcodeElement>(id, "Prop.ModuleSize", e => e.ModuleSize, (e, v) => e.ModuleSize = v, 1, 10);
-        if (sym == BarcodeSymbology.DataMatrix)
-        {
-            AddInt<BarcodeElement>(id, "Prop.Columns", e => e.Columns, (e, v) => e.Columns = v, 0, 144);
-            AddInt<BarcodeElement>(id, "Prop.Rows", e => e.Rows, (e, v) => e.Rows = v, 0, 144);
-        }
-        if (pdf)
-        {
-            AddInt<BarcodeElement>(id, "Prop.Columns", e => e.Columns, (e, v) => e.Columns = v, 0, 30);
-            AddInt<BarcodeElement>(id, "Prop.Rows", e => e.Rows, (e, v) => e.Rows = v, 0, 90);
-            AddInt<BarcodeElement>(id, "Prop.Pdf417Security", e => e.Pdf417SecurityLevel, (e, v) => e.Pdf417SecurityLevel = v, 1, 8);
-            AddBool<BarcodeElement>(id, "Prop.Pdf417Truncate", e => e.Pdf417Truncate, (e, v) => e.Pdf417Truncate = v);
+            case BarcodeOption.Height:
+                {
+                    (int min, int max) = sym switch
+                    {
+                        BarcodeSymbology.MicroPdf417 or BarcodeSymbology.Tlc39 => (1, 9999),
+                        BarcodeSymbology.Codablock => (2, 32000),
+                        _ => (1, 32000),
+                    };
+                    AddInt<BarcodeElement>(id, "Prop.BarHeight", e => e.Height, (e, v) => e.Height = v, min, max, "Barcode.Height.Range");
+                    break;
+                }
+            case BarcodeOption.ModuleWidth:
+                AddInt<BarcodeElement>(id, "Prop.ModuleWidth", e => e.ModuleWidth, (e, v) => e.ModuleWidth = v, 1, 10, "Barcode.ModuleWidth.Range");
+                break;
+            case BarcodeOption.WideBarRatio:
+                Rows.Add(new DoubleRow("Prop.WideBarRatio", () => El<BarcodeElement>(id).WideBarRatio,
+                    v => Edit<BarcodeElement>(id, "ratio", e => e.WideBarRatio = v), 2.0, 3.0));
+                break;
+            case BarcodeOption.HumanReadable:
+                AddBool<BarcodeElement>(id, "Prop.HumanReadable", e => e.HumanReadable, (e, v) => e.HumanReadable = v);
+                break;
+            case BarcodeOption.HumanReadablePosition:
+                AddEnum<BarcodeElement, HumanReadablePosition>(id, "Prop.HumanReadablePosition", e => e.HumanReadablePosition, (e, v) => e.HumanReadablePosition = v);
+                break;
+            case BarcodeOption.CheckDigit:
+                AddBool<BarcodeElement>(id, "Prop.CheckDigit", e => e.CheckDigit, (e, v) => e.CheckDigit = v);
+                break;
+            case BarcodeOption.Code128Mode:
+                AddEnum<BarcodeElement, Code128Mode>(id, "Prop.Code128Mode", e => e.Code128Mode, (e, v) => e.Code128Mode = v);
+                break;
+            case BarcodeOption.QrErrorCorrection:
+                AddEnum<BarcodeElement, QrErrorCorrection>(id, "Prop.QrErrorCorrection", e => e.QrErrorCorrection, (e, v) => e.QrErrorCorrection = v);
+                break;
+            case BarcodeOption.QrModel:
+                AddInt<BarcodeElement>(id, "Prop.QrModel", e => e.QrModel, (e, v) => e.QrModel = v, 1, 2);
+                break;
+            case BarcodeOption.ModuleSize:
+                AddInt<BarcodeElement>(id, "Prop.ModuleSize", e => e.ModuleSize, (e, v) => e.ModuleSize = v, 1, 10, "Barcode.ModuleSize.Range");
+                break;
+            case BarcodeOption.Columns:
+                if (sym == BarcodeSymbology.Codablock)
+                    AddInt<BarcodeElement>(id, "Prop.Columns.Chars", e => e.Columns, (e, v) => e.Columns = v, 0, 62, hintKey: "Prop.Columns.Chars.Hint");
+                else
+                    AddInt<BarcodeElement>(id, "Prop.Columns", e => e.Columns, (e, v) => e.Columns = v, 0, sym == BarcodeSymbology.Pdf417 ? 30 : 144);
+                break;
+            case BarcodeOption.Rows:
+                // Codablock A allows 1-22 rows and E/F 2-4; the box accepts the wider range and Core's message names the exact one.
+                AddInt<BarcodeElement>(id, "Prop.Rows", e => e.Rows, (e, v) => e.Rows = v, 0, sym switch { BarcodeSymbology.Codablock => 22, BarcodeSymbology.Pdf417 => 90, _ => 144 });
+                break;
+            case BarcodeOption.Pdf417SecurityLevel:
+                AddInt<BarcodeElement>(id, "Prop.Pdf417Security", e => e.Pdf417SecurityLevel, (e, v) => e.Pdf417SecurityLevel = v, 1, 8);
+                break;
+            case BarcodeOption.Pdf417Truncate:
+                AddBool<BarcodeElement>(id, "Prop.Pdf417Truncate", e => e.Pdf417Truncate, (e, v) => e.Pdf417Truncate = v);
+                break;
+            case BarcodeOption.Code11CheckDigitCount:
+                AddInt<BarcodeElement>(id, "Prop.Code11CheckDigitCount", e => e.Code11CheckDigitCount, (e, v) => e.Code11CheckDigitCount = v, 1, 2);
+                break;
+            case BarcodeOption.MsiCheckDigit:
+                AddEnum<BarcodeElement, MsiCheckDigitMode>(id, "Prop.MsiCheckDigit", e => e.MsiCheckDigit, (e, v) => e.MsiCheckDigit = v);
+                break;
+            case BarcodeOption.MsiCheckDigitInText:
+                AddBool<BarcodeElement>(id, "Prop.MsiCheckDigitInText", e => e.MsiCheckDigitInText, (e, v) => e.MsiCheckDigitInText = v);
+                break;
+            case BarcodeOption.CodabarStart:
+                AddCharChoice(id, "Prop.CodabarStart", "ABCD", e => e.CodabarStart, (e, v) => e.CodabarStart = v);
+                break;
+            case BarcodeOption.CodabarStop:
+                AddCharChoice(id, "Prop.CodabarStop", "ABCD", e => e.CodabarStop, (e, v) => e.CodabarStop = v);
+                break;
+            case BarcodeOption.DataBarType:
+                AddEnum<BarcodeElement, DataBarType>(id, "Prop.DataBarType", e => e.DataBarType, (e, v) => e.DataBarType = v);
+                break;
+            case BarcodeOption.DataBarSeparatorHeight:
+                AddInt<BarcodeElement>(id, "Prop.DataBarSeparatorHeight", e => e.DataBarSeparatorHeight, (e, v) => e.DataBarSeparatorHeight = v, 1, 2, "Barcode.DataBar.Separator");
+                break;
+            case BarcodeOption.DataBarSegmentsPerRow:
+                // Only the Expanded variant has segments; for the others the setting would be ignored, so it is not offered.
+                if (element.DataBarType == DataBarType.Expanded)
+                    AddInt<BarcodeElement>(id, "Prop.DataBarSegmentsPerRow", e => e.DataBarSegmentsPerRow, (e, v) => e.DataBarSegmentsPerRow = v, 2, 22, "Barcode.DataBar.Segments", hintKey: "Prop.DataBarSegmentsPerRow.Hint");
+                break;
+            case BarcodeOption.AztecEci:
+                AddBool<BarcodeElement>(id, "Prop.AztecEci", e => e.AztecEci, (e, v) => e.AztecEci = v);
+                break;
+            case BarcodeOption.AztecErrorControl:
+                AddInt<BarcodeElement>(id, "Prop.AztecErrorControl", e => e.AztecErrorControl, (e, v) => e.AztecErrorControl = v, 0, 300, hintKey: "Prop.AztecErrorControl.Hint");
+                break;
+            case BarcodeOption.AztecMenuSymbol:
+                AddBool<BarcodeElement>(id, "Prop.AztecMenuSymbol", e => e.AztecMenuSymbol, (e, v) => e.AztecMenuSymbol = v);
+                break;
+            case BarcodeOption.AztecStructuredAppendCount:
+                AddInt<BarcodeElement>(id, "Prop.AztecStructuredAppendCount", e => e.AztecStructuredAppendCount, (e, v) => e.AztecStructuredAppendCount = v, 1, 26, "Barcode.Aztec.StructuredAppend", hintKey: "Prop.AztecStructuredAppendCount.Hint");
+                break;
+            case BarcodeOption.AztecStructuredAppendId:
+                Rows.Add(new TextRow("Prop.AztecStructuredAppendId", () => El<BarcodeElement>(id).AztecStructuredAppendId,
+                    v => Edit<BarcodeElement>(id, "aztecid", e => e.AztecStructuredAppendId = v), maxLength: 24));
+                break;
+            case BarcodeOption.MicroPdf417Mode:
+                AddInt<BarcodeElement>(id, "Prop.MicroPdf417Mode", e => e.MicroPdf417Mode, (e, v) => e.MicroPdf417Mode = v, 0, 33, "Barcode.MicroPdf417.Mode", hintKey: "Prop.MicroPdf417Mode.Hint");
+                break;
+            case BarcodeOption.CodablockMode:
+                AddEnum<BarcodeElement, CodablockMode>(id, "Prop.CodablockMode", e => e.CodablockMode, (e, v) => e.CodablockMode = v);
+                break;
+            case BarcodeOption.CodablockSecurity:
+                AddBool<BarcodeElement>(id, "Prop.CodablockSecurity", e => e.CodablockSecurity, (e, v) => e.CodablockSecurity = v);
+                break;
+            case BarcodeOption.MaxiCodeMode:
+                AddInt<BarcodeElement>(id, "Prop.MaxiCodeMode", e => e.MaxiCodeMode, (e, v) => e.MaxiCodeMode = v, 2, 6, "Barcode.MaxiCode.Mode", hintKey: "Prop.MaxiCodeMode.Hint");
+                break;
+            case BarcodeOption.MaxiCodeSymbolNumber:
+                AddInt<BarcodeElement>(id, "Prop.MaxiCodeSymbolNumber", e => e.MaxiCodeSymbolNumber, (e, v) => e.MaxiCodeSymbolNumber = v, 1, 8, "Barcode.MaxiCode.Symbol");
+                break;
+            case BarcodeOption.MaxiCodeSymbolTotal:
+                AddInt<BarcodeElement>(id, "Prop.MaxiCodeSymbolTotal", e => e.MaxiCodeSymbolTotal, (e, v) => e.MaxiCodeSymbolTotal = v, 1, 8, "Barcode.MaxiCode.Symbol");
+                break;
+            case BarcodeOption.Tlc39MicroModuleWidth:
+                AddInt<BarcodeElement>(id, "Prop.Tlc39MicroModuleWidth", e => e.Tlc39MicroModuleWidth, (e, v) => e.Tlc39MicroModuleWidth = v, 1, 10, "Barcode.Tlc39.MicroModuleWidth");
+                break;
+            case BarcodeOption.Tlc39MicroRowHeight:
+                AddInt<BarcodeElement>(id, "Prop.Tlc39MicroRowHeight", e => e.Tlc39MicroRowHeight, (e, v) => e.Tlc39MicroRowHeight = v, 1, 255, "Barcode.Tlc39.MicroRowHeight");
+                break;
+            case BarcodeOption.Code49StartMode:
+                {
+                    // 'A' means automatic; the others are the numbered start modes of the symbology.
+                    var items = new List<ChoiceItem> { new('A', Loc.Get("Prop.Code49StartMode.Auto")) };
+                    items.AddRange("012345".Select(c => new ChoiceItem(c, c.ToString())));
+                    Rows.Add(new ChoiceRow("Prop.Code49StartMode", items, () => El<BarcodeElement>(id).Code49StartMode,
+                        v => Edit<BarcodeElement>(id, "code49", e => e.Code49StartMode = (char)v!)));
+                    break;
+                }
         }
     }
+
+    /// <summary>A drop-down of single characters (for example the Codabar start letters A to D).</summary>
+    private void AddCharChoice(string id, string labelKey, string choices, Func<BarcodeElement, char> get, Action<BarcodeElement, char> set) =>
+        Rows.Add(new ChoiceRow(labelKey, choices.Select(c => new ChoiceItem(c, c.ToString())).ToList(),
+            () => get(El<BarcodeElement>(id)), v => Edit<BarcodeElement>(id, labelKey, e => set(e, (char)v!))));
 
     // ----------------------------------------------------------------------------------- label rows
 

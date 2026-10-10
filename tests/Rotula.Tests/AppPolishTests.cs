@@ -172,10 +172,10 @@ public class AppPolishTests : IDisposable
         string path = Path.Combine(Path.GetTempPath(), "rotula-raw-" + Guid.NewGuid().ToString("N") + ".rotula");
         try
         {
-            Rotula.App.Files.RotulaFileSerializer.Save(vm.Session.Document, path);
-            Assert.Equal(Rotula.App.Files.RotulaFileSerializer.RawZplFormatVersion,
+            Rotula.Files.RotulaFileSerializer.Save(vm.Session.Document, path);
+            Assert.Equal(Rotula.Files.RotulaFileSerializer.RawZplFormatVersion,
                 System.Text.Json.JsonDocument.Parse(File.ReadAllText(path)).RootElement.GetProperty("formatVersion").GetInt32());
-            var back = Rotula.App.Files.RotulaFileSerializer.Load(path);
+            var back = Rotula.Files.RotulaFileSerializer.Load(path);
             Assert.Equal("^FO10,10^GB100,40,3^FS", ((RawZplElement)back.Elements[0]).Zpl);
             Assert.True(((RawZplElement)back.Elements[0]).IsVisual);
             Assert.Equal("R:LOGO.GRF", ((RecallPlaceholderElement)back.Elements[1]).Reference);
@@ -188,8 +188,8 @@ public class AppPolishTests : IDisposable
     {
         var doc = new LabelDocument();
         doc.Elements.Add(new TextElement { Text = "x" });
-        using var json = System.Text.Json.JsonDocument.Parse(Rotula.App.Files.RotulaFileSerializer.Serialize(doc));
-        Assert.Equal(Rotula.App.Files.RotulaFileSerializer.BaseFormatVersion, json.RootElement.GetProperty("formatVersion").GetInt32());
+        using var json = System.Text.Json.JsonDocument.Parse(Rotula.Files.RotulaFileSerializer.Serialize(doc));
+        Assert.Equal(Rotula.Files.RotulaFileSerializer.BaseFormatVersion, json.RootElement.GetProperty("formatVersion").GetInt32());
     }
 
     // ------------------------------------------------------------------------------- driver detection in the printer settings

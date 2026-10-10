@@ -1,0 +1,13 @@
+{
+  "_help": "Template for extract-settings.json. Copy it to extract-settings.json (the first run of the extractor does this for you), fill in the paths, save, and run Rebuild-StockCatalog.cmd.",
+  "designerExportPath": "",
+  "_designerExportPath_help": "Full path of the ZebraDesigner stock export (.xlsx). Required when the export source is used.",
+  "seedPath": "",
+  "_seedPath_help": "Full path of the ZipShip PDF seed (a JSON array, or a catalogue with an 'entries' list). Leave empty to build from the export alone.",
+  "excludeSources": [],
+  "_excludeSources_help": "Sources are export and pdf. Put a name here to leave that source out of the build.",
+  "outputFolder": "output",
+  "_outputFolder_help": "Folder for the results. A relative path is relative to this script.",
+  "pauseAtEnd": true,
+  "_pauseAtEnd_help": "True keeps the window open until you press Enter, so the result can be read."
+}

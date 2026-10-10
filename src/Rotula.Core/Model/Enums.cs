@@ -103,6 +103,87 @@ public enum BarcodeSymbology
     DataMatrix,
     /// <summary>PDF417, ^B7.</summary>
     Pdf417,
+    // Members below were added later. They are appended (never inserted) so that the numeric values
+    // of the members above stay stable for anything that stored them as numbers.
+    /// <summary>Code 11 (USD-8), ^B1.</summary>
+    Code11,
+    /// <summary>Industrial 2 of 5, ^BI.</summary>
+    Industrial2Of5,
+    /// <summary>Standard 2 of 5, ^BJ.</summary>
+    Standard2Of5,
+    /// <summary>LOGMARS (Code 39 with a mandatory mod 43 check character), ^BL.</summary>
+    Logmars,
+    /// <summary>ANSI Codabar (NW-7), ^BK.</summary>
+    Codabar,
+    /// <summary>MSI (modified Plessey), ^BM.</summary>
+    Msi,
+    /// <summary>Plessey, ^BP.</summary>
+    Plessey,
+    /// <summary>EAN-8, ^B8.</summary>
+    Ean8,
+    /// <summary>UPC-E, ^B9.</summary>
+    UpcE,
+    /// <summary>UPC/EAN two- or five-digit add-on, ^BS.</summary>
+    UpcEanExtension,
+    /// <summary>POSTNET, ^BZ with postal type 0.</summary>
+    Postnet,
+    /// <summary>PLANET, ^B5 (also ^BZ with postal type 1).</summary>
+    Planet,
+    /// <summary>GS1 DataBar family, ^BR; the variant is <see cref="Elements.BarcodeElement.DataBarType"/>.</summary>
+    DataBar,
+    /// <summary>Aztec Code, ^BO.</summary>
+    Aztec,
+    /// <summary>MicroPDF417, ^BF.</summary>
+    MicroPdf417,
+    /// <summary>Codablock A, E or F, ^BB.</summary>
+    Codablock,
+    /// <summary>UPS MaxiCode, ^BD.</summary>
+    MaxiCode,
+    /// <summary>TLC39 (Code 39 plus MicroPDF417), ^BT.</summary>
+    Tlc39,
+    /// <summary>Code 49, ^B4.</summary>
+    Code49,
+}
+
+/// <summary>Variant of the GS1 DataBar family (the ^BR symbology type parameter, values 1 to 6).</summary>
+public enum DataBarType
+{
+    /// <summary>GS1 DataBar Omnidirectional, type 1.</summary>
+    Omnidirectional = 1,
+    /// <summary>GS1 DataBar Truncated, type 2.</summary>
+    Truncated = 2,
+    /// <summary>GS1 DataBar Stacked, type 3.</summary>
+    Stacked = 3,
+    /// <summary>GS1 DataBar Stacked Omnidirectional, type 4.</summary>
+    StackedOmnidirectional = 4,
+    /// <summary>GS1 DataBar Limited, type 5.</summary>
+    Limited = 5,
+    /// <summary>GS1 DataBar Expanded, type 6 (stacked over several rows when the segment width is below 22).</summary>
+    Expanded = 6,
+}
+
+/// <summary>Check digit scheme of MSI (the ^BM check digit selection parameter).</summary>
+public enum MsiCheckDigitMode
+{
+    /// <summary>No check digit, "A".</summary>
+    None,
+    /// <summary>One modulo 10 check digit, "B" (the ZPL default).</summary>
+    Mod10,
+    /// <summary>Two modulo 10 check digits, "C".</summary>
+    DoubleMod10,
+    /// <summary>One modulo 11 and one modulo 10 check digit, "D".</summary>
+    Mod11Mod10,
+}
+
+/// <summary>Codablock variant (the ^BB mode parameter).</summary>
+public enum CodablockMode
+{
+    /// <summary>Codablock A (Code 39 character set), "A".</summary>
+    A,
+    /// <summary>Codablock E (Code 128 character set with automatic FNC1), "E".</summary>
+    E,
+    /// <summary>Codablock F (Code 128 character set), "F" (the ZPL default).</summary>
+    F,
 }
 
 /// <summary>Position of the human-readable line of a linear barcode.</summary>
@@ -149,4 +230,69 @@ public enum ImageDitherMode
     FloydSteinberg,
     /// <summary>4x4 Bayer ordered dithering (stable, no error propagation).</summary>
     Ordered,
+}
+
+/// <summary>What the printer does with a label after printing it (the ^MM mode letter).</summary>
+public enum PrintMode
+{
+    /// <summary>Tear-off, "T".</summary>
+    Tear,
+    /// <summary>Peel-off, "P".</summary>
+    Peel,
+    /// <summary>Rewind, "R".</summary>
+    Rewind,
+    /// <summary>Applicator, "A".</summary>
+    Applicator,
+    /// <summary>Cutter, "C".</summary>
+    Cutter,
+    /// <summary>Delayed cutter, "D".</summary>
+    DelayedCutter,
+    /// <summary>RFID, "F".</summary>
+    Rfid,
+    /// <summary>Kiosk, "K".</summary>
+    Kiosk,
+}
+
+/// <summary>Direction in which the characters of a text field advance (the ^FP direction parameter).</summary>
+public enum FieldDirection
+{
+    /// <summary>Left to right, "H" (the default).</summary>
+    Horizontal,
+    /// <summary>Top to bottom, "V".</summary>
+    Vertical,
+    /// <summary>Right to left, "R".</summary>
+    Reverse,
+}
+
+/// <summary>Which way a diagonal line leans (the ^GD orientation parameter).</summary>
+public enum DiagonalLean
+{
+    /// <summary>Rises to the right, like a slash: bottom-left to top-right. ZPL "R" or "/" (the default).</summary>
+    Right,
+    /// <summary>Falls to the right, like a backslash: top-left to bottom-right. ZPL "L" or "\".</summary>
+    Left,
+}
+
+/// <summary>The symbols ^GS can draw. The letter is what the field data holds.</summary>
+public enum GraphicSymbol
+{
+    /// <summary>Registered trademark, data "A".</summary>
+    Registered,
+    /// <summary>Copyright, data "B".</summary>
+    Copyright,
+    /// <summary>Trademark, data "C".</summary>
+    Trademark,
+    /// <summary>Underwriters Laboratories approval mark, data "D".</summary>
+    UnderwritersLaboratories,
+    /// <summary>Canadian Standards Association approval mark, data "E".</summary>
+    CanadianStandards,
+}
+
+/// <summary>Which printer-side serialization command a field uses.</summary>
+public enum PrinterSerialKind
+{
+    /// <summary>^SN: the field data is a start value whose trailing number counts up or down on every label.</summary>
+    Number,
+    /// <summary>^SF: the field data is serialized according to a character-by-character mask.</summary>
+    Mask,
 }

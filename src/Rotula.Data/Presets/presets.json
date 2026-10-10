@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "presets": [
+    { "id": "mariadb", "nameKey": "Data.Preset.MariaDb", "name": "MariaDB", "providerId": "mysql", "defaultPort": 3306,
+      "hostPatterns": [ "*.skysql.com", "*.mariadb.com" ], "extras": { "flavor": "mariadb" }, "hintKeys": [ "Data.Hint.CaCertificate" ] },
+
+    { "id": "amazon-rds-mysql", "nameKey": "Data.Preset.AmazonRdsMySql", "name": "Amazon RDS for MySQL", "providerId": "mysql", "defaultPort": 3306,
+      "hostPatterns": [ "*.rds.amazonaws.com", "*.rds.amazonaws.com.cn" ], "hintKeys": [ "Data.Hint.CaCertificate" ] },
+    { "id": "amazon-aurora-mysql", "nameKey": "Data.Preset.AmazonAuroraMySql", "name": "Amazon Aurora (MySQL)", "providerId": "mysql", "defaultPort": 3306,
+      "hostPatterns": [ "*.cluster-*.rds.amazonaws.com", "*.cluster-ro-*.rds.amazonaws.com" ], "hintKeys": [ "Data.Hint.CaCertificate" ] },
+    { "id": "amazon-rds-postgresql", "nameKey": "Data.Preset.AmazonRdsPostgreSql", "name": "Amazon RDS for PostgreSQL", "providerId": "postgresql", "defaultPort": 5432,
+      "hostPatterns": [ "*.rds.amazonaws.com", "*.rds.amazonaws.com.cn" ], "hintKeys": [ "Data.Hint.CaCertificate" ] },
+    { "id": "amazon-aurora-postgresql", "nameKey": "Data.Preset.AmazonAuroraPostgreSql", "name": "Amazon Aurora (PostgreSQL)", "providerId": "postgresql", "defaultPort": 5432,
+      "hostPatterns": [ "*.cluster-*.rds.amazonaws.com", "*.cluster-ro-*.rds.amazonaws.com" ], "hintKeys": [ "Data.Hint.CaCertificate" ] },
+
+    { "id": "amazon-redshift", "nameKey": "Data.Preset.AmazonRedshift", "name": "Amazon Redshift", "providerId": "postgresql", "defaultPort": 5439,
+      "hostPatterns": [ "*.redshift.amazonaws.com", "*.redshift-serverless.amazonaws.com" ],
+      "extras": { "noStartupOptions": true }, "hintKeys": [ "Data.Hint.ReadOnlyAccount" ], "verified": false },
+
+    { "id": "cockroachdb", "nameKey": "Data.Preset.CockroachDb", "name": "CockroachDB", "providerId": "postgresql", "defaultPort": 26257,
+      "hostPatterns": [ "*.cockroachlabs.cloud" ], "hintKeys": [ "Data.Hint.CaCertificate" ], "verified": false },
+    { "id": "yugabytedb", "nameKey": "Data.Preset.YugabyteDb", "name": "YugabyteDB (YSQL)", "providerId": "postgresql", "defaultPort": 5433,
+      "hostPatterns": [ "*.yugabyte.cloud" ], "hintKeys": [ "Data.Hint.CaCertificate" ], "verified": false },
+
+    { "id": "supabase", "nameKey": "Data.Preset.Supabase", "name": "Supabase (direct connection)", "providerId": "postgresql", "defaultPort": 5432,
+      "hostPatterns": [ "db.*.supabase.co" ] },
+    { "id": "supabase-pooler", "nameKey": "Data.Preset.SupabasePooler", "name": "Supabase (connection pooler)", "providerId": "postgresql", "defaultPort": 6543,
+      "hostPatterns": [ "*.pooler.supabase.com" ], "poolerHost": true, "extras": { "noStartupOptions": true }, "hintKeys": [ "Data.Hint.PoolerHost" ] },
+    { "id": "neon", "nameKey": "Data.Preset.Neon", "name": "Neon (direct connection)", "providerId": "postgresql", "defaultPort": 5432,
+      "hostPatterns": [ "ep-*.neon.tech" ] },
+    { "id": "neon-pooler", "nameKey": "Data.Preset.NeonPooler", "name": "Neon (connection pooler)", "providerId": "postgresql", "defaultPort": 5432,
+      "hostPatterns": [ "ep-*-pooler.*.neon.tech" ], "poolerHost": true, "extras": { "noStartupOptions": true }, "hintKeys": [ "Data.Hint.PoolerHost" ] },
+
+    { "id": "planetscale", "nameKey": "Data.Preset.PlanetScale", "name": "PlanetScale", "providerId": "mysql", "defaultPort": 3306,
+      "hostPatterns": [ "*.psdb.cloud" ], "verified": false },
+    { "id": "tidb", "nameKey": "Data.Preset.TiDb", "name": "TiDB", "providerId": "mysql", "defaultPort": 4000,
+      "hostPatterns": [ "*.tidbcloud.com" ], "verified": false },
+    { "id": "singlestore", "nameKey": "Data.Preset.SingleStore", "name": "SingleStore", "providerId": "mysql", "defaultPort": 3306,
+      "hostPatterns": [ "*.singlestore.com" ], "hintKeys": [ "Data.Hint.CaCertificate" ], "verified": false },
+
+    { "id": "azure-sql-database", "nameKey": "Data.Preset.AzureSqlDatabase", "name": "Azure SQL Database", "providerId": "sqlserver", "defaultPort": 1433,
+      "hostPatterns": [ "*.database.windows.net" ], "hintKeys": [ "Data.Hint.ReadOnlyAccount" ] },
+    { "id": "azure-synapse", "nameKey": "Data.Preset.AzureSynapse", "name": "Azure Synapse Analytics", "providerId": "sqlserver", "defaultPort": 1433,
+      "hostPatterns": [ "*.sql.azuresynapse.net" ], "hintKeys": [ "Data.Hint.ReadOnlyAccount" ] },
+    { "id": "microsoft-fabric", "nameKey": "Data.Preset.MicrosoftFabric", "name": "Microsoft Fabric", "providerId": "sqlserver", "defaultPort": 1433,
+      "hostPatterns": [ "*.datawarehouse.fabric.microsoft.com" ], "requiresEntra": true, "hintKeys": [ "Data.Hint.EntraOnly" ] },
+
+    { "id": "google-cloud-sql-mysql", "nameKey": "Data.Preset.GoogleCloudSqlMySql", "name": "Google Cloud SQL for MySQL", "providerId": "mysql", "defaultPort": 3306,
+      "hostPatterns": [ "*.sql.goog" ], "hintKeys": [ "Data.Hint.CaCertificate" ], "verified": false },
+    { "id": "google-cloud-sql-postgresql", "nameKey": "Data.Preset.GoogleCloudSqlPostgreSql", "name": "Google Cloud SQL for PostgreSQL", "providerId": "postgresql", "defaultPort": 5432,
+      "hostPatterns": [ "*.sql.goog" ], "hintKeys": [ "Data.Hint.CaCertificate" ], "verified": false },
+    { "id": "google-cloud-sql-sqlserver", "nameKey": "Data.Preset.GoogleCloudSqlSqlServer", "name": "Google Cloud SQL for SQL Server", "providerId": "sqlserver", "defaultPort": 1433,
+      "hostPatterns": [ "*.sql.goog" ], "hintKeys": [ "Data.Hint.ReadOnlyAccount" ], "verified": false },
+
+    { "id": "microsoft-access", "nameKey": "Data.Preset.MicrosoftAccess", "name": "Microsoft Access (.mdb, .accdb)", "providerId": "odbc", "category": "File",
+      "driverMissingHintKey": "Data.Hint.InstallAce64",
+      "odbc": { "drivers": [ "Microsoft Access Driver (*.mdb, *.accdb)" ], "pathKey": "Dbq", "pathKind": "file", "extensions": [ ".mdb", ".accdb" ],
+                "parameters": { "ReadOnly": "1" }, "underlyingEngine": "jet" } },
+    { "id": "microsoft-excel", "nameKey": "Data.Preset.MicrosoftExcel", "name": "Microsoft Excel (.xls, .xlsx)", "providerId": "odbc", "category": "File",
+      "driverMissingHintKey": "Data.Hint.InstallAce64",
+      "odbc": { "drivers": [ "Microsoft Excel Driver (*.xls, *.xlsx, *.xlsm, *.xlsb)" ], "pathKey": "Dbq", "pathKind": "file", "extensions": [ ".xls", ".xlsx", ".xlsm", ".xlsb" ],
+                "parameters": { "ReadOnly": "1" }, "underlyingEngine": "jet" } },
+    { "id": "text-csv", "nameKey": "Data.Preset.TextCsv", "name": "Text and CSV files (a folder)", "providerId": "odbc", "category": "File",
+      "driverMissingHintKey": "Data.Hint.InstallAce64",
+      "odbc": { "drivers": [ "Microsoft Access Text Driver (*.txt, *.csv)" ], "pathKey": "Dbq", "pathKind": "folder", "extensions": [],
+                "parameters": { "Extensions": "asc,csv,tab,txt", "ReadOnly": "1" }, "underlyingEngine": "jet" } }
+  ]
+}

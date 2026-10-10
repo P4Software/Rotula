@@ -1,0 +1,11 @@
+{
+  "id": "sample",
+  "name": "Sample pack",
+  "version": "1.0.0",
+  "publisher": "Rotula tests",
+  "providerIds": [ "sample-memory" ],
+  "minDataApiVersion": "1.0",
+  "entryAssembly": "Rotula.Data.SamplePack.dll",
+  "entryType": "Rotula.Data.SamplePack.SamplePack",
+  "licenseNoticesFile": "NOTICES.txt"
+}

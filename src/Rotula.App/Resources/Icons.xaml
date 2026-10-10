@@ -16,6 +16,8 @@
   <Geometry x:Key="IconQr">M4,4 H10 V10 H4 Z M14,4 H20 V10 H14 Z M4,14 H10 V20 H4 Z M14,14 H16 M18,14 H20 M14,17 H17 M20,17 V20 M14,20 H17</Geometry>
   <Geometry x:Key="IconLine">M5,19 L19,5</Geometry>
   <Geometry x:Key="IconRectangle">M4,6 H20 V18 H4 Z</Geometry>
+  <Geometry x:Key="IconEllipse">M12,6 C17,6 21,8.7 21,12 C21,15.3 17,18 12,18 C7,18 3,15.3 3,12 C3,8.7 7,6 12,6 Z</Geometry>
+  <Geometry x:Key="IconDiagonal">M5,5 L19,19 M5,10 V5 H10 M14,19 H19 V14</Geometry>
   <Geometry x:Key="IconCircle">M12,4 A8,8 0 1 1 11.99,4</Geometry>
   <Geometry x:Key="IconImage">M4,5 H20 V19 H4 Z M4,16 L9,11 L13,15 L16,12 L20,16 M15.5,9 A1,1 0 1 0 15.51,9</Geometry>
   <Geometry x:Key="IconPrinter">M7,8 V4 H17 V8 M7,17 H5 V9 H19 V17 H17 M7,14 H17 V21 H7 Z</Geometry>

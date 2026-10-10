@@ -104,6 +104,9 @@ public sealed class Loc : INotifyPropertyChanged
     public static string FormatIssue(ValidationIssue issue)
     {
         string key = "Issue." + issue.MessageKey;
+        // Rotula.Data raises its own notes (for example the row-cap warning) under their Data.* key, with no Issue. prefix.
+        if (!Instance.HasKey(key) && issue.MessageKey.StartsWith("Data.", StringComparison.Ordinal) && Instance.HasKey(issue.MessageKey))
+            key = issue.MessageKey;
         if (!Instance.HasKey(key))
             return Get("Issue.Unknown", issue.MessageKey);
         var args = issue.Args.Select(a => (object)(Instance.HasKey("Issue.Arg." + a) ? Instance.Lookup("Issue.Arg." + a) : a)).ToArray();

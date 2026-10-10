@@ -39,6 +39,10 @@ public sealed class WpfFileDialogService : IFileDialogService
     public string? PickOpenData() => Open(Loc.Get("Data.Open"),
         $"{Loc.Get("Filter.Data")} (*.csv;*.txt;*.xlsx)|*.csv;*.txt;*.xlsx|{Loc.Get("Filter.AllFiles")} (*.*)|*.*");
 
+    /// <inheritdoc />
+    public string? PickOpenDatabaseFile() => Open(Loc.Get("Conn.Sqlite.Pick"),
+        $"{Loc.Get("Filter.Database")} (*.db;*.sqlite;*.sqlite3;*.db3)|*.db;*.sqlite;*.sqlite3;*.db3|{Loc.Get("Filter.AllFiles")} (*.*)|*.*");
+
     private static string? Open(string title, string filter)
     {
         var dialog = new OpenFileDialog { Title = title, Filter = filter, CheckFileExists = true };
@@ -168,6 +172,15 @@ public sealed class WpfToolDialogService : IToolDialogService
     public void ShowPreviewDialog(Rotula.App.Editing.PreviewCache preview, string title)
     {
         var window = new PreviewWindow(preview, title) { Owner = Application.Current?.MainWindow };
+        window.ShowDialog();
+    }
+
+    /// <inheritdoc />
+    public void ShowConnectionManager(Rotula.App.ViewModels.ConnectionManagerViewModel viewModel)
+    {
+        // Owner is the Data window when it is open, so the dialog stays on top of it and not behind the main window.
+        var owner = (Window?)_dataWindow ?? Application.Current?.MainWindow;
+        var window = new ConnectionManagerWindow(viewModel) { Owner = owner };
         window.ShowDialog();
     }
 

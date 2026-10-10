@@ -4,13 +4,14 @@ using System.Text;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Rotula.App.Editing;
-using Rotula.App.Files;
+using Rotula.Files;
 using Rotula.App.Localization;
 using Rotula.App.Services;
 using Rotula.Core.Merge;
 using Rotula.Core.Model;
 using Rotula.Core.Validation;
 using Rotula.Core.Zpl;
+using Rotula.Data;
 using Rotula.Printing;
 
 namespace Rotula.App.ViewModels;
@@ -26,8 +27,17 @@ public enum CopiesSource
     Column,
 }
 
+/// <summary>Where the records come from.</summary>
+public enum DataSourceMode
+{
+    /// <summary>A CSV or Excel file.</summary>
+    File,
+    /// <summary>A saved database connection (a table, view or SELECT query).</summary>
+    Database,
+}
+
 /// <summary>
-/// The Data merge window: open a CSV or Excel file, map its columns to the label's placeholders, walk through the records
+/// The Data merge window: open a CSV or Excel file (or read a database table or query), map its columns to the label's placeholders, walk through the records
 /// (the canvas shows the chosen record), set up serial counters and copies, check every record, and print or export the batch.
 /// Only the settings are saved in the .rotula file; the data itself never is.
 /// </summary>
@@ -56,8 +66,10 @@ public sealed partial class DataMergeViewModel : OperationViewModel
     /// <param name="documentName">Name of the open label, used to suggest file names.</param>
     /// <param name="files">File dialogs.</param>
     /// <param name="messages">Message boxes (confirmation before a large print).</param>
+    /// <param name="database">Saved connections and database access; null uses the real ones (nothing is read until the user asks).</param>
+    /// <param name="dialogs">Opens the connection manager; null disables it (tests).</param>
     public DataMergeViewModel(IPrintService service, PrinterSettingsViewModel printer, Func<LabelDocument> document, Func<string> documentName,
-        IFileDialogService files, IMessageService messages)
+        IFileDialogService files, IMessageService messages, IDatabaseServices? database = null, IToolDialogService? dialogs = null)
     {
         _service = service;
         Printer = printer;
@@ -65,6 +77,8 @@ public sealed partial class DataMergeViewModel : OperationViewModel
         _documentName = documentName;
         _files = files;
         _messages = messages;
+        Database = new DatabaseSourceViewModel(database ?? new DatabaseServices(), dialogs, messages, files);
+        Database.DataSelected += OnDatabaseDataSelected;
 
         DelimiterChoices = new[]
         {
@@ -93,6 +107,9 @@ public sealed partial class DataMergeViewModel : OperationViewModel
 
     /// <summary>Printer selection and profile, shared with the Print dialog.</summary>
     public PrinterSettingsViewModel Printer { get; }
+
+    /// <summary>The database half of the source picker (connections, tables, query).</summary>
+    public DatabaseSourceViewModel Database { get; }
 
     /// <summary>Delimiter choices for CSV files.</summary>
     public IReadOnlyList<Choice<string>> DelimiterChoices { get; }
@@ -126,6 +143,119 @@ public sealed partial class DataMergeViewModel : OperationViewModel
 
     // ----------------------------------------------------------------------------------- source
 
+    // ----------------------------------------------------------------------------------- source kind (file or database)
+
+    /// <summary>The database settings the current (or remembered) data came from; this is what the .rotula file keeps. Never holds credentials.</summary>
+    private DatabaseMergeSettings? _databaseSettings;
+
+    /// <summary>Where the records come from.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsFileMode), nameof(IsDatabaseMode))]
+    private DataSourceMode _sourceMode;
+
+    partial void OnSourceModeChanged(DataSourceMode value) => NotifyLayout();
+
+    /// <summary>True when the records come from a CSV or Excel file (binds the "File" option).</summary>
+    public bool IsFileMode
+    {
+        get => SourceMode == DataSourceMode.File;
+        set { if (value) SourceMode = DataSourceMode.File; }
+    }
+
+    /// <summary>True when the records come from a database (binds the "Database" option).</summary>
+    public bool IsDatabaseMode
+    {
+        get => SourceMode == DataSourceMode.Database;
+        set
+        {
+            if (!value || SourceMode == DataSourceMode.Database) return;
+            SourceMode = DataSourceMode.Database;
+            // Reading the list of saved connections is a local file read; no database is contacted.
+            _ = Database.RefreshConnectionsAsync();
+        }
+    }
+
+    /// <summary>True while the database picker is shown even though data is already loaded ("Change data source").</summary>
+    [ObservableProperty]
+    private bool _showDatabasePicker;
+
+    partial void OnShowDatabasePickerChanged(bool value) => NotifyLayout();
+
+    /// <summary>The database picker (connection, table or query) fills the area.</summary>
+    public bool ShowDatabasePanel => IsDatabaseMode && (HasNoData || ShowDatabasePicker);
+
+    /// <summary>The tabs (data, mapping, counters...) fill the area.</summary>
+    public bool ShowTabs => HasData && !(IsDatabaseMode && ShowDatabasePicker);
+
+    /// <summary>The file "open" card fills the area.</summary>
+    public bool ShowFileEmpty => IsFileMode && HasNoData;
+
+    /// <summary>The sheet picker applies (Excel file in file mode).</summary>
+    public bool ShowXlsxOptions => IsFileMode && IsXlsx;
+
+    /// <summary>The delimiter picker applies (text file in file mode).</summary>
+    public bool ShowCsvOptions => IsFileMode && IsCsv;
+
+    /// <summary>The "first row is a header" box applies (files only; a database always has column names).</summary>
+    public bool ShowHeaderOption => IsFileMode;
+
+    /// <summary>True when data from a database is shown in the tabs (the header offers "Change data source").</summary>
+    public bool CanChangeDatabaseSource => IsDatabaseMode && HasData;
+
+    /// <summary>Header text of a database source, for example "Warehouse (database)".</summary>
+    public string DatabaseSummary => _databaseSettings is null
+        ? Loc.Get("Data.Db.NoSource")
+        : Loc.Get("Data.Db.Summary", _databaseSettings.Reference.ConnectionName);
+
+    private void NotifyLayout()
+    {
+        OnPropertyChanged(nameof(ShowDatabasePanel));
+        OnPropertyChanged(nameof(ShowTabs));
+        OnPropertyChanged(nameof(ShowFileEmpty));
+        OnPropertyChanged(nameof(ShowXlsxOptions));
+        OnPropertyChanged(nameof(ShowCsvOptions));
+        OnPropertyChanged(nameof(ShowHeaderOption));
+        OnPropertyChanged(nameof(CanChangeDatabaseSource));
+        OnPropertyChanged(nameof(DatabaseSummary));
+    }
+
+    /// <summary>Opens the database picker over the loaded data so another table or query can be chosen.</summary>
+    [RelayCommand(CanExecute = nameof(CanChangeDatabaseSource))]
+    private void ChangeDatabaseSource()
+    {
+        ShowDatabasePicker = true;
+        _ = Database.RefreshConnectionsAsync();
+    }
+
+    /// <summary>Goes back from the picker to the loaded data.</summary>
+    [RelayCommand]
+    private void HideDatabasePicker() => ShowDatabasePicker = false;
+
+    /// <summary>
+    /// The user chose rows in the database picker. They flow through exactly the same pipeline as a file: the table is bound to
+    /// the label by <see cref="Rebind"/>, so mapping, counters, copies, the record navigator and batch print/export just work.
+    /// </summary>
+    private void OnDatabaseDataSelected(object? sender, DatabaseDataSelectedEventArgs e)
+    {
+        _databaseSettings = e.Settings;
+        _applying = true;
+        try
+        {
+            SourceHintIgnored = false;
+            SourcePath = null; // a database label has no file path; the file hint is dropped, not kept beside the query
+            SelectedSheet = null;
+            SourceMode = DataSourceMode.Database;
+            ShowDatabasePicker = false;
+        }
+        finally { _applying = false; }
+        SetTable(e.Table, Array.Empty<string>(), null);
+        CurrentIndex = 0;
+        SetResult(Loc.Get("Data.Db.Loaded", e.Table.RowCount, e.Settings.Reference.ConnectionName), false);
+        RaiseSettingsEdited();
+        Rebind();
+        RaisePreviewChanged();
+    }
+
     /// <summary>The loaded table, or null when no data is loaded. The data is never saved.</summary>
     public MergeTable? Table { get; private set; }
 
@@ -142,6 +272,8 @@ public sealed partial class DataMergeViewModel : OperationViewModel
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SourceName), nameof(HasSource), nameof(IsXlsx), nameof(IsCsv), nameof(CanReload))]
     private string? _sourcePath;
+
+    partial void OnSourcePathChanged(string? value) => NotifyLayout();
 
     /// <summary>File name of the data source.</summary>
     public string SourceName => SourcePath is null ? string.Empty : Path.GetFileName(SourcePath);
@@ -318,13 +450,19 @@ public sealed partial class DataMergeViewModel : OperationViewModel
         }
 
         // Reloading the same file is not a change to the label; only a different file or sheet is.
-        bool settingsChanged = !string.Equals(SourcePath, path, StringComparison.OrdinalIgnoreCase) || (xlsx && SelectedSheet != sheet);
+        bool settingsChanged = !string.Equals(SourcePath, path, StringComparison.OrdinalIgnoreCase) || (xlsx && SelectedSheet != sheet)
+            || _databaseSettings is not null;
         _applying = true;
         try
         {
             SourceHintIgnored = false;
             SourcePath = path;
             SelectedSheet = xlsx ? sheet : null;
+            // A file replaces a database source: the label must not keep pointing at a query it no longer uses.
+            _databaseSettings = null;
+            Database.DiscardReference();
+            SourceMode = DataSourceMode.File;
+            ShowDatabasePicker = false;
         }
         finally { _applying = false; }
         SetTable(table, sheets, delimiter ?? detected);
@@ -381,6 +519,8 @@ public sealed partial class DataMergeViewModel : OperationViewModel
         OnPropertyChanged(nameof(TableSummary));
         OnPropertyChanged(nameof(PreviewTruncated));
         OnPropertyChanged(nameof(HasLoadWarnings));
+        NotifyLayout();
+        ChangeDatabaseSourceCommand.NotifyCanExecuteChanged();
         TableChanged?.Invoke(this, EventArgs.Empty);
         Rebind();
     }
@@ -971,9 +1111,13 @@ public sealed partial class DataMergeViewModel : OperationViewModel
         SetResult(BatchSummary(perJob ? "Data.Export.DonePerJob" : "Data.Export.Done", report, files), report.HasErrors || report.Emitted == 0);
     }
 
-    /// <summary>Closes the window (stopping any running batch first).</summary>
+    /// <summary>Closes the window (stopping any running batch or database operation first).</summary>
     [RelayCommand]
-    private void Close() => RequestClose();
+    private void Close()
+    {
+        Database.CancelOperation();
+        RequestClose();
+    }
 
     // ----------------------------------------------------------------------------------- settings in the .rotula file
 
@@ -988,6 +1132,8 @@ public sealed partial class DataMergeViewModel : OperationViewModel
             CopiesMode = CopiesMode, OnInvalidRecord = InvalidPolicy,
             MaxRecordsPerJob = int.TryParse(MaxRecordsText.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out int m) ? m : 0,
             OneFilePerJob = OneFilePerJob,
+            // Only the connection NAME, the query text and parameter defaults: never host, user, password or connection string.
+            Database = _databaseSettings,
         };
         foreach (var kv in _overrides) s.ColumnOverrides[kv.Key] = kv.Value;
         foreach (var c2 in Counters) s.Counters.Add(c2.ToSettings());
@@ -1003,6 +1149,11 @@ public sealed partial class DataMergeViewModel : OperationViewModel
         {
             SourcePath = string.IsNullOrEmpty(settings.SourcePath) ? null : settings.SourcePath;
             SourceHintIgnored = settings.SourcePathIgnored;
+            // A query reference is only remembered and shown. Nothing connects until the user clicks "Connect and reload data".
+            _databaseSettings = settings.Database;
+            SourceMode = settings.Database is null ? DataSourceMode.File : DataSourceMode.Database;
+            ShowDatabasePicker = false;
+            Database.Restore(settings.Database);
             SelectedSheet = settings.SheetName;
             SelectedDelimiter = settings.Delimiter;
             HasHeader = settings.HasHeader;
@@ -1042,6 +1193,7 @@ public sealed partial class DataMergeViewModel : OperationViewModel
         foreach (var c in Counters) c.RefreshLanguage();
         UpdateDelimiterText();
         Rebind();
+        NotifyLayout();
         OnPropertyChanged(nameof(TableSummary));
         OnPropertyChanged(nameof(PreviewNote));
     }

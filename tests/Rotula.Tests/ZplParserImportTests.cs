@@ -135,19 +135,19 @@ public class ZplParserImportTests
         var r = ParseFixture("unknown_commands");
         var raws = r.Document.Elements.OfType<RawZplElement>().ToList();
 
-        // ^LS20 standalone, ^FX comment, the ^FN field, the ^SN field, ~SD15.
-        Assert.Contains(raws, e => e.Zpl == "^LS20" && !e.IsVisual);
+        // ^JMA standalone, ^FX comment, the ^FM field, the ^PA field, ~SD15.
+        Assert.Contains(raws, e => e.Zpl == "^JMA" && !e.IsVisual);
         Assert.Contains(raws, e => e.Zpl == "^FX A comment that must survive^FS");
-        Assert.Contains(raws, e => e.Zpl == "^FO20,80^FN1^A0N,30,30^FDWith a field number^FS" && e.IsVisual && e.X == 20 && e.Y == 80);
-        Assert.Contains(raws, e => e.Zpl == "^FO20,140^SN001,1,Y^A0N,30,30^FDSerial^FS" && e.IsVisual);
+        Assert.Contains(raws, e => e.Zpl == "^FO20,80^FM100,100^A0N,30,30^FDWith a multiple origin^FS" && e.IsVisual && e.X == 20 && e.Y == 80);
+        Assert.Contains(raws, e => e.Zpl == "^FO20,140^PA0,1,1,0^A0N,30,30^FDAdvanced^FS" && e.IsVisual);
         Assert.Contains(raws, e => e.Zpl == "~SD15");
         Assert.Contains(r.Document.Elements, e => e is TextElement { Text: "Plain text" });
 
         var unknown = r.Warnings.Where(w => w.MessageKey == "Import.Command.Unknown").ToList();
-        Assert.Equal(new[] { "^LS", "^FN", "^SN", "~SD" }, unknown.Select(w => w.Args[0]).ToArray());
+        Assert.Equal(new[] { "^JM", "^FM", "^PA", "~SD" }, unknown.Select(w => w.Args[0]).ToArray());
         var ls = unknown[0];
         Assert.Equal((5, 1), (ls.Line, ls.Column));
-        Assert.Equal(ImportFixtureText("unknown_commands").IndexOf("^LS20", StringComparison.Ordinal), ls.Position);
+        Assert.Equal(ImportFixtureText("unknown_commands").IndexOf("^JMA", StringComparison.Ordinal), ls.Position);
 
         // Nothing is lost: every raw block is written back.
         string again = ZplGenerator.Generate(r.Document).Zpl;
@@ -157,12 +157,17 @@ public class ZplParserImportTests
     private static string ImportFixtureText(string name) => File.ReadAllText(ImportFixture(name)).Replace("\r\n", "\n");
 
     [Fact]
-    public void Unsupported_mirroring_is_preserved_but_pmn_is_silent()
+    public void Mirroring_is_a_document_setting_and_reserved_print_modes_stay_raw()
     {
         var r = ZplParser.Parse("^XA^PMY^PW400^LL200^XZ");
-        Assert.Contains(r.Document.Elements, e => e is RawZplElement { Zpl: "^PMY" });
-        Assert.Contains("Import.Setting.Unsupported", Keys(r));
-        Assert.DoesNotContain("Import.Setting.Unsupported", Keys(ZplParser.Parse("^XA^PMN^PW400^LL200^XZ")));
+        Assert.True(r.Document.MirrorImage);
+        Assert.DoesNotContain(r.Document.Elements, e => e is RawZplElement);
+        Assert.Empty(r.Warnings);
+        Assert.False(ZplParser.Parse("^XA^PMN^PW400^LL200^XZ").Document.MirrorImage);
+        // ^MML is documented as reserved, so it cannot be modelled and is kept verbatim.
+        var reserved = ZplParser.Parse("^XA^MML^PW400^LL200^XZ");
+        Assert.Contains(reserved.Document.Elements, e => e is RawZplElement { Zpl: "^MML" });
+        Assert.Contains("Import.Setting.Unsupported", Keys(reserved));
     }
 
     // ---- graphics -------------------------------------------------------------------------
@@ -338,9 +343,9 @@ public class ZplParserImportTests
     [Fact]
     public void Raw_blocks_holding_high_bytes_are_flagged()
     {
-        var r = ZplParser.Parse(Concat("^XA^FO0,0^FN1^FDNi", new byte[] { 0xA4 }, "o^FS^XZ"));
+        var r = ZplParser.Parse(Concat("^XA^FO0,0^FM1,1^FDNi", new byte[] { 0xA4 }, "o^FS^XZ"));
         Assert.Contains("Import.Raw.NonAscii", Keys(r));
-        Assert.DoesNotContain("Import.Raw.NonAscii", Keys(ZplParser.Parse("^XA^FO0,0^FN1^FDplain^FS^XZ")));
+        Assert.DoesNotContain("Import.Raw.NonAscii", Keys(ZplParser.Parse("^XA^FO0,0^FM1,1^FDplain^FS^XZ")));
     }
 
     [Fact]
@@ -444,10 +449,10 @@ public class ZplParserImportTests
     [Fact]
     public void Warnings_convert_to_validation_issues()
     {
-        var w = Assert.Single(ZplParser.Parse("^XA^PW10^LL10^LS5^XZ").Warnings);
+        var w = Assert.Single(ZplParser.Parse("^XA^PW10^LL10^JMA^XZ").Warnings);
         var issue = w.ToValidationIssue();
         Assert.Equal(Rotula.Core.Validation.ValidationSeverity.Warning, issue.Severity);
         Assert.Equal("Import.Command.Unknown", issue.MessageKey);
-        Assert.Equal(new[] { "^LS" }, issue.Args);
+        Assert.Equal(new[] { "^JM" }, issue.Args);
     }
 }

@@ -51,12 +51,17 @@ public sealed partial class IntRow : PropertyRow
     private readonly Action<int?> _set;
     private readonly int _min, _max;
     private readonly bool _nullable;
+    private readonly string? _rangeIssueKey;
 
-    /// <summary>Creates a row. With <paramref name="nullable"/> an empty box means "inherit the label default".</summary>
-    public IntRow(string labelKey, Func<int?> get, Action<int?> set, int min, int max, bool nullable = false, string? hintKey = null)
+    /// <summary>
+    /// Creates a row. With <paramref name="nullable"/> an empty box means "inherit the label default". With
+    /// <paramref name="rangeIssueKey"/> (a Core issue key whose arguments are the lowest and highest value) an out-of-range
+    /// number is explained with that message, the same wording the validation list uses.
+    /// </summary>
+    public IntRow(string labelKey, Func<int?> get, Action<int?> set, int min, int max, bool nullable = false, string? hintKey = null, string? rangeIssueKey = null)
         : base(labelKey, hintKey)
     {
-        _get = get; _set = set; _min = min; _max = max; _nullable = nullable;
+        _get = get; _set = set; _min = min; _max = max; _nullable = nullable; _rangeIssueKey = rangeIssueKey;
         _text = Format(get());
     }
 
@@ -88,7 +93,10 @@ public sealed partial class IntRow : PropertyRow
         }
         if (n < _min || n > _max)
         {
-            Error = Loc.Get("Validation.Range", _min, _max);
+            Error = _rangeIssueKey is null
+                ? Loc.Get("Validation.Range", _min, _max)
+                : Loc.FormatIssue(new Rotula.Core.Validation.ValidationIssue(Rotula.Core.Validation.ValidationSeverity.Error, _rangeIssueKey, null,
+                    _min.ToString(CultureInfo.InvariantCulture), _max.ToString(CultureInfo.InvariantCulture)));
             return;
         }
         Error = string.Empty;
@@ -254,14 +262,15 @@ public sealed partial class BoolRow : PropertyRow
 /// <summary>One entry of a <see cref="ChoiceRow"/>.</summary>
 /// <param name="Value">The underlying value (an enum member, or null for "inherit").</param>
 /// <param name="Display">Translated name.</param>
-public sealed record ChoiceItem(object? Value, string Display)
+/// <param name="Group">Translated name of the group the item is listed under, or null for a flat list.</param>
+public sealed record ChoiceItem(object? Value, string Display, string? Group = null)
 {
     /// <inheritdoc />
     public override string ToString() => Display;
 }
 
 /// <summary>Pick one of several options (enum values, or "inherit").</summary>
-public sealed partial class ChoiceRow : PropertyRow
+public partial class ChoiceRow : PropertyRow
 {
     private readonly Func<object?> _get;
     private readonly Action<object?> _set;
@@ -273,7 +282,14 @@ public sealed partial class ChoiceRow : PropertyRow
     {
         Items = items; _get = get; _set = set;
         _selected = Find(get());
+        // The drop-down binds to a view so that items with a group (the barcode families) are listed under group headings.
+        View = System.Windows.Data.CollectionViewSource.GetDefaultView(items);
+        if (items.Any(i => i.Group is not null))
+            View.GroupDescriptions.Add(new System.Windows.Data.PropertyGroupDescription(nameof(ChoiceItem.Group)));
     }
+
+    /// <summary>The items as the drop-down shows them (grouped when the items carry a group).</summary>
+    public System.ComponentModel.ICollectionView View { get; }
 
     /// <summary>All options.</summary>
     public IReadOnlyList<ChoiceItem> Items { get; }
@@ -329,4 +345,32 @@ public sealed class HeadingRow : PropertyRow
 
     /// <inheritdoc />
     public override void Refresh() { }
+}
+
+/// <summary>
+/// A read-only line of explanatory text under the rows, for example what the preview of a barcode does differently. The text is
+/// re-read on every refresh, so it follows the element's options without rebuilding the panel (which would take the focus away).
+/// </summary>
+public sealed partial class NoteRow : PropertyRow
+{
+    private readonly Func<string?> _get;
+
+    /// <summary>Creates a note. <paramref name="get"/> returns the current text, or null/empty to hide the note.</summary>
+    public NoteRow(string labelKey, Func<string?> get) : base(labelKey)
+    {
+        _get = get;
+        _text = get() ?? string.Empty;
+    }
+
+    /// <summary>The note, empty when there is nothing to say.</summary>
+    [ObservableProperty]
+    private string _text;
+
+    /// <summary>True when there is a note to show.</summary>
+    public bool HasText => Text.Length > 0;
+
+    partial void OnTextChanged(string value) => OnPropertyChanged(nameof(HasText));
+
+    /// <inheritdoc />
+    public override void Refresh() => Text = _get() ?? string.Empty;
 }

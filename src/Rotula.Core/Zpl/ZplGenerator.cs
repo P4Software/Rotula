@@ -64,6 +64,9 @@ public static class ZplGenerator
         var sb = new StringBuilder();
         void Line(string s) => sb.Append(s).Append('\n');
 
+        // Downloaded graphics are immediate (tilde) commands: they go before the label format, not inside it.
+        foreach (var g in doc.StoredGraphics) Line(StoredGraphicCommand(g));
+
         Line("^XA");
         Line("^MN" + doc.MediaTracking switch { MediaTracking.Continuous => "N", MediaTracking.Mark => "M", _ => "Y" });
         Line("^MT" + (doc.MediaType == MediaType.DirectThermal ? "D" : "T"));
@@ -72,8 +75,18 @@ public static class ZplGenerator
         Line(Invariant($"^LL{heightDots}"));
         Line("^PO" + (doc.Orientation == LabelOrientation.Inverted ? "I" : "N"));
         Line(Invariant($"^LH{doc.Margins.Left.ToDots(doc.Dpi)},{doc.Margins.Top.ToDots(doc.Dpi)}"));
+        // Optional printer settings: written only when the design sets them, so a plain label stays byte-for-byte as before.
+        if (doc.LabelShift != 0) Line(Invariant($"^LS{doc.LabelShift}"));
+        if (doc.LabelTop != 0) Line(Invariant($"^LT{doc.LabelTop}"));
+        if (doc.MirrorImage) Line("^PMY");
+        if (doc.PrintMode is { } mode) Line("^MM" + PrintModeChar(mode) + (doc.PrePeel ? ",Y" : string.Empty));
+        if (doc.PrintRate is { IsEmpty: false } rate)
+            Line("^PR" + Params(rate.Speed?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
+                rate.SlewSpeed?.ToString(CultureInfo.InvariantCulture) ?? string.Empty, rate.BackfeedSpeed?.ToString(CultureInfo.InvariantCulture) ?? string.Empty));
+        if (doc.MediaDarkness is { } darkness) Line("^MD" + darkness.ToString(CultureInfo.InvariantCulture));
         Line("^FW" + RotationChar(doc.DefaultRotation));
         if (doc.DefaultFont is { } f) Line(Invariant($"^CF{f.FontId},{f.Height},{f.Width}"));
+        foreach (var alias in doc.FontAliases) Line("^CW" + alias.Letter + "," + alias.Path);
 
         foreach (var element in doc.Elements)
         {
@@ -99,9 +112,38 @@ public static class ZplGenerator
         if (p.Quantity < 1 || p.Quantity > 99999999) issues.Add(new ValidationIssue(ValidationSeverity.Error, "Print.Quantity.Range", null, "1", "99999999"));
         if (p.PauseEvery < 0 || p.PauseEvery > 99999999) issues.Add(new ValidationIssue(ValidationSeverity.Error, "Print.Pause.Range", null, "0", "99999999"));
         if (p.Replicates < 1 || p.Replicates > 99999999) issues.Add(new ValidationIssue(ValidationSeverity.Error, "Print.Replicates.Range", null, "1", "99999999"));
+        if (doc.LabelShift < -9999 || doc.LabelShift > 9999) issues.Add(new ValidationIssue(ValidationSeverity.Error, "Label.Shift.Range", null, "-9999", "9999"));
+        if (doc.LabelTop < -240 || doc.LabelTop > 240) issues.Add(new ValidationIssue(ValidationSeverity.Error, "Label.Top.Range", null, "-240", "240"));
+        if (doc.MediaDarkness is < -30m or > 30m) issues.Add(new ValidationIssue(ValidationSeverity.Error, "Print.Darkness.Range", null, "-30", "30"));
+        if (doc.PrintRate is { } pr && new[] { pr.Speed, pr.SlewSpeed, pr.BackfeedSpeed }.Any(v => v is < 1 or > 14))
+            issues.Add(new ValidationIssue(ValidationSeverity.Error, "Print.Rate.Range", null, "1", "14"));
+        foreach (var alias in doc.FontAliases)
+            if (!(char.IsAsciiLetterOrDigit(alias.Letter) && FontPath.IsMatch(alias.Path)))
+                issues.Add(new ValidationIssue(ValidationSeverity.Error, "Font.Alias.Invalid", null, alias.Letter.ToString(), alias.Path));
+        foreach (var g in doc.StoredGraphics)
+            if (!StoredGraphic.IsValidPath(g.Path) || g.Data.Length > 4 * 1024 * 1024)
+                issues.Add(new ValidationIssue(ValidationSeverity.Error, "Graphic.Stored.Invalid", null, g.Path));
         if (doc.DefaultFont is { } f && (f.Height < 10 || f.Height > 32000 || f.Width < 0 || f.Width > 32000))
             issues.Add(new ValidationIssue(ValidationSeverity.Error, "Font.Size.Range", null, "10", "32000"));
     }
+
+    // Font file names: an optional device letter, a name of up to 8 characters and a font extension.
+    private static readonly System.Text.RegularExpressions.Regex FontPath = new(@"^(?:[REBA]:)?[A-Za-z0-9_\-]{1,8}\.(?:FNT|TTF|TTE|fnt|ttf|tte)$", System.Text.RegularExpressions.RegexOptions.CultureInvariant | System.Text.RegularExpressions.RegexOptions.Compiled);
+
+    private static string StoredGraphicCommand(StoredGraphic g) =>
+        Invariant($"~DG{g.Path},{g.Data.Length},{g.BytesPerRow},") + Convert.ToHexString(g.Data);
+
+    private static char PrintModeChar(PrintMode m) => m switch
+    {
+        PrintMode.Peel => 'P',
+        PrintMode.Rewind => 'R',
+        PrintMode.Applicator => 'A',
+        PrintMode.Cutter => 'C',
+        PrintMode.DelayedCutter => 'D',
+        PrintMode.Rfid => 'F',
+        PrintMode.Kiosk => 'K',
+        _ => 'T',
+    };
 
     private static void CheckPosition(LabelElement e, LabelDocument doc, int extentW, int extentH, List<ValidationIssue> issues)
     {
@@ -123,6 +165,9 @@ public static class ZplGenerator
             case BoxElement box: return EmitBox(doc, box, issues);
             case LineElement line: return EmitLine(doc, line, issues);
             case CircleElement c: return EmitCircle(doc, c, issues);
+            case EllipseElement el: return EmitEllipse(doc, el, issues);
+            case DiagonalLineElement dl: return EmitDiagonal(doc, dl, issues);
+            case SymbolElement sy: return EmitSymbol(doc, sy, issues);
             case ImageElement img: return EmitImage(doc, img, issues);
             // Imported content the designer cannot model is written back unchanged.
             case RawZplElement raw: return raw.Zpl.Length == 0 ? null : raw.Zpl;
@@ -163,6 +208,14 @@ public static class ZplGenerator
         string resolved = VariableResolver.Resolve(t.GetTemplate(), data, doc.Variables, t.Id, issues);
         var sb = new StringBuilder(Origin(t));
 
+        if (t.Direction != FieldDirection.Horizontal || t.InterCharacterGap != 0)
+        {
+            if (t.InterCharacterGap < 0 || t.InterCharacterGap > 9999)
+                issues.Add(new ValidationIssue(ValidationSeverity.Error, "Text.Direction.Range", t.Id, "0", "9999"));
+            char dir = t.Direction switch { FieldDirection.Vertical => 'V', FieldDirection.Reverse => 'R', _ => 'H' };
+            sb.Append("^FP").Append(Params(dir.ToString(), t.InterCharacterGap == 0 ? string.Empty : t.InterCharacterGap.ToString(CultureInfo.InvariantCulture)));
+        }
+
         if (t.FontId is not null || t.FontHeight is not null || t.FontWidth is not null || t.Rotation is not null)
         {
             // Unset parts come from ^CF; when the document has none, fall back to ZPL's scalable font so ^A is always complete.
@@ -180,13 +233,90 @@ public static class ZplGenerator
             char just = b.Alignment switch { TextAlignment.Center => 'C', TextAlignment.Right => 'R', TextAlignment.Justified => 'J', _ => 'L' };
             sb.Append(Invariant($"^FB{b.WidthDots},{b.MaxLines},{b.LineSpacing},{just},{b.HangingIndent}"));
         }
+        if (t.TextBox is { } box)
+        {
+            // ^FB and ^TB both lay out a block; a field can only have one of them.
+            if (t.Block is not null) issues.Add(new ValidationIssue(ValidationSeverity.Error, "Text.Box.WithBlock", t.Id));
+            if (box.WidthDots < 1 || box.WidthDots > 32000 || box.HeightDots < 1 || box.HeightDots > 32000)
+                issues.Add(new ValidationIssue(ValidationSeverity.Error, "Text.Box.Range", t.Id, "1", "32000"));
+            sb.Append("^TB").Append(Params(RotationOrEmpty(t.Rotation), box.WidthDots.ToString(CultureInfo.InvariantCulture), box.HeightDots.ToString(CultureInfo.InvariantCulture)));
+        }
 
-        var esc = ZplText.Escape(resolved, doc.Encoding, allowLineBreaks: t.Block is not null);
-        foreach (var ch in esc.Unmappable)
-            issues.Add(new ValidationIssue(ValidationSeverity.Warning, "Text.UnmappableChar", t.Id, ch));
-        if (esc.NeedsHexEscape) sb.Append("^FH_");
-        sb.Append("^FD").Append(esc.Text).Append("^FS");
+        AppendDataField(sb, doc, t, resolved, allowLineBreaks: t.Block is not null, textBox: t.TextBox is not null, fdPrefix: string.Empty, issues);
         return sb.ToString();
+    }
+
+    /// <summary>
+    /// Writes the part of a data field after its command: field options, then the data (<c>^FD</c>, or <c>^SN</c> for a counting
+    /// number) and finally <c>^FS</c>. Shared by text and barcodes so both support the same options.
+    /// </summary>
+    private static void AppendDataField(StringBuilder sb, LabelDocument doc, FieldDataElement e, string text, bool allowLineBreaks, bool textBox, string fdPrefix, List<ValidationIssue> issues)
+    {
+        var serial = e.Serial;
+        string? body = null; // the ^SN replacement for ^FD
+
+        if (serial is { Kind: PrinterSerialKind.Number })
+        {
+            // ^SN carries the value as a plain parameter, which has no hex escape: only simple characters can be written.
+            if (!PrinterSerialOptions.IsValidStartValue(text))
+                issues.Add(new ValidationIssue(ValidationSeverity.Error, "Field.Serial.Value", e.Id));
+            if (fdPrefix.Length > 0) issues.Add(new ValidationIssue(ValidationSeverity.Error, "Field.Serial.Barcode", e.Id));
+            body = "^SN" + Params(text, serial.Increment.ToString(CultureInfo.InvariantCulture), YN(serial.LeadingZeros));
+        }
+        else if (serial is { Kind: PrinterSerialKind.Mask })
+        {
+            if (!PrinterSerialOptions.IsValidMask(serial.Mask) || !PrinterSerialOptions.IsValidIncrementText(serial.IncrementText))
+                issues.Add(new ValidationIssue(ValidationSeverity.Error, "Field.Serial.Mask", e.Id));
+        }
+
+        string? hexMarker = null;
+        string fd = string.Empty;
+        if (body is null)
+        {
+            var esc = ZplText.Escape(text, doc.Encoding, allowLineBreaks);
+            if (e is TextElement) foreach (var ch in esc.Unmappable)
+                issues.Add(new ValidationIssue(ValidationSeverity.Warning, "Text.UnmappableChar", e.Id, ch));
+            string escaped = esc.Text;
+            // Inside a ^TB box a less-than sign starts an escape sequence, and the three characters "<<>" write a literal one.
+            if (textBox) escaped = escaped.Replace("<", "<<>", StringComparison.Ordinal);
+            if (esc.NeedsHexEscape) hexMarker = "^FH_";
+            fd = "^FD" + fdPrefix + escaped;
+        }
+
+        if (hexMarker is not null) sb.Append(hexMarker);
+        if (e.EmbedCharacter is { } embed)
+        {
+            if (embed is '^' or '~' || embed < ' ' || embed > '~') issues.Add(new ValidationIssue(ValidationSeverity.Error, "Field.Embed.Invalid", e.Id));
+            sb.Append("^FE").Append(embed);
+        }
+        if (e.Clock is { } clock)
+        {
+            var present = new List<char> { clock.Primary };
+            if (clock.Secondary is { } second) present.Add(second);
+            if (clock.Third is { } third) present.Add(third);
+            if (present.Any(m => m is '^' or '~' or ',' || m < ' ' || m > '~') || present.Distinct().Count() != present.Count)
+                issues.Add(new ValidationIssue(ValidationSeverity.Error, "Field.Clock.Invalid", e.Id));
+            // The primary indicator is always written so the command never depends on a default.
+            sb.Append("^FC").Append(Params(clock.Primary.ToString(), clock.Secondary?.ToString() ?? string.Empty, clock.Third?.ToString() ?? string.Empty));
+        }
+        if (e.FieldNumber is { } number)
+        {
+            if (number < 0 || number > 9999) issues.Add(new ValidationIssue(ValidationSeverity.Error, "Field.Number.Range", e.Id, "0", "9999"));
+            sb.Append("^FN").Append(number.ToString(CultureInfo.InvariantCulture));
+            if (e.FieldPrompt is { Length: > 0 } prompt)
+            {
+                if (prompt.Length > 255 || !prompt.All(ch => char.IsAsciiLetterOrDigit(ch) || ch == ' '))
+                    issues.Add(new ValidationIssue(ValidationSeverity.Error, "Field.Prompt.Invalid", e.Id));
+                sb.Append('"').Append(prompt).Append('"');
+            }
+        }
+
+        if (body is not null) sb.Append(body);
+        // A numbered field without data only refers to the data another field stored under that number.
+        else if (text.Length > 0 || e.FieldNumber is null) sb.Append(fd);
+        if (serial is { Kind: PrinterSerialKind.Mask })
+            sb.Append("^SF").Append(Params(serial.Mask, serial.IncrementText));
+        sb.Append("^FS");
     }
 
     private static string? EmitBarcode(LabelDocument doc, BarcodeElement b, IReadOnlyDictionary<string, string>? data, List<ValidationIssue> issues)
@@ -197,57 +327,10 @@ public static class ZplGenerator
         CheckPosition(b, doc, 0, 0, issues);
         if (found.Any(i => i.Severity == ValidationSeverity.Error)) return null;
 
-        string payload = BarcodeValidator.NormalizeForPrinter(b.Symbology, resolved);
-        string rot = RotationOrEmpty(b.Rotation);
-        string above = YN(b.HumanReadablePosition == HumanReadablePosition.Above);
-        string hr = YN(b.HumanReadable);
-        string h = b.Height.ToString(CultureInfo.InvariantCulture);
-        string by = Invariant($"^BY{b.ModuleWidth},{b.WideBarRatio:0.0}");
+        string payload = BarcodeValidator.NormalizeForPrinter(b, resolved);
         var sb = new StringBuilder(Origin(b));
-        string fdPrefix = string.Empty;
-
-        switch (b.Symbology)
-        {
-            case BarcodeSymbology.Code128:
-                char mode = b.Code128Mode switch { Code128Mode.Ucc => 'U', Code128Mode.Automatic => 'A', Code128Mode.Ean => 'D', _ => 'N' };
-                sb.Append(by).Append("^BC").Append(Params(rot, h, hr, above, "N", mode.ToString()));
-                break;
-            case BarcodeSymbology.Code39:
-                sb.Append(by).Append("^B3").Append(Params(rot, YN(b.CheckDigit), h, hr, above));
-                break;
-            case BarcodeSymbology.Code93:
-                sb.Append(by).Append("^BA").Append(Params(rot, h, hr, above, YN(b.CheckDigit)));
-                break;
-            case BarcodeSymbology.Ean13:
-                sb.Append(by).Append("^BE").Append(Params(rot, h, hr, above));
-                break;
-            case BarcodeSymbology.UpcA:
-                sb.Append(by).Append("^BU").Append(Params(rot, h, hr, above, YN(b.CheckDigit)));
-                break;
-            case BarcodeSymbology.Interleaved2Of5:
-                sb.Append(by).Append("^B2").Append(Params(rot, h, hr, above, YN(b.CheckDigit)));
-                break;
-            case BarcodeSymbology.QrCode:
-                sb.Append("^BQ").Append(Params(rot, b.QrModel.ToString(CultureInfo.InvariantCulture), b.ModuleSize.ToString(CultureInfo.InvariantCulture)));
-                // QR data carries its own header: error correction letter + "A" (automatic input mode) + comma.
-                fdPrefix = (b.QrErrorCorrection switch { QrErrorCorrection.Low => "L", QrErrorCorrection.Medium => "M", QrErrorCorrection.High => "H", _ => "Q" }) + "A,";
-                break;
-            case BarcodeSymbology.DataMatrix:
-                sb.Append("^BX").Append(Params(rot, b.ModuleSize.ToString(CultureInfo.InvariantCulture), "200",
-                    b.Columns > 0 ? b.Columns.ToString(CultureInfo.InvariantCulture) : string.Empty,
-                    b.Rows > 0 ? b.Rows.ToString(CultureInfo.InvariantCulture) : string.Empty));
-                break;
-            case BarcodeSymbology.Pdf417:
-                sb.Append(Invariant($"^BY{b.ModuleWidth}")).Append("^B7").Append(Params(rot, h, b.Pdf417SecurityLevel.ToString(CultureInfo.InvariantCulture),
-                    b.Columns > 0 ? b.Columns.ToString(CultureInfo.InvariantCulture) : string.Empty,
-                    b.Rows > 0 ? b.Rows.ToString(CultureInfo.InvariantCulture) : string.Empty,
-                    YN(b.Pdf417Truncate)));
-                break;
-        }
-
-        var esc = ZplText.Escape(payload, doc.Encoding, allowLineBreaks: false);
-        if (esc.NeedsHexEscape) sb.Append("^FH_");
-        sb.Append("^FD").Append(fdPrefix).Append(esc.Text).Append("^FS");
+        sb.Append(ZplBarcodeEmitter.Command(b, RotationOrEmpty(b.Rotation), RotationChar(doc.DefaultRotation), out string fdPrefix));
+        AppendDataField(sb, doc, b, payload, allowLineBreaks: false, textBox: false, fdPrefix, issues);
         return sb.ToString();
     }
 
@@ -303,6 +386,32 @@ public static class ZplGenerator
         int total = mono.PackedRows.Length;
         // ^GF ignores ^FW and ^FO orientation, so rotation was already applied to the dots.
         return Origin(img) + Invariant($"^GFA,{total},{total},{mono.BytesPerRow},{mono.ToHex()}^FS");
+    }
+
+    private static string? EmitEllipse(LabelDocument doc, EllipseElement e, List<ValidationIssue> issues)
+    {
+        CheckPosition(e, doc, e.WidthDots, e.HeightDots, issues);
+        if (e.WidthDots < 3 || e.WidthDots > 4095 || e.HeightDots < 3 || e.HeightDots > 4095 || e.ThicknessDots < 1 || e.ThicknessDots > 4095)
+            issues.Add(new ValidationIssue(ValidationSeverity.Error, "Graphic.Ellipse.Range", e.Id, "3", "4095"));
+        return Origin(e) + Invariant($"^GE{e.WidthDots},{e.HeightDots},{e.ThicknessDots},{ColorChar(e.Color)}^FS");
+    }
+
+    private static string? EmitDiagonal(LabelDocument doc, DiagonalLineElement d, List<ValidationIssue> issues)
+    {
+        CheckPosition(d, doc, d.WidthDots, d.HeightDots, issues);
+        if (d.WidthDots < 3 || d.WidthDots > 32000 || d.HeightDots < 3 || d.HeightDots > 32000 || d.ThicknessDots < 1 || d.ThicknessDots > 32000)
+            issues.Add(new ValidationIssue(ValidationSeverity.Error, "Graphic.Diagonal.Range", d.Id, "3", "32000"));
+        return Origin(d) + Invariant($"^GD{d.WidthDots},{d.HeightDots},{d.ThicknessDots},{ColorChar(d.Color)},{(d.Lean == DiagonalLean.Left ? 'L' : 'R')}^FS");
+    }
+
+    private static string? EmitSymbol(LabelDocument doc, SymbolElement s, List<ValidationIssue> issues)
+    {
+        CheckPosition(s, doc, s.WidthDots, s.HeightDots, issues);
+        if (s.HeightDots < 0 || s.HeightDots > 32000 || s.WidthDots < 0 || s.WidthDots > 32000)
+            issues.Add(new ValidationIssue(ValidationSeverity.Error, "Graphic.Symbol.Range", s.Id, "0", "32000"));
+        char letter = (char)('A' + (int)s.Symbol);
+        // Height and width are always written: without them the printer would use whatever ^CF last set.
+        return Origin(s) + Invariant($"^GS{RotationOrEmpty(s.Rotation)},{s.HeightDots},{s.WidthDots}^FD{letter}^FS");
     }
 
     private static string ColorChar(GraphicColor c) => c == GraphicColor.White ? "W" : "B";

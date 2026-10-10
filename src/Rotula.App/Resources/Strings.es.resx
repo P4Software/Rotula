@@ -503,7 +503,7 @@
     <value>Un gráfico usa el formato {0}, que no es compatible. Se conservó como ZPL sin procesar.</value>
   </data>
   <data name="Issue.Import.Graphic.Invalid" xml:space="preserve">
-    <value>Un gráfico tiene datos no válidos (total {0} bytes). Se conservó como ZPL sin procesar.</value>
+    <value>Un gráfico tiene datos no válidos o es demasiado grande (total {0} bytes; el límite es 16 MB por archivo). Se conservó como ZPL sin interpretar.</value>
   </data>
   <data name="Issue.Import.Graphic.Truncated" xml:space="preserve">
     <value>Un gráfico tiene menos datos de los que declara. Se importó hasta donde llegan los datos.</value>
@@ -2166,5 +2166,1163 @@
   </data>
   <data name="Start.Name" xml:space="preserve">
     <value>Pantalla de inicio</value>
+  </data>
+  <data name="Filter.Database" xml:space="preserve">
+    <value>Archivos de base de datos</value>
+  </data>
+  <data name="Conn.Sqlite.Pick" xml:space="preserve">
+    <value>Elegir un archivo de base de datos SQLite</value>
+  </data>
+  <data name="Data.Source" xml:space="preserve">
+    <value>Datos desde</value>
+  </data>
+  <data name="Data.Source.File" xml:space="preserve">
+    <value>Archivo (CSV o Excel)</value>
+  </data>
+  <data name="Data.Source.Database" xml:space="preserve">
+    <value>Base de datos</value>
+  </data>
+  <data name="Data.Db.Title" xml:space="preserve">
+    <value>Base de datos</value>
+  </data>
+  <data name="Data.Db.NoSource" xml:space="preserve">
+    <value>Base de datos: aún no se leyeron datos</value>
+  </data>
+  <data name="Data.Db.Summary" xml:space="preserve">
+    <value>Conexión de base de datos: {0}</value>
+  </data>
+  <data name="Data.Db.Loaded" xml:space="preserve">
+    <value>Se leyeron {0} filas de la conexión de base de datos "{1}".</value>
+  </data>
+  <data name="Data.Db.Rows" xml:space="preserve">
+    <value>{0} filas, {1} columnas</value>
+  </data>
+  <data name="Data.Db.Connection" xml:space="preserve">
+    <value>Conexión guardada</value>
+  </data>
+  <data name="Data.Db.NewConnection" xml:space="preserve">
+    <value>Nueva conexión...</value>
+  </data>
+  <data name="Data.Db.ManageConnections" xml:space="preserve">
+    <value>Administrar conexiones...</value>
+  </data>
+  <data name="Data.Db.NoConnections" xml:space="preserve">
+    <value>Todavía no hay conexiones guardadas. Elija "Nueva conexión..." para agregar la primera.</value>
+  </data>
+  <data name="Data.Db.PickConnection" xml:space="preserve">
+    <value>Primero elija una conexión guardada, o cree una con "Nueva conexión...".</value>
+  </data>
+  <data name="Data.Db.Change" xml:space="preserve">
+    <value>Cambiar origen de datos...</value>
+  </data>
+  <data name="Data.Db.BackToData" xml:space="preserve">
+    <value>Volver a los datos cargados</value>
+  </data>
+  <data name="Data.Db.Reference.Banner" xml:space="preserve">
+    <value>Esta etiqueta usa la conexión guardada "{0}". Conéctese y vuelva a cargar los datos.</value>
+  </data>
+  <data name="Data.Db.Reference.Safe" xml:space="preserve">
+    <value>Rotula no se ha conectado a nada. Se conecta solo cuando usted pulsa el botón, y solo ejecuta la consulta de abajo si pasa la revisión de solo lectura.</value>
+  </data>
+  <data name="Data.Db.Reference.QueryLabel" xml:space="preserve">
+    <value>Consulta guardada en esta etiqueta</value>
+  </data>
+  <data name="Data.Db.Reference.Connect" xml:space="preserve">
+    <value>Conectar y volver a cargar los datos</value>
+  </data>
+  <data name="Data.Db.Reference.Missing" xml:space="preserve">
+    <value>En este equipo no hay ninguna conexión guardada llamada "{0}". Abra "Administrar conexiones...", agregue una conexión y póngale exactamente el nombre "{0}"; luego pulse el botón otra vez.</value>
+  </data>
+  <data name="Data.Db.Tab.Table" xml:space="preserve">
+    <value>Tabla o vista</value>
+  </data>
+  <data name="Data.Db.Tab.Query" xml:space="preserve">
+    <value>Consulta</value>
+  </data>
+  <data name="Data.Db.Search" xml:space="preserve">
+    <value>Buscar tablas y vistas</value>
+  </data>
+  <data name="Data.Db.Tables" xml:space="preserve">
+    <value>Tablas y vistas</value>
+  </data>
+  <data name="Data.Db.Kind.View" xml:space="preserve">
+    <value>vista</value>
+  </data>
+  <data name="Data.Db.NoTablesShown" xml:space="preserve">
+    <value>No hay tablas ni vistas que mostrar. Cambie la búsqueda, o compruebe que esta cuenta puede leer la base de datos.</value>
+  </data>
+  <data name="Data.Db.PreviewHeading" xml:space="preserve">
+    <value>Vista previa</value>
+  </data>
+  <data name="Data.Db.PreviewNote" xml:space="preserve">
+    <value>La vista previa muestra las primeras 100 filas. "Usar estos datos" lee todas las filas hasta el máximo.</value>
+  </data>
+  <data name="Data.Db.PickTable" xml:space="preserve">
+    <value>Elija una tabla o vista para ver sus filas.</value>
+  </data>
+  <data name="Data.Db.Query.Label" xml:space="preserve">
+    <value>Consulta SELECT</value>
+  </data>
+  <data name="Data.Db.Query.Tip" xml:space="preserve">
+    <value>Solo se permite un único SELECT. Escriba @nombre donde deba ir un valor, por ejemplo WHERE Id = @id.</value>
+  </data>
+  <data name="Data.Db.Guard.Ok" xml:space="preserve">
+    <value>Todo bien: esta consulta solo lee datos.</value>
+  </data>
+  <data name="Data.Db.Params" xml:space="preserve">
+    <value>Parámetros</value>
+  </data>
+  <data name="Data.Db.Params.Hint" xml:space="preserve">
+    <value>Valores para los @nombres de su consulta. Elija Número o Fecha cuando la columna no sea de texto.</value>
+  </data>
+  <data name="Data.Db.Param.Type" xml:space="preserve">
+    <value>Tipo del parámetro</value>
+  </data>
+  <data name="Data.Db.Param.Type.Text" xml:space="preserve">
+    <value>Texto</value>
+  </data>
+  <data name="Data.Db.Param.Type.Number" xml:space="preserve">
+    <value>Número</value>
+  </data>
+  <data name="Data.Db.Param.Type.Date" xml:space="preserve">
+    <value>Fecha</value>
+  </data>
+  <data name="Data.Db.Param.NumberInvalid" xml:space="preserve">
+    <value>El valor de {0} no es un número. Escriba dígitos con un punto decimal opcional, por ejemplo 12.5.</value>
+  </data>
+  <data name="Data.Db.Param.DateInvalid" xml:space="preserve">
+    <value>El valor de {0} no es una fecha. Escríbala así: 2026-03-31.</value>
+  </data>
+  <data name="Data.Db.Run" xml:space="preserve">
+    <value>Ejecutar</value>
+  </data>
+  <data name="Data.Db.Run.Tip" xml:space="preserve">
+    <value>Ejecuta la consulta (solo lectura) y muestra las filas abajo.</value>
+  </data>
+  <data name="Data.Db.Results" xml:space="preserve">
+    <value>Resultado</value>
+  </data>
+  <data name="Data.Db.ErrorDetail" xml:space="preserve">
+    <value>Detalle técnico de la base de datos</value>
+  </data>
+  <data name="Data.Db.Use" xml:space="preserve">
+    <value>Usar estos datos</value>
+  </data>
+  <data name="Data.Db.Use.Tip" xml:space="preserve">
+    <value>Lee las filas y las usa como registros de esta etiqueta.</value>
+  </data>
+  <data name="Data.Db.MaxRows" xml:space="preserve">
+    <value>Máximo de filas</value>
+  </data>
+  <data name="Data.Db.MaxRows.Tip" xml:space="preserve">
+    <value>Se leen como máximo estas filas (de 1 a 1.000.000). Aparece un aviso si el resultado se cortó.</value>
+  </data>
+  <data name="Data.Db.MaxRows.Invalid" xml:space="preserve">
+    <value>El máximo de filas debe ser un número entero de 1 a {0}.</value>
+  </data>
+  <data name="Data.Db.NoTables" xml:space="preserve">
+    <value>Esta base de datos no tiene tablas ni vistas que esta cuenta pueda ver.</value>
+  </data>
+  <data name="Data.Db.Busy.Tables" xml:space="preserve">
+    <value>Leyendo la lista de tablas...</value>
+  </data>
+  <data name="Data.Db.Busy.Preview" xml:space="preserve">
+    <value>Leyendo {0}...</value>
+  </data>
+  <data name="Data.Db.Busy.Query" xml:space="preserve">
+    <value>Ejecutando la consulta...</value>
+  </data>
+  <data name="Data.Db.Busy.Reading" xml:space="preserve">
+    <value>Leyendo todas las filas de {0}...</value>
+  </data>
+  <data name="Conn.Title" xml:space="preserve">
+    <value>Conexiones de base de datos</value>
+  </data>
+  <data name="Conn.ReadOnlyNote" xml:space="preserve">
+    <value>Rotula solo lee datos. Use una cuenta de base de datos de solo lectura cuando pueda.</value>
+  </data>
+  <data name="Conn.Saved.Heading" xml:space="preserve">
+    <value>Conexiones guardadas</value>
+  </data>
+  <data name="Conn.Saved.None" xml:space="preserve">
+    <value>Aún no hay nada guardado. Complete el formulario y elija Guardar.</value>
+  </data>
+  <data name="Conn.New" xml:space="preserve">
+    <value>Nueva</value>
+  </data>
+  <data name="Conn.Delete" xml:space="preserve">
+    <value>Eliminar</value>
+  </data>
+  <data name="Conn.Form.Heading" xml:space="preserve">
+    <value>Datos de la conexión</value>
+  </data>
+  <data name="Conn.Name" xml:space="preserve">
+    <value>Nombre</value>
+  </data>
+  <data name="Conn.Name.Hint" xml:space="preserve">
+    <value>Las etiquetas se refieren a una conexión por este nombre; elija un nombre corto que conservará.</value>
+  </data>
+  <data name="Conn.Name.Fixed" xml:space="preserve">
+    <value>El nombre no se puede cambiar porque las etiquetas se refieren a él. Para usar otro nombre, cree una conexión nueva.</value>
+  </data>
+  <data name="Conn.Name.Required" xml:space="preserve">
+    <value>Escriba un nombre para esta conexión.</value>
+  </data>
+  <data name="Conn.Name.Exists" xml:space="preserve">
+    <value>Ya existe una conexión llamada "{0}". Elija otro nombre, o selecciónela en la lista para editarla.</value>
+  </data>
+  <data name="Conn.Provider" xml:space="preserve">
+    <value>Tipo de base de datos</value>
+  </data>
+  <data name="Conn.Provider.SqlServer" xml:space="preserve">
+    <value>SQL Server</value>
+  </data>
+  <data name="Conn.Provider.PostgreSql" xml:space="preserve">
+    <value>PostgreSQL</value>
+  </data>
+  <data name="Conn.Provider.MySql" xml:space="preserve">
+    <value>MySQL / MariaDB</value>
+  </data>
+  <data name="Conn.Provider.Sqlite" xml:space="preserve">
+    <value>Archivo SQLite</value>
+  </data>
+  <data name="Conn.Provider.Odbc" xml:space="preserve">
+    <value>ODBC</value>
+  </data>
+  <data name="Conn.Host" xml:space="preserve">
+    <value>Servidor</value>
+  </data>
+  <data name="Conn.Port" xml:space="preserve">
+    <value>Puerto</value>
+  </data>
+  <data name="Conn.Port.Invalid" xml:space="preserve">
+    <value>El puerto debe ser un número entero de 1 a 65535, o estar vacío para usar el habitual.</value>
+  </data>
+  <data name="Conn.Database" xml:space="preserve">
+    <value>Nombre de la base de datos</value>
+  </data>
+  <data name="Conn.Sqlite.File" xml:space="preserve">
+    <value>Archivo SQLite</value>
+  </data>
+  <data name="Conn.Sqlite.Hint" xml:space="preserve">
+    <value>El archivo se abre en solo lectura, así que Rotula nunca puede modificarlo.</value>
+  </data>
+  <data name="Conn.Browse" xml:space="preserve">
+    <value>Examinar...</value>
+  </data>
+  <data name="Conn.Odbc.Dsn" xml:space="preserve">
+    <value>Nombre del origen de datos ODBC (DSN)</value>
+  </data>
+  <data name="Conn.Odbc.String" xml:space="preserve">
+    <value>o una cadena de conexión</value>
+  </data>
+  <data name="Conn.Odbc.Hint" xml:space="preserve">
+    <value>Si la cadena de conexión contiene una contraseña, Rotula la pasa al almacén protegido y la quita del texto guardado.</value>
+  </data>
+  <data name="Conn.Auth" xml:space="preserve">
+    <value>Iniciar sesión con</value>
+  </data>
+  <data name="Conn.Auth.Windows" xml:space="preserve">
+    <value>Mi cuenta de Windows</value>
+  </data>
+  <data name="Conn.Auth.UserPassword" xml:space="preserve">
+    <value>Usuario y contraseña</value>
+  </data>
+  <data name="Conn.User" xml:space="preserve">
+    <value>Usuario</value>
+  </data>
+  <data name="Conn.Password" xml:space="preserve">
+    <value>Contraseña</value>
+  </data>
+  <data name="Conn.Password.Saved" xml:space="preserve">
+    <value>Hay una contraseña guardada para esta conexión y nunca se muestra. Déjelo vacío para conservarla, o escriba una nueva para reemplazarla.</value>
+  </data>
+  <data name="Conn.Password.None" xml:space="preserve">
+    <value>La contraseña se guarda protegida solo para su cuenta de Windows, y nunca se vuelve a mostrar.</value>
+  </data>
+  <data name="Conn.Security" xml:space="preserve">
+    <value>Seguridad</value>
+  </data>
+  <data name="Conn.Encrypt" xml:space="preserve">
+    <value>Cifrar la conexión</value>
+  </data>
+  <data name="Conn.Encrypt.Warning" xml:space="preserve">
+    <value>Déjela activada. Desactívela solo para un servidor de confianza en su propia red.</value>
+  </data>
+  <data name="Conn.Encrypt.Off" xml:space="preserve">
+    <value>El cifrado está desactivado: cualquiera en el camino de la red puede leer los datos y la contraseña. Úselo solo con un servidor local de confianza.</value>
+  </data>
+  <data name="Conn.Trust" xml:space="preserve">
+    <value>Confiar en el certificado de este servidor</value>
+  </data>
+  <data name="Conn.Trust.Warning" xml:space="preserve">
+    <value>Solo para un servidor que usted conoce y controla, como uno de pruebas. De lo contrario alguien podría hacerse pasar por el servidor.</value>
+  </data>
+  <data name="Conn.Trust.On" xml:space="preserve">
+    <value>Rotula no comprobará quién es el servidor, así que alguien en la red podría hacerse pasar por él y leer los datos y la contraseña. Úselo solo con un servidor que usted controle.</value>
+  </data>
+  <data name="Conn.Test" xml:space="preserve">
+    <value>Probar conexión</value>
+  </data>
+  <data name="Conn.Test.Ok" xml:space="preserve">
+    <value>La conexión funciona.</value>
+  </data>
+  <data name="Conn.Test.RetypePassword" xml:space="preserve">
+    <value>Cambió esta conexión y la contraseña guardada no se puede leer para probarla. Escriba la contraseña otra vez para probarla.</value>
+  </data>
+  <data name="Conn.Save" xml:space="preserve">
+    <value>Guardar</value>
+  </data>
+  <data name="Conn.Saved" xml:space="preserve">
+    <value>Se guardó la conexión "{0}".</value>
+  </data>
+  <data name="Conn.Deleted" xml:space="preserve">
+    <value>Se eliminó la conexión "{0}".</value>
+  </data>
+  <data name="Conn.Delete.Title" xml:space="preserve">
+    <value>Eliminar conexión</value>
+  </data>
+  <data name="Conn.Delete.Body" xml:space="preserve">
+    <value>¿Eliminar la conexión "{0}"? Las etiquetas que la usan pedirán una conexión con este nombre la próxima vez que se abran.</value>
+  </data>
+  <data name="Conn.Busy.Saving" xml:space="preserve">
+    <value>Guardando...</value>
+  </data>
+  <data name="Conn.Busy.Deleting" xml:space="preserve">
+    <value>Eliminando...</value>
+  </data>
+  <data name="Conn.Busy.Testing" xml:space="preserve">
+    <value>Probando la conexión...</value>
+  </data>
+  <data name="Conn.TrustOffer" xml:space="preserve">
+    <value>No se pudo verificar el certificado de seguridad del servidor. Si es su propio servidor (por ejemplo, uno de pruebas), puede confiar en él para esta conexión. De lo contrario, pida al administrador un certificado válido.</value>
+  </data>
+  <data name="Conn.TrustOffer.Button" xml:space="preserve">
+    <value>Confiar en este servidor y guardar</value>
+  </data>
+  <data name="Conn.Field.Name" xml:space="preserve">
+    <value>nombre</value>
+  </data>
+  <data name="Conn.Field.Provider" xml:space="preserve">
+    <value>tipo de base de datos</value>
+  </data>
+  <data name="Conn.Field.Authentication" xml:space="preserve">
+    <value>método de inicio de sesión</value>
+  </data>
+  <data name="Conn.Field.Host" xml:space="preserve">
+    <value>servidor</value>
+  </data>
+  <data name="Conn.Field.Port" xml:space="preserve">
+    <value>puerto</value>
+  </data>
+  <data name="Conn.Field.Database" xml:space="preserve">
+    <value>nombre de la base de datos</value>
+  </data>
+  <data name="Conn.Field.UserName" xml:space="preserve">
+    <value>usuario</value>
+  </data>
+  <data name="Conn.Field.FilePath" xml:space="preserve">
+    <value>archivo SQLite</value>
+  </data>
+  <data name="Conn.Field.OdbcConnectionString" xml:space="preserve">
+    <value>cadena de conexión</value>
+  </data>
+  <data name="Conn.Field.Dsn" xml:space="preserve">
+    <value>nombre del origen de datos</value>
+  </data>
+  <data name="Conn.Field.CommandTimeoutSeconds" xml:space="preserve">
+    <value>tiempo de espera del comando</value>
+  </data>
+  <data name="Conn.Field.ConnectTimeoutSeconds" xml:space="preserve">
+    <value>tiempo de espera de conexión</value>
+  </data>
+  <data name="Data.Error.Unknown" xml:space="preserve">
+    <value>Algo salió mal al leer de la base de datos ({0}). Inténtelo de nuevo y revise los datos de la conexión si sigue ocurriendo.</value>
+  </data>
+  <data name="Data.Error.ConnectionFailed" xml:space="preserve">
+    <value>Rotula no pudo conectarse a la base de datos. Revise los datos de la conexión y que el servidor esté en marcha, y vuelva a intentarlo.</value>
+  </data>
+  <data name="Data.Error.AuthenticationFailed" xml:space="preserve">
+    <value>El servidor no aceptó el usuario o la contraseña. Revíselos en "Administrar conexiones..." y vuelva a intentarlo.</value>
+  </data>
+  <data name="Data.Error.Timeout" xml:space="preserve">
+    <value>La base de datos tardó demasiado en responder. Inténtelo de nuevo, acote la consulta o consulte al administrador de la base de datos.</value>
+  </data>
+  <data name="Data.Error.HostUnreachable" xml:space="preserve">
+    <value>No se pudo llegar al servidor. Revise el nombre del servidor y el puerto, su red o VPN, y vuelva a intentarlo.</value>
+  </data>
+  <data name="Data.Error.DatabaseNotFound" xml:space="preserve">
+    <value>No se encontró la base de datos. Revise el nombre de la base de datos o la ubicación del archivo, y vuelva a intentarlo.</value>
+  </data>
+  <data name="Data.Error.PermissionDenied" xml:space="preserve">
+    <value>Esta cuenta no tiene permiso para leer esos datos. Pida al administrador de la base de datos acceso de lectura.</value>
+  </data>
+  <data name="Data.Error.QueryRejected" xml:space="preserve">
+    <value>Rotula solo lee datos, así que esta consulta no se ejecutó. {0}</value>
+  </data>
+  <data name="Data.Error.QueryFailed" xml:space="preserve">
+    <value>La base de datos no pudo ejecutar la consulta. Revise los nombres de tablas y columnas y la escritura de la consulta, y vuelva a intentarlo.</value>
+  </data>
+  <data name="Data.Error.Cancelled" xml:space="preserve">
+    <value>Detenido. No se cambió nada.</value>
+  </data>
+  <data name="Data.Error.TooManyRows" xml:space="preserve">
+    <value>El límite de filas {0} supera el máximo de {1}. Elija un límite menor.</value>
+  </data>
+  <data name="Data.Error.DriverNotInstalled" xml:space="preserve">
+    <value>El controlador u origen de datos ODBC no está instalado en este equipo. Instálelo, o elija otro nombre de origen de datos.</value>
+  </data>
+  <data name="Data.Error.CertificateNotTrusted" xml:space="preserve">
+    <value>El certificado de seguridad del servidor no es de confianza. Si es su propio servidor, abra "Administrar conexiones..." y elija confiar en él para esta conexión. De lo contrario, pida al administrador un certificado válido.</value>
+  </data>
+  <data name="Data.Error.InvalidSettings" xml:space="preserve">
+    <value>El dato "{0}" falta o no está permitido. Corríjalo en "Administrar conexiones..." y vuelva a intentarlo.</value>
+  </data>
+  <data name="Data.Error.ConnectionNotFound" xml:space="preserve">
+    <value>No hay ninguna conexión guardada llamada "{0}". Créela con exactamente ese nombre en "Administrar conexiones...".</value>
+  </data>
+  <data name="Data.Query.Rejected.NotSelect" xml:space="preserve">
+    <value>Solo se permite una única consulta SELECT. Reescríbala como un SELECT.</value>
+  </data>
+  <data name="Data.Query.Rejected.MultipleStatements" xml:space="preserve">
+    <value>Solo se permite una instrucción. Quite todo lo que sigue al primer punto y coma.</value>
+  </data>
+  <data name="Data.Query.Rejected.Empty" xml:space="preserve">
+    <value>Escriba primero una consulta SELECT.</value>
+  </data>
+  <data name="Data.Query.Rejected.ForbiddenKeyword" xml:space="preserve">
+    <value>La palabra "{0}" no está permitida porque puede modificar datos. Si es el nombre de una columna, póngala entre comillas.</value>
+  </data>
+  <data name="Data.Query.Rejected.SelectInto" xml:space="preserve">
+    <value>SELECT ... INTO no está permitido porque crea tablas o archivos. Quite la parte INTO.</value>
+  </data>
+  <data name="Data.Query.Rejected.Locking" xml:space="preserve">
+    <value>No se permite bloquear filas (FOR UPDATE, FOR SHARE, LOCK IN SHARE MODE). Quite esa parte.</value>
+  </data>
+  <data name="Data.Query.Rejected.ForbiddenFunction" xml:space="preserve">
+    <value>La función "{0}" no está permitida porque puede leer archivos, llegar a otros servidores o ejecutar código. Quítela.</value>
+  </data>
+  <data name="Data.Query.Rejected.ExecutableComment" xml:space="preserve">
+    <value>Un comentario que empieza con /*! se ejecuta como SQL en MySQL, así que no está permitido. Quítelo.</value>
+  </data>
+  <data name="Data.Query.Rejected.Unterminated" xml:space="preserve">
+    <value>Hay una comilla o un comentario sin cerrar. Ciérrelo y vuelva a intentarlo.</value>
+  </data>
+  <data name="Data.Query.Rejected.TooLong" xml:space="preserve">
+    <value>La consulta es demasiado larga. Acórtela.</value>
+  </data>
+  <data name="Data.Query.Rejected.MissingParameter" xml:space="preserve">
+    <value>El parámetro @{0} no tiene valor. Complételo en Parámetros.</value>
+  </data>
+  <data name="Data.Query.Truncated" xml:space="preserve">
+    <value>Solo se leyeron las primeras {0} filas. Aumente el máximo de filas o acote la consulta para leer el resto.</value>
+  </data>
+  <data name="Data.Store.Damaged" xml:space="preserve">
+    <value>El archivo con las conexiones guardadas está dañado y se ignoró. Vuelva a agregar sus conexiones; el archivo dañado se conserva a su lado con la extensión .damaged.</value>
+  </data>
+  <data name="Data.Store.PasswordReenterRequired" xml:space="preserve">
+    <value>Cambió dónde o cómo inicia sesión esta conexión, así que no se usó la contraseña guardada. Escríbala de nuevo.</value>
+  </data>
+  <data name="Data.Error.ProviderUnavailable" xml:space="preserve">
+    <value>El tipo de origen de datos "{0}" no está disponible. Es posible que falte su complemento o esté desactivado.</value>
+  </data>
+  <data name="Data.Query.Rejected.Ambiguous" xml:space="preserve">
+    <value>Esta consulta puede leerse de más de una forma (por ejemplo una barra invertida antes de una comilla), así que no se ejecutó. Use dos comillas ('') en lugar de la barra invertida.</value>
+  </data>
+  <data name="Conn.Field.ProviderId" xml:space="preserve">
+    <value>proveedor</value>
+  </data>
+  <data name="Conn.Field.PresetId" xml:space="preserve">
+    <value>servicio</value>
+  </data>
+  <data name="Conn.Field.CaCertificatePath" xml:space="preserve">
+    <value>archivo de la entidad certificadora</value>
+  </data>
+  <data name="Conn.Field.Extras" xml:space="preserve">
+    <value>opciones adicionales</value>
+  </data>
+  <data name="Data.Store.TooLarge" xml:space="preserve">
+    <value>El archivo con las conexiones guardadas es demasiado grande y se ignoró. Vuelva a agregar sus conexiones.</value>
+  </data>
+  <data name="Data.Store.PasswordUnreadable" xml:space="preserve">
+    <value>No se puede leer la contraseña guardada. Probablemente la guardó otro usuario de Windows u otro equipo. Abra "Administrar conexiones..." y escríbala otra vez.</value>
+  </data>
+  <data name="Data.Store.WriteFailed" xml:space="preserve">
+    <value>Rotula no pudo guardar las conexiones. Compruebe que puede escribir en su carpeta de usuario (AppData) y vuelva a intentarlo.</value>
+  </data>
+  <data name="Data.Store.ProtectionUnavailable" xml:space="preserve">
+    <value>La protección de contraseñas no está disponible en este sistema, así que no se pueden guardar conexiones que requieran contraseña. Inicie sesión con su cuenta de Windows, o use un archivo SQLite.</value>
+  </data>
+  <data name="Conn.Field.Encrypt" xml:space="preserve">
+    <value>cifrado</value>
+  </data>
+  <data name="Conn.Field.TrustServerCertificate" xml:space="preserve">
+    <value>confiar en el certificado del servidor</value>
+  </data>
+  <data name="Enum.BarcodeSymbology.Code11" xml:space="preserve">
+    <value>Code 11</value>
+  </data>
+  <data name="Enum.BarcodeSymbology.Industrial2Of5" xml:space="preserve">
+    <value>Industrial 2 de 5</value>
+  </data>
+  <data name="Enum.BarcodeSymbology.Standard2Of5" xml:space="preserve">
+    <value>Standard 2 de 5</value>
+  </data>
+  <data name="Enum.BarcodeSymbology.Logmars" xml:space="preserve">
+    <value>LOGMARS</value>
+  </data>
+  <data name="Enum.BarcodeSymbology.Codabar" xml:space="preserve">
+    <value>Codabar</value>
+  </data>
+  <data name="Enum.BarcodeSymbology.Msi" xml:space="preserve">
+    <value>MSI</value>
+  </data>
+  <data name="Enum.BarcodeSymbology.Plessey" xml:space="preserve">
+    <value>Plessey</value>
+  </data>
+  <data name="Enum.BarcodeSymbology.Ean8" xml:space="preserve">
+    <value>EAN-8</value>
+  </data>
+  <data name="Enum.BarcodeSymbology.UpcE" xml:space="preserve">
+    <value>UPC-E</value>
+  </data>
+  <data name="Enum.BarcodeSymbology.UpcEanExtension" xml:space="preserve">
+    <value>Extensión UPC/EAN</value>
+  </data>
+  <data name="Enum.BarcodeSymbology.Postnet" xml:space="preserve">
+    <value>POSTNET</value>
+  </data>
+  <data name="Enum.BarcodeSymbology.Planet" xml:space="preserve">
+    <value>PLANET</value>
+  </data>
+  <data name="Enum.BarcodeSymbology.DataBar" xml:space="preserve">
+    <value>GS1 DataBar</value>
+  </data>
+  <data name="Enum.BarcodeSymbology.Aztec" xml:space="preserve">
+    <value>Código Aztec</value>
+  </data>
+  <data name="Enum.BarcodeSymbology.MicroPdf417" xml:space="preserve">
+    <value>MicroPDF417</value>
+  </data>
+  <data name="Enum.BarcodeSymbology.Codablock" xml:space="preserve">
+    <value>Codablock</value>
+  </data>
+  <data name="Enum.BarcodeSymbology.MaxiCode" xml:space="preserve">
+    <value>MaxiCode</value>
+  </data>
+  <data name="Enum.BarcodeSymbology.Tlc39" xml:space="preserve">
+    <value>TLC39</value>
+  </data>
+  <data name="Enum.BarcodeSymbology.Code49" xml:space="preserve">
+    <value>Code 49</value>
+  </data>
+  <data name="Enum.DataBarType.Omnidirectional" xml:space="preserve">
+    <value>Omnidireccional</value>
+  </data>
+  <data name="Enum.DataBarType.Truncated" xml:space="preserve">
+    <value>Truncado</value>
+  </data>
+  <data name="Enum.DataBarType.Stacked" xml:space="preserve">
+    <value>Apilado</value>
+  </data>
+  <data name="Enum.DataBarType.StackedOmnidirectional" xml:space="preserve">
+    <value>Apilado omnidireccional</value>
+  </data>
+  <data name="Enum.DataBarType.Limited" xml:space="preserve">
+    <value>Limitado</value>
+  </data>
+  <data name="Enum.DataBarType.Expanded" xml:space="preserve">
+    <value>Expandido</value>
+  </data>
+  <data name="Enum.MsiCheckDigitMode.None" xml:space="preserve">
+    <value>Ninguno</value>
+  </data>
+  <data name="Enum.MsiCheckDigitMode.Mod10" xml:space="preserve">
+    <value>Un dígito módulo 10</value>
+  </data>
+  <data name="Enum.MsiCheckDigitMode.DoubleMod10" xml:space="preserve">
+    <value>Dos dígitos módulo 10</value>
+  </data>
+  <data name="Enum.MsiCheckDigitMode.Mod11Mod10" xml:space="preserve">
+    <value>Dígitos módulo 11 y módulo 10</value>
+  </data>
+  <data name="Enum.CodablockMode.A" xml:space="preserve">
+    <value>Codablock A (caracteres de Code 39)</value>
+  </data>
+  <data name="Enum.CodablockMode.E" xml:space="preserve">
+    <value>Codablock E (Code 128, FNC1 automático)</value>
+  </data>
+  <data name="Enum.CodablockMode.F" xml:space="preserve">
+    <value>Codablock F (Code 128)</value>
+  </data>
+  <data name="Enum.BarcodeCategory.Linear" xml:space="preserve">
+    <value>Lineales</value>
+  </data>
+  <data name="Enum.BarcodeCategory.Matrix2D" xml:space="preserve">
+    <value>Matriciales 2D</value>
+  </data>
+  <data name="Enum.BarcodeCategory.Stacked" xml:space="preserve">
+    <value>Apilados</value>
+  </data>
+  <data name="Enum.BarcodeCategory.Postal" xml:space="preserve">
+    <value>Postales</value>
+  </data>
+  <data name="Prop.Code11CheckDigitCount" xml:space="preserve">
+    <value>Dígitos de control (1 o 2)</value>
+  </data>
+  <data name="Prop.MsiCheckDigit" xml:space="preserve">
+    <value>Dígitos de control</value>
+  </data>
+  <data name="Prop.MsiCheckDigitInText" xml:space="preserve">
+    <value>Mostrar los dígitos de control en el texto</value>
+  </data>
+  <data name="Prop.CodabarStart" xml:space="preserve">
+    <value>Carácter de inicio</value>
+  </data>
+  <data name="Prop.CodabarStop" xml:space="preserve">
+    <value>Carácter de fin</value>
+  </data>
+  <data name="Prop.DataBarType" xml:space="preserve">
+    <value>Tipo de GS1 DataBar</value>
+  </data>
+  <data name="Prop.DataBarSeparatorHeight" xml:space="preserve">
+    <value>Altura del separador (1-2)</value>
+  </data>
+  <data name="Prop.DataBarSegmentsPerRow" xml:space="preserve">
+    <value>Segmentos por fila (2-22)</value>
+  </data>
+  <data name="Prop.AztecEci" xml:space="preserve">
+    <value>Los datos tienen códigos ECI</value>
+  </data>
+  <data name="Prop.AztecErrorControl" xml:space="preserve">
+    <value>Corrección / tamaño</value>
+  </data>
+  <data name="Prop.AztecMenuSymbol" xml:space="preserve">
+    <value>Símbolo de menú (configuración del lector)</value>
+  </data>
+  <data name="Prop.AztecStructuredAppendCount" xml:space="preserve">
+    <value>Símbolos del conjunto</value>
+  </data>
+  <data name="Prop.AztecStructuredAppendId" xml:space="preserve">
+    <value>Id del conjunto (opcional)</value>
+  </data>
+  <data name="Prop.MicroPdf417Mode" xml:space="preserve">
+    <value>Modo (0-33)</value>
+  </data>
+  <data name="Prop.CodablockMode" xml:space="preserve">
+    <value>Tipo de Codablock</value>
+  </data>
+  <data name="Prop.CodablockSecurity" xml:space="preserve">
+    <value>Agregar caracteres de control</value>
+  </data>
+  <data name="Prop.MaxiCodeMode" xml:space="preserve">
+    <value>Modo (2-6)</value>
+  </data>
+  <data name="Prop.MaxiCodeSymbolNumber" xml:space="preserve">
+    <value>N.º de símbolo (1-8)</value>
+  </data>
+  <data name="Prop.MaxiCodeSymbolTotal" xml:space="preserve">
+    <value>Total de símbolos (1-8)</value>
+  </data>
+  <data name="Prop.Tlc39MicroModuleWidth" xml:space="preserve">
+    <value>Módulo MicroPDF417 (puntos)</value>
+  </data>
+  <data name="Prop.Tlc39MicroRowHeight" xml:space="preserve">
+    <value>Fila MicroPDF417 (puntos)</value>
+  </data>
+  <data name="Prop.Code49StartMode" xml:space="preserve">
+    <value>Modo inicial</value>
+  </data>
+  <data name="Prop.Columns.Chars" xml:space="preserve">
+    <value>Caracteres por fila</value>
+  </data>
+  <data name="Prop.Code49StartMode.Auto" xml:space="preserve">
+    <value>Automático</value>
+  </data>
+  <data name="Prop.Rotation.Unsupported" xml:space="preserve">
+    <value>Rotación (no se puede imprimir en este código: elija Valor de la etiqueta)</value>
+  </data>
+  <data name="Prop.PreviewNote" xml:space="preserve">
+    <value>Sobre la vista previa</value>
+  </data>
+  <data name="Preview.Note.Placeholder" xml:space="preserve">
+    <value>La impresora dibuja este código de barras; la vista previa muestra un marcador.</value>
+  </data>
+  <data name="Preview.Note.AztecSpecial" xml:space="preserve">
+    <value>La impresora dibuja este símbolo Aztec (Rune, menú, anexado estructurado o ECI); la vista previa muestra un marcador.</value>
+  </data>
+  <data name="Preview.Note.Aztec" xml:space="preserve">
+    <value>Los símbolos Rune, de menú, de anexado estructurado y con ECI los dibuja la impresora; en esos casos la vista previa muestra un marcador.</value>
+  </data>
+  <data name="Preview.Note.Ratio2" xml:space="preserve">
+    <value>En la vista previa la proporción de barras anchas y estrechas se dibuja como 2:1.</value>
+  </data>
+  <data name="Preview.Note.Ratio3" xml:space="preserve">
+    <value>En la vista previa la proporción de barras anchas y estrechas se dibuja como 3:1.</value>
+  </data>
+  <data name="Preview.Note.Postal" xml:space="preserve">
+    <value>En la vista previa el ancho de barras y espacios sigue el ancho de módulo; la impresora real usa las medidas fijas del USPS.</value>
+  </data>
+  <data name="Preview.Note.DataBar" xml:space="preserve">
+    <value>La parte compuesta 2D de GS1 DataBar no se admite; en los tipos apilados la altura de barra es la de todo el símbolo.</value>
+  </data>
+  <data name="Issue.Barcode.Code11.Charset" xml:space="preserve">
+    <value>Code 11 solo admite dígitos y el guion (-). Quite cualquier otro carácter.</value>
+  </data>
+  <data name="Issue.Barcode.Code11.CheckDigits" xml:space="preserve">
+    <value>Code 11 usa 1 o 2 dígitos de control. Elija uno de esos dos valores.</value>
+  </data>
+  <data name="Issue.Barcode.Logmars.Charset" xml:space="preserve">
+    <value>LOGMARS solo admite letras de la A a la Z, dígitos, espacio y - . $ / + %. Quite cualquier otro carácter.</value>
+  </data>
+  <data name="Issue.Barcode.Logmars.TextAlways" xml:space="preserve">
+    <value>La impresora siempre imprime el texto debajo de un código LOGMARS, así que desactivarlo no tiene efecto. Active el texto para que coincida con lo que se imprimirá.</value>
+  </data>
+  <data name="Issue.Barcode.Codabar.Charset" xml:space="preserve">
+    <value>Codabar solo admite dígitos y - $ : / . + en los datos. Las letras de inicio y fin (A a D) se eligen en las opciones, no se escriben en los datos.</value>
+  </data>
+  <data name="Issue.Barcode.Codabar.StartStop" xml:space="preserve">
+    <value>Los caracteres de inicio y fin de Codabar deben ser A, B, C o D. Elija uno de ellos.</value>
+  </data>
+  <data name="Issue.Barcode.Msi.Length" xml:space="preserve">
+    <value>Los datos MSI pueden tener como máximo {0} dígitos con esta opción de dígito de control. Acorte los datos.</value>
+  </data>
+  <data name="Issue.Barcode.Msi.CheckDigit" xml:space="preserve">
+    <value>Elija una de las opciones de dígito de control de MSI.</value>
+  </data>
+  <data name="Issue.Barcode.Plessey.Charset" xml:space="preserve">
+    <value>Plessey solo admite dígitos del 0 al 9 y letras mayúsculas de la A a la F. Quite cualquier otro carácter.</value>
+  </data>
+  <data name="Issue.Barcode.Ean8.Length" xml:space="preserve">
+    <value>EAN-8 necesita {0} dígitos (el dígito de control se agrega solo) o {1} dígitos incluyendo el dígito de control.</value>
+  </data>
+  <data name="Issue.Barcode.Ean8.CheckDigit" xml:space="preserve">
+    <value>El último dígito no es el dígito de control correcto de EAN-8. Debería ser {0}; o quite el último dígito y deje que la impresora lo agregue.</value>
+  </data>
+  <data name="Issue.Barcode.UpcE.Length" xml:space="preserve">
+    <value>UPC-E necesita el código de 10 dígitos de fabricante y producto que la impresora acorta, o el código UPC-E de 6 dígitos (con el sistema numérico 0 delante y un dígito de control al final, si se desea). Cambie la cantidad de dígitos.</value>
+  </data>
+  <data name="Issue.Barcode.UpcE.NumberSystem" xml:space="preserve">
+    <value>UPC-E solo puede usar el sistema numérico 0. Empiece el código con 0.</value>
+  </data>
+  <data name="Issue.Barcode.UpcE.NotCompressible" xml:space="preserve">
+    <value>Estos dígitos no se pueden acortar a un código UPC-E, porque UPC-E necesita ceros en lugares concretos. Cambie los dígitos o use UPC-A.</value>
+  </data>
+  <data name="Issue.Barcode.UpcE.CheckDigit" xml:space="preserve">
+    <value>El último dígito no es el dígito de control correcto de UPC-E. Debería ser {0}; o quite el último dígito y deje que la impresora lo agregue.</value>
+  </data>
+  <data name="Issue.Barcode.UpcEanExtension.Length" xml:space="preserve">
+    <value>Una extensión UPC/EAN necesita exactamente 2 o 5 dígitos.</value>
+  </data>
+  <data name="Issue.Barcode.Postnet.Length" xml:space="preserve">
+    <value>Los datos POSTNET deben tener una de estas cantidades de dígitos: {0}. La impresora agrega el dígito de control.</value>
+  </data>
+  <data name="Issue.Barcode.Planet.Length" xml:space="preserve">
+    <value>Los datos PLANET deben tener una de estas cantidades de dígitos: {0}. La impresora agrega el dígito de control.</value>
+  </data>
+  <data name="Issue.Barcode.DataBar.Type" xml:space="preserve">
+    <value>Elija uno de los tipos de GS1 DataBar.</value>
+  </data>
+  <data name="Issue.Barcode.DataBar.Length" xml:space="preserve">
+    <value>Este tipo de GS1 DataBar necesita hasta {0} dígitos (se agregan ceros al principio) o {1} dígitos incluyendo el dígito de control. Acorte los datos.</value>
+  </data>
+  <data name="Issue.Barcode.DataBar.CheckDigit" xml:space="preserve">
+    <value>El último dígito no es el dígito de control GS1 correcto. Debería ser {0}; o quite el último dígito y deje que la impresora lo agregue.</value>
+  </data>
+  <data name="Issue.Barcode.DataBar.Composite" xml:space="preserve">
+    <value>Los datos compuestos (2D) después de un | no se admiten. Quite el | y todo lo que sigue.</value>
+  </data>
+  <data name="Issue.Barcode.DataBar.ElementString" xml:space="preserve">
+    <value>GS1 DataBar Expanded necesita cadenas de elementos GS1 con los identificadores entre paréntesis, por ejemplo (01)12345678901231(10)ABC. Revise los paréntesis y los identificadores.</value>
+  </data>
+  <data name="Issue.Barcode.DataBar.Charset" xml:space="preserve">
+    <value>Una cadena de elementos GS1 solo puede contener caracteres normales del teclado. Quite los acentos y símbolos especiales.</value>
+  </data>
+  <data name="Issue.Barcode.DataBar.TooLong" xml:space="preserve">
+    <value>La cadena de elementos GS1 es demasiado larga (máximo {0} caracteres). Acórtela.</value>
+  </data>
+  <data name="Issue.Barcode.DataBar.Gtin" xml:space="preserve">
+    <value>El elemento (01) necesita un GTIN de 14 dígitos formado solo por números. Corrija los dígitos dentro del paréntesis.</value>
+  </data>
+  <data name="Issue.Barcode.DataBar.LimitedRange" xml:space="preserve">
+    <value>GS1 DataBar Limited solo puede codificar números hasta 1999999999999, así que el primero de sus 13 dígitos debe ser 0 o 1. Cambie el número o elija otro tipo.</value>
+  </data>
+  <data name="Issue.Barcode.DataBar.Segments" xml:space="preserve">
+    <value>Los segmentos por fila deben ser un número par entre {0} y {1}.</value>
+  </data>
+  <data name="Issue.Barcode.DataBar.Separator" xml:space="preserve">
+    <value>La altura del separador debe estar entre {0} y {1} módulos.</value>
+  </data>
+  <data name="Issue.Barcode.Aztec.ErrorControl" xml:space="preserve">
+    <value>El valor de corrección de errores de Aztec no es válido. Use 0 (automático), 1 a 99 (porcentaje), 101 a 104 (tamaño compacto), 201 a 232 (tamaño completo) o 300 (Rune).</value>
+  </data>
+  <data name="Issue.Barcode.Aztec.StructuredAppend" xml:space="preserve">
+    <value>La cantidad de símbolos de un conjunto de anexado estructurado debe estar entre {0} y {1}.</value>
+  </data>
+  <data name="Issue.Barcode.Aztec.StructuredAppendId" xml:space="preserve">
+    <value>El id del conjunto puede tener como máximo {0} caracteres. Acórtelo.</value>
+  </data>
+  <data name="Issue.Barcode.Aztec.StructuredAppendIdChars" xml:space="preserve">
+    <value>El id del conjunto solo puede usar caracteres normales del teclado, y no una coma, ^ ni ~. Quítelos.</value>
+  </data>
+  <data name="Issue.Barcode.Aztec.TooLong" xml:space="preserve">
+    <value>Los datos de Aztec son demasiado largos (máximo {0} caracteres). Acorte el texto.</value>
+  </data>
+  <data name="Issue.Barcode.MicroPdf417.Mode" xml:space="preserve">
+    <value>El modo de MicroPDF417 debe estar entre {0} y {1}.</value>
+  </data>
+  <data name="Issue.Barcode.MicroPdf417.TooLong" xml:space="preserve">
+    <value>Los datos de MicroPDF417 son demasiado largos (máximo {0} caracteres). Acorte el texto.</value>
+  </data>
+  <data name="Issue.Barcode.Codablock.Mode" xml:space="preserve">
+    <value>Elija Codablock A, E o F.</value>
+  </data>
+  <data name="Issue.Barcode.Codablock.Charset" xml:space="preserve">
+    <value>Codablock A solo admite letras mayúsculas, dígitos y - . espacio $ / + %. Cambie los datos o elija Codablock E o F.</value>
+  </data>
+  <data name="Issue.Barcode.Codablock.Charset128" xml:space="preserve">
+    <value>Codablock E y F solo pueden codificar caracteres normales del teclado. Quite los acentos y símbolos especiales.</value>
+  </data>
+  <data name="Issue.Barcode.Codablock.Columns" xml:space="preserve">
+    <value>Los caracteres por fila deben ser 0 (automático) o estar entre {0} y {1}.</value>
+  </data>
+  <data name="Issue.Barcode.Codablock.Rows" xml:space="preserve">
+    <value>Para este tipo de Codablock la cantidad de filas debe ser 0 (automático) o estar entre {0} y {1}.</value>
+  </data>
+  <data name="Issue.Barcode.MaxiCode.Mode" xml:space="preserve">
+    <value>El modo de MaxiCode debe estar entre {0} y {1}.</value>
+  </data>
+  <data name="Issue.Barcode.MaxiCode.Symbol" xml:space="preserve">
+    <value>El total de símbolos MaxiCode debe estar entre {0} y {1}, y el número de este símbolo debe estar entre 1 y el total.</value>
+  </data>
+  <data name="Issue.Barcode.MaxiCode.Message" xml:space="preserve">
+    <value>El modo {0} de MaxiCode necesita un mensaje de transporte: una clase de servicio de 3 dígitos, un código de país de 3 dígitos y después el código postal (9 dígitos en el modo 2, 6 letras o dígitos en el modo 3). Complete el comienzo de los datos.</value>
+  </data>
+  <data name="Issue.Barcode.MaxiCode.TooLong" xml:space="preserve">
+    <value>Los datos de MaxiCode son demasiado largos (máximo {0} caracteres). Acorte el texto.</value>
+  </data>
+  <data name="Issue.Barcode.MaxiCode.RotationIgnored" xml:space="preserve">
+    <value>MaxiCode no se puede girar en ZPL, así que la rotación de este elemento no se imprimirá. Vuelva a poner la rotación del valor predeterminado de la etiqueta.</value>
+  </data>
+  <data name="Issue.Barcode.Tlc39.Format" xml:space="preserve">
+    <value>Los datos de TLC39 empiezan con un número ECI de 6 dígitos, seguido opcionalmente de una coma y del número de serie y otros campos. Corrija el comienzo de los datos.</value>
+  </data>
+  <data name="Issue.Barcode.Tlc39.Fields" xml:space="preserve">
+    <value>Cada campo de TLC39 después del número ECI solo puede tener letras y dígitos, hasta {0} caracteres. Revise los campos entre las comas.</value>
+  </data>
+  <data name="Issue.Barcode.Tlc39.TooLong" xml:space="preserve">
+    <value>Los datos de TLC39 son demasiado largos (máximo {0} caracteres). Acorte el texto.</value>
+  </data>
+  <data name="Issue.Barcode.Tlc39.MicroModuleWidth" xml:space="preserve">
+    <value>El ancho de módulo del MicroPDF417 debe estar entre {0} y {1} puntos.</value>
+  </data>
+  <data name="Issue.Barcode.Tlc39.MicroRowHeight" xml:space="preserve">
+    <value>El alto de fila del MicroPDF417 debe estar entre {0} y {1} puntos.</value>
+  </data>
+  <data name="Issue.Barcode.Code49.Charset" xml:space="preserve">
+    <value>Code 49 solo puede codificar caracteres normales del teclado. Quite los acentos y símbolos especiales.</value>
+  </data>
+  <data name="Issue.Barcode.Code49.StartMode" xml:space="preserve">
+    <value>El modo inicial de Code 49 debe ser automático o un número del 0 al 5. Elija uno de ellos.</value>
+  </data>
+  <data name="Issue.Barcode.Code49.TooLong" xml:space="preserve">
+    <value>Los datos de Code 49 son demasiado largos (máximo {0} caracteres). Acorte el texto.</value>
+  </data>
+  <data name="Issue.Import.Barcode.DataBar.Type" xml:space="preserve">
+    <value>Este GS1 DataBar usa el tipo de simbología {0}, que Rotula no admite (solo los tipos 1 a 6). Se conservó como texto ZPL y se seguirá imprimiendo, pero no se puede editar.</value>
+  </data>
+  <data name="Issue.Import.Barcode.DataBar.Composite" xml:space="preserve">
+    <value>Este GS1 DataBar tiene una parte compuesta (2D), que Rotula no admite. Se conservó como texto ZPL y se seguirá imprimiendo, pero no se puede editar.</value>
+  </data>
+  <data name="Issue.Import.Barcode.Postal.Type" xml:space="preserve">
+    <value>Este código postal usa el tipo {0}, que Rotula no admite (solo POSTNET y PLANET). Se conservó como texto ZPL y se seguirá imprimiendo, pero no se puede editar.</value>
+  </data>
+  <data name="Prop.DataBarSegmentsPerRow.Hint" xml:space="preserve">
+    <value>Solo números pares. Con menos de 22 el símbolo se apila en varias filas.</value>
+  </data>
+  <data name="Prop.AztecErrorControl.Hint" xml:space="preserve">
+    <value>0 = automático. 1 a 99 = corrección de errores mínima en porcentaje. 101 a 104 = símbolo compacto de 1 a 4 capas. 201 a 232 = símbolo completo de 1 a 32 capas. 300 = Aztec Rune.</value>
+  </data>
+  <data name="Prop.AztecStructuredAppendCount.Hint" xml:space="preserve">
+    <value>1 = un solo símbolo. De 2 a 26 reparte el mensaje en esa cantidad de símbolos.</value>
+  </data>
+  <data name="Prop.Columns.Chars.Hint" xml:space="preserve">
+    <value>0 = automático.</value>
+  </data>
+  <data name="Prop.MaxiCodeMode.Hint" xml:space="preserve">
+    <value>Los modos 2 y 3 llevan un mensaje de transporte estructurado (clase de servicio, país, código postal); los modos 4 a 6 llevan cualquier texto.</value>
+  </data>
+  <data name="Prop.MicroPdf417Mode.Hint" xml:space="preserve">
+    <value>El modo fija la cantidad de columnas y filas y la corrección de errores (vea la guía de ZPL).</value>
+  </data>
+  <data name="Issue.Field.Serial.Value" xml:space="preserve">
+    <value>Un contador de la impresora necesita un valor inicial de 1 a 40 caracteres formado por letras, dígitos, espacios y - / . con al menos un dígito. Cambie el texto de este campo.</value>
+  </data>
+  <data name="Issue.Field.Serial.Barcode" xml:space="preserve">
+    <value>La impresora no puede contar en un código QR, porque sus datos empiezan con un encabezado. Desactive el contador de la impresora para este código de barras.</value>
+  </data>
+  <data name="Issue.Field.Serial.Mask" xml:space="preserve">
+    <value>La máscara del contador solo puede usar las letras D, H, O, A, N y %, y el paso solo letras, dígitos y %. Corrija la máscara o el paso.</value>
+  </data>
+  <data name="Issue.Field.Embed.Invalid" xml:space="preserve">
+    <value>El carácter que marca las referencias a números de campo debe ser un carácter normal del teclado, y no ^ ni ~. Elija otro.</value>
+  </data>
+  <data name="Issue.Field.Clock.Invalid" xml:space="preserve">
+    <value>Los caracteres marcadores del reloj deben ser caracteres normales del teclado, distintos entre sí, y no ^, ~ ni coma. Cámbielos.</value>
+  </data>
+  <data name="Issue.Field.Number.Range" xml:space="preserve">
+    <value>El número de campo debe estar entre {0} y {1}.</value>
+  </data>
+  <data name="Issue.Field.Prompt.Invalid" xml:space="preserve">
+    <value>El texto de solicitud del campo solo puede usar letras, dígitos y espacios, hasta 255 caracteres. Cambie el texto.</value>
+  </data>
+  <data name="Tool.Ellipse" xml:space="preserve">
+    <value>Elipse</value>
+  </data>
+  <data name="Tool.DiagonalLine" xml:space="preserve">
+    <value>Línea diagonal</value>
+  </data>
+  <data name="Tool.Symbol" xml:space="preserve">
+    <value>Símbolo</value>
+  </data>
+  <data name="Element.Ellipse" xml:space="preserve">
+    <value>Elipse</value>
+  </data>
+  <data name="Element.DiagonalLine" xml:space="preserve">
+    <value>Línea diagonal</value>
+  </data>
+  <data name="Element.Symbol" xml:space="preserve">
+    <value>Símbolo</value>
+  </data>
+  <data name="Panel.Symbol" xml:space="preserve">
+    <value>Símbolo</value>
+  </data>
+  <data name="Prop.Lean" xml:space="preserve">
+    <value>Inclinación</value>
+  </data>
+  <data name="Prop.Symbol" xml:space="preserve">
+    <value>Símbolo</value>
+  </data>
+  <data name="Prop.Symbol.Height" xml:space="preserve">
+    <value>Alto del carácter (puntos)</value>
+  </data>
+  <data name="Prop.Symbol.Width" xml:space="preserve">
+    <value>Ancho del carácter (puntos)</value>
+  </data>
+  <data name="Enum.DiagonalLean.Right" xml:space="preserve">
+    <value>Derecha (/ de abajo a la izquierda hacia arriba a la derecha)</value>
+  </data>
+  <data name="Enum.DiagonalLean.Left" xml:space="preserve">
+    <value>Izquierda (\ de arriba a la izquierda hacia abajo a la derecha)</value>
+  </data>
+  <data name="Enum.GraphicSymbol.Registered" xml:space="preserve">
+    <value>Marca registrada (R)</value>
+  </data>
+  <data name="Enum.GraphicSymbol.Copyright" xml:space="preserve">
+    <value>Derechos de autor (C)</value>
+  </data>
+  <data name="Enum.GraphicSymbol.Trademark" xml:space="preserve">
+    <value>Marca comercial (TM)</value>
+  </data>
+  <data name="Enum.GraphicSymbol.UnderwritersLaboratories" xml:space="preserve">
+    <value>Underwriters Laboratories (UL)</value>
+  </data>
+  <data name="Enum.GraphicSymbol.CanadianStandards" xml:space="preserve">
+    <value>Asociación Canadiense de Normas (CSA)</value>
+  </data>
+  <data name="Enum.FieldDirection.Horizontal" xml:space="preserve">
+    <value>Horizontal</value>
+  </data>
+  <data name="Enum.FieldDirection.Vertical" xml:space="preserve">
+    <value>Vertical (de arriba a abajo)</value>
+  </data>
+  <data name="Enum.FieldDirection.Reverse" xml:space="preserve">
+    <value>Invertida (de derecha a izquierda)</value>
+  </data>
+  <data name="Issue.Label.Shift.Range" xml:space="preserve">
+    <value>El desplazamiento de la etiqueta debe estar entre {0} y {1} puntos. Cambie el desplazamiento en los ajustes de la etiqueta.</value>
+  </data>
+  <data name="Issue.Label.Top.Range" xml:space="preserve">
+    <value>El margen superior de la etiqueta debe estar entre {0} y {1} filas de puntos. Cámbielo en los ajustes de la etiqueta.</value>
+  </data>
+  <data name="Issue.Print.Darkness.Range" xml:space="preserve">
+    <value>El cambio de oscuridad debe estar entre {0} y {1}. Elija un valor dentro de ese rango.</value>
+  </data>
+  <data name="Issue.Print.Rate.Range" xml:space="preserve">
+    <value>Las velocidades de impresión deben estar entre {0} y {1} pulgadas por segundo. Cambie las velocidades de impresión, avance y retroceso a valores dentro de ese rango.</value>
+  </data>
+  <data name="Issue.Font.Alias.Invalid" xml:space="preserve">
+    <value>La fuente {0} no puede usar el archivo "{1}". El id de fuente es una letra o un dígito, y el archivo debe tener la forma E:NOMBRE.TTF. Corrija el id o el nombre del archivo.</value>
+  </data>
+  <data name="Issue.Graphic.Stored.Invalid" xml:space="preserve">
+    <value>El gráfico guardado {0} no se puede usar. Su nombre debe tener la forma R:LOGO.GRF y sus datos no pueden pasar de 4 MB. Corrija el nombre o use un gráfico más pequeño.</value>
+  </data>
+  <data name="Issue.Graphic.Diagonal.Range" xml:space="preserve">
+    <value>El ancho, el alto y el grosor de una línea diagonal deben estar entre {0} y {1} puntos. Cambie el tamaño.</value>
+  </data>
+  <data name="Issue.Graphic.Ellipse.Range" xml:space="preserve">
+    <value>El ancho, el alto y el grosor de una elipse deben estar entre {0} y {1} puntos. Cambie el tamaño.</value>
+  </data>
+  <data name="Issue.Graphic.Symbol.Range" xml:space="preserve">
+    <value>El alto y el ancho de un símbolo deben estar entre {0} y {1} puntos. Cambie el tamaño.</value>
+  </data>
+  <data name="Issue.Text.Box.Range" xml:space="preserve">
+    <value>El ancho y el alto de un cuadro de texto deben estar entre {0} y {1} puntos. Cambie el tamaño del cuadro.</value>
+  </data>
+  <data name="Issue.Text.Box.WithBlock" xml:space="preserve">
+    <value>Un campo de texto puede ser un bloque con ajuste de línea o un cuadro de texto, pero no los dos. Desactive uno.</value>
+  </data>
+  <data name="Issue.Text.Direction.Range" xml:space="preserve">
+    <value>El espacio entre caracteres debe estar entre {0} y {1} puntos. Cambie el espacio.</value>
+  </data>
+  <data name="Issue.Import.Field.OptionNotApplicable" xml:space="preserve">
+    <value>La opción {0} de este campo no se puede usar con el campo al que pertenece, así que todo el campo se conservó como ZPL sin interpretar y se seguirá imprimiendo, pero no se puede editar.</value>
+  </data>
+  <data name="Issue.Import.Serial.Conflict" xml:space="preserve">
+    <value>Este campo tiene datos y también un contador de la impresora, que no se pueden combinar. Se conservó como ZPL sin interpretar y se seguirá imprimiendo, pero no se puede editar.</value>
+  </data>
+  <data name="Issue.Import.Font.AliasLate" xml:space="preserve">
+    <value>La asignación de fuente {0} viene después de que ya se definieron campos, así que no puede ser un ajuste de la etiqueta. Se conservó como ZPL sin interpretar en su lugar original.</value>
+  </data>
+  <data name="Issue.Stocks.File.TooLarge" xml:space="preserve">
+    <value>El archivo de rollos "{0}" pesa más de {1} bytes, así que no se leyó. Use un archivo más pequeño.</value>
+  </data>
+  <data name="Issue.Stocks.File.Unreadable" xml:space="preserve">
+    <value>No se pudo abrir el archivo de rollos "{0}". Compruebe que existe y que tiene permiso para leerlo.</value>
+  </data>
+  <data name="Issue.Stocks.File.InvalidJson" xml:space="preserve">
+    <value>El archivo de rollos "{0}" no es una lista de rollos válida. Revise el archivo o restáurelo desde el original.</value>
+  </data>
+  <data name="Issue.Stocks.File.UnsupportedSchema" xml:space="preserve">
+    <value>El archivo de rollos "{0}" tiene una versión de formato ({1}) que este Rotula no entiende. Actualice Rotula o use otro archivo.</value>
+  </data>
+  <data name="Issue.Stocks.File.NoEntries" xml:space="preserve">
+    <value>El archivo de rollos "{0}" no tiene entradas. Agregue al menos un rollo.</value>
+  </data>
+  <data name="Issue.Stocks.File.TooManyEntries" xml:space="preserve">
+    <value>El archivo de rollos "{0}" tiene más de {1} entradas, así que solo se leyeron las primeras {1}. Divida el archivo en archivos más pequeños.</value>
+  </data>
+  <data name="Issue.Stocks.File.TooManyFiles" xml:space="preserve">
+    <value>La carpeta de rollos tiene más de {0} archivos, así que se ignoraron los sobrantes. Quite los archivos que no necesite.</value>
+  </data>
+  <data name="Issue.Stocks.Entry.NotAnObject" xml:space="preserve">
+    <value>El elemento {1} de "{0}" no es una entrada de rollo, así que se omitió.</value>
+  </data>
+  <data name="Issue.Stocks.Entry.MissingId" xml:space="preserve">
+    <value>La entrada {1} de "{0}" no tiene id, así que se omitió. Dé a cada entrada un id único.</value>
+  </data>
+  <data name="Issue.Stocks.Entry.BadId" xml:space="preserve">
+    <value>La entrada {1} de "{0}" tiene el id "{2}", que es demasiado largo o usa caracteres no permitidos, así que se omitió. Use letras, dígitos, puntos, guiones bajos y guiones, hasta 64 caracteres.</value>
+  </data>
+  <data name="Issue.Stocks.Entry.DuplicateId" xml:space="preserve">
+    <value>El id "{1}" aparece dos veces en "{0}", así que se omitió la segunda entrada. Dé a cada entrada un id único.</value>
+  </data>
+  <data name="Issue.Stocks.Entry.MissingName" xml:space="preserve">
+    <value>El rollo "{0}" no tiene nombre, así que se omitió. Póngale un nombre.</value>
+  </data>
+  <data name="Issue.Stocks.Entry.BadField" xml:space="preserve">
+    <value>El campo "{1}" del rollo "{0}" tiene un tipo incorrecto o es demasiado largo, así que se omitió el rollo. Corrija el campo.</value>
+  </data>
+  <data name="Issue.Stocks.Entry.MissingSize" xml:space="preserve">
+    <value>El rollo "{0}" no tiene un ancho y alto utilizables, así que se omitió. Agregue el tamaño de la etiqueta.</value>
+  </data>
+  <data name="Issue.Stocks.Entry.SizeOutOfRange" xml:space="preserve">
+    <value>El valor de {1} del rollo "{0}" ({2}) está fuera de los tamaños que una impresora de etiquetas puede usar, así que se omitió el rollo. Revise el número y su unidad.</value>
+  </data>
+  <data name="Issue.Stocks.Entry.UnitMismatch" xml:space="preserve">
+    <value>El valor de {1} del rollo "{0}" figura como {2} mm y {3} pulg, que no son la misma longitud, así que se omitió el rollo. Corrija una de las dos cifras.</value>
+  </data>
+  <data name="Issue.Stocks.Entry.ValueOutOfRange" xml:space="preserve">
+    <value>El campo "{1}" del rollo "{0}" tiene el valor {2}, que está fuera del rango permitido, así que se omitió el rollo. Corrija el valor.</value>
+  </data>
+  <data name="Issue.Stocks.Entry.BadUrl" xml:space="preserve">
+    <value>La dirección de origen del rollo "{0}" no es una dirección https, así que se omitió el rollo. Use una dirección que empiece con https://.</value>
+  </data>
+  <data name="Issue.Stocks.Entry.PriceFieldIgnored" xml:space="preserve">
+    <value>El campo "{1}" del rollo "{0}" parece un precio. Rotula no guarda precios, así que se ignoró el campo.</value>
+  </data>
+  <data name="Issue.Stocks.Validate.IncompleteVerified" xml:space="preserve">
+    <value>El rollo "{0}" está marcado como verificado pero le falta {1}. Agréguelo o marque el rollo como no verificado.</value>
+  </data>
+  <data name="Issue.Stocks.Validate.NoProvenance" xml:space="preserve">
+    <value>El rollo "{0}" no indica de dónde salen sus datos. Agregue un id de fuente o una dirección de origen https.</value>
+  </data>
+  <data name="Issue.Stocks.Validate.BadMetadata" xml:space="preserve">
+    <value>El bloque de descripción del archivo de rollos está incompleto: falta {0}. Agréguelo.</value>
+  </data>
+  <data name="Issue.Stocks.Validate.UnknownSource" xml:space="preserve">
+    <value>El rollo "{0}" cita la fuente "{1}", que el archivo no describe. Agregue esa fuente al bloque de descripción.</value>
+  </data>
+  <data name="Issue.Stocks.Validate.CountMismatch" xml:space="preserve">
+    <value>El archivo dice que {0} entradas están verificadas, pero son {1}. Actualice los totales del bloque de descripción.</value>
+  </data>
+  <data name="Issue.Stocks.Apply.Unverified" xml:space="preserve">
+    <value>El tamaño del rollo "{0}" no está verificado. Mida las etiquetas reales antes de imprimir una tirada grande.</value>
+  </data>
+  <data name="Issue.Stocks.Apply.GapUnknown" xml:space="preserve">
+    <value>No se conoce el espacio entre etiquetas del rollo "{0}". Calibre la impresora con este rollo cargado.</value>
+  </data>
+  <data name="Issue.Stocks.Apply.ContinuousNoHeight" xml:space="preserve">
+    <value>El rollo "{0}" es continuo y no tiene una altura de etiqueta fija, así que la altura de la etiqueta se dejó como estaba. Indique la altura que necesite. El rollo mide {1} m de largo (vacío si se desconoce).</value>
+  </data>
+  <data name="Issue.Stocks.Apply.MultiUpNotSupported" xml:space="preserve">
+    <value>Este rollo tiene {0} etiquetas a lo ancho y {1} a lo largo. Por ahora solo se prepara una etiqueta, así que coloque usted las demás si las necesita.</value>
+  </data>
+  <data name="Issue.Stocks.Apply.SheetLayoutNotSupported" xml:space="preserve">
+    <value>El rollo "{0}" es una hoja troquelada. Se aplicó el tamaño de la etiqueta, pero no la distribución de la hoja.</value>
+  </data>
+  <data name="Issue.Stocks.Apply.RotationKept" xml:space="preserve">
+    <value>La etiqueta ya tiene contenido, así que no se cambió su rotación predeterminada para el rollo "{0}". Cambie usted la rotación si el rollo lo necesita.</value>
+  </data>
+  <data name="Issue.Stocks.Apply.RoundShape" xml:space="preserve">
+    <value>El rollo "{0}" es redondo u ovalado, pero la etiqueta de la impresora es rectangular y la forma no se dibuja. Mantenga su contenido dentro de la forma.</value>
+  </data>
+  <data name="Issue.Stocks.Apply.ElementsMayClip" xml:space="preserve">
+    <value>Ya hay {0} elementos en la etiqueta y puede que ahora queden fuera del nuevo tamaño. Compruebe que siguen cabiendo.</value>
+  </data>
+  <data name="Issue.Stocks.Import.UnsupportedFormat" xml:space="preserve">
+    <value>No se pueden importar archivos de tipo "{0}". Guarde la lista como .csv o .xlsx e inténtelo de nuevo.</value>
+  </data>
+  <data name="Issue.Stocks.Import.FileTooLarge" xml:space="preserve">
+    <value>La lista pesa más de {0} bytes y no se leyó. Use un archivo más pequeño.</value>
+  </data>
+  <data name="Issue.Stocks.Import.ReadFailed" xml:space="preserve">
+    <value>No se pudo leer la lista "{0}". Compruebe que no esté abierta en otro programa y que sea un archivo válido.</value>
+  </data>
+  <data name="Issue.Stocks.Import.NoRows" xml:space="preserve">
+    <value>La lista no tiene filas de datos. Agregue los suministros debajo de la fila de encabezados.</value>
+  </data>
+  <data name="Issue.Stocks.Import.TooManyRows" xml:space="preserve">
+    <value>La lista tiene más de {0} filas, así que solo se leyeron las primeras {0}. Divídala en listas más pequeñas.</value>
+  </data>
+  <data name="Issue.Stocks.Import.NoPartColumn" xml:space="preserve">
+    <value>No se encontró ninguna columna con números de parte, así que no se importó nada. Agregue una columna llamada "Número de parte".</value>
+  </data>
+  <data name="Issue.Stocks.Import.NoSizeColumn" xml:space="preserve">
+    <value>No se encontró ninguna columna con tamaños de etiqueta, así que no se importó nada. Agregue una columna de tamaño, o una de ancho y otra de alto.</value>
+  </data>
+  <data name="Issue.Stocks.Import.PriceColumnIgnored" xml:space="preserve">
+    <value>La columna "{0}" parece un precio y se ignoró. Rotula no guarda precios.</value>
+  </data>
+  <data name="Issue.Stocks.Import.ColumnGuessed" xml:space="preserve">
+    <value>La columna de {0} se eligió por su contenido porque ningún encabezado coincidía: "{1}". Compruebe que sea la correcta.</value>
+  </data>
+  <data name="Issue.Stocks.Import.RowNoPartNumber" xml:space="preserve">
+    <value>La fila {0} no tiene número de parte, así que se omitió. Agregue el número de parte.</value>
+  </data>
+  <data name="Issue.Stocks.Import.RowNoSize" xml:space="preserve">
+    <value>La fila {0} ({1}) no tiene un tamaño que se pueda leer, así que se omitió. Escriba el tamaño como ancho x alto con su unidad.</value>
+  </data>
+  <data name="Issue.Stocks.Import.RowUnitAmbiguous" xml:space="preserve">
+    <value>La fila {0} ({1}) da el tamaño "{2}" sin decir si son pulgadas o milímetros, así que se omitió. Agregue "in" o "mm".</value>
+  </data>
+  <data name="Issue.Stocks.Import.RowSizeConflict" xml:space="preserve">
+    <value>La fila {0} ({1}) indica dos tamaños que no coinciden ("{2}"), así que se omitió. Deje solo el correcto.</value>
+  </data>
+  <data name="Issue.Stocks.Import.RowSizeOutOfRange" xml:space="preserve">
+    <value>La fila {0} ({1}) tiene el tamaño "{2}", que está fuera de los tamaños que una impresora de etiquetas puede usar, así que se omitió. Revise el número y su unidad.</value>
+  </data>
+  <data name="Issue.Stocks.Import.RowDuplicate" xml:space="preserve">
+    <value>La fila {0} repite el número de parte {1}, así que se omitió. Deje una fila por número de parte.</value>
   </data>
 </root>

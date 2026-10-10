@@ -6,7 +6,7 @@ using Rotula.Core.Imaging;
 using Rotula.Core.Model;
 using Rotula.Core.Zpl;
 
-namespace Rotula.App.Files;
+namespace Rotula.Files;
 
 /// <summary>A problem reading a .rotula file. <see cref="MessageKey"/> is a UI resource key; the UI shows it in the user's language.</summary>
 public sealed class RotulaFileException : Exception
@@ -46,8 +46,36 @@ public static class RotulaFileSerializer
     /// <summary>Version 3: adds the "rawZpl" and "recall" element types that an imported ZPL file can contain.</summary>
     public const int RawZplFormatVersion = 3;
 
+    /// <summary>Version 4: adds the "database" object inside "merge" (connection NAME, query text, parameter defaults; never credentials).</summary>
+    public const int DatabaseFormatVersion = 4;
+
+    /// <summary>Version 5: adds the extra barcode symbologies (anything after PDF417) and the "extraOptions" object of a barcode element.</summary>
+    public const int BarcodeBreadthFormatVersion = 5;
+
+    /// <summary>
+    /// Version 6: adds the ZPL command catalogue features: the "diagonalLine", "ellipse" and "symbol" element types, field options
+    /// (field number, embedding, clock, printer serialization), text boxes and direction, and the printer settings of the label
+    /// (shift, top, print mode, mirror, speeds, darkness, font aliases, stored graphics) plus the stock id.
+    /// </summary>
+    public const int ZplCatalogFormatVersion = 6;
+
     /// <summary>The newest format version this build can read. Files are written with the lowest version that can hold their content.</summary>
-    public const int CurrentFormatVersion = RawZplFormatVersion;
+    public const int CurrentFormatVersion = ZplCatalogFormatVersion;
+
+    // Limits for untrusted values of the version 6 fields.
+    private const int MaxStoredGraphics = 256;
+    private const int MaxFontAliases = 64;
+    private const int MaxTotalStoredGraphicBytes = 16 * 1024 * 1024; // the same memory rule the ZPL importer uses
+    private const int MaxFieldTextLength = 255;
+    private const int MaxSerialTextLength = 64;
+    private const int MaxPathLength = 64;
+    private const int MaxStockIdLength = 64;
+
+    // Limits for the untrusted "extraOptions" object. The known option names are far shorter than this; anything longer
+    // cannot be a valid value and is dropped instead of being handed to the model.
+    private const int MaxExtraOptionCount = 64;
+    private const int MaxExtraOptionNameLength = 48;
+    private const int MaxExtraOptionValueLength = 64;
 
     private const string ClipboardMarker = "rotulaElements";
 
@@ -75,12 +103,39 @@ public static class RotulaFileSerializer
         {
             dto.Merge = MergeSettingsMapper.ToDto(merge);
             dto.FormatVersion = DataMergeFormatVersion;
+            // A file is stamped with the highest version of any feature it uses, never lower: older builds then refuse it cleanly.
+            if (merge.Database is not null) dto.FormatVersion = DatabaseFormatVersion;
         }
         // Older builds do not know the raw/recall element types, so only labels that contain them are marked version 3.
         if (document.Elements.Any(e => e is RawZplElement or RecallPlaceholderElement))
-            dto.FormatVersion = RawZplFormatVersion;
+            dto.FormatVersion = Math.Max(dto.FormatVersion, RawZplFormatVersion);
+        // Older builds cannot parse the new symbology names, so a label that uses one is stamped version 5. Extra options
+        // alone would be ignored by an old build, but then it would silently lose them, so they also require version 5.
+        if (document.Elements.Any(RequiresBarcodeBreadth))
+            dto.FormatVersion = Math.Max(dto.FormatVersion, BarcodeBreadthFormatVersion);
+        // Version 6 features are only written when used, so ToDto leaves them null; any one of them raises the stamp.
+        if (UsesCatalogFeatures(dto))
+            dto.FormatVersion = Math.Max(dto.FormatVersion, ZplCatalogFormatVersion);
         return JsonSerializer.Serialize(dto, Options);
     }
+
+    private static bool UsesCatalogFeatures(RotulaFileDto dto)
+    {
+        var l = dto.Label;
+        if (l.StockId is not null || l.LabelShift is not null || l.LabelTop is not null || l.PrintMode is not null || l.PrePeel is not null
+            || l.MirrorImage is not null || l.PrintRate is not null || l.MediaDarkness is not null || l.FontAliases is not null || l.StoredGraphics is not null)
+            return true;
+        return dto.Elements.Any(e => e switch
+        {
+            DiagonalLineElementDto or EllipseElementDto or SymbolElementDto => true,
+            FieldDataElementDto f when f.FieldNumber is not null || f.FieldPrompt is not null || f.EmbedCharacter is not null || f.Clock is not null || f.Serial is not null => true,
+            TextElementDto t when t.TextBox is not null || t.Direction is not null || t.InterCharacterGap is not null => true,
+            _ => false,
+        });
+    }
+
+    private static bool RequiresBarcodeBreadth(LabelElement e) =>
+        e is BarcodeElement b && (b.Symbology > BarcodeSymbology.Pdf417 || b.ExportExtraOptions().Count > 0);
 
     /// <summary>Parses .rotula JSON text. Throws <see cref="RotulaFileException"/> with a localizable key when it cannot be used.</summary>
     public static LabelDocument Deserialize(string json) => DeserializeFile(json).Document;
@@ -96,7 +151,9 @@ public static class RotulaFileSerializer
                 || !parsed.RootElement.TryGetProperty("formatVersion", out var version)
                 || version.ValueKind != JsonValueKind.Number)
                 throw new RotulaFileException("File.Error.NotRotula");
-            int v = version.GetInt32();
+            // A huge or fractional number (1e99) is not a version; treat it like any other unreadable header.
+            if (!version.TryGetInt32(out int v))
+                throw new RotulaFileException("File.Error.NotRotula");
             if (v > CurrentFormatVersion)
                 throw new RotulaFileException("File.Error.NewerVersion", null, v.ToString(CultureInfo.InvariantCulture));
             if (v < 1)
@@ -213,6 +270,18 @@ public static class RotulaFileSerializer
                 Variables = d.Variables.Select(v => new VariableDto { Name = v.Name, SampleValue = v.SampleValue }).ToList(),
             },
         };
+        var lab = dto.Label;
+        lab.StockId = d.StockId;
+        lab.LabelShift = d.LabelShift != 0 ? d.LabelShift : null;
+        lab.LabelTop = d.LabelTop != 0 ? d.LabelTop : null;
+        lab.PrintMode = d.PrintMode?.ToString();
+        lab.PrePeel = d.PrePeel ? true : null;
+        lab.MirrorImage = d.MirrorImage ? true : null;
+        lab.PrintRate = d.PrintRate is { IsEmpty: false } r ? new PrintRateDto { Speed = r.Speed, SlewSpeed = r.SlewSpeed, BackfeedSpeed = r.BackfeedSpeed } : null;
+        lab.MediaDarkness = d.MediaDarkness;
+        lab.FontAliases = d.FontAliases.Count == 0 ? null : d.FontAliases.Select(a => new FontAliasDto { Letter = a.Letter.ToString(), Path = a.Path }).ToList();
+        lab.StoredGraphics = d.StoredGraphics.Count == 0 ? null
+            : d.StoredGraphics.Select(g => new StoredGraphicDto { Path = g.Path, BytesPerRow = g.BytesPerRow, Data = Convert.ToBase64String(g.Data) }).ToList();
         foreach (var e in d.Elements) dto.Elements.Add(ToDto(e));
         return dto;
     }
@@ -233,8 +302,15 @@ public static class RotulaFileSerializer
                 HumanReadable = b.HumanReadable, HumanReadablePosition = b.HumanReadablePosition.ToString(), CheckDigit = b.CheckDigit,
                 Code128Mode = b.Code128Mode.ToString(), QrErrorCorrection = b.QrErrorCorrection.ToString(), QrModel = b.QrModel,
                 ModuleSize = b.ModuleSize, Columns = b.Columns, Rows = b.Rows, Pdf417SecurityLevel = b.Pdf417SecurityLevel, Pdf417Truncate = b.Pdf417Truncate,
+                ExtraOptions = ExtrasToDto(b),
             },
             BoxElement x => new BoxElementDto { WidthDots = x.WidthDots, HeightDots = x.HeightDots, ThicknessDots = x.ThicknessDots, Color = x.Color.ToString(), CornerRounding = x.CornerRounding },
+            DiagonalLineElement g => new DiagonalLineElementDto
+            {
+                WidthDots = g.WidthDots, HeightDots = g.HeightDots, ThicknessDots = g.ThicknessDots, Color = g.Color.ToString(), Lean = g.Lean.ToString(),
+            },
+            EllipseElement el => new EllipseElementDto { WidthDots = el.WidthDots, HeightDots = el.HeightDots, ThicknessDots = el.ThicknessDots, Color = el.Color.ToString() },
+            SymbolElement sy => new SymbolElementDto { Symbol = sy.Symbol.ToString(), HeightDots = sy.HeightDots, WidthDots = sy.WidthDots },
             LineElement l => new LineElementDto { LengthDots = l.LengthDots, ThicknessDots = l.ThicknessDots, Direction = l.Direction.ToString(), Color = l.Color.ToString() },
             CircleElement c => new CircleElementDto { DiameterDots = c.DiameterDots, ThicknessDots = c.ThicknessDots, Color = c.Color.ToString() },
             ImageElement i => ImageToDto(i),
@@ -256,6 +332,21 @@ public static class RotulaFileSerializer
                 WidthDots = t.Block.WidthDots, MaxLines = t.Block.MaxLines, LineSpacing = t.Block.LineSpacing,
                 Alignment = t.Block.Alignment.ToString(), HangingIndent = t.Block.HangingIndent,
             };
+            td.TextBox = t.TextBox is null ? null : new TextBoxDto { WidthDots = t.TextBox.WidthDots, HeightDots = t.TextBox.HeightDots };
+            td.Direction = t.Direction == FieldDirection.Horizontal ? null : t.Direction.ToString();
+            td.InterCharacterGap = t.InterCharacterGap != 0 ? t.InterCharacterGap : null;
+        }
+        if (e is FieldDataElement fe && dto is FieldDataElementDto fd)
+        {
+            fd.FieldNumber = fe.FieldNumber;
+            fd.FieldPrompt = fe.FieldPrompt;
+            fd.EmbedCharacter = fe.EmbedCharacter?.ToString();
+            fd.Clock = fe.Clock is null ? null : new FieldClockDto { Primary = fe.Clock.Primary.ToString(), Secondary = fe.Clock.Secondary?.ToString(), Third = fe.Clock.Third?.ToString() };
+            fd.Serial = fe.Serial is null ? null : new PrinterSerialDto
+            {
+                Kind = fe.Serial.Kind.ToString(), Increment = fe.Serial.Increment, LeadingZeros = fe.Serial.LeadingZeros,
+                Mask = fe.Serial.Mask, IncrementText = fe.Serial.IncrementText,
+            };
         }
         dto.Id = e.Id;
         dto.Name = e.Name;
@@ -265,6 +356,44 @@ public static class RotulaFileSerializer
         dto.Rotation = e.Rotation?.ToString();
         dto.ReverseField = e.ReverseField;
         return dto;
+    }
+
+    private static Dictionary<string, JsonElement>? ExtrasToDto(BarcodeElement b)
+    {
+        var extras = b.ExportExtraOptions();
+        if (extras.Count == 0) return null; // null is omitted from the file, so a plain barcode looks exactly as before
+        var result = new Dictionary<string, JsonElement>(StringComparer.Ordinal);
+        foreach (var (name, value) in extras)
+            result[name] = JsonSerializer.SerializeToElement(value);
+        return result;
+    }
+
+    /// <summary>
+    /// Turns the untrusted "extraOptions" object into text pairs for the model. Why filtered here: the model ignores unknown
+    /// names and unreadable values, but it would still copy a huge string into the document, so size is capped first.
+    /// </summary>
+    private static Dictionary<string, string>? ExtrasFromDto(Dictionary<string, JsonElement>? raw)
+    {
+        if (raw is null) return null;
+        var result = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var (name, value) in raw)
+        {
+            // Every option the model understands is the name of a BarcodeOption member, so junk names are dropped before they can use up the count.
+            if (string.IsNullOrEmpty(name) || name.Length > MaxExtraOptionNameLength || char.IsDigit(name[0])
+                || !Enum.TryParse<Rotula.Core.Barcodes.BarcodeOption>(name, false, out _)) continue;
+            if (result.Count >= MaxExtraOptionCount) break;
+            string? text = value.ValueKind switch
+            {
+                JsonValueKind.String => value.GetString(),
+                JsonValueKind.Number => value.GetRawText(),
+                JsonValueKind.True => "true",
+                JsonValueKind.False => "false",
+                _ => null, // objects, arrays and null are never valid option values
+            };
+            if (text is null || text.Length > MaxExtraOptionValueLength) continue;
+            result[name] = text;
+        }
+        return result;
     }
 
     private static ImageElementDto ImageToDto(ImageElement i)
@@ -307,8 +436,49 @@ public static class RotulaFileSerializer
             Print = new PrintOptions { Quantity = l.Print.Quantity, PauseEvery = l.Print.PauseEvery, Replicates = l.Print.Replicates, OverridePause = l.Print.OverridePause },
         };
         foreach (var v in l.Variables) doc.Variables.Add(new LabelVariable(v.Name, v.SampleValue));
+        ReadCatalogSettings(l, doc);
         foreach (var e in dto.Elements) doc.Elements.Add(FromDto(e));
         return doc;
+    }
+
+    /// <summary>
+    /// Reads the version 6 label settings. They are optional and untrusted, so a value that is not usable (an unknown name, a bad
+    /// path, too much data) is skipped instead of failing the whole file; the label then simply opens without that setting.
+    /// </summary>
+    private static void ReadCatalogSettings(LabelDto l, LabelDocument doc)
+    {
+        doc.StockId = l.StockId is { Length: > 0 and <= MaxStockIdLength } id && id.All(c => char.IsAsciiLetterOrDigit(c) || c is '.' or '_' or '-') ? id : null;
+        doc.LabelShift = l.LabelShift ?? 0;
+        doc.LabelTop = l.LabelTop ?? 0;
+        doc.PrintMode = TryParse<PrintMode>(l.PrintMode, out var pm) ? pm : null;
+        doc.PrePeel = l.PrePeel ?? false;
+        doc.MirrorImage = l.MirrorImage ?? false;
+        doc.PrintRate = l.PrintRate is null ? null : new PrintRateOptions { Speed = l.PrintRate.Speed, SlewSpeed = l.PrintRate.SlewSpeed, BackfeedSpeed = l.PrintRate.BackfeedSpeed };
+        doc.MediaDarkness = l.MediaDarkness;
+        if (l.FontAliases is not null)
+            foreach (var a in l.FontAliases.Take(MaxFontAliases))
+                if (a?.Letter is { Length: 1 } letter && char.IsAsciiLetterOrDigit(letter[0]) && a.Path is { Length: > 0 and <= MaxPathLength } path
+                    && path.All(c => c >= ' ' && c <= '~'))
+                    doc.FontAliases.Add(new FontAlias(letter[0], path));
+        if (l.StoredGraphics is not null)
+        {
+            long budget = MaxTotalStoredGraphicBytes;
+            foreach (var g in l.StoredGraphics.Take(MaxStoredGraphics))
+            {
+                if (g?.Data is null || g.Path is null || g.Path.Length > MaxPathLength || g.BytesPerRow < 1 || g.BytesPerRow > 4096) continue;
+                // The decoded size is known from the text length, so an oversized graphic is refused before any memory is allocated for it.
+                long decoded = (long)g.Data.Length / 4 * 3;
+                if (decoded > budget) continue;
+                string path = StoredGraphic.NormalizePath(g.Path);
+                if (!StoredGraphic.IsValidPath(path)) continue;
+                byte[] bytes;
+                try { bytes = Convert.FromBase64String(g.Data); }
+                catch (FormatException) { continue; }
+                if (bytes.Length == 0 || bytes.Length % g.BytesPerRow != 0 || bytes.Length > budget) continue;
+                budget -= bytes.Length;
+                doc.StoredGraphics.Add(new StoredGraphic(path, g.BytesPerRow, bytes));
+            }
+        }
     }
 
     private static Measure FromDto(MeasureDto m)
@@ -330,13 +500,24 @@ public static class RotulaFileSerializer
                 e = FillText(new TextElement(), t);
                 break;
             case BarcodeElementDto b:
-                e = new BarcodeElement
+                var barcode = new BarcodeElement
                 {
                     Symbology = Parse<BarcodeSymbology>(b.Symbology), Data = b.Data, Height = b.Height, ModuleWidth = b.ModuleWidth, WideBarRatio = b.WideBarRatio,
                     HumanReadable = b.HumanReadable, HumanReadablePosition = Parse<HumanReadablePosition>(b.HumanReadablePosition), CheckDigit = b.CheckDigit,
                     Code128Mode = Parse<Code128Mode>(b.Code128Mode), QrErrorCorrection = Parse<QrErrorCorrection>(b.QrErrorCorrection), QrModel = b.QrModel,
                     ModuleSize = b.ModuleSize, Columns = b.Columns, Rows = b.Rows, Pdf417SecurityLevel = b.Pdf417SecurityLevel, Pdf417Truncate = b.Pdf417Truncate,
                 };
+                barcode.ImportExtraOptions(ExtrasFromDto(b.ExtraOptions));
+                e = barcode;
+                break;
+            case DiagonalLineElementDto g:
+                e = new DiagonalLineElement { WidthDots = g.WidthDots, HeightDots = g.HeightDots, ThicknessDots = g.ThicknessDots, Color = Parse<GraphicColor>(g.Color), Lean = Parse<DiagonalLean>(g.Lean) };
+                break;
+            case EllipseElementDto el:
+                e = new EllipseElement { WidthDots = el.WidthDots, HeightDots = el.HeightDots, ThicknessDots = el.ThicknessDots, Color = Parse<GraphicColor>(el.Color) };
+                break;
+            case SymbolElementDto sy:
+                e = new SymbolElement { Symbol = Parse<GraphicSymbol>(sy.Symbol), HeightDots = sy.HeightDots, WidthDots = sy.WidthDots };
                 break;
             case BoxElementDto x:
                 e = new BoxElement { WidthDots = x.WidthDots, HeightDots = x.HeightDots, ThicknessDots = x.ThicknessDots, Color = Parse<GraphicColor>(x.Color), CornerRounding = x.CornerRounding };
@@ -363,6 +544,7 @@ public static class RotulaFileSerializer
             default:
                 throw new ArgumentException("Unknown element type.");
         }
+        if (e is FieldDataElement fe && dto is FieldDataElementDto fd) ReadFieldData(fe, fd);
         if (!string.IsNullOrEmpty(dto.Id)) e.Id = dto.Id;
         e.Name = dto.Name;
         e.X = dto.X;
@@ -371,6 +553,41 @@ public static class RotulaFileSerializer
         e.Rotation = dto.Rotation is null ? null : Parse<FieldRotation>(dto.Rotation);
         e.ReverseField = dto.ReverseField;
         return e;
+    }
+
+    /// <summary>Reads the optional field settings; unusable values are skipped (see <see cref="ReadCatalogSettings"/>).</summary>
+    private static void ReadFieldData(FieldDataElement e, FieldDataElementDto d)
+    {
+        e.FieldNumber = d.FieldNumber;
+        e.FieldPrompt = d.FieldPrompt is { Length: > 0 and <= MaxFieldTextLength } prompt ? prompt : null;
+        e.EmbedCharacter = d.EmbedCharacter is { Length: 1 } embed ? embed[0] : null;
+        if (d.Clock?.Primary is { Length: 1 } primary)
+            e.Clock = new FieldClockOptions
+            {
+                Primary = primary[0],
+                Secondary = d.Clock.Secondary is { Length: 1 } second ? second[0] : null,
+                Third = d.Clock.Third is { Length: 1 } third ? third[0] : null,
+            };
+        if (d.Serial is { } ser && TryParse<PrinterSerialKind>(ser.Kind, out var kind))
+            e.Serial = new PrinterSerialOptions
+            {
+                Kind = kind, Increment = ser.Increment, LeadingZeros = ser.LeadingZeros,
+                Mask = (ser.Mask ?? string.Empty).Length <= MaxSerialTextLength ? ser.Mask ?? string.Empty : string.Empty,
+                IncrementText = (ser.IncrementText ?? string.Empty).Length <= MaxSerialTextLength ? ser.IncrementText ?? string.Empty : string.Empty,
+            };
+        if (e is TextElement t)
+        {
+            var td = (TextElementDto)d;
+            t.TextBox = td.TextBox is null ? null : new TextBoxOptions { WidthDots = td.TextBox.WidthDots, HeightDots = td.TextBox.HeightDots };
+            t.Direction = TryParse<FieldDirection>(td.Direction, out var dir) ? dir : FieldDirection.Horizontal;
+            t.InterCharacterGap = td.InterCharacterGap ?? 0;
+        }
+    }
+
+    private static bool TryParse<T>(string? value, out T result) where T : struct, Enum
+    {
+        result = default;
+        return !string.IsNullOrEmpty(value) && !char.IsDigit(value[0]) && Enum.TryParse(value, false, out result) && Enum.IsDefined(result);
     }
 
     private static TextElement FillText(TextElement t, TextElementDto d)

@@ -74,6 +74,8 @@
         <DataTrigger Binding="{Binding Kind}" Value="Line"><Setter Property="Data" Value="{StaticResource IconLine}" /></DataTrigger>
         <DataTrigger Binding="{Binding Kind}" Value="Circle"><Setter Property="Data" Value="{StaticResource IconCircle}" /></DataTrigger>
         <DataTrigger Binding="{Binding Kind}" Value="Image"><Setter Property="Data" Value="{StaticResource IconImage}" /></DataTrigger>
+        <DataTrigger Binding="{Binding Kind}" Value="Ellipse"><Setter Property="Data" Value="{StaticResource IconEllipse}" /></DataTrigger>
+        <DataTrigger Binding="{Binding Kind}" Value="DiagonalLine"><Setter Property="Data" Value="{StaticResource IconDiagonal}" /></DataTrigger>
       </Style.Triggers>
     </Style>
   </Window.Resources>
@@ -601,6 +603,19 @@
           <Border Style="{StaticResource StatusSeparator}" />
           <TextBlock Text="{Binding ApproximateNoticeShort}" Style="{StaticResource StatusText}" TextTrimming="None" FontStyle="Italic" AutomationProperties.Name="{loc:T Preview.Approximate.Name}"
                      AutomationProperties.HelpText="{Binding ApproximateNotice}" />
+          <!-- What the preview does differently for the selected barcode; hidden when the preview is exact. -->
+          <StackPanel Orientation="Horizontal" ToolTip="{Binding BarcodePreviewNote}">
+            <StackPanel.Style>
+              <Style TargetType="StackPanel">
+                <Style.Triggers>
+                  <DataTrigger Binding="{Binding BarcodePreviewNote}" Value=""><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
+                </Style.Triggers>
+              </Style>
+            </StackPanel.Style>
+            <Border Style="{StaticResource StatusSeparator}" />
+            <TextBlock Text="{Binding BarcodePreviewNote}" Style="{StaticResource StatusText}" TextTrimming="CharacterEllipsis" MaxWidth="420" FontStyle="Italic"
+                       AutomationProperties.Name="{loc:T Prop.PreviewNote}" />
+          </StackPanel>
         </StackPanel>
         <StackPanel Grid.Column="4" Orientation="Horizontal">
           <StackPanel.Resources>

@@ -1,0 +1,1 @@
+Sample pack for the Rotula tests. Contains no third-party code except SQLitePCLRaw.lib.e_sqlite3 (Apache-2.0).

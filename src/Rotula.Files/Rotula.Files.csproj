@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The .rotula file format and the path-safety helper, kept out of the WPF app so a headless host (the MCP server) can use them. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <RootNamespace>Rotula.Files</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Lets the test project exercise MergeSettingsMapper without making it public API. -->
+    <InternalsVisibleTo Include="Rotula.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Rotula.Core\Rotula.Core.csproj" />
+    <!-- Only for DatabaseQueryReference (a connection NAME plus query text) and the query-size limits; no database drivers. -->
+    <ProjectReference Include="..\Rotula.Data.Abstractions\Rotula.Data.Abstractions.csproj" />
+  </ItemGroup>
+
+</Project>

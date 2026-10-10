@@ -1,0 +1,6 @@
+# Local working files of the catalogue rebuild: your own settings, the source files and the results.
+extract-settings.json
+output/
+*.xlsx
+stock-seed.json
+__pycache__/

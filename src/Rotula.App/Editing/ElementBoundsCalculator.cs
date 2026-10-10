@@ -107,6 +107,11 @@ public sealed class ElementBoundsCalculator
             case CircleElement c:
                 // The renderer ignores rotation for circles, so the box is always square.
                 return FromSize(e, doc, c.DiameterDots, c.DiameterDots, FieldRotation.Normal);
+            case EllipseElement el:
+                // ^GE has no orientation, so rotation never changes the box.
+                return FromSize(e, doc, el.WidthDots, el.HeightDots, FieldRotation.Normal);
+            case DiagonalLineElement dl:
+                return FromSize(e, doc, dl.WidthDots, dl.HeightDots, FieldRotation.Normal);
             case ImageElement i:
             {
                 if (i.Source is null) return FromSize(e, doc, Math.Max(i.WidthDots, FallbackSize), Math.Max(i.HeightDots, FallbackSize), FieldRotation.Normal);

@@ -85,7 +85,8 @@ internal static class AppTestSupport
 /// <summary>Scriptable fakes for every service of the main view-model.</summary>
 internal sealed class FakeServices
 {
-    public string? OpenPath, SavePath, ExportPath, ZplPath, ImagePath, DataPath;
+    public string? OpenPath, SavePath, ExportPath, ZplPath, ImagePath, DataPath, DbFilePath;
+    public readonly FakeDatabaseServices Database = new();
     public bool ConfirmAnswer = true;
     public readonly List<string> Confirms = new();
     public readonly List<(string Title, string Message)> Errors = new();
@@ -101,7 +102,7 @@ internal sealed class FakeServices
     public readonly InMemorySettings Settings = new();
 
     public MainServices Build() => new(
-        new Dialogs(this), new Messages(this), new Clip(this), new Images(this), new NewDialog(this), Importer, Printer, Settings, ToolDialogs);
+        new Dialogs(this), new Messages(this), new Clip(this), new Images(this), new NewDialog(this), Importer, Printer, Settings, ToolDialogs, Database);
 
     private sealed class Dialogs(FakeServices f) : IFileDialogService
     {
@@ -111,6 +112,7 @@ internal sealed class FakeServices
         public string? PickOpenZpl() => f.ZplPath;
         public string? PickOpenImage() => f.ImagePath;
         public string? PickOpenData() => f.DataPath;
+        public string? PickOpenDatabaseFile() => f.DbFilePath;
     }
 
     private sealed class Messages(FakeServices f) : IMessageService
@@ -155,6 +157,14 @@ internal sealed class FakeToolDialogs : IToolDialogService
     public Rotula.App.ViewModels.DataMergeViewModel? LastData;
     public void ShowPrintDialog(Rotula.App.ViewModels.PrintViewModel viewModel) => LastPrint = viewModel;
     public void ShowDataWindow(Rotula.App.ViewModels.DataMergeViewModel viewModel) => LastData = viewModel;
+    public readonly List<Rotula.App.ViewModels.ConnectionManagerViewModel> Managers = new();
+    /// <summary>What the "user" does inside the manager before it is closed (the fake dialog returns immediately).</summary>
+    public Func<Rotula.App.ViewModels.ConnectionManagerViewModel, Task>? OnManager;
+    public void ShowConnectionManager(Rotula.App.ViewModels.ConnectionManagerViewModel viewModel)
+    {
+        Managers.Add(viewModel);
+        OnManager?.Invoke(viewModel).GetAwaiter().GetResult();
+    }
     public int Previews;
     public void ShowPreviewDialog(Rotula.App.Editing.PreviewCache preview, string title) => Previews++;
 }

@@ -503,7 +503,7 @@
     <value>A graphic uses format {0}, which is not supported. It was kept as raw ZPL.</value>
   </data>
   <data name="Issue.Import.Graphic.Invalid" xml:space="preserve">
-    <value>A graphic has invalid data (total {0} bytes). It was kept as raw ZPL.</value>
+    <value>A graphic has invalid data or is too large (total {0} bytes; the limit is 16 MB per file). It was kept as raw ZPL.</value>
   </data>
   <data name="Issue.Import.Graphic.Truncated" xml:space="preserve">
     <value>A graphic has less data than it declares. It was imported as far as the data goes.</value>
@@ -2166,5 +2166,1163 @@
   </data>
   <data name="Start.Name" xml:space="preserve">
     <value>Start screen</value>
+  </data>
+  <data name="Filter.Database" xml:space="preserve">
+    <value>Database files</value>
+  </data>
+  <data name="Conn.Sqlite.Pick" xml:space="preserve">
+    <value>Choose a SQLite database file</value>
+  </data>
+  <data name="Data.Source" xml:space="preserve">
+    <value>Data from</value>
+  </data>
+  <data name="Data.Source.File" xml:space="preserve">
+    <value>File (CSV or Excel)</value>
+  </data>
+  <data name="Data.Source.Database" xml:space="preserve">
+    <value>Database</value>
+  </data>
+  <data name="Data.Db.Title" xml:space="preserve">
+    <value>Database</value>
+  </data>
+  <data name="Data.Db.NoSource" xml:space="preserve">
+    <value>Database: no data read yet</value>
+  </data>
+  <data name="Data.Db.Summary" xml:space="preserve">
+    <value>Database connection: {0}</value>
+  </data>
+  <data name="Data.Db.Loaded" xml:space="preserve">
+    <value>{0} rows were read from the database connection "{1}".</value>
+  </data>
+  <data name="Data.Db.Rows" xml:space="preserve">
+    <value>{0} rows, {1} columns</value>
+  </data>
+  <data name="Data.Db.Connection" xml:space="preserve">
+    <value>Saved connection</value>
+  </data>
+  <data name="Data.Db.NewConnection" xml:space="preserve">
+    <value>New connection...</value>
+  </data>
+  <data name="Data.Db.ManageConnections" xml:space="preserve">
+    <value>Manage connections...</value>
+  </data>
+  <data name="Data.Db.NoConnections" xml:space="preserve">
+    <value>There are no saved connections yet. Choose "New connection..." to add your first one.</value>
+  </data>
+  <data name="Data.Db.PickConnection" xml:space="preserve">
+    <value>Choose a saved connection first, or create one with "New connection...".</value>
+  </data>
+  <data name="Data.Db.Change" xml:space="preserve">
+    <value>Change data source...</value>
+  </data>
+  <data name="Data.Db.BackToData" xml:space="preserve">
+    <value>Back to the loaded data</value>
+  </data>
+  <data name="Data.Db.Reference.Banner" xml:space="preserve">
+    <value>This label uses the saved connection "{0}". Connect and reload data.</value>
+  </data>
+  <data name="Data.Db.Reference.Safe" xml:space="preserve">
+    <value>Rotula has not connected to anything. It connects only after you click the button, and only runs the query below if it passes the read-only check.</value>
+  </data>
+  <data name="Data.Db.Reference.QueryLabel" xml:space="preserve">
+    <value>Query saved in this label</value>
+  </data>
+  <data name="Data.Db.Reference.Connect" xml:space="preserve">
+    <value>Connect and reload data</value>
+  </data>
+  <data name="Data.Db.Reference.Missing" xml:space="preserve">
+    <value>There is no saved connection named "{0}" on this computer. Open "Manage connections...", add a connection and give it exactly the name "{0}", then click the button again.</value>
+  </data>
+  <data name="Data.Db.Tab.Table" xml:space="preserve">
+    <value>Table or view</value>
+  </data>
+  <data name="Data.Db.Tab.Query" xml:space="preserve">
+    <value>Query</value>
+  </data>
+  <data name="Data.Db.Search" xml:space="preserve">
+    <value>Search tables and views</value>
+  </data>
+  <data name="Data.Db.Tables" xml:space="preserve">
+    <value>Tables and views</value>
+  </data>
+  <data name="Data.Db.Kind.View" xml:space="preserve">
+    <value>view</value>
+  </data>
+  <data name="Data.Db.NoTablesShown" xml:space="preserve">
+    <value>No tables or views to show. Change the search, or check that this account may read the database.</value>
+  </data>
+  <data name="Data.Db.PreviewHeading" xml:space="preserve">
+    <value>Preview</value>
+  </data>
+  <data name="Data.Db.PreviewNote" xml:space="preserve">
+    <value>The preview shows the first 100 rows. "Use this data" reads all rows up to the maximum.</value>
+  </data>
+  <data name="Data.Db.PickTable" xml:space="preserve">
+    <value>Choose a table or view to see its rows.</value>
+  </data>
+  <data name="Data.Db.Query.Label" xml:space="preserve">
+    <value>SELECT query</value>
+  </data>
+  <data name="Data.Db.Query.Tip" xml:space="preserve">
+    <value>Only a single SELECT is allowed. Write @name where a value should be filled in, for example WHERE Id = @id.</value>
+  </data>
+  <data name="Data.Db.Guard.Ok" xml:space="preserve">
+    <value>Looks fine: this query only reads data.</value>
+  </data>
+  <data name="Data.Db.Params" xml:space="preserve">
+    <value>Parameters</value>
+  </data>
+  <data name="Data.Db.Params.Hint" xml:space="preserve">
+    <value>Values for the @names in your query. Pick Number or Date when the column is not text.</value>
+  </data>
+  <data name="Data.Db.Param.Type" xml:space="preserve">
+    <value>Parameter type</value>
+  </data>
+  <data name="Data.Db.Param.Type.Text" xml:space="preserve">
+    <value>Text</value>
+  </data>
+  <data name="Data.Db.Param.Type.Number" xml:space="preserve">
+    <value>Number</value>
+  </data>
+  <data name="Data.Db.Param.Type.Date" xml:space="preserve">
+    <value>Date</value>
+  </data>
+  <data name="Data.Db.Param.NumberInvalid" xml:space="preserve">
+    <value>The value of {0} is not a number. Type digits with an optional decimal point, for example 12.5.</value>
+  </data>
+  <data name="Data.Db.Param.DateInvalid" xml:space="preserve">
+    <value>The value of {0} is not a date. Type it like 2026-03-31.</value>
+  </data>
+  <data name="Data.Db.Run" xml:space="preserve">
+    <value>Run</value>
+  </data>
+  <data name="Data.Db.Run.Tip" xml:space="preserve">
+    <value>Runs the query (read-only) and shows the rows below.</value>
+  </data>
+  <data name="Data.Db.Results" xml:space="preserve">
+    <value>Result</value>
+  </data>
+  <data name="Data.Db.ErrorDetail" xml:space="preserve">
+    <value>Technical detail from the database</value>
+  </data>
+  <data name="Data.Db.Use" xml:space="preserve">
+    <value>Use this data</value>
+  </data>
+  <data name="Data.Db.Use.Tip" xml:space="preserve">
+    <value>Reads the rows and uses them as the records of this label.</value>
+  </data>
+  <data name="Data.Db.MaxRows" xml:space="preserve">
+    <value>Maximum rows</value>
+  </data>
+  <data name="Data.Db.MaxRows.Tip" xml:space="preserve">
+    <value>At most this many rows are read (1 to 1,000,000). A warning appears when the result was cut.</value>
+  </data>
+  <data name="Data.Db.MaxRows.Invalid" xml:space="preserve">
+    <value>The maximum rows must be a whole number from 1 to {0}.</value>
+  </data>
+  <data name="Data.Db.NoTables" xml:space="preserve">
+    <value>This database has no tables or views that this account can see.</value>
+  </data>
+  <data name="Data.Db.Busy.Tables" xml:space="preserve">
+    <value>Reading the list of tables...</value>
+  </data>
+  <data name="Data.Db.Busy.Preview" xml:space="preserve">
+    <value>Reading {0}...</value>
+  </data>
+  <data name="Data.Db.Busy.Query" xml:space="preserve">
+    <value>Running the query...</value>
+  </data>
+  <data name="Data.Db.Busy.Reading" xml:space="preserve">
+    <value>Reading all rows of {0}...</value>
+  </data>
+  <data name="Conn.Title" xml:space="preserve">
+    <value>Database connections</value>
+  </data>
+  <data name="Conn.ReadOnlyNote" xml:space="preserve">
+    <value>Rotula only reads data. Use a read-only database account when you can.</value>
+  </data>
+  <data name="Conn.Saved.Heading" xml:space="preserve">
+    <value>Saved connections</value>
+  </data>
+  <data name="Conn.Saved.None" xml:space="preserve">
+    <value>Nothing saved yet. Fill in the form and choose Save.</value>
+  </data>
+  <data name="Conn.New" xml:space="preserve">
+    <value>New</value>
+  </data>
+  <data name="Conn.Delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Conn.Form.Heading" xml:space="preserve">
+    <value>Connection details</value>
+  </data>
+  <data name="Conn.Name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Conn.Name.Hint" xml:space="preserve">
+    <value>Labels refer to a connection by this name, so choose a short name you will keep.</value>
+  </data>
+  <data name="Conn.Name.Fixed" xml:space="preserve">
+    <value>The name cannot be changed because labels refer to it. To use another name, create a new connection.</value>
+  </data>
+  <data name="Conn.Name.Required" xml:space="preserve">
+    <value>Type a name for this connection.</value>
+  </data>
+  <data name="Conn.Name.Exists" xml:space="preserve">
+    <value>A connection named "{0}" already exists. Choose another name, or select it in the list to edit it.</value>
+  </data>
+  <data name="Conn.Provider" xml:space="preserve">
+    <value>Database type</value>
+  </data>
+  <data name="Conn.Provider.SqlServer" xml:space="preserve">
+    <value>SQL Server</value>
+  </data>
+  <data name="Conn.Provider.PostgreSql" xml:space="preserve">
+    <value>PostgreSQL</value>
+  </data>
+  <data name="Conn.Provider.MySql" xml:space="preserve">
+    <value>MySQL / MariaDB</value>
+  </data>
+  <data name="Conn.Provider.Sqlite" xml:space="preserve">
+    <value>SQLite file</value>
+  </data>
+  <data name="Conn.Provider.Odbc" xml:space="preserve">
+    <value>ODBC</value>
+  </data>
+  <data name="Conn.Host" xml:space="preserve">
+    <value>Server</value>
+  </data>
+  <data name="Conn.Port" xml:space="preserve">
+    <value>Port</value>
+  </data>
+  <data name="Conn.Port.Invalid" xml:space="preserve">
+    <value>The port must be a whole number from 1 to 65535, or empty to use the usual one.</value>
+  </data>
+  <data name="Conn.Database" xml:space="preserve">
+    <value>Database name</value>
+  </data>
+  <data name="Conn.Sqlite.File" xml:space="preserve">
+    <value>SQLite file</value>
+  </data>
+  <data name="Conn.Sqlite.Hint" xml:space="preserve">
+    <value>The file is opened read-only, so Rotula can never change it.</value>
+  </data>
+  <data name="Conn.Browse" xml:space="preserve">
+    <value>Browse...</value>
+  </data>
+  <data name="Conn.Odbc.Dsn" xml:space="preserve">
+    <value>ODBC data source name (DSN)</value>
+  </data>
+  <data name="Conn.Odbc.String" xml:space="preserve">
+    <value>or a connection string</value>
+  </data>
+  <data name="Conn.Odbc.Hint" xml:space="preserve">
+    <value>If the connection string contains a password, Rotula moves it into the protected store and removes it from the saved text.</value>
+  </data>
+  <data name="Conn.Auth" xml:space="preserve">
+    <value>Sign in with</value>
+  </data>
+  <data name="Conn.Auth.Windows" xml:space="preserve">
+    <value>My Windows account</value>
+  </data>
+  <data name="Conn.Auth.UserPassword" xml:space="preserve">
+    <value>User name and password</value>
+  </data>
+  <data name="Conn.User" xml:space="preserve">
+    <value>User name</value>
+  </data>
+  <data name="Conn.Password" xml:space="preserve">
+    <value>Password</value>
+  </data>
+  <data name="Conn.Password.Saved" xml:space="preserve">
+    <value>A password is saved for this connection and is never shown. Leave this empty to keep it, or type a new one to replace it.</value>
+  </data>
+  <data name="Conn.Password.None" xml:space="preserve">
+    <value>The password is stored protected for your Windows account only, and is never shown again.</value>
+  </data>
+  <data name="Conn.Security" xml:space="preserve">
+    <value>Security</value>
+  </data>
+  <data name="Conn.Encrypt" xml:space="preserve">
+    <value>Encrypt the connection</value>
+  </data>
+  <data name="Conn.Encrypt.Warning" xml:space="preserve">
+    <value>Keep this on. Turn it off only for a trusted server on your own network.</value>
+  </data>
+  <data name="Conn.Encrypt.Off" xml:space="preserve">
+    <value>Encryption is off: anyone on the network path can read the data and the password. Use this only for a trusted local server.</value>
+  </data>
+  <data name="Conn.Trust" xml:space="preserve">
+    <value>Trust this server's certificate</value>
+  </data>
+  <data name="Conn.Trust.Warning" xml:space="preserve">
+    <value>Only for a server you know and control, such as a test server. Otherwise someone could impersonate the server.</value>
+  </data>
+  <data name="Conn.Trust.On" xml:space="preserve">
+    <value>Rotula will not check who the server is, so someone on the network could pose as it and read the data and the password. Use this only for a server you control.</value>
+  </data>
+  <data name="Conn.Test" xml:space="preserve">
+    <value>Test connection</value>
+  </data>
+  <data name="Conn.Test.Ok" xml:space="preserve">
+    <value>The connection works.</value>
+  </data>
+  <data name="Conn.Test.RetypePassword" xml:space="preserve">
+    <value>You changed this connection, and the saved password cannot be read back for a test. Type the password again to test it.</value>
+  </data>
+  <data name="Conn.Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Conn.Saved" xml:space="preserve">
+    <value>The connection "{0}" was saved.</value>
+  </data>
+  <data name="Conn.Deleted" xml:space="preserve">
+    <value>The connection "{0}" was deleted.</value>
+  </data>
+  <data name="Conn.Delete.Title" xml:space="preserve">
+    <value>Delete connection</value>
+  </data>
+  <data name="Conn.Delete.Body" xml:space="preserve">
+    <value>Delete the connection "{0}"? Labels that use it will ask for a connection with this name the next time they are opened.</value>
+  </data>
+  <data name="Conn.Busy.Saving" xml:space="preserve">
+    <value>Saving...</value>
+  </data>
+  <data name="Conn.Busy.Deleting" xml:space="preserve">
+    <value>Deleting...</value>
+  </data>
+  <data name="Conn.Busy.Testing" xml:space="preserve">
+    <value>Testing the connection...</value>
+  </data>
+  <data name="Conn.TrustOffer" xml:space="preserve">
+    <value>The server's security certificate could not be verified. If this is your own server (for example a test server), you can trust it for this connection. Otherwise ask the administrator for a valid certificate.</value>
+  </data>
+  <data name="Conn.TrustOffer.Button" xml:space="preserve">
+    <value>Trust this server and save</value>
+  </data>
+  <data name="Conn.Field.Name" xml:space="preserve">
+    <value>name</value>
+  </data>
+  <data name="Conn.Field.Provider" xml:space="preserve">
+    <value>database type</value>
+  </data>
+  <data name="Conn.Field.Authentication" xml:space="preserve">
+    <value>sign-in method</value>
+  </data>
+  <data name="Conn.Field.Host" xml:space="preserve">
+    <value>server</value>
+  </data>
+  <data name="Conn.Field.Port" xml:space="preserve">
+    <value>port</value>
+  </data>
+  <data name="Conn.Field.Database" xml:space="preserve">
+    <value>database name</value>
+  </data>
+  <data name="Conn.Field.UserName" xml:space="preserve">
+    <value>user name</value>
+  </data>
+  <data name="Conn.Field.FilePath" xml:space="preserve">
+    <value>SQLite file</value>
+  </data>
+  <data name="Conn.Field.OdbcConnectionString" xml:space="preserve">
+    <value>connection string</value>
+  </data>
+  <data name="Conn.Field.Dsn" xml:space="preserve">
+    <value>data source name</value>
+  </data>
+  <data name="Conn.Field.CommandTimeoutSeconds" xml:space="preserve">
+    <value>command timeout</value>
+  </data>
+  <data name="Conn.Field.ConnectTimeoutSeconds" xml:space="preserve">
+    <value>connect timeout</value>
+  </data>
+  <data name="Data.Error.Unknown" xml:space="preserve">
+    <value>Something went wrong while reading from the database ({0}). Try again, and check the connection details if it keeps happening.</value>
+  </data>
+  <data name="Data.Error.ConnectionFailed" xml:space="preserve">
+    <value>Rotula could not connect to the database. Check the connection details and that the server is running, then try again.</value>
+  </data>
+  <data name="Data.Error.AuthenticationFailed" xml:space="preserve">
+    <value>The server did not accept the user name or password. Check them in "Manage connections..." and try again.</value>
+  </data>
+  <data name="Data.Error.Timeout" xml:space="preserve">
+    <value>The database took too long to answer. Try again, narrow the query, or ask the database administrator.</value>
+  </data>
+  <data name="Data.Error.HostUnreachable" xml:space="preserve">
+    <value>The server could not be reached. Check the server name and port, your network or VPN, and try again.</value>
+  </data>
+  <data name="Data.Error.DatabaseNotFound" xml:space="preserve">
+    <value>The database was not found. Check the database name or the file location, and try again.</value>
+  </data>
+  <data name="Data.Error.PermissionDenied" xml:space="preserve">
+    <value>This account is not allowed to read that data. Ask the database administrator for read access.</value>
+  </data>
+  <data name="Data.Error.QueryRejected" xml:space="preserve">
+    <value>Rotula only reads data, so this query was not run. {0}</value>
+  </data>
+  <data name="Data.Error.QueryFailed" xml:space="preserve">
+    <value>The database could not run the query. Check the table and column names and the spelling of the query, then try again.</value>
+  </data>
+  <data name="Data.Error.Cancelled" xml:space="preserve">
+    <value>Stopped. Nothing was changed.</value>
+  </data>
+  <data name="Data.Error.TooManyRows" xml:space="preserve">
+    <value>The row limit {0} is above the maximum of {1}. Choose a smaller limit.</value>
+  </data>
+  <data name="Data.Error.DriverNotInstalled" xml:space="preserve">
+    <value>The ODBC driver or data source is not installed on this computer. Install it, or choose another data source name.</value>
+  </data>
+  <data name="Data.Error.CertificateNotTrusted" xml:space="preserve">
+    <value>The server's security certificate is not trusted. If this is your own server, open "Manage connections..." and choose to trust it for this connection. Otherwise ask the administrator for a valid certificate.</value>
+  </data>
+  <data name="Data.Error.InvalidSettings" xml:space="preserve">
+    <value>The setting "{0}" is missing or not allowed. Correct it in "Manage connections..." and try again.</value>
+  </data>
+  <data name="Data.Error.ConnectionNotFound" xml:space="preserve">
+    <value>There is no saved connection named "{0}". Create it with exactly that name in "Manage connections...".</value>
+  </data>
+  <data name="Data.Query.Rejected.NotSelect" xml:space="preserve">
+    <value>Only a single SELECT query is allowed. Rewrite it as a SELECT.</value>
+  </data>
+  <data name="Data.Query.Rejected.MultipleStatements" xml:space="preserve">
+    <value>Only one statement is allowed. Remove everything after the first semicolon.</value>
+  </data>
+  <data name="Data.Query.Rejected.Empty" xml:space="preserve">
+    <value>Type a SELECT query first.</value>
+  </data>
+  <data name="Data.Query.Rejected.ForbiddenKeyword" xml:space="preserve">
+    <value>The word "{0}" is not allowed because it can change data. If it is a column name, put it in quotes.</value>
+  </data>
+  <data name="Data.Query.Rejected.SelectInto" xml:space="preserve">
+    <value>SELECT ... INTO is not allowed because it creates tables or files. Remove the INTO part.</value>
+  </data>
+  <data name="Data.Query.Rejected.Locking" xml:space="preserve">
+    <value>Locking rows (FOR UPDATE, FOR SHARE, LOCK IN SHARE MODE) is not allowed. Remove that part.</value>
+  </data>
+  <data name="Data.Query.Rejected.ForbiddenFunction" xml:space="preserve">
+    <value>The function "{0}" is not allowed because it can read files, reach other servers or run code. Remove it.</value>
+  </data>
+  <data name="Data.Query.Rejected.ExecutableComment" xml:space="preserve">
+    <value>A comment that starts with /*! runs as SQL in MySQL, so it is not allowed. Remove it.</value>
+  </data>
+  <data name="Data.Query.Rejected.Unterminated" xml:space="preserve">
+    <value>A quote or comment is not closed. Close it and try again.</value>
+  </data>
+  <data name="Data.Query.Rejected.TooLong" xml:space="preserve">
+    <value>The query is too long. Shorten it.</value>
+  </data>
+  <data name="Data.Query.Rejected.MissingParameter" xml:space="preserve">
+    <value>The parameter @{0} has no value. Fill it in under Parameters.</value>
+  </data>
+  <data name="Data.Query.Truncated" xml:space="preserve">
+    <value>Only the first {0} rows were read. Raise the maximum rows or narrow the query to read the rest.</value>
+  </data>
+  <data name="Data.Store.Damaged" xml:space="preserve">
+    <value>The file with the saved connections is damaged and was ignored. Add your connections again; the damaged file is kept next to it with the extension .damaged.</value>
+  </data>
+  <data name="Data.Store.PasswordReenterRequired" xml:space="preserve">
+    <value>You changed where or how this connection signs in, so the saved password was not used. Type the password again.</value>
+  </data>
+  <data name="Data.Error.ProviderUnavailable" xml:space="preserve">
+    <value>The data source type "{0}" is not available. Its add-on may be missing or turned off.</value>
+  </data>
+  <data name="Data.Query.Rejected.Ambiguous" xml:space="preserve">
+    <value>This query can be read in more than one way (for example a backslash before a quote), so it was not run. Use two quotes ('') instead of a backslash.</value>
+  </data>
+  <data name="Conn.Field.ProviderId" xml:space="preserve">
+    <value>provider</value>
+  </data>
+  <data name="Conn.Field.PresetId" xml:space="preserve">
+    <value>service</value>
+  </data>
+  <data name="Conn.Field.CaCertificatePath" xml:space="preserve">
+    <value>certificate authority file</value>
+  </data>
+  <data name="Conn.Field.Extras" xml:space="preserve">
+    <value>extra options</value>
+  </data>
+  <data name="Data.Store.TooLarge" xml:space="preserve">
+    <value>The file with the saved connections is too large and was ignored. Add your connections again.</value>
+  </data>
+  <data name="Data.Store.PasswordUnreadable" xml:space="preserve">
+    <value>The saved password cannot be read. It was probably saved by another Windows user or on another computer. Open "Manage connections..." and type it again.</value>
+  </data>
+  <data name="Data.Store.WriteFailed" xml:space="preserve">
+    <value>Rotula could not save the connections. Check that you can write to your user folder (AppData) and try again.</value>
+  </data>
+  <data name="Data.Store.ProtectionUnavailable" xml:space="preserve">
+    <value>Password protection is not available on this system, so connections that need a password cannot be saved. Use your Windows account to sign in, or a SQLite file.</value>
+  </data>
+  <data name="Conn.Field.Encrypt" xml:space="preserve">
+    <value>encryption</value>
+  </data>
+  <data name="Conn.Field.TrustServerCertificate" xml:space="preserve">
+    <value>trust the server certificate</value>
+  </data>
+  <data name="Enum.BarcodeSymbology.Code11" xml:space="preserve">
+    <value>Code 11</value>
+  </data>
+  <data name="Enum.BarcodeSymbology.Industrial2Of5" xml:space="preserve">
+    <value>Industrial 2 of 5</value>
+  </data>
+  <data name="Enum.BarcodeSymbology.Standard2Of5" xml:space="preserve">
+    <value>Standard 2 of 5</value>
+  </data>
+  <data name="Enum.BarcodeSymbology.Logmars" xml:space="preserve">
+    <value>LOGMARS</value>
+  </data>
+  <data name="Enum.BarcodeSymbology.Codabar" xml:space="preserve">
+    <value>Codabar</value>
+  </data>
+  <data name="Enum.BarcodeSymbology.Msi" xml:space="preserve">
+    <value>MSI</value>
+  </data>
+  <data name="Enum.BarcodeSymbology.Plessey" xml:space="preserve">
+    <value>Plessey</value>
+  </data>
+  <data name="Enum.BarcodeSymbology.Ean8" xml:space="preserve">
+    <value>EAN-8</value>
+  </data>
+  <data name="Enum.BarcodeSymbology.UpcE" xml:space="preserve">
+    <value>UPC-E</value>
+  </data>
+  <data name="Enum.BarcodeSymbology.UpcEanExtension" xml:space="preserve">
+    <value>UPC/EAN extension</value>
+  </data>
+  <data name="Enum.BarcodeSymbology.Postnet" xml:space="preserve">
+    <value>POSTNET</value>
+  </data>
+  <data name="Enum.BarcodeSymbology.Planet" xml:space="preserve">
+    <value>PLANET</value>
+  </data>
+  <data name="Enum.BarcodeSymbology.DataBar" xml:space="preserve">
+    <value>GS1 DataBar</value>
+  </data>
+  <data name="Enum.BarcodeSymbology.Aztec" xml:space="preserve">
+    <value>Aztec Code</value>
+  </data>
+  <data name="Enum.BarcodeSymbology.MicroPdf417" xml:space="preserve">
+    <value>MicroPDF417</value>
+  </data>
+  <data name="Enum.BarcodeSymbology.Codablock" xml:space="preserve">
+    <value>Codablock</value>
+  </data>
+  <data name="Enum.BarcodeSymbology.MaxiCode" xml:space="preserve">
+    <value>MaxiCode</value>
+  </data>
+  <data name="Enum.BarcodeSymbology.Tlc39" xml:space="preserve">
+    <value>TLC39</value>
+  </data>
+  <data name="Enum.BarcodeSymbology.Code49" xml:space="preserve">
+    <value>Code 49</value>
+  </data>
+  <data name="Enum.DataBarType.Omnidirectional" xml:space="preserve">
+    <value>Omnidirectional</value>
+  </data>
+  <data name="Enum.DataBarType.Truncated" xml:space="preserve">
+    <value>Truncated</value>
+  </data>
+  <data name="Enum.DataBarType.Stacked" xml:space="preserve">
+    <value>Stacked</value>
+  </data>
+  <data name="Enum.DataBarType.StackedOmnidirectional" xml:space="preserve">
+    <value>Stacked omnidirectional</value>
+  </data>
+  <data name="Enum.DataBarType.Limited" xml:space="preserve">
+    <value>Limited</value>
+  </data>
+  <data name="Enum.DataBarType.Expanded" xml:space="preserve">
+    <value>Expanded</value>
+  </data>
+  <data name="Enum.MsiCheckDigitMode.None" xml:space="preserve">
+    <value>None</value>
+  </data>
+  <data name="Enum.MsiCheckDigitMode.Mod10" xml:space="preserve">
+    <value>One modulo 10 digit</value>
+  </data>
+  <data name="Enum.MsiCheckDigitMode.DoubleMod10" xml:space="preserve">
+    <value>Two modulo 10 digits</value>
+  </data>
+  <data name="Enum.MsiCheckDigitMode.Mod11Mod10" xml:space="preserve">
+    <value>Modulo 11 and modulo 10 digits</value>
+  </data>
+  <data name="Enum.CodablockMode.A" xml:space="preserve">
+    <value>Codablock A (Code 39 characters)</value>
+  </data>
+  <data name="Enum.CodablockMode.E" xml:space="preserve">
+    <value>Codablock E (Code 128, automatic FNC1)</value>
+  </data>
+  <data name="Enum.CodablockMode.F" xml:space="preserve">
+    <value>Codablock F (Code 128)</value>
+  </data>
+  <data name="Enum.BarcodeCategory.Linear" xml:space="preserve">
+    <value>Linear</value>
+  </data>
+  <data name="Enum.BarcodeCategory.Matrix2D" xml:space="preserve">
+    <value>2D matrix</value>
+  </data>
+  <data name="Enum.BarcodeCategory.Stacked" xml:space="preserve">
+    <value>Stacked</value>
+  </data>
+  <data name="Enum.BarcodeCategory.Postal" xml:space="preserve">
+    <value>Postal</value>
+  </data>
+  <data name="Prop.Code11CheckDigitCount" xml:space="preserve">
+    <value>Check digits (1 or 2)</value>
+  </data>
+  <data name="Prop.MsiCheckDigit" xml:space="preserve">
+    <value>Check digits</value>
+  </data>
+  <data name="Prop.MsiCheckDigitInText" xml:space="preserve">
+    <value>Show the check digits in the text</value>
+  </data>
+  <data name="Prop.CodabarStart" xml:space="preserve">
+    <value>Start character</value>
+  </data>
+  <data name="Prop.CodabarStop" xml:space="preserve">
+    <value>Stop character</value>
+  </data>
+  <data name="Prop.DataBarType" xml:space="preserve">
+    <value>GS1 DataBar type</value>
+  </data>
+  <data name="Prop.DataBarSeparatorHeight" xml:space="preserve">
+    <value>Separator height (1-2)</value>
+  </data>
+  <data name="Prop.DataBarSegmentsPerRow" xml:space="preserve">
+    <value>Segments per row (2-22)</value>
+  </data>
+  <data name="Prop.AztecEci" xml:space="preserve">
+    <value>Data has ECI codes</value>
+  </data>
+  <data name="Prop.AztecErrorControl" xml:space="preserve">
+    <value>Error correction / size</value>
+  </data>
+  <data name="Prop.AztecMenuSymbol" xml:space="preserve">
+    <value>Menu (reader setup) symbol</value>
+  </data>
+  <data name="Prop.AztecStructuredAppendCount" xml:space="preserve">
+    <value>Symbols in the set</value>
+  </data>
+  <data name="Prop.AztecStructuredAppendId" xml:space="preserve">
+    <value>Set id (optional)</value>
+  </data>
+  <data name="Prop.MicroPdf417Mode" xml:space="preserve">
+    <value>Mode (0-33)</value>
+  </data>
+  <data name="Prop.CodablockMode" xml:space="preserve">
+    <value>Codablock type</value>
+  </data>
+  <data name="Prop.CodablockSecurity" xml:space="preserve">
+    <value>Add check characters</value>
+  </data>
+  <data name="Prop.MaxiCodeMode" xml:space="preserve">
+    <value>Mode (2-6)</value>
+  </data>
+  <data name="Prop.MaxiCodeSymbolNumber" xml:space="preserve">
+    <value>Symbol number (1-8)</value>
+  </data>
+  <data name="Prop.MaxiCodeSymbolTotal" xml:space="preserve">
+    <value>Total symbols (1-8)</value>
+  </data>
+  <data name="Prop.Tlc39MicroModuleWidth" xml:space="preserve">
+    <value>MicroPDF417 module (dots)</value>
+  </data>
+  <data name="Prop.Tlc39MicroRowHeight" xml:space="preserve">
+    <value>MicroPDF417 row (dots)</value>
+  </data>
+  <data name="Prop.Code49StartMode" xml:space="preserve">
+    <value>Starting mode</value>
+  </data>
+  <data name="Prop.Columns.Chars" xml:space="preserve">
+    <value>Characters per row</value>
+  </data>
+  <data name="Prop.Code49StartMode.Auto" xml:space="preserve">
+    <value>Automatic</value>
+  </data>
+  <data name="Prop.Rotation.Unsupported" xml:space="preserve">
+    <value>Rotation (cannot be printed for this barcode: choose Label default)</value>
+  </data>
+  <data name="Prop.PreviewNote" xml:space="preserve">
+    <value>About the preview</value>
+  </data>
+  <data name="Preview.Note.Placeholder" xml:space="preserve">
+    <value>The printer draws this barcode; the preview shows a placeholder.</value>
+  </data>
+  <data name="Preview.Note.AztecSpecial" xml:space="preserve">
+    <value>This Aztec symbol (Rune, menu, structured append or ECI) is drawn by the printer; the preview shows a placeholder.</value>
+  </data>
+  <data name="Preview.Note.Aztec" xml:space="preserve">
+    <value>Rune, menu, structured append and ECI symbols are drawn by the printer; for those the preview shows a placeholder.</value>
+  </data>
+  <data name="Preview.Note.Ratio2" xml:space="preserve">
+    <value>The wide-to-narrow bar ratio is drawn as 2:1 in the preview.</value>
+  </data>
+  <data name="Preview.Note.Ratio3" xml:space="preserve">
+    <value>The wide-to-narrow bar ratio is drawn as 3:1 in the preview.</value>
+  </data>
+  <data name="Preview.Note.Postal" xml:space="preserve">
+    <value>Bar and gap widths follow the module width in the preview; the real printer uses the fixed USPS dimensions.</value>
+  </data>
+  <data name="Preview.Note.DataBar" xml:space="preserve">
+    <value>The 2D composite part of GS1 DataBar is not supported; in stacked types the bar height is the height of the whole symbol.</value>
+  </data>
+  <data name="Issue.Barcode.Code11.Charset" xml:space="preserve">
+    <value>Code 11 allows only digits and the hyphen (-). Remove any other character.</value>
+  </data>
+  <data name="Issue.Barcode.Code11.CheckDigits" xml:space="preserve">
+    <value>Code 11 uses 1 or 2 check digits. Choose one of those two values.</value>
+  </data>
+  <data name="Issue.Barcode.Logmars.Charset" xml:space="preserve">
+    <value>LOGMARS allows only letters A to Z, digits, space and - . $ / + %. Remove any other character.</value>
+  </data>
+  <data name="Issue.Barcode.Logmars.TextAlways" xml:space="preserve">
+    <value>The printer always prints the text under a LOGMARS barcode, so switching it off has no effect. Turn the text on to match what will print.</value>
+  </data>
+  <data name="Issue.Barcode.Codabar.Charset" xml:space="preserve">
+    <value>Codabar allows only digits and - $ : / . + in the data. The start and stop letters A to D are chosen in the options, not typed in the data.</value>
+  </data>
+  <data name="Issue.Barcode.Codabar.StartStop" xml:space="preserve">
+    <value>The Codabar start and stop characters must each be A, B, C or D. Choose one of those.</value>
+  </data>
+  <data name="Issue.Barcode.Msi.Length" xml:space="preserve">
+    <value>MSI data can have at most {0} digits with this check digit setting. Shorten the data.</value>
+  </data>
+  <data name="Issue.Barcode.Msi.CheckDigit" xml:space="preserve">
+    <value>Choose one of the MSI check digit options.</value>
+  </data>
+  <data name="Issue.Barcode.Plessey.Charset" xml:space="preserve">
+    <value>Plessey allows only digits 0 to 9 and capital letters A to F. Remove any other character.</value>
+  </data>
+  <data name="Issue.Barcode.Ean8.Length" xml:space="preserve">
+    <value>EAN-8 needs {0} digits (the check digit is added for you) or {1} digits including the check digit.</value>
+  </data>
+  <data name="Issue.Barcode.Ean8.CheckDigit" xml:space="preserve">
+    <value>The last digit is not the right EAN-8 check digit. It should be {0}, or remove the last digit and let the printer add it.</value>
+  </data>
+  <data name="Issue.Barcode.UpcE.Length" xml:space="preserve">
+    <value>UPC-E needs the 10-digit manufacturer and product code that the printer shortens, or the 6-digit UPC-E code (optionally with number system 0 in front and a check digit at the end). Change the number of digits.</value>
+  </data>
+  <data name="Issue.Barcode.UpcE.NumberSystem" xml:space="preserve">
+    <value>UPC-E can only use number system 0. Start the code with 0.</value>
+  </data>
+  <data name="Issue.Barcode.UpcE.NotCompressible" xml:space="preserve">
+    <value>These digits cannot be shortened to a UPC-E code, because UPC-E needs zeros in specific places. Change the digits or use UPC-A instead.</value>
+  </data>
+  <data name="Issue.Barcode.UpcE.CheckDigit" xml:space="preserve">
+    <value>The last digit is not the right UPC-E check digit. It should be {0}, or remove the last digit and let the printer add it.</value>
+  </data>
+  <data name="Issue.Barcode.UpcEanExtension.Length" xml:space="preserve">
+    <value>A UPC/EAN extension needs exactly 2 or 5 digits.</value>
+  </data>
+  <data name="Issue.Barcode.Postnet.Length" xml:space="preserve">
+    <value>POSTNET data must have one of these numbers of digits: {0}. The printer adds the check digit.</value>
+  </data>
+  <data name="Issue.Barcode.Planet.Length" xml:space="preserve">
+    <value>PLANET data must have one of these numbers of digits: {0}. The printer adds the check digit.</value>
+  </data>
+  <data name="Issue.Barcode.DataBar.Type" xml:space="preserve">
+    <value>Choose one of the GS1 DataBar types.</value>
+  </data>
+  <data name="Issue.Barcode.DataBar.Length" xml:space="preserve">
+    <value>This GS1 DataBar type needs up to {0} digits (zeros are added in front) or {1} digits including the check digit. Shorten the data.</value>
+  </data>
+  <data name="Issue.Barcode.DataBar.CheckDigit" xml:space="preserve">
+    <value>The last digit is not the right GS1 check digit. It should be {0}, or remove the last digit and let the printer add it.</value>
+  </data>
+  <data name="Issue.Barcode.DataBar.Composite" xml:space="preserve">
+    <value>Composite (2D) data after a | is not supported. Remove the | and everything after it.</value>
+  </data>
+  <data name="Issue.Barcode.DataBar.ElementString" xml:space="preserve">
+    <value>GS1 DataBar Expanded needs GS1 element strings with the identifiers in brackets, for example (01)12345678901231(10)ABC. Check the brackets and the identifiers.</value>
+  </data>
+  <data name="Issue.Barcode.DataBar.Charset" xml:space="preserve">
+    <value>A GS1 element string can only contain standard keyboard characters. Remove accents and special symbols.</value>
+  </data>
+  <data name="Issue.Barcode.DataBar.TooLong" xml:space="preserve">
+    <value>The GS1 element string is too long (maximum {0} characters). Shorten it.</value>
+  </data>
+  <data name="Issue.Barcode.DataBar.Gtin" xml:space="preserve">
+    <value>The (01) element needs a 14-digit GTIN made only of digits. Fix the digits inside the brackets.</value>
+  </data>
+  <data name="Issue.Barcode.DataBar.LimitedRange" xml:space="preserve">
+    <value>GS1 DataBar Limited can only encode numbers up to 1999999999999, so the first of its 13 digits must be 0 or 1. Change the number or choose another type.</value>
+  </data>
+  <data name="Issue.Barcode.DataBar.Segments" xml:space="preserve">
+    <value>The segments per row must be an even number between {0} and {1}.</value>
+  </data>
+  <data name="Issue.Barcode.DataBar.Separator" xml:space="preserve">
+    <value>The separator height must be between {0} and {1} modules.</value>
+  </data>
+  <data name="Issue.Barcode.Aztec.ErrorControl" xml:space="preserve">
+    <value>The Aztec error correction value is not valid. Use 0 (automatic), 1 to 99 (percent), 101 to 104 (compact size), 201 to 232 (full size) or 300 (Rune).</value>
+  </data>
+  <data name="Issue.Barcode.Aztec.StructuredAppend" xml:space="preserve">
+    <value>The number of symbols in a structured append set must be between {0} and {1}.</value>
+  </data>
+  <data name="Issue.Barcode.Aztec.StructuredAppendId" xml:space="preserve">
+    <value>The set id can have at most {0} characters. Shorten it.</value>
+  </data>
+  <data name="Issue.Barcode.Aztec.StructuredAppendIdChars" xml:space="preserve">
+    <value>The set id can only use standard keyboard characters, and not a comma, ^ or ~. Remove them.</value>
+  </data>
+  <data name="Issue.Barcode.Aztec.TooLong" xml:space="preserve">
+    <value>The Aztec data is too long (maximum {0} characters). Shorten the text.</value>
+  </data>
+  <data name="Issue.Barcode.MicroPdf417.Mode" xml:space="preserve">
+    <value>The MicroPDF417 mode must be between {0} and {1}.</value>
+  </data>
+  <data name="Issue.Barcode.MicroPdf417.TooLong" xml:space="preserve">
+    <value>The MicroPDF417 data is too long (maximum {0} characters). Shorten the text.</value>
+  </data>
+  <data name="Issue.Barcode.Codablock.Mode" xml:space="preserve">
+    <value>Choose Codablock A, E or F.</value>
+  </data>
+  <data name="Issue.Barcode.Codablock.Charset" xml:space="preserve">
+    <value>Codablock A allows only capital letters, digits and - . space $ / + %. Change the data or choose Codablock E or F.</value>
+  </data>
+  <data name="Issue.Barcode.Codablock.Charset128" xml:space="preserve">
+    <value>Codablock E and F can only encode standard keyboard characters. Remove accents and special symbols.</value>
+  </data>
+  <data name="Issue.Barcode.Codablock.Columns" xml:space="preserve">
+    <value>The characters per row must be 0 (automatic) or between {0} and {1}.</value>
+  </data>
+  <data name="Issue.Barcode.Codablock.Rows" xml:space="preserve">
+    <value>For this Codablock type the number of rows must be 0 (automatic) or between {0} and {1}.</value>
+  </data>
+  <data name="Issue.Barcode.MaxiCode.Mode" xml:space="preserve">
+    <value>The MaxiCode mode must be between {0} and {1}.</value>
+  </data>
+  <data name="Issue.Barcode.MaxiCode.Symbol" xml:space="preserve">
+    <value>The total number of MaxiCode symbols must be between {0} and {1}, and this symbol's number must be between 1 and the total.</value>
+  </data>
+  <data name="Issue.Barcode.MaxiCode.Message" xml:space="preserve">
+    <value>MaxiCode mode {0} needs a carrier message: a 3-digit class of service, a 3-digit country code and then the postal code (9 digits in mode 2, 6 letters or digits in mode 3). Complete the beginning of the data.</value>
+  </data>
+  <data name="Issue.Barcode.MaxiCode.TooLong" xml:space="preserve">
+    <value>The MaxiCode data is too long (maximum {0} characters). Shorten the text.</value>
+  </data>
+  <data name="Issue.Barcode.MaxiCode.RotationIgnored" xml:space="preserve">
+    <value>MaxiCode cannot be rotated in ZPL, so the rotation set on this element will not be printed. Set the rotation back to the label default.</value>
+  </data>
+  <data name="Issue.Barcode.Tlc39.Format" xml:space="preserve">
+    <value>TLC39 data starts with a 6-digit ECI number, optionally followed by a comma and the serial number and other fields. Fix the beginning of the data.</value>
+  </data>
+  <data name="Issue.Barcode.Tlc39.Fields" xml:space="preserve">
+    <value>Each TLC39 field after the ECI number can have only letters and digits, up to {0} characters. Check the fields between the commas.</value>
+  </data>
+  <data name="Issue.Barcode.Tlc39.TooLong" xml:space="preserve">
+    <value>The TLC39 data is too long (maximum {0} characters). Shorten the text.</value>
+  </data>
+  <data name="Issue.Barcode.Tlc39.MicroModuleWidth" xml:space="preserve">
+    <value>The MicroPDF417 module width must be between {0} and {1} dots.</value>
+  </data>
+  <data name="Issue.Barcode.Tlc39.MicroRowHeight" xml:space="preserve">
+    <value>The MicroPDF417 row height must be between {0} and {1} dots.</value>
+  </data>
+  <data name="Issue.Barcode.Code49.Charset" xml:space="preserve">
+    <value>Code 49 can only encode standard keyboard characters. Remove accents and special symbols.</value>
+  </data>
+  <data name="Issue.Barcode.Code49.StartMode" xml:space="preserve">
+    <value>The Code 49 starting mode must be automatic or a number from 0 to 5. Choose one of those.</value>
+  </data>
+  <data name="Issue.Barcode.Code49.TooLong" xml:space="preserve">
+    <value>The Code 49 data is too long (maximum {0} characters). Shorten the text.</value>
+  </data>
+  <data name="Issue.Import.Barcode.DataBar.Type" xml:space="preserve">
+    <value>This GS1 DataBar uses symbology type {0}, which Rotula does not support (only types 1 to 6). It was kept as ZPL text and will still print, but it cannot be edited.</value>
+  </data>
+  <data name="Issue.Import.Barcode.DataBar.Composite" xml:space="preserve">
+    <value>This GS1 DataBar has a composite (2D) part, which Rotula does not support. It was kept as ZPL text and will still print, but it cannot be edited.</value>
+  </data>
+  <data name="Issue.Import.Barcode.Postal.Type" xml:space="preserve">
+    <value>This postal barcode uses type {0}, which Rotula does not support (only POSTNET and PLANET). It was kept as ZPL text and will still print, but it cannot be edited.</value>
+  </data>
+  <data name="Prop.DataBarSegmentsPerRow.Hint" xml:space="preserve">
+    <value>Even numbers only. Fewer than 22 stacks the symbol over several rows.</value>
+  </data>
+  <data name="Prop.AztecErrorControl.Hint" xml:space="preserve">
+    <value>0 = automatic. 1 to 99 = minimum error correction in percent. 101 to 104 = compact symbol of 1 to 4 layers. 201 to 232 = full symbol of 1 to 32 layers. 300 = Aztec Rune.</value>
+  </data>
+  <data name="Prop.AztecStructuredAppendCount.Hint" xml:space="preserve">
+    <value>1 = a single symbol. 2 to 26 splits the message over that many symbols.</value>
+  </data>
+  <data name="Prop.Columns.Chars.Hint" xml:space="preserve">
+    <value>0 = automatic.</value>
+  </data>
+  <data name="Prop.MaxiCodeMode.Hint" xml:space="preserve">
+    <value>Modes 2 and 3 carry a structured carrier message (class of service, country, postal code); modes 4 to 6 carry any text.</value>
+  </data>
+  <data name="Prop.MicroPdf417Mode.Hint" xml:space="preserve">
+    <value>The mode fixes the number of columns and rows and the error correction (see the ZPL guide).</value>
+  </data>
+  <data name="Issue.Field.Serial.Value" xml:space="preserve">
+    <value>A printer counter needs a start value of 1 to 40 characters made of letters, digits, spaces and - / . with at least one digit. Change the text of this field.</value>
+  </data>
+  <data name="Issue.Field.Serial.Barcode" xml:space="preserve">
+    <value>A QR code cannot be counted by the printer, because its data starts with a header. Turn the printer counter off for this barcode.</value>
+  </data>
+  <data name="Issue.Field.Serial.Mask" xml:space="preserve">
+    <value>The counter mask can only use the letters D, H, O, A, N and %, and the step only letters, digits and %. Fix the mask or the step.</value>
+  </data>
+  <data name="Issue.Field.Embed.Invalid" xml:space="preserve">
+    <value>The character that marks field-number references must be one standard keyboard character, and not ^ or ~. Choose another one.</value>
+  </data>
+  <data name="Issue.Field.Clock.Invalid" xml:space="preserve">
+    <value>The clock marker characters must be different standard keyboard characters, and not ^, ~ or a comma. Change them.</value>
+  </data>
+  <data name="Issue.Field.Number.Range" xml:space="preserve">
+    <value>The field number must be between {0} and {1}.</value>
+  </data>
+  <data name="Issue.Field.Prompt.Invalid" xml:space="preserve">
+    <value>The field prompt can only use letters, digits and spaces, up to 255 characters. Change the prompt.</value>
+  </data>
+  <data name="Tool.Ellipse" xml:space="preserve">
+    <value>Ellipse</value>
+  </data>
+  <data name="Tool.DiagonalLine" xml:space="preserve">
+    <value>Diagonal line</value>
+  </data>
+  <data name="Tool.Symbol" xml:space="preserve">
+    <value>Symbol</value>
+  </data>
+  <data name="Element.Ellipse" xml:space="preserve">
+    <value>Ellipse</value>
+  </data>
+  <data name="Element.DiagonalLine" xml:space="preserve">
+    <value>Diagonal line</value>
+  </data>
+  <data name="Element.Symbol" xml:space="preserve">
+    <value>Symbol</value>
+  </data>
+  <data name="Panel.Symbol" xml:space="preserve">
+    <value>Symbol</value>
+  </data>
+  <data name="Prop.Lean" xml:space="preserve">
+    <value>Leans</value>
+  </data>
+  <data name="Prop.Symbol" xml:space="preserve">
+    <value>Symbol</value>
+  </data>
+  <data name="Prop.Symbol.Height" xml:space="preserve">
+    <value>Character height (dots)</value>
+  </data>
+  <data name="Prop.Symbol.Width" xml:space="preserve">
+    <value>Character width (dots)</value>
+  </data>
+  <data name="Enum.DiagonalLean.Right" xml:space="preserve">
+    <value>Right (/ from bottom left to top right)</value>
+  </data>
+  <data name="Enum.DiagonalLean.Left" xml:space="preserve">
+    <value>Left (\ from top left to bottom right)</value>
+  </data>
+  <data name="Enum.GraphicSymbol.Registered" xml:space="preserve">
+    <value>Registered mark (R)</value>
+  </data>
+  <data name="Enum.GraphicSymbol.Copyright" xml:space="preserve">
+    <value>Copyright (C)</value>
+  </data>
+  <data name="Enum.GraphicSymbol.Trademark" xml:space="preserve">
+    <value>Trademark (TM)</value>
+  </data>
+  <data name="Enum.GraphicSymbol.UnderwritersLaboratories" xml:space="preserve">
+    <value>Underwriters Laboratories (UL)</value>
+  </data>
+  <data name="Enum.GraphicSymbol.CanadianStandards" xml:space="preserve">
+    <value>Canadian Standards Association (CSA)</value>
+  </data>
+  <data name="Enum.FieldDirection.Horizontal" xml:space="preserve">
+    <value>Horizontal</value>
+  </data>
+  <data name="Enum.FieldDirection.Vertical" xml:space="preserve">
+    <value>Vertical (top to bottom)</value>
+  </data>
+  <data name="Enum.FieldDirection.Reverse" xml:space="preserve">
+    <value>Reverse (right to left)</value>
+  </data>
+  <data name="Issue.Label.Shift.Range" xml:space="preserve">
+    <value>The label shift must be between {0} and {1} dots. Change the shift in the label settings.</value>
+  </data>
+  <data name="Issue.Label.Top.Range" xml:space="preserve">
+    <value>The label top must be between {0} and {1} dot rows. Change it in the label settings.</value>
+  </data>
+  <data name="Issue.Print.Darkness.Range" xml:space="preserve">
+    <value>The darkness change must be between {0} and {1}. Choose a value in that range.</value>
+  </data>
+  <data name="Issue.Print.Rate.Range" xml:space="preserve">
+    <value>Print speeds must be between {0} and {1} inches per second. Change the print, slew and backfeed speeds to values in that range.</value>
+  </data>
+  <data name="Issue.Font.Alias.Invalid" xml:space="preserve">
+    <value>Font {0} cannot use the file "{1}". A font id is one letter or digit, and the file must look like E:NAME.TTF. Fix the font id or the file name.</value>
+  </data>
+  <data name="Issue.Graphic.Stored.Invalid" xml:space="preserve">
+    <value>The stored graphic {0} cannot be used. Its name must look like R:LOGO.GRF and its data must not be larger than 4 MB. Fix the name or use a smaller graphic.</value>
+  </data>
+  <data name="Issue.Graphic.Diagonal.Range" xml:space="preserve">
+    <value>The width, height and thickness of a diagonal line must be between {0} and {1} dots. Change the size.</value>
+  </data>
+  <data name="Issue.Graphic.Ellipse.Range" xml:space="preserve">
+    <value>The width, height and thickness of an ellipse must be between {0} and {1} dots. Change the size.</value>
+  </data>
+  <data name="Issue.Graphic.Symbol.Range" xml:space="preserve">
+    <value>The height and width of a symbol must be between {0} and {1} dots. Change the size.</value>
+  </data>
+  <data name="Issue.Text.Box.Range" xml:space="preserve">
+    <value>The width and height of a text box must be between {0} and {1} dots. Change the size of the box.</value>
+  </data>
+  <data name="Issue.Text.Box.WithBlock" xml:space="preserve">
+    <value>A text field can be a wrapped block or a text box, not both. Turn one of them off.</value>
+  </data>
+  <data name="Issue.Text.Direction.Range" xml:space="preserve">
+    <value>The gap between characters must be between {0} and {1} dots. Change the gap.</value>
+  </data>
+  <data name="Issue.Import.Field.OptionNotApplicable" xml:space="preserve">
+    <value>The option {0} on this field cannot be used with the field it belongs to, so the whole field was kept as raw ZPL and will still print, but it cannot be edited.</value>
+  </data>
+  <data name="Issue.Import.Serial.Conflict" xml:space="preserve">
+    <value>This field has both data and a printer counter, which cannot be combined. It was kept as raw ZPL and will still print, but it cannot be edited.</value>
+  </data>
+  <data name="Issue.Import.Font.AliasLate" xml:space="preserve">
+    <value>The font assignment {0} comes after some fields were already defined, so it cannot become a label setting. It was kept as raw ZPL in its original place.</value>
+  </data>
+  <data name="Issue.Stocks.File.TooLarge" xml:space="preserve">
+    <value>The stock file "{0}" is larger than {1} bytes, so it was not read. Use a smaller file.</value>
+  </data>
+  <data name="Issue.Stocks.File.Unreadable" xml:space="preserve">
+    <value>The stock file "{0}" could not be opened. Check that it exists and that you may read it.</value>
+  </data>
+  <data name="Issue.Stocks.File.InvalidJson" xml:space="preserve">
+    <value>The stock file "{0}" is not a valid stock list. Check the file, or restore it from the original.</value>
+  </data>
+  <data name="Issue.Stocks.File.UnsupportedSchema" xml:space="preserve">
+    <value>The stock file "{0}" has a format version ({1}) that this Rotula does not understand. Update Rotula or use a different file.</value>
+  </data>
+  <data name="Issue.Stocks.File.NoEntries" xml:space="preserve">
+    <value>The stock file "{0}" has no entries. Add at least one stock to it.</value>
+  </data>
+  <data name="Issue.Stocks.File.TooManyEntries" xml:space="preserve">
+    <value>The stock file "{0}" has more than {1} entries, so only the first {1} were read. Split the file into smaller ones.</value>
+  </data>
+  <data name="Issue.Stocks.File.TooManyFiles" xml:space="preserve">
+    <value>The stocks folder has more than {0} files, so the extra ones were ignored. Remove the files you do not need.</value>
+  </data>
+  <data name="Issue.Stocks.Entry.NotAnObject" xml:space="preserve">
+    <value>Item {1} in "{0}" is not a stock entry, so it was skipped.</value>
+  </data>
+  <data name="Issue.Stocks.Entry.MissingId" xml:space="preserve">
+    <value>Entry {1} in "{0}" has no id, so it was skipped. Give every entry a unique id.</value>
+  </data>
+  <data name="Issue.Stocks.Entry.BadId" xml:space="preserve">
+    <value>Entry {1} in "{0}" has the id "{2}", which is too long or uses characters that are not allowed, so it was skipped. Use letters, digits, dots, underscores and hyphens, up to 64 characters.</value>
+  </data>
+  <data name="Issue.Stocks.Entry.DuplicateId" xml:space="preserve">
+    <value>The id "{1}" appears twice in "{0}", so the second entry was skipped. Give each entry a unique id.</value>
+  </data>
+  <data name="Issue.Stocks.Entry.MissingName" xml:space="preserve">
+    <value>The stock "{0}" has no name, so it was skipped. Give it a name.</value>
+  </data>
+  <data name="Issue.Stocks.Entry.BadField" xml:space="preserve">
+    <value>The field "{1}" of the stock "{0}" has the wrong type or is too long, so the stock was skipped. Correct the field.</value>
+  </data>
+  <data name="Issue.Stocks.Entry.MissingSize" xml:space="preserve">
+    <value>The stock "{0}" has no usable width and height, so it was skipped. Add the label size.</value>
+  </data>
+  <data name="Issue.Stocks.Entry.SizeOutOfRange" xml:space="preserve">
+    <value>The {1} of the stock "{0}" ({2}) is outside the sizes a label printer can use, so the stock was skipped. Check the number and its unit.</value>
+  </data>
+  <data name="Issue.Stocks.Entry.UnitMismatch" xml:space="preserve">
+    <value>The {1} of the stock "{0}" is given as {2} mm and {3} in, which are not the same length, so the stock was skipped. Correct one of the two figures.</value>
+  </data>
+  <data name="Issue.Stocks.Entry.ValueOutOfRange" xml:space="preserve">
+    <value>The field "{1}" of the stock "{0}" has the value {2}, which is outside the allowed range, so the stock was skipped. Correct the value.</value>
+  </data>
+  <data name="Issue.Stocks.Entry.BadUrl" xml:space="preserve">
+    <value>The source address of the stock "{0}" is not an https address, so the stock was skipped. Use an address that starts with https://.</value>
+  </data>
+  <data name="Issue.Stocks.Entry.PriceFieldIgnored" xml:space="preserve">
+    <value>The field "{1}" of the stock "{0}" looks like a price. Rotula does not keep prices, so the field was ignored.</value>
+  </data>
+  <data name="Issue.Stocks.Validate.IncompleteVerified" xml:space="preserve">
+    <value>The stock "{0}" is marked as verified but is missing {1}. Add it or mark the stock as not verified.</value>
+  </data>
+  <data name="Issue.Stocks.Validate.NoProvenance" xml:space="preserve">
+    <value>The stock "{0}" does not say where its data comes from. Add a source id or an https source address.</value>
+  </data>
+  <data name="Issue.Stocks.Validate.BadMetadata" xml:space="preserve">
+    <value>The description block of the stock file is incomplete: {0} is missing. Add it.</value>
+  </data>
+  <data name="Issue.Stocks.Validate.UnknownSource" xml:space="preserve">
+    <value>The stock "{0}" cites the source "{1}", which the file does not describe. Add that source to the description block.</value>
+  </data>
+  <data name="Issue.Stocks.Validate.CountMismatch" xml:space="preserve">
+    <value>The file says {0} entries are verified, but {1} are. Update the counts in the description block.</value>
+  </data>
+  <data name="Issue.Stocks.Apply.Unverified" xml:space="preserve">
+    <value>The size of the stock "{0}" has not been verified. Measure the real labels before you print a large run.</value>
+  </data>
+  <data name="Issue.Stocks.Apply.GapUnknown" xml:space="preserve">
+    <value>The gap between labels of the stock "{0}" is not known. Calibrate the printer with this stock loaded.</value>
+  </data>
+  <data name="Issue.Stocks.Apply.ContinuousNoHeight" xml:space="preserve">
+    <value>The stock "{0}" is a continuous roll with no fixed label height, so the label height was left as it was. Set the height you need. The roll is {1} m long (empty if unknown).</value>
+  </data>
+  <data name="Issue.Stocks.Apply.MultiUpNotSupported" xml:space="preserve">
+    <value>This stock has {0} labels across and {1} down. Only one label is laid out for now, so place the other labels yourself if you need them.</value>
+  </data>
+  <data name="Issue.Stocks.Apply.SheetLayoutNotSupported" xml:space="preserve">
+    <value>The stock "{0}" is a cut sheet. The label size was applied, but not the layout of the sheet.</value>
+  </data>
+  <data name="Issue.Stocks.Apply.RotationKept" xml:space="preserve">
+    <value>The label already has content, so its default field rotation was not changed for the stock "{0}". Change the rotation yourself if the stock needs it.</value>
+  </data>
+  <data name="Issue.Stocks.Apply.RoundShape" xml:space="preserve">
+    <value>The stock "{0}" is round or oval, but the printer label is rectangular and the shape is not drawn. Keep your content inside the shape.</value>
+  </data>
+  <data name="Issue.Stocks.Apply.ElementsMayClip" xml:space="preserve">
+    <value>{0} elements are already on the label and may now lie outside the new size. Check that they still fit.</value>
+  </data>
+  <data name="Issue.Stocks.Import.UnsupportedFormat" xml:space="preserve">
+    <value>Files of type "{0}" cannot be imported. Save the list as .csv or .xlsx and try again.</value>
+  </data>
+  <data name="Issue.Stocks.Import.FileTooLarge" xml:space="preserve">
+    <value>The list is larger than {0} bytes and was not read. Use a smaller file.</value>
+  </data>
+  <data name="Issue.Stocks.Import.ReadFailed" xml:space="preserve">
+    <value>The list "{0}" could not be read. Check that it is not open in another program and that it is a valid file.</value>
+  </data>
+  <data name="Issue.Stocks.Import.NoRows" xml:space="preserve">
+    <value>The list has no data rows. Add the supplies below the header row.</value>
+  </data>
+  <data name="Issue.Stocks.Import.TooManyRows" xml:space="preserve">
+    <value>The list has more than {0} rows, so only the first {0} were read. Split it into smaller lists.</value>
+  </data>
+  <data name="Issue.Stocks.Import.NoPartColumn" xml:space="preserve">
+    <value>No column with part numbers was found, so nothing was imported. Add a column named "Part number".</value>
+  </data>
+  <data name="Issue.Stocks.Import.NoSizeColumn" xml:space="preserve">
+    <value>No column with label sizes was found, so nothing was imported. Add a size column, or a width and a height column.</value>
+  </data>
+  <data name="Issue.Stocks.Import.PriceColumnIgnored" xml:space="preserve">
+    <value>The column "{0}" looks like a price and was ignored. Rotula does not keep prices.</value>
+  </data>
+  <data name="Issue.Stocks.Import.ColumnGuessed" xml:space="preserve">
+    <value>The {0} column was picked from its content because no header matched: "{1}". Check that it is the right one.</value>
+  </data>
+  <data name="Issue.Stocks.Import.RowNoPartNumber" xml:space="preserve">
+    <value>Row {0} has no part number, so it was skipped. Add the part number.</value>
+  </data>
+  <data name="Issue.Stocks.Import.RowNoSize" xml:space="preserve">
+    <value>Row {0} ({1}) has no size that can be read, so it was skipped. Write the size as width x height with a unit.</value>
+  </data>
+  <data name="Issue.Stocks.Import.RowUnitAmbiguous" xml:space="preserve">
+    <value>Row {0} ({1}) gives the size "{2}" without saying whether it is inches or millimetres, so it was skipped. Add "in" or "mm".</value>
+  </data>
+  <data name="Issue.Stocks.Import.RowSizeConflict" xml:space="preserve">
+    <value>Row {0} ({1}) states two sizes that do not agree ("{2}"), so it was skipped. Keep only the correct one.</value>
+  </data>
+  <data name="Issue.Stocks.Import.RowSizeOutOfRange" xml:space="preserve">
+    <value>Row {0} ({1}) has the size "{2}", which is outside the sizes a label printer can use, so it was skipped. Check the number and its unit.</value>
+  </data>
+  <data name="Issue.Stocks.Import.RowDuplicate" xml:space="preserve">
+    <value>Row {0} repeats the part number {1}, so it was skipped. Keep one row per part number.</value>
   </data>
 </root>

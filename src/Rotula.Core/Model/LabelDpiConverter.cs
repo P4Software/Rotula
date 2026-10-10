@@ -64,6 +64,15 @@ public static class LabelDpiConverter
                 ? new FontSpec(f.FontId, f.Height == 0 ? 0 : c.Dots(f.Height, 1), f.Width == 0 ? 0 : c.Dots(f.Width, 1))
                 : null,
             Encoding = source.Encoding,
+            StockId = source.StockId,
+            // Dot offsets scale with the resolution; the other printer settings are resolution independent.
+            LabelShift = c.Dots(source.LabelShift, int.MinValue),
+            LabelTop = c.Dots(source.LabelTop, int.MinValue),
+            PrintMode = source.PrintMode,
+            PrePeel = source.PrePeel,
+            MirrorImage = source.MirrorImage,
+            PrintRate = source.PrintRate is { } pr ? new PrintRateOptions { Speed = pr.Speed, SlewSpeed = pr.SlewSpeed, BackfeedSpeed = pr.BackfeedSpeed } : null,
+            MediaDarkness = source.MediaDarkness,
             Print = new PrintOptions
             {
                 Quantity = source.Print.Quantity,
@@ -72,6 +81,9 @@ public static class LabelDpiConverter
                 OverridePause = source.Print.OverridePause,
             },
         };
+        foreach (var a in source.FontAliases) doc.FontAliases.Add(new FontAlias(a.Letter, a.Path));
+        // Stored graphics are fixed bitmaps; they are immutable data, so they are shared rather than rescaled.
+        doc.StoredGraphics.AddRange(source.StoredGraphics);
         foreach (var v in source.Variables) doc.Variables.Add(new LabelVariable(v.Name, v.SampleValue));
         foreach (var e in source.Elements) doc.Elements.Add(ConvertElement(e, c));
         return new DpiConversionResult(doc, issues);
@@ -166,6 +178,39 @@ public static class LabelDpiConverter
                     n.ThicknessDots = c.Dots(ci.ThicknessDots, 1);
                     return n;
                 }
+            case DiagonalLineElement dl:
+                {
+                    var n = new DiagonalLineElement
+                    {
+                        WidthDots = c.Dots(dl.WidthDots, 3),
+                        HeightDots = c.Dots(dl.HeightDots, 3),
+                        ThicknessDots = c.Dots(dl.ThicknessDots, 1),
+                        Color = dl.Color,
+                        Lean = dl.Lean,
+                    };
+                    CopyBase(dl, n, c);
+                    return n;
+                }
+            case EllipseElement el:
+                {
+                    var n = new EllipseElement { Color = el.Color };
+                    CopyBase(el, n, c);
+                    n.WidthDots = Ranged(el, nameof(EllipseElement.WidthDots), el.WidthDots, 3, 4095, c);
+                    n.HeightDots = Ranged(el, nameof(EllipseElement.HeightDots), el.HeightDots, 3, 4095, c);
+                    n.ThicknessDots = c.Dots(el.ThicknessDots, 1);
+                    return n;
+                }
+            case SymbolElement sy:
+                {
+                    var n = new SymbolElement
+                    {
+                        Symbol = sy.Symbol,
+                        HeightDots = sy.HeightDots == 0 ? 0 : c.Dots(sy.HeightDots, 1),
+                        WidthDots = sy.WidthDots == 0 ? 0 : c.Dots(sy.WidthDots, 1),
+                    };
+                    CopyBase(sy, n, c);
+                    return n;
+                }
             case ImageElement im:
                 return ConvertImage(im, c);
             case RawZplElement r:
@@ -215,6 +260,17 @@ public static class LabelDpiConverter
         // null means "inherit the default font" and must stay null; width 0 means proportional and stays 0.
         to.FontHeight = from.FontHeight is { } h ? (h == 0 ? 0 : c.Dots(h, 1)) : null;
         to.FontWidth = from.FontWidth is { } w ? (w == 0 ? 0 : c.Dots(w, 1)) : null;
+        to.Direction = from.Direction;
+        to.InterCharacterGap = c.Dots(from.InterCharacterGap, 0);
+        CopyFieldOptions(from, to);
+        if (from.TextBox is { } tb)
+        {
+            to.TextBox = new TextBoxOptions
+            {
+                WidthDots = Ranged(from, nameof(TextBoxOptions.WidthDots), tb.WidthDots, 1, 32000, c),
+                HeightDots = Ranged(from, nameof(TextBoxOptions.HeightDots), tb.HeightDots, 1, 32000, c),
+            };
+        }
         if (from.Block is { } b)
         {
             to.Block = new TextBlockOptions
@@ -226,6 +282,18 @@ public static class LabelDpiConverter
                 HangingIndent = c.Dots(b.HangingIndent, int.MinValue),
             };
         }
+    }
+
+    /// <summary>Copies the data-field options (field number, embed, clock, serial); none of them depends on the resolution.</summary>
+    private static void CopyFieldOptions(FieldDataElement from, FieldDataElement to)
+    {
+        to.FieldNumber = from.FieldNumber;
+        to.FieldPrompt = from.FieldPrompt;
+        to.EmbedCharacter = from.EmbedCharacter;
+        to.Clock = from.Clock is { } k ? new FieldClockOptions { Primary = k.Primary, Secondary = k.Secondary, Third = k.Third } : null;
+        to.Serial = from.Serial is { } s
+            ? new PrinterSerialOptions { Kind = s.Kind, Increment = s.Increment, LeadingZeros = s.LeadingZeros, Mask = s.Mask, IncrementText = s.IncrementText }
+            : null;
     }
 
     private static ImageElement ConvertImage(ImageElement im, Ctx c)
@@ -272,6 +340,9 @@ public static class LabelDpiConverter
             Pdf417Truncate = b.Pdf417Truncate,
         };
         CopyBase(b, n, c);
+        CopyFieldOptions(b, n);
+        // The options of the later symbologies (Aztec, DataBar, ...) are plain text and carry over unchanged.
+        n.ImportExtraOptions(b.ExportExtraOptions());
         // Height is the bar height (linear), row height (PDF417) and irrelevant for 2D matrix codes; scaling
         // it everywhere keeps the stored value consistent and harmless.
         n.Height = Ranged(b, nameof(BarcodeElement.Height), b.Height, 1, 32000, c);

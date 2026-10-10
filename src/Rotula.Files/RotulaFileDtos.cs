@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Rotula.App.Files;
+namespace Rotula.Files;
 
 // Data-transfer objects of the .rotula file. They are deliberately separate from the Core model:
 // Core collections are get-only, ZplEncoding has a private constructor and images are raw pixel
@@ -123,6 +123,60 @@ public sealed class LabelDto
     public PrintOptionsDto Print { get; set; } = new();
     /// <summary>Declared variables.</summary>
     public List<VariableDto> Variables { get; set; } = new();
+
+    // ---- format version 6: everything below is omitted from the file while it has its default value.
+
+    /// <summary>Id of the stock-library entry the label was sized from (informational).</summary>
+    public string? StockId { get; set; }
+    /// <summary>Label shift in dots (^LS), when not 0.</summary>
+    public int? LabelShift { get; set; }
+    /// <summary>Label top in dot rows (^LT), when not 0.</summary>
+    public int? LabelTop { get; set; }
+    /// <summary>Print mode name (^MM), or null.</summary>
+    public string? PrintMode { get; set; }
+    /// <summary>Pre-peel flag of the print mode.</summary>
+    public bool? PrePeel { get; set; }
+    /// <summary>Mirror image printing (^PM).</summary>
+    public bool? MirrorImage { get; set; }
+    /// <summary>Print speeds (^PR), or null.</summary>
+    public PrintRateDto? PrintRate { get; set; }
+    /// <summary>Darkness relative to the printer setting (^MD), or null.</summary>
+    public decimal? MediaDarkness { get; set; }
+    /// <summary>Font id to font file assignments (^CW).</summary>
+    public List<FontAliasDto>? FontAliases { get; set; }
+    /// <summary>Graphics downloaded by the file (~DG).</summary>
+    public List<StoredGraphicDto>? StoredGraphics { get; set; }
+}
+
+/// <summary>Print speeds.</summary>
+public sealed class PrintRateDto
+{
+    /// <summary>Print speed.</summary>
+    public int? Speed { get; set; }
+    /// <summary>Slew speed.</summary>
+    public int? SlewSpeed { get; set; }
+    /// <summary>Backfeed speed.</summary>
+    public int? BackfeedSpeed { get; set; }
+}
+
+/// <summary>A font alias (^CW).</summary>
+public sealed class FontAliasDto
+{
+    /// <summary>One-character font id.</summary>
+    public string Letter { get; set; } = string.Empty;
+    /// <summary>Stored font path.</summary>
+    public string Path { get; set; } = string.Empty;
+}
+
+/// <summary>A downloaded graphic; the bitmap rows are base64.</summary>
+public sealed class StoredGraphicDto
+{
+    /// <summary>Printer path such as R:LOGO.GRF.</summary>
+    public string Path { get; set; } = string.Empty;
+    /// <summary>Bytes per row.</summary>
+    public int BytesPerRow { get; set; }
+    /// <summary>Base64 of the packed rows.</summary>
+    public string Data { get; set; } = string.Empty;
 }
 
 /// <summary>Block (^FB) options of a text element.</summary>
@@ -149,6 +203,9 @@ public sealed class TextBlockDto
 [JsonDerivedType(typeof(LineElementDto), "line")]
 [JsonDerivedType(typeof(CircleElementDto), "circle")]
 [JsonDerivedType(typeof(ImageElementDto), "image")]
+[JsonDerivedType(typeof(DiagonalLineElementDto), "diagonalLine")]
+[JsonDerivedType(typeof(EllipseElementDto), "ellipse")]
+[JsonDerivedType(typeof(SymbolElementDto), "symbol")]
 [JsonDerivedType(typeof(RawZplElementDto), "rawZpl")]
 [JsonDerivedType(typeof(RecallPlaceholderElementDto), "recall")]
 public abstract class ElementDto
@@ -169,9 +226,65 @@ public abstract class ElementDto
     public bool ReverseField { get; set; }
 }
 
-/// <summary>Serialized text element.</summary>
-public class TextElementDto : ElementDto
+/// <summary>Block of settings shared by text and barcodes (field numbers, embedding, clock, printer serialization). Format version 6.</summary>
+public abstract class FieldDataElementDto : ElementDto
 {
+    /// <summary>Field number (^FN).</summary>
+    public int? FieldNumber { get; set; }
+    /// <summary>Prompt stored with the field number.</summary>
+    public string? FieldPrompt { get; set; }
+    /// <summary>Embedding character (^FE), one character.</summary>
+    public string? EmbedCharacter { get; set; }
+    /// <summary>Clock indicators (^FC).</summary>
+    public FieldClockDto? Clock { get; set; }
+    /// <summary>Printer serialization (^SN / ^SF).</summary>
+    public PrinterSerialDto? Serial { get; set; }
+}
+
+/// <summary>Clock indicator characters.</summary>
+public sealed class FieldClockDto
+{
+    /// <summary>Primary indicator, one character.</summary>
+    public string Primary { get; set; } = "%";
+    /// <summary>Secondary indicator, one character, or null.</summary>
+    public string? Secondary { get; set; }
+    /// <summary>Third indicator, one character, or null.</summary>
+    public string? Third { get; set; }
+}
+
+/// <summary>Printer-side serialization.</summary>
+public sealed class PrinterSerialDto
+{
+    /// <summary>Number or Mask.</summary>
+    public string Kind { get; set; } = "Number";
+    /// <summary>Step of a numeric counter.</summary>
+    public long Increment { get; set; } = 1;
+    /// <summary>Keep leading zeros.</summary>
+    public bool LeadingZeros { get; set; }
+    /// <summary>Mask characters.</summary>
+    public string Mask { get; set; } = string.Empty;
+    /// <summary>Step written in the mask alphabet.</summary>
+    public string IncrementText { get; set; } = string.Empty;
+}
+
+/// <summary>Fixed-size text box (^TB).</summary>
+public sealed class TextBoxDto
+{
+    /// <summary>Width in dots.</summary>
+    public int WidthDots { get; set; } = 400;
+    /// <summary>Height in dots.</summary>
+    public int HeightDots { get; set; } = 100;
+}
+
+/// <summary>Serialized text element.</summary>
+public class TextElementDto : FieldDataElementDto
+{
+    /// <summary>Text box (^TB), format version 6.</summary>
+    public TextBoxDto? TextBox { get; set; }
+    /// <summary>Direction name when not Horizontal, format version 6.</summary>
+    public string? Direction { get; set; }
+    /// <summary>Gap between characters when not 0, format version 6.</summary>
+    public int? InterCharacterGap { get; set; }
     /// <summary>Text content.</summary>
     public string Text { get; set; } = string.Empty;
     /// <summary>Font id as a one-character string, or null.</summary>
@@ -192,7 +305,7 @@ public sealed class DataFieldElementDto : TextElementDto
 }
 
 /// <summary>Serialized barcode.</summary>
-public sealed class BarcodeElementDto : ElementDto
+public sealed class BarcodeElementDto : FieldDataElementDto
 {
     /// <summary>Symbology name.</summary>
     public string Symbology { get; set; } = "Code128";
@@ -226,6 +339,12 @@ public sealed class BarcodeElementDto : ElementDto
     public int Pdf417SecurityLevel { get; set; } = 2;
     /// <summary>PDF417 truncated.</summary>
     public bool Pdf417Truncate { get; set; }
+    /// <summary>
+    /// Options of the symbologies added in format version 5 (see <c>BarcodeElement.ExportExtraOptions</c>), as name to text.
+    /// Only values that differ from their default are listed. Values are JSON elements so that a hand-edited number or
+    /// boolean does not make the whole file unreadable. Needs format version 5.
+    /// </summary>
+    public Dictionary<string, System.Text.Json.JsonElement>? ExtraOptions { get; set; }
 }
 
 /// <summary>Serialized box.</summary>
@@ -265,6 +384,45 @@ public sealed class CircleElementDto : ElementDto
     public int ThicknessDots { get; set; } = 3;
     /// <summary>Colour name.</summary>
     public string Color { get; set; } = "Black";
+}
+
+/// <summary>Serialized diagonal line (^GD). Format version 6.</summary>
+public sealed class DiagonalLineElementDto : ElementDto
+{
+    /// <summary>Box width.</summary>
+    public int WidthDots { get; set; } = 100;
+    /// <summary>Box height.</summary>
+    public int HeightDots { get; set; } = 100;
+    /// <summary>Thickness.</summary>
+    public int ThicknessDots { get; set; } = 3;
+    /// <summary>Colour name.</summary>
+    public string Color { get; set; } = "Black";
+    /// <summary>Lean name (Right or Left).</summary>
+    public string Lean { get; set; } = "Right";
+}
+
+/// <summary>Serialized ellipse (^GE). Format version 6.</summary>
+public sealed class EllipseElementDto : ElementDto
+{
+    /// <summary>Width.</summary>
+    public int WidthDots { get; set; } = 100;
+    /// <summary>Height.</summary>
+    public int HeightDots { get; set; } = 60;
+    /// <summary>Thickness.</summary>
+    public int ThicknessDots { get; set; } = 3;
+    /// <summary>Colour name.</summary>
+    public string Color { get; set; } = "Black";
+}
+
+/// <summary>Serialized built-in symbol (^GS). Format version 6.</summary>
+public sealed class SymbolElementDto : ElementDto
+{
+    /// <summary>Symbol name.</summary>
+    public string Symbol { get; set; } = "Copyright";
+    /// <summary>Character height.</summary>
+    public int HeightDots { get; set; } = 40;
+    /// <summary>Character width.</summary>
+    public int WidthDots { get; set; } = 40;
 }
 
 /// <summary>Serialized image; pixels are stored as base64 luminance bytes.</summary>

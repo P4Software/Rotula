@@ -48,6 +48,28 @@ with tooltips for tool actions.
 - **Bounds while a record is previewed**: text and barcode frames are now measured with the shown record's values (the cache key includes
   them); Rotula.Rendering still has no public `Measure`, so the probe render remains.
 
+### Database data source (Data merge window)
+The Data window has a source switch: File (CSV / Excel) or Database. Database mode lives in `DatabaseSourceViewModel` (connection drop-down,
+"Table or view" with a search box and a 100-row preview, "Query" with a monospace SELECT editor) and `ConnectionManagerViewModel` (modal manager,
+`DialogWindow` style). Both talk to `Rotula.Data` only through `IDatabaseServices` (the saved connections plus a factory), so view-models run with fakes.
+- **Same pipeline**: "Use this data" produces a `MergeTable` and goes through the same `SetTable` / `Rebind` path as a CSV, so mapping, counters, copies,
+  the record navigator and batch print/export are unchanged. A table is read in full up to the row cap (the 100-row preview is only a preview).
+- **Never connects by itself**: opening a label that refers to a connection only shows `This label uses the saved connection "X"` with the query text
+  (read-only) and a "Connect and reload data" button. Even reading the list of saved connections waits until the Data window is shown. The query text from a
+  file is untrusted: the guard (`SqlGuard`) checks it live and again in the engine before anything is sent.
+- **The .rotula file holds only** the connection NAME, the query text, parameter defaults (name, value, type) and the row cap (format version 4, `merge.database`).
+  The DTO has no member for host, user, password or connection string; a test asserts that, and that a hand-edited file cannot smuggle them back in. A table is
+  saved as the quoted `SELECT * FROM ...` the engine built.
+- **Parameters** are text by default; Number and Date can be chosen per parameter (PostgreSQL does not convert implicitly). Numbers and dates are parsed
+  culture-independently first so a saved label behaves the same on every PC.
+- **Passwords**: a `PasswordBox` is copied into the view-model on change and emptied on save, selection change and close. Store semantics: an empty box means
+  "keep" (`null`), switching to a method without a password sends `""` (remove). A saved connection that was edited cannot be tested with its saved password
+  (the public API cannot read it back), so the manager asks to type it again; an unchanged one is tested through `IConnectionStore.OpenAsync`.
+- **Names are fixed** once saved (labels refer to them). Encrypt-off and trust-certificate each have an amber sentence under the box before it is touched and an
+  amber banner while the risky value is on; a certificate failure offers "Trust this server and save".
+- **Row cap** 100,000 by default (1 to 1,000,000); a truncated result shows an amber note and the same note stays in the load warnings.
+- **Accessibility**: the shared TabControl template now names its content host `PART_SelectedContentHost`; without it WPF did not expose the content of any tab to UI Automation.
+
 ### Undo/redo
 Memento command: each edit stores the whole document before/after (documents are small; image pixels are shared). Unlimited.
 Arrow nudges and typing in one property merge into one step within one second. Drags are gestures: one undo step per drag.
@@ -159,3 +181,118 @@ git-ignored `artifacts/` folder; it is safe by default (builds and signs, publis
 unsigned output). Signatures are verified with `Get-AuthenticodeSignature` (Valid, expected signer, timestamp), never from the
 sign tool's exit code; the signing helper is named `SignFile`; calls run one at a time and retry up to three times on a
 transient token error. The version lives only in `Directory.Build.props`. See `docs/releasing.md`.
+
+## MCP server (Rotula.Mcp)
+
+Owner decision: Rotula ships a Model Context Protocol server so AI assistants can create and edit labels. Details for users are
+in `docs/mcp.md`; the decisions that shaped the code:
+
+- **Separate headless executable**, `src/Rotula.Mcp` (`net10.0-windows`, because it reuses the DPAPI-protected connection store and the
+  Windows spooler). It never references WPF. The `.rotula` serializer, its DTOs, `DataMergeSettings` and `SafeLocalPath` moved from
+  `Rotula.App/Files` into the UI-free library `src/Rotula.Files` (namespace `Rotula.Files`) so both hosts share one file format.
+  Behaviour and format are unchanged; the one fix is that a non-integer `formatVersion` is now reported as "not a Rotula file"
+  instead of a raw exception.
+- **Official SDK** (`ModelContextProtocol` 2.2.0, Apache-2.0, permissive) over stdio, hosted by the generic host with the *empty*
+  builder: no environment variables, no appsettings files, no console logger (stdout is the protocol). Publish flags (single file,
+  self-contained) are passed on the command line only, never in the csproj, so the test project can reference the program.
+- **Nothing dangerous without the settings file** (`rotula-mcp.settings.json` next to the program): printing, printers, databases
+  and the label folders are all opt-in. A damaged file means the safe defaults, never more access.
+- **One gate for paths** (`PathGuard`): textual rules of `SafeLocalPath`, canonical containment with a trailing separator, a
+  whitelist of extensions per tool, reserved Windows names, links and junctions refused, size checked before reading.
+- **Printing is a two-step state machine** (`PrintGate`): the first call is always a dry run; the second needs a random one-time
+  token bound to a hash of printer + copies + final ZPL. Changing anything invalidates it. Copies go on a copy of the label.
+- **Messages**: tools return plain sentences. The English texts come from the app's own `Strings.en.resx`, embedded as XML in the
+  server, so validation and print messages stay identical in both programs.
+- **Previews are approximate** and say so every time (stand-in fonts, as in the app).
+
+## Database providers (Rotula.Data)
+
+Owner decisions of 2026-10-10: the choice of databases must be large; some engines need non-MIT components; those are accepted as recorded below.
+Developer documentation is in `docs/data-providers.md`; the licence list is in `THIRD-PARTY-NOTICES.md`.
+
+### Provider model and packs
+- **The closed `DatabaseProvider` enum is now a registry of descriptors.** Each engine is an `IProviderDescriptor` (id, message key for its
+  name, category, port, sign-in methods, a form schema the UI renders, SQL dialect, read-only steps, connection-string builder, error mapper).
+  The five original engines keep their ids (`sqlserver`, `postgresql`, `mysql`, `sqlite`, `odbc`) and their enum values; `Custom` was appended
+  for pack engines and always travels with a string `ProviderId`. `connections.json` stays at version 1; the new fields (`providerId`,
+  `presetId`, `caCertificatePath`, `extras`) are optional, so an older Rotula still reads the file. Entries of a pack that is not loaded are
+  kept on the next save instead of being dropped.
+- **Presets are data** (`src/Rotula.Data/Presets/presets.json`): MariaDB, Amazon RDS/Aurora, Redshift, CockroachDB, YugabyteDB, Supabase, Neon,
+  PlanetScale, TiDB, SingleStore, Azure SQL / Synapse / Fabric, Google Cloud SQL, and Microsoft Access, Excel and text files through ODBC. They
+  are secure by default (encrypt on, no blind trust of certificates) and a test enforces it. Pooler hosts (Neon `-pooler`, Supabase pooler)
+  do not receive the `options` startup parameter; the in-transaction `SET TRANSACTION READ ONLY` and the guard remain.
+- **Packs are separate folders**, loaded by `PackLoader` into their own `AssemblyLoadContext`. The `packs` folder next to the program is
+  trusted (it is installed with Rotula). `%AppData%\Rotula\packs` is opt-in: loading a pack runs its code with the user's rights, so each
+  user pack needs an explicit approval after a plain-language warning, and the approval stores the SHA-256 of EVERY file of the pack; any
+  change asks again. No other folder is ever searched; folders with links are skipped. A pack can add provider ids but never replace one.
+  A pack that fails to load is a warning with a message key and never stops the application. Proven with a single-file, self-contained
+  executable that loads a sample pack, with its own managed dependency and its own native library, from a `packs` folder beside it.
+- **The query guard stays in the core.** A pack supplies a dialect and a connection factory; the shared code applies the guard and the
+  read-only transaction. Engines that are not SQL (MongoDB, DynamoDB, REST) provide their own source through `CreateCustomSource` and must
+  bring their own allow-list validator and tests.
+
+### Read-only is layered, and the guard is a safety net
+The guard (one SELECT, no writes, no file or network functions) is the first layer; the second is whatever the engine offers (read-only
+session or transaction, read-only open mode, `readonly=1`, `enable_external_access=false`); the third, which only the user can provide, is
+a database account that can only read. SQL Server, ODBC and the cloud warehouses have no read-only session, so for them the account is the
+real control and the UI says so.
+
+### Guard: differential lexing (security)
+Where an engine and the guard could disagree about the end of a string or quoted name (backslash escapes that depend on server settings such
+as MySQL `NO_BACKSLASH_ESCAPES`, PostgreSQL `standard_conforming_strings`, or rules the vendor documents loosely), the guard lexes the text again
+with each uncertain feature flipped, all on and all off. If the readings place a token boundary differently, the query is refused as
+**ambiguous** (`Data.Query.Rejected.Ambiguous`) instead of guessed. A quoted identifier of an uncertain kind that contains a backslash is refused
+outright when the dialect reads that kind of quote without backslash escapes. The ODBC "database behind the driver" hint only ADDS rules (the four
+classic lexings still apply), because the hint is a claim Rotula cannot check. The price is that `'it\'s'` is refused for MySQL (write `'it''s'`). Each dialect lists the features it checks and the vendor page
+its rules come from. When the engine nests block comments the guard nests them only if the vendor documents it (PostgreSQL, ClickHouse);
+otherwise it does not, because skipping text the engine will run is the bypass.
+
+Other guard changes: `NEXT VALUE FOR` (a sequence call that changes state, valid in SQL Server and MariaDB) is refused in every dialect; the
+words NEXT and VALUE alone stay allowed.
+
+### Saved passwords are reused only for the destination they were saved for
+`IConnectionStore.OpenWithSettingsAsync` lets the connection manager test an edited connection. The saved password is used only if every property
+of the settings is equal to the saved one except `Name`, `Database` and the two timeouts (default deny, computed by reflection so a property
+added later is covered automatically; a test fails if an unknown property type appears). Any other difference, including turning encryption off or
+trusting the certificate, makes the caller supply the password again (`Data.Store.PasswordReenterRequired`). The password is never returned.
+
+### SQL Server networking component (SNI)
+`Microsoft.Data.SqlClient` is MIT, but its native networking library arrives as `Microsoft.Data.SqlClient.SNI.runtime` (7.1.0) under
+"Microsoft Software License Terms: MICROSOFT.DATA.SQLCLIENT.SNI LIBRARY", not under an open-source licence. The owner accepted those terms on
+2026-10-10. The terms say the software consists of "Distributable Code". Summary of what they require of Rotula (P4 Software), read from the
+`LICENSE.txt` in the package:
+- Rotula may copy and distribute the object code, and may let distributors of Rotula do the same.
+- It must be used inside Rotula and not distributed as a standalone product.
+- **Pass-through:** distributors and external end users must agree to terms that protect the component at least as much as Microsoft's agreement.
+- **Indemnity:** P4 Software must indemnify, defend and hold Microsoft harmless from claims, including attorneys' fees, related to the distribution or use of
+  Rotula, except claims based solely on the unmodified component.
+- No use of Microsoft trademarks in the application's name or in a way that suggests Microsoft endorses it.
+- Do not modify or distribute its source so that any part becomes subject to a licence that requires source disclosure or the right to modify.
+- Do not reverse engineer it, work around its technical limits, remove Microsoft notices, or rent, lease, share or transfer it as a stand-alone offering.
+- Comply with export law. If features of the software collect data, comply with the law and the Microsoft Privacy Statement (Rotula has no telemetry).
+- Microsoft's liability is limited to US$5 and the software is provided as is.
+
+**Open action (owner / legal):** Rotula's own licence is MIT and does not bind end users to terms "at least as protective" as Microsoft's.
+Before the next release, add a short notice to the installer licence page and to the README that names the component, forbids reverse
+engineering it and disclaims Microsoft's liability, or take legal advice on whether the MIT text plus the notice in
+`THIRD-PARTY-NOTICES.md` is enough. Until then this decision is accepted but not fully discharged.
+
+### Accepted, not yet shipped (placeholders; the pack work finishes the notices)
+Each of these ships only as an optional provider pack with its own licence notices file, never inside the core executable.
+- **Oracle (ODP.NET, `Oracle.ManagedDataAccess.Core`)**, "Oracle Free Distribution, Hosting, and Use Terms and Conditions". Conditions: distribute
+  unmodified; include a copy of the licence with every distribution; do not charge end users an additional fee for the distribution or use of the
+  component (distributing it inside a free product is allowed); keep Oracle notices; comply with export and sanctions law; no reverse engineering or
+  decompiling. The "information collection" clause concerns installers and auto-update, which a NuGet library does not have; verify with a network
+  trace when the pack is built. Oracle names .NET 8 and netstandard2.1 builds only; test on .NET 10 before release.
+- **Firebird (`FirebirdSql.Data.FirebirdClient`)**, Initial Developer's Public License 1.0 (file-level copyleft). Conditions: keep the licence and
+  notices, do not modify its files, and make its source available (link to the upstream repository in the notices).
+- **Azure Cosmos DB (`Microsoft.Azure.Cosmos`)**: MIT, but the package ships Microsoft Visual C++ runtime files (`vcruntime140.dll`,
+  `vcruntime140_1.dll`, `msvcp140.dll`, `Cosmos.CRTCompat.dll`) under Microsoft's redistribution terms, plus the native `Microsoft.Azure.Cosmos.ServiceInterop.dll`.
+  Read and record the VC++ redistribution conditions when the pack is built. Use read-only keys.
+- **Microsoft Entra sign-in for the SQL Server family (`Microsoft.Data.SqlClient.Extensions.Azure`)**: MIT packages (Azure.Identity, Azure.Core,
+  Microsoft.Identity.Client, Microsoft.Identity.Client.Broker) plus `Microsoft.Identity.Client.NativeInterop` (native `msalruntime.dll`) under
+  Microsoft Software License Terms. A keyword search of those terms found no explicit redistribution clause; read them in full when the pack is
+  built and record the conditions here.
+
+Not bundled, ever: SAP HANA, Teradata, IBM Db2 and Informix drivers. The user installs their own ODBC driver; Rotula offers the preset and the
+dialect hint.

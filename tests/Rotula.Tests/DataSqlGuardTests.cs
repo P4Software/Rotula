@@ -161,7 +161,11 @@ public class DataSqlGuardTests
     {
         // MySQL: the string is  a\'; DROP TABLE x; --  (one literal). Other engines see a statement after the quote.
         const string sql = "SELECT 'a\\'; DROP TABLE x; --'";
-        Assert.True(SqlGuard.Check(sql, My).IsAllowed);
+        // This text used to be accepted for MySQL. A server running with NO_BACKSLASH_ESCAPES reads it the other way and would execute the
+        // DROP, so the guard now lexes both readings and refuses the text as ambiguous (see DataLexAmbiguityTests).
+        var my = SqlGuard.Check(sql, My);
+        Assert.False(my.IsAllowed);
+        Assert.Equal(DataKeys.RejectAmbiguous, my.ReasonKey);
         Assert.False(SqlGuard.Check(sql, Ms).IsAllowed);
         // ODBC cannot know the engine, so it must refuse anything that is dangerous under any reading.
         Assert.False(SqlGuard.Check(sql, Odbc).IsAllowed);

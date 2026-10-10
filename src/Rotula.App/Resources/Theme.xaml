@@ -371,6 +371,45 @@
     <Setter Property="FontSize" Value="12.5" />
   </Style>
 
+  <!-- Password box: the same field look as the text box (the framework still masks the characters; PasswordChar keeps the bullet). -->
+  <Style TargetType="PasswordBox">
+    <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+    <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+    <Setter Property="BorderBrush" Value="{StaticResource BorderStrongBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Padding" Value="12,0" />
+    <Setter Property="MinHeight" Value="40" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="CaretBrush" Value="{StaticResource AccentBrush}" />
+    <Setter Property="SelectionBrush" Value="{StaticResource AccentBrush}" />
+    <Setter Property="SelectionOpacity" Value="0.3" />
+    <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="PasswordBox">
+          <Grid>
+            <Border x:Name="Chrome" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6" SnapsToDevicePixels="True">
+              <ScrollViewer x:Name="PART_ContentHost" VerticalAlignment="{TemplateBinding VerticalContentAlignment}" Focusable="False" />
+            </Border>
+            <Border x:Name="Ring" IsHitTestVisible="False" Visibility="Collapsed" BorderBrush="{StaticResource AccentBrush}" BorderThickness="1" CornerRadius="6" Margin="1" />
+          </Grid>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Chrome" Property="BorderBrush" Value="{StaticResource MutedBrush}" /></Trigger>
+            <Trigger Property="IsKeyboardFocused" Value="True">
+              <Setter TargetName="Chrome" Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+              <Setter TargetName="Ring" Property="Visibility" Value="Visible" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+              <Setter TargetName="Chrome" Property="Background" Value="{StaticResource HoverBrush}" />
+              <Setter Property="Foreground" Value="{StaticResource DisabledTextBrush}" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
   <!-- ===================================================================== combo box -->
   <Style x:Key="ComboToggle" TargetType="ToggleButton">
     <Setter Property="Focusable" Value="False" />
@@ -643,6 +682,7 @@
 
   <!-- ===================================================================== tabs -->
   <Style TargetType="TabControl">
+    <Setter Property="FocusVisualStyle" Value="{x:Null}" />
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderThickness" Value="0" />
     <Setter Property="Padding" Value="0" />
@@ -653,7 +693,8 @@
             <Border DockPanel.Dock="Top" BorderBrush="{StaticResource BorderBrushLight}" BorderThickness="0,0,0,1">
               <TabPanel IsItemsHost="True" Margin="0" />
             </Border>
-            <ContentPresenter ContentSource="SelectedContent" />
+            <!-- The PART_ name is what lets WPF expose the selected tab's content to screen readers and UI Automation. -->
+            <ContentPresenter x:Name="PART_SelectedContentHost" ContentSource="SelectedContent" />
           </DockPanel>
         </ControlTemplate>
       </Setter.Value>

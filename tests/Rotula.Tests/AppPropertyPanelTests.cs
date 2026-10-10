@@ -147,7 +147,8 @@ public class AppPropertyPanelTests : IDisposable
         var p = new PropertyPanelViewModel(s);
         s.Select(bc);
         Assert.Contains(p.Rows, r => r.LabelKey == "Prop.Code128Mode");
-        Assert.Contains(p.Rows, r => r.LabelKey == "Prop.WideBarRatio");
+        // The catalogue says ^BC has no wide-to-narrow ratio, so the row is not offered; Code 39 does have it.
+        Assert.DoesNotContain(p.Rows, r => r.LabelKey == "Prop.WideBarRatio");
         Assert.DoesNotContain(p.Rows, r => r.LabelKey == "Prop.QrErrorCorrection");
 
         var symbology = Row<ChoiceRow>(p, "Prop.Symbology");

@@ -1,3 +1,4 @@
+using Rotula.Core.Barcodes;
 using Rotula.Core.Elements;
 using Rotula.Core.Imaging;
 using Rotula.Core.Model;
@@ -12,8 +13,8 @@ namespace Rotula.Rendering.Input;
 /// variables are substituted, defaults (^CF, ^FW) are applied and margins (^LH) are added to every position,
 /// so the preview lays elements out exactly where <see cref="ZplGenerator"/> tells the printer to put them.
 /// <para>
-/// Not previewed: whole-label inversion (^PO) is ignored, and bitmap font ids other than '0' are all drawn with
-/// the monospaced stand-in. Text preview is approximate in general (see <see cref="LabelRenderer"/>).
+/// Not previewed: whole-label inversion (^PO) and mirroring (^PM) are ignored, text direction (^FP) is ignored, and bitmap
+/// font ids other than '0' are all drawn with the monospaced stand-in. Label shift (^LS) and label top (^LT) are applied. Text preview is approximate in general (see <see cref="LabelRenderer"/>).
 /// </para>
 /// </summary>
 public static class LabelDocumentAdapter
@@ -35,7 +36,8 @@ public static class LabelDocumentAdapter
         {
             var mapped = Map(doc, e, data, ignored);
             if (mapped is null) continue;
-            elements.Add(mapped with { X = e.X + homeX, Y = e.Y + homeY });
+            // ^LS moves everything to the left, ^LT moves the whole format down (or up when negative).
+            elements.Add(mapped with { X = e.X + homeX - doc.LabelShift, Y = e.Y + homeY + doc.LabelTop });
         }
 
         return new RenderLabel(doc.WidthDots, doc.HeightDots, dpi, elements);
@@ -58,9 +60,11 @@ public static class LabelDocumentAdapter
                 return new RenderText
                 {
                     Text = text,
+                    // A ^TB box wraps at its width and shows only the lines that fit its height.
+                    HeightDots = t.TextBox?.HeightDots ?? 0,
                     FontHeightDots = t.FontHeight ?? def.Height,
                     Font = (t.FontId ?? def.FontId) == '0' ? RenderFontFamily.Sans : RenderFontFamily.Mono,
-                    WidthDots = t.Block?.WidthDots ?? 0,
+                    WidthDots = t.Block?.WidthDots ?? t.TextBox?.WidthDots ?? 0,
                     MaxLines = t.Block?.MaxLines ?? 0,
                     LineSpacingDots = t.Block?.LineSpacing ?? 0,
                     Alignment = t.Block?.Alignment switch
@@ -78,21 +82,46 @@ public static class LabelDocumentAdapter
 
             case BarcodeElement b:
             {
-                bool linear = Barcodes.BarcodeEncoder.IsLinear(b.Symbology);
+                var info = BarcodeCatalog.Get(b.Symbology);
                 var data1 = VariableResolver.Resolve(b.Data, data, doc.Variables, b.Id, issues);
+                // Symbologies (or options) without an exact preview are drawn as a labelled placeholder: the printer still
+                // prints the real symbol from the generated ZPL, so the designer must not pretend to show it.
+                if (BarcodeCatalog.GetPreviewLimitation(b) is not null)
+                {
+                    return new RenderPlaceholder
+                    {
+                        WidthDots = PlaceholderWidth(b),
+                        HeightDots = Math.Max(40, b.Height),
+                        Caption = info.DisplayName + " - printer draws it",
+                        Typeset = typeset,
+                    };
+                }
                 return new RenderBarcode
                 {
                     Symbology = b.Symbology,
                     Data = data1,
-                    // ZPL: ^BY sets the module for linear codes and PDF417; ^BQ / ^BX carry their own module size.
-                    ModuleDots = b.Symbology is BarcodeSymbology.QrCode or BarcodeSymbology.DataMatrix ? b.ModuleSize : b.ModuleWidth,
+                    // ZPL: ^BY sets the module for linear codes and PDF417; ^BQ, ^BX, ^BO and ^BR carry their own module size.
+                    // MaxiCode has a fixed size: its modules are about 0.88 mm apart, 7 dots at 203 dpi.
+                    ModuleDots = b.Symbology == BarcodeSymbology.MaxiCode ? MaxiCodeModuleDots : info.UsesModuleSize ? b.ModuleSize : b.ModuleWidth,
                     HeightDots = b.Height,
-                    ShowText = linear && b.HumanReadable,
+                    ShowText = info.SupportsHumanReadable && (info.AlwaysPrintsHumanReadable || b.HumanReadable),
                     TextAbove = b.HumanReadablePosition == HumanReadablePosition.Above,
                     CheckDigit = b.CheckDigit,
                     QrErrorCorrection = b.QrErrorCorrection,
                     Pdf417SecurityLevel = b.Pdf417SecurityLevel,
                     Pdf417Truncate = b.Pdf417Truncate,
+                    Code11CheckDigits = b.Code11CheckDigitCount,
+                    MsiCheckDigit = b.MsiCheckDigit,
+                    MsiCheckDigitInText = b.MsiCheckDigitInText,
+                    CodabarStart = b.CodabarStart,
+                    CodabarStop = b.CodabarStop,
+                    DataBarType = b.DataBarType,
+                    DataBarSegmentsPerRow = b.DataBarSegmentsPerRow,
+                    DataBarSeparatorHeight = b.DataBarSeparatorHeight,
+                    AztecErrorControl = b.AztecErrorControl,
+                    MaxiCodeMode = b.MaxiCodeMode,
+                    MaxiCodeSymbolNumber = b.MaxiCodeSymbolNumber,
+                    MaxiCodeSymbolTotal = b.MaxiCodeSymbolTotal,
                     Rotation = rotation,
                     Typeset = typeset,
                     Reverse = b.ReverseField,
@@ -145,6 +174,51 @@ public static class LabelDocumentAdapter
                     Reverse = c.ReverseField,
                 };
 
+            case EllipseElement el:
+                return new RenderEllipse
+                {
+                    WidthDots = el.WidthDots,
+                    HeightDots = el.HeightDots,
+                    ThicknessDots = el.ThicknessDots,
+                    White = el.Color == GraphicColor.White,
+                    Typeset = typeset,
+                    Reverse = el.ReverseField,
+                };
+
+            case DiagonalLineElement dl:
+                return new RenderDiagonal
+                {
+                    WidthDots = dl.WidthDots,
+                    HeightDots = dl.HeightDots,
+                    ThicknessDots = dl.ThicknessDots,
+                    LeansRight = dl.Lean == DiagonalLean.Right,
+                    White = dl.Color == GraphicColor.White,
+                    Typeset = typeset,
+                    Reverse = dl.ReverseField,
+                };
+
+            case SymbolElement sy:
+            {
+                // The printer draws these from its own symbol font; the preview uses the nearest glyphs of the stand-in typeface.
+                string glyph = sy.Symbol switch
+                {
+                    GraphicSymbol.Registered => "\u00AE",
+                    GraphicSymbol.Copyright => "\u00A9",
+                    GraphicSymbol.Trademark => "\u2122",
+                    GraphicSymbol.UnderwritersLaboratories => "UL",
+                    _ => "CSA",
+                };
+                return new RenderText
+                {
+                    Text = glyph,
+                    FontHeightDots = Math.Max(1, sy.HeightDots),
+                    Font = RenderFontFamily.Sans,
+                    Rotation = rotation,
+                    Typeset = typeset,
+                    Reverse = sy.ReverseField,
+                };
+            }
+
             case ImageElement img:
             {
                 if (img.Source is null) return null;
@@ -160,6 +234,9 @@ public static class LabelDocumentAdapter
                     Reverse = img.ReverseField,
                 };
             }
+
+            case RecallPlaceholderElement recall when TryMapStoredGraphic(doc, recall, typeset) is { } stored:
+                return stored;
 
             case RecallPlaceholderElement recall:
                 // The stored object is unknown, so the designer's own size is used. The caption says what is recalled.
@@ -188,6 +265,58 @@ public static class LabelDocumentAdapter
                 return null;
         }
     }
+
+    /// <summary>
+    /// Draws a recalled graphic (<c>^XG</c>, <c>^IM</c>) when the same file downloads it with <c>~DG</c>: the dots are known,
+    /// so the preview is exact. The magnification is applied by repeating dots, as the printer does.
+    /// </summary>
+    private static RenderElement? TryMapStoredGraphic(LabelDocument doc, RecallPlaceholderElement recall, bool typeset)
+    {
+        if (!recall.Command.Equals("XG", StringComparison.OrdinalIgnoreCase) && !recall.Command.Equals("IM", StringComparison.OrdinalIgnoreCase)) return null;
+        var graphic = StoredGraphic.Find(doc.StoredGraphics, recall.Reference);
+        if (graphic is null) return null;
+
+        var (mx, my) = recall.GetMagnification();
+        long w = (long)graphic.WidthDots * mx, h = (long)graphic.HeightDots * my;
+        // A huge magnified bitmap is not worth building; the renderer scales the original instead.
+        if (w * h > 16_000_000) (mx, my) = (1, 1);
+        int bytesPerRow = graphic.BytesPerRow, rows = graphic.HeightDots;
+        MonochromeBitmap mono;
+        if (mx == 1 && my == 1)
+        {
+            mono = new MonochromeBitmap(graphic.WidthDots, rows, graphic.Data);
+        }
+        else
+        {
+            int outW = graphic.WidthDots * mx, outH = rows * my;
+            var scaled = new MonochromeBitmap(outW, outH, new byte[((outW + 7) / 8) * outH]);
+            int outBytes = scaled.BytesPerRow;
+            for (int y = 0; y < outH; y++)
+                for (int x = 0; x < outW; x++)
+                {
+                    int sx = x / mx, sy = y / my;
+                    if ((graphic.Data[sy * bytesPerRow + (sx >> 3)] & (0x80 >> (sx & 7))) != 0)
+                        scaled.PackedRows[y * outBytes + (x >> 3)] |= (byte)(0x80 >> (x & 7));
+                }
+            mono = scaled;
+        }
+        return new RenderImage
+        {
+            EncodedBytes = EncodeMonochrome(mono),
+            WidthDots = mono.Width,
+            HeightDots = mono.Height,
+            Typeset = typeset,
+            Reverse = recall.ReverseField,
+        };
+    }
+
+    /// <summary>
+    /// The real size of a symbol without a preview is unknown, so the stand-in grows a little with the amount of data
+    /// (and with the module width) to keep the label layout believable.
+    /// </summary>
+    private static int PlaceholderWidth(BarcodeElement b) => Math.Clamp(80 + b.Data.Length * Math.Max(1, b.ModuleWidth) * 6, 200, 600);
+
+    private const int MaxiCodeModuleDots = 7;
 
     private const int RawMarkerWidthDots = 100;
     private const int RawMarkerHeightDots = 40;

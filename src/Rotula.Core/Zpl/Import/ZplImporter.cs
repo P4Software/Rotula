@@ -18,7 +18,7 @@ internal readonly record struct ZplCommand(char Prefix, string Name, string Para
 /// The interpreter behind <see cref="ZplParser"/>. It walks the command stream once, keeping the same sticky state a
 /// printer keeps (^BY, ^CF, ^FW, ^CI, ^MU) and collecting one field at a time between ^FO/^FT and ^FS.
 /// </summary>
-internal sealed class ZplImporter
+internal sealed partial class ZplImporter
 {
     private static readonly Regex QrHeader = new(@"^([HQML])([AM]),(.*)$", RegexOptions.Singleline | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
@@ -44,6 +44,21 @@ internal sealed class ZplImporter
         public string? RecallCommand;
         public string RecallParams = string.Empty;
         public bool Unsupported;
+        // Options of data fields. They are applied to the element that is built, or the field is kept raw when it cannot hold them.
+        public int? FieldNumber;
+        public string? FieldPrompt;
+        public char? EmbedChar;
+        public FieldClockOptions? Clock;
+        public FieldDirection Direction;
+        public int Gap;
+        public bool HasDirection;
+        public TextBoxOptions? TextBox;
+        public PrinterSerialOptions? Serial;
+        public string? SerialValue;
+        /// <summary>True when ^LRY was in force as the field started: the field prints reversed as if it had ^FR.</summary>
+        public bool LabelReverse;
+        /// <summary>The first option command that only some fields understand, for the "not applicable" warning.</summary>
+        public string? OptionCommand;
     }
 
     /// <summary>Per-label bookkeeping next to the <see cref="LabelDocument"/> being filled.</summary>
@@ -53,6 +68,8 @@ internal sealed class ZplImporter
         public LabelDocument Doc { get; }
         public bool HasStart, Ended, SeenWidth, SeenLength, ExplicitStart;
         public int Visual;
+        /// <summary>Offset where the label ended (its ^XZ, or the end of the input); downloads before it belong to it.</summary>
+        public int EndPosition = int.MaxValue;
         public Dictionary<string, int> Positions { get; } = new();
     }
 
@@ -75,6 +92,10 @@ internal sealed class ZplImporter
     private double _byRatio = 3.0;
     private ZplEncoding? _enc;
     private bool _fieldDecodeFailed;
+    private bool _labelReverse; // ^LRY: every following field prints reversed, until ^LRN
+    private readonly List<(int Position, StoredGraphic Graphic)> _stored = new(); // ~DG / ~DY downloads in file order
+    private long _storedBytes;
+    private const long MaxStoredBytes = 16L * 1024 * 1024;
 
     public ZplImporter(string text, bool bytesMode, ZplParseOptions options, bool utf8Bom)
     {
@@ -124,15 +145,36 @@ internal sealed class ZplImporter
 
         // A trailing implicit label created only by stray text after the last ^XZ carries nothing worth keeping.
         if (_docs.Count > 1 && _docs[^1] is { ExplicitStart: false, Doc.Elements.Count: 0 }) _docs.RemoveAt(_docs.Count - 1);
-        if (_docs.Count == 0) _docs.Add(NewDoc(null, implicitStart: true));
+        // NewDoc registers the document itself; adding its result again would list the same label twice.
+        if (_docs.Count == 0) NewDoc(null, implicitStart: true);
         if (_docs.Count > 1) Warn("Import.Label.Multiple", -1, null, null, _docs.Count.ToString(CultureInfo.InvariantCulture));
 
+        AssignStoredGraphics();
         var documents = _docs.Select(d => d.Doc).ToList();
         var patterns = BarPatternRecognizer.Detect(documents[0]);
         foreach (var pattern in patterns)
             Warn("Import.BarPattern.Detected", _docs[0].Positions.GetValueOrDefault(pattern.Bars[0].Id, -1), null, pattern.Bars[0].Id,
                 pattern.Bars.Count.ToString(CultureInfo.InvariantCulture), pattern.DecodedValue ?? string.Empty);
         return new ZplParseResult(documents, _warnings.OrderBy(w => w.Position < 0 ? int.MaxValue : w.Position).ToList(), patterns);
+    }
+
+    /// <summary>
+    /// A download stays on the printer, so it belongs to the label it precedes and to every later label. A download after the
+    /// last label still goes to the last label rather than being lost.
+    /// </summary>
+    private void AssignStoredGraphics()
+    {
+        foreach (var (position, graphic) in _stored)
+        {
+            bool placed = false;
+            foreach (var d in _docs)
+            {
+                if (position >= d.EndPosition) continue;
+                d.Doc.StoredGraphics.Add(graphic);
+                placed = true;
+            }
+            if (!placed && _docs.Count > 0) _docs[^1].Doc.StoredGraphics.Add(graphic);
+        }
     }
 
     private IEnumerable<ZplCommand> Tokenize()
@@ -209,6 +251,14 @@ internal sealed class ZplImporter
             doc.DefaultRotation = p.DefaultRotation;
             doc.DefaultFont = p.DefaultFont is { } f ? new FontSpec(f.FontId, f.Height, f.Width) : null;
             doc.Encoding = p.Encoding;
+            doc.LabelShift = p.LabelShift;
+            doc.LabelTop = p.LabelTop;
+            doc.PrintMode = p.PrintMode;
+            doc.PrePeel = p.PrePeel;
+            doc.MirrorImage = p.MirrorImage;
+            doc.PrintRate = p.PrintRate is { } pr ? new PrintRateOptions { Speed = pr.Speed, SlewSpeed = pr.SlewSpeed, BackfeedSpeed = pr.BackfeedSpeed } : null;
+            doc.MediaDarkness = p.MediaDarkness;
+            foreach (var alias in p.FontAliases) doc.FontAliases.Add(new FontAlias(alias.Letter, alias.Path));
             ctx.SeenWidth = previous.SeenWidth;
             ctx.SeenLength = previous.SeenLength;
         }
@@ -247,16 +297,17 @@ internal sealed class ZplImporter
             Warn("Import.Label.StrayEnd", c.Start, "^XZ", null);
             return;
         }
-        EndDoc(_cur, closedByXz: true);
+        EndDoc(_cur, closedByXz: true, c.Start);
     }
 
-    private void EndDoc(DocCtx d, bool closedByXz)
+    private void EndDoc(DocCtx d, bool closedByXz, int position = 0)
     {
         if (!d.HasStart) Warn("Import.Label.NoStart", 0, null, null);
         else if (!closedByXz) Warn("Import.Label.NoEnd", _s.Length, null, null);
         if (!d.SeenWidth) Warn("Import.Label.NoWidth", -1, "^PW", null);
         if (!d.SeenLength) Warn("Import.Label.NoLength", -1, "^LL", null);
         d.Ended = true;
+        d.EndPosition = closedByXz ? position : _s.Length + 1;
     }
 
     // ---- command dispatch ------------------------------------------------------------------
@@ -265,7 +316,8 @@ internal sealed class ZplImporter
     {
         if (c.Prefix == '~')
         {
-            // Tilde commands are immediate printer actions (downloads, status, feed); none is a label element.
+            if (c.Name is "DG" or "DY" && TryStoreDownload(c)) return;
+            // Other tilde commands are immediate printer actions (status, feed, fonts); none is a label element.
             AddRawStandalone(_cur ?? NewDoc(null, implicitStart: true), c, "Import.Command.Unknown", c.Display);
             return;
         }
@@ -317,12 +369,46 @@ internal sealed class ZplImporter
                 break;
             case "MU": SetUnits(p, c); break;
             case "PM":
-                if (UpperChar(p, 0) != 'N')
+                switch (UpperChar(p, 0))
                 {
-                    // Mirroring the whole image is not modelled; keep the command so printing stays the same.
-                    AddRawStandalone(d, c, "Import.Setting.Unsupported", c.Display);
+                    case 'Y': d.Doc.MirrorImage = true; break;
+                    case 'N': d.Doc.MirrorImage = false; break;
+                    default: Warn("Import.Parameter.Invalid", c.Start, "^PM", null, "^PM", Opt(p, 0) ?? string.Empty); break;
                 }
                 break;
+            case "LS":
+                if (Opt(p, 0) is not null)
+                {
+                    if (Int(p, 0, c, scale: true) is { } shift && shift is >= -9999 and <= 9999) d.Doc.LabelShift = shift;
+                    else Warn("Import.Parameter.OutOfRange", c.Start, "^LS", null, "^LS", Opt(p, 0)!);
+                }
+                break;
+            case "LT":
+                if (Opt(p, 0) is not null)
+                {
+                    if (Int(p, 0, c, scale: true) is { } top && top is >= -240 and <= 240) d.Doc.LabelTop = top;
+                    else Warn("Import.Parameter.OutOfRange", c.Start, "^LT", null, "^LT", Opt(p, 0)!);
+                }
+                break;
+            case "LR":
+                // ^LRY is the same as an ^FR in every following field, so it becomes a per-field flag and stays exact mid-label.
+                switch (UpperChar(p, 0))
+                {
+                    case 'Y': _labelReverse = true; break;
+                    case 'N': case '\0': _labelReverse = false; break;
+                    default: Warn("Import.Parameter.Invalid", c.Start, "^LR", null, "^LR", Opt(p, 0)!); break;
+                }
+                break;
+            case "MM": SetPrintMode(d, p, c); break;
+            case "PR": SetPrintRate(d, p, c); break;
+            case "MD":
+                if (Opt(p, 0) is { } md)
+                {
+                    if (decimal.TryParse(md, NumberStyles.Float, CultureInfo.InvariantCulture, out decimal level) && level is >= -30m and <= 30m) d.Doc.MediaDarkness = level;
+                    else Warn("Import.Parameter.OutOfRange", c.Start, "^MD", null, "^MD", md);
+                }
+                break;
+            case "CW": SetFontAlias(d, p, c); break;
             case "PQ":
                 d.Doc.Print.Quantity = Math.Max(1, Int(p, 0, c) ?? 1);
                 d.Doc.Print.PauseEvery = Math.Max(0, Int(p, 1, c) ?? 0);
@@ -377,6 +463,56 @@ internal sealed class ZplImporter
                 };
                 break;
             case "A": SetFieldFont(d, p, c); break;
+            case "FP":
+                RequireField(d, c);
+                _f.HasDirection = true;
+                _f.OptionCommand ??= "^FP";
+                switch (UpperChar(p, 0))
+                {
+                    case 'V': _f.Direction = FieldDirection.Vertical; break;
+                    case 'R': _f.Direction = FieldDirection.Reverse; break;
+                    case 'H': case '\0': _f.Direction = FieldDirection.Horizontal; break;
+                    default: Warn("Import.Parameter.Invalid", c.Start, "^FP", null, "^FP", Opt(p, 0)!); break;
+                }
+                _f.Gap = Math.Clamp(Int(p, 1, c, scale: true) ?? 0, 0, 9999);
+                break;
+            case "TB":
+                RequireField(d, c);
+                _f.OptionCommand ??= "^TB";
+                if (RotationFrom(UpperChar(p, 0)) is not null) _f.RotationChar = UpperChar(p, 0);
+                _f.TextBox = new TextBoxOptions
+                {
+                    WidthDots = Math.Clamp(Int(p, 1, c, scale: true) ?? 1, 1, 32000),
+                    HeightDots = Math.Clamp(Int(p, 2, c, scale: true) ?? 1, 1, 32000),
+                };
+                break;
+            case "FE":
+                RequireField(d, c);
+                // The character may be a space or a comma, so it is read from the raw text rather than the split parameters.
+                _f.EmbedChar = c.Params.Length > 0 ? c.Params[0] : '#';
+                if (_f.EmbedChar is < ' ' or > '~')
+                {
+                    // Only printable ASCII can be written back safely.
+                    _f.Unsupported = true;
+                    Warn("Import.Parameter.Invalid", c.Start, "^FE", null, "^FE", c.Params.Trim());
+                }
+                break;
+            case "FC":
+                RequireField(d, c);
+                SetClock(p, c);
+                break;
+            case "FN":
+                RequireField(d, c);
+                SetFieldNumber(c);
+                break;
+            case "SN":
+                RequireField(d, c);
+                SetSerialNumber(p, c);
+                break;
+            case "SF":
+                RequireField(d, c);
+                SetSerialMask(p, c);
+                break;
             case "FD":
             case "FV":
                 RequireField(d, c);
@@ -390,6 +526,9 @@ internal sealed class ZplImporter
             // ---- graphics
             case "GB":
             case "GC":
+            case "GD":
+            case "GE":
+            case "GS":
                 RequireField(d, c);
                 _f.GraphicCommand = c.Name;
                 _f.GraphicParams = p;
@@ -402,15 +541,19 @@ internal sealed class ZplImporter
 
             // ---- barcodes
             case "BC": case "B3": case "BA": case "BE": case "BU": case "B2": case "BQ": case "BX": case "B7":
+            case "B1": case "B4": case "B5": case "B8": case "B9": case "BB": case "BD": case "BF": case "BI": case "BJ":
+            case "BK": case "BL": case "BM": case "BO": case "BP": case "BR": case "BS": case "BT": case "BZ":
+            case "B0": // the guide documents Aztec under both ^BO (letter) and ^B0 (zero); it is one symbology
                 RequireField(d, c);
-                _f.BarcodeCommand = c.Name;
+                _f.BarcodeCommand = c.Name == "B0" ? "BO" : c.Name;
                 _f.BarcodeParams = p;
                 break;
 
             // ---- stored objects
             case "XG":
+            case "IM":
                 RequireField(d, c);
-                _f.RecallCommand = "XG";
+                _f.RecallCommand = c.Name;
                 _f.RecallParams = c.Params.Trim();
                 break;
             case "IL":
@@ -477,7 +620,7 @@ internal sealed class ZplImporter
     {
         if (_f.Open) return;
         // Field data without a preceding ^FO: ZPL continues from the last position.
-        _f = new Field { Open = true, StartOffset = c.Start, EndOffset = c.End, StartPosition = c.Start, X = _lastX, Y = _lastY };
+        _f = new Field { Open = true, StartOffset = c.Start, EndOffset = c.End, StartPosition = c.Start, X = _lastX, Y = _lastY, LabelReverse = _labelReverse };
     }
 
     private void AddRawStandalone(DocCtx d, ZplCommand c, string? warningKey, string? warningArg, bool visual = false)
@@ -566,6 +709,194 @@ internal sealed class ZplImporter
         _f.FontWidth = Int(p, 2, c, scale: true);
     }
 
+    private static readonly Regex FontAliasPath = new(@"^(?:[REBAreba]:)?[A-Za-z0-9_\-]{1,8}\.(?:FNT|TTF|TTE|fnt|ttf|tte)$", RegexOptions.CultureInvariant | RegexOptions.Compiled);
+    private static readonly Regex FieldNumberParams = new(@"^\s*(\d{1,4})?\s*(?:""([A-Za-z0-9 ]{0,255})"")?\s*$", RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
+    private void SetPrintMode(DocCtx d, string[] p, ZplCommand c)
+    {
+        PrintMode? mode = UpperChar(p, 0) switch
+        {
+            'T' => PrintMode.Tear, 'P' => PrintMode.Peel, 'R' => PrintMode.Rewind, 'A' => PrintMode.Applicator,
+            'C' => PrintMode.Cutter, 'D' => PrintMode.DelayedCutter, 'F' => PrintMode.Rfid, 'K' => PrintMode.Kiosk,
+            _ => null,
+        };
+        if (mode is null)
+        {
+            // Modes the guide marks as reserved (L, U) and anything unknown cannot be modelled; the printer decides what they do.
+            if (Opt(p, 0) is null) Warn("Import.Parameter.Invalid", c.Start, "^MM", null, "^MM", string.Empty);
+            else AddRawStandalone(d, c, "Import.Setting.Unsupported", c.Display);
+            return;
+        }
+        d.Doc.PrintMode = mode;
+        // The pre-peel switch defaults to no, so leaving it out switches it off again.
+        d.Doc.PrePeel = UpperChar(p, 1) == 'Y';
+    }
+
+    /// <summary>Reads one ^PR speed: a number 1-14, or the letters A-E that stand for 2, 3, 4, 6 and 8 inches per second.</summary>
+    private int? ReadSpeed(string[] p, int i, ZplCommand c)
+    {
+        if (Opt(p, i) is not { } s) return null;
+        if (s.Length == 1 && char.ToUpperInvariant(s[0]) is >= 'A' and <= 'E')
+            return char.ToUpperInvariant(s[0]) switch { 'A' => 2, 'B' => 3, 'C' => 4, 'D' => 6, _ => 8 };
+        if (int.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out int v) && v is >= 1 and <= 14) return v;
+        Warn("Import.Parameter.Invalid", c.Start, "^PR", null, "^PR", s);
+        return null;
+    }
+
+    private void SetPrintRate(DocCtx d, string[] p, ZplCommand c)
+    {
+        int? speed = ReadSpeed(p, 0, c), slew = ReadSpeed(p, 1, c), back = ReadSpeed(p, 2, c);
+        if (speed is null && slew is null && back is null) return;
+        // The printer keeps the speeds it was not told about, so only the given ones change.
+        var rate = d.Doc.PrintRate ??= new PrintRateOptions();
+        rate.Speed = speed ?? rate.Speed;
+        rate.SlewSpeed = slew ?? rate.SlewSpeed;
+        rate.BackfeedSpeed = back ?? rate.BackfeedSpeed;
+    }
+
+    private void SetFontAlias(DocCtx d, string[] p, ZplCommand c)
+    {
+        string? letter = Opt(p, 0), path = Opt(p, 1);
+        if (letter is null || letter.Length != 1 || !char.IsAsciiLetterOrDigit(letter[0]) || path is null || !FontAliasPath.IsMatch(path))
+        {
+            AddRawStandalone(d, c, null, null);
+            Warn("Import.Parameter.Invalid", c.Start, "^CW", null, "^CW", c.Params.Trim());
+            return;
+        }
+        if (d.Visual > 0)
+        {
+            // Fields before this command still use the old font, which a document-wide list cannot express.
+            AddRawStandalone(d, c, "Import.Font.AliasLate", c.Display);
+            return;
+        }
+        d.Doc.FontAliases.RemoveAll(a => a.Letter == char.ToUpperInvariant(letter[0]));
+        d.Doc.FontAliases.Add(new FontAlias(letter[0], path.ToUpperInvariant()));
+    }
+
+    private void SetClock(string[] p, ZplCommand c)
+    {
+        char? Mark(int i) => Opt(p, i) is { } s ? s[0] : null;
+        var clock = new FieldClockOptions { Primary = Mark(0) ?? '%', Secondary = Mark(1), Third = Mark(2) };
+        var marks = new List<char> { clock.Primary };
+        if (clock.Secondary is { } second) marks.Add(second);
+        if (clock.Third is { } third) marks.Add(third);
+        if (marks.Distinct().Count() != marks.Count || marks.Any(m => m < ' ' || m > '~'))
+        {
+            // The printer requires three different indicators; a clash cannot be written back the same way.
+            _f.Unsupported = true;
+            Warn("Import.Parameter.Invalid", c.Start, "^FC", null, "^FC", c.Params.Trim());
+            return;
+        }
+        _f.Clock = clock;
+    }
+
+    private void SetFieldNumber(ZplCommand c)
+    {
+        var m = FieldNumberParams.Match(c.Params);
+        if (!m.Success)
+        {
+            _f.Unsupported = true;
+            Warn("Import.Parameter.Invalid", c.Start, "^FN", null, "^FN", c.Params.Trim());
+            return;
+        }
+        _f.FieldNumber = m.Groups[1].Success ? int.Parse(m.Groups[1].Value, CultureInfo.InvariantCulture) : 0;
+        _f.FieldPrompt = m.Groups[2].Success && m.Groups[2].Value.Length > 0 ? m.Groups[2].Value : null;
+    }
+
+    private void SetSerialNumber(string[] p, ZplCommand c)
+    {
+        long increment = 1;
+        if (Opt(p, 1) is { } inc && !long.TryParse(inc, NumberStyles.Integer, CultureInfo.InvariantCulture, out increment))
+        {
+            Warn("Import.Parameter.Invalid", c.Start, "^SN", null, "^SN", inc);
+            increment = 1;
+        }
+        string value = Opt(p, 0) ?? string.Empty;
+        if (!PrinterSerialOptions.IsValidStartValue(value))
+        {
+            // A start value the generator would refuse cannot be modelled; the field is kept as it was written.
+            _f.Unsupported = true;
+            Warn("Import.Parameter.Invalid", c.Start, "^SN", null, "^SN", value);
+            return;
+        }
+        _f.Serial = new PrinterSerialOptions { Kind = PrinterSerialKind.Number, Increment = increment, LeadingZeros = YesNo(p, 2, false) };
+        _f.SerialValue = value;
+    }
+
+    private void SetSerialMask(string[] p, ZplCommand c)
+    {
+        string mask = Opt(p, 0) ?? string.Empty;
+        string increment = Opt(p, 1) ?? string.Empty;
+        if (!PrinterSerialOptions.IsValidMask(mask) || !PrinterSerialOptions.IsValidIncrementText(increment))
+        {
+            _f.Unsupported = true;
+            Warn("Import.Parameter.Invalid", c.Start, "^SF", null, "^SF", mask + "," + increment);
+            return;
+        }
+        _f.Serial = new PrinterSerialOptions { Kind = PrinterSerialKind.Mask, Mask = mask, IncrementText = increment };
+    }
+
+    /// <summary>
+    /// Records a graphic downloaded with <c>~DG</c>, or with <c>~DY</c> when its data is plain ASCII bitmap data. Returns false when
+    /// the command is something else (a font, a PNG, binary data) so the caller keeps it verbatim.
+    /// </summary>
+    private bool TryStoreDownload(ZplCommand c)
+    {
+        string[] head;
+        string data;
+        string path;
+        int total, perRow;
+        if (c.Name == "DG")
+        {
+            // ~DGd:o.x,t,w,data: the data may itself contain commas (compression), so only the first three are separators.
+            head = c.Params.Split(',', 4);
+            if (head.Length < 4) { Warn("Import.Graphic.Invalid", c.Start, c.Display, null, "0"); return false; }
+            path = head[0].Trim();
+            data = head[3];
+            if (!int.TryParse(head[1].Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out total)
+                || !int.TryParse(head[2].Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out perRow))
+            {
+                Warn("Import.Graphic.Invalid", c.Start, c.Display, null, head[1].Trim());
+                return false;
+            }
+        }
+        else
+        {
+            // ~DYd:f,b,x,t,w,data with b = A (hex or Z64 text) and x = G (.GRF bitmap) is the same download as ~DG.
+            head = c.Params.Split(',', 6);
+            if (head.Length < 6 || head[1].Trim().ToUpperInvariant() != "A" || head[2].Trim().ToUpperInvariant() is not ("G" or "B")) return false;
+            path = head[0].Trim();
+            data = head[5];
+            if (!int.TryParse(head[3].Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out total)
+                || !int.TryParse(head[4].Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out perRow))
+                return false;
+            // ~DY names carry no extension in their file part; the x parameter says what it is.
+            if (!path.Contains('.')) path += ".GRF";
+        }
+
+        if (!StoredGraphic.IsValidPath(StoredGraphic.NormalizePath(path)))
+        {
+            // A name the printer would not accept cannot be written back, so the download is kept verbatim instead.
+            Warn("Import.Parameter.Invalid", c.Start, c.Display, null, c.Display, path);
+            return false;
+        }
+        // Each download is kept in memory until the file is processed; a limit stops a hostile file from using all of it.
+        if (total < 1 || _storedBytes + (long)total > MaxStoredBytes)
+        {
+            Warn("Import.Graphic.Invalid", c.Start, c.Display, null, total.ToString(CultureInfo.InvariantCulture));
+            return false;
+        }
+        if (!ZplGraphicData.TryDecode(data, total, perRow, out byte[] packed, out bool truncated) || total % perRow != 0)
+        {
+            Warn("Import.Graphic.Invalid", c.Start, c.Display, null, total.ToString(CultureInfo.InvariantCulture));
+            return false;
+        }
+        if (truncated) Warn("Import.Graphic.Truncated", c.Start, c.Display, null);
+        _storedBytes += packed.Length;
+        _stored.Add((c.Start, new StoredGraphic(path, perRow, packed)));
+        return true;
+    }
+
     // ---- fields ----------------------------------------------------------------------------
 
     private void OpenField(DocCtx d, ZplCommand c, string[] p)
@@ -574,7 +905,7 @@ internal sealed class ZplImporter
         var kind = c.Name == "FT" ? FieldOriginKind.Typeset : FieldOriginKind.Origin;
         int x = Int(p, 0, c, scale: true) ?? _lastX;
         int y = Int(p, 1, c, scale: true) ?? _lastY;
-        _f = new Field { Open = true, Kind = kind, X = x, Y = y, StartOffset = c.Start, EndOffset = c.End, StartPosition = c.Start };
+        _f = new Field { Open = true, Kind = kind, X = x, Y = y, StartOffset = c.Start, EndOffset = c.End, StartPosition = c.Start, LabelReverse = _labelReverse };
     }
 
     /// <summary>
@@ -591,19 +922,99 @@ internal sealed class ZplImporter
         var d = _cur;
         if (d is null) return;
 
-        bool hasContent = f.Unsupported || f.GraphicCommand is not null || f.BarcodeCommand is not null || f.RecallCommand is not null || f.Data is not null;
+        bool hasContent = f.Unsupported || f.GraphicCommand is not null || f.BarcodeCommand is not null || f.RecallCommand is not null || f.Data is not null
+            || f.FieldNumber is not null || f.Serial is not null;
         if (!hasContent) return;
         if (implicitEnd && terminator is null)
             Warn("Import.Field.MissingEnd", f.StartPosition, null, null);
 
         _fieldDecodeFailed = false;
+        // A barcode command with a parameter the model cannot hold (a composite DataBar, Intelligent Mail ...) is kept whole.
+        if (!f.Unsupported && f.BarcodeCommand is not null && RejectBarcode(f) is { } rejection)
+        {
+            f.Unsupported = true;
+            Warn(rejection.Key, f.StartPosition, "^" + f.BarcodeCommand, null, rejection.Args);
+        }
+        if (!f.Unsupported && f.Serial is { Kind: PrinterSerialKind.Number })
+        {
+            // ^SN supplies the data itself; a ^FD next to it would make the printed value ambiguous.
+            if (f.Data is not null)
+            {
+                f.Unsupported = true;
+                Warn("Import.Serial.Conflict", f.StartPosition, "^SN", null);
+            }
+            else f.Data = f.SerialValue;
+        }
         LabelElement? element = f.Unsupported ? BuildRawField(f, terminator) : BuildElement(d, f);
         if (element is null) return;
+        if (element is not RawZplElement && !ApplyFieldOptions(f, element))
+        {
+            element = BuildRawField(f, terminator);
+        }
         element.X = f.X;
         element.Y = f.Y;
         element.OriginKind = f.Kind;
-        element.ReverseField = f.Reverse;
+        element.ReverseField = f.Reverse || f.LabelReverse;
         AddElement(d, element, f.StartPosition);
+    }
+
+    /// <summary>
+    /// Copies the options collected for the field onto the element. Returns false (after warning) when the element cannot hold
+    /// one of them, for example a field number on a box: the caller then keeps the whole field verbatim.
+    /// </summary>
+    private bool ApplyFieldOptions(Field f, LabelElement element)
+    {
+        bool any = f.FieldNumber is not null || f.EmbedChar is not null || f.Clock is not null || f.Serial is not null;
+        if (element is TextElement text)
+        {
+            if (f.TextBox is not null && text.Block is not null)
+            {
+                Warn("Import.Field.OptionNotApplicable", f.StartPosition, "^TB", null, "^TB");
+                return false;
+            }
+            text.TextBox = f.TextBox;
+            if (f.HasDirection) { text.Direction = f.Direction; text.InterCharacterGap = f.Gap; }
+            if (f.TextBox is not null && text.Text.Contains('<'))
+            {
+                // Inside a ^TB box "<<>" is a literal '<'; any other '<' opens an escape sequence the model cannot hold.
+                string unescaped = text.Text.Replace("<<>", "\u0001", StringComparison.Ordinal);
+                if (unescaped.Contains('<'))
+                {
+                    Warn("Import.Field.OptionNotApplicable", f.StartPosition, "^TB", null, "^TB");
+                    return false;
+                }
+                text.Text = unescaped.Replace("\u0001", "<", StringComparison.Ordinal);
+            }
+        }
+        else if (f.TextBox is not null || f.HasDirection)
+        {
+            Warn("Import.Field.OptionNotApplicable", f.StartPosition, f.OptionCommand ?? "^TB", null, f.OptionCommand ?? "^TB");
+            return false;
+        }
+
+        if (element is BarcodeElement symbol && f.Serial is { Kind: PrinterSerialKind.Number }
+            && ZplBarcodeEmitter.Command(symbol, string.Empty, "N", out string dataPrefix).Length > 0 && dataPrefix.Length > 0)
+        {
+            // Symbols whose data starts with a fixed prefix (a QR Code's "QA,") cannot take a counting start value.
+            Warn("Import.Field.OptionNotApplicable", f.StartPosition, "^SN", null, "^SN");
+            return false;
+        }
+
+        if (element is FieldDataElement data)
+        {
+            data.FieldNumber = f.FieldNumber;
+            data.FieldPrompt = f.FieldPrompt;
+            data.EmbedCharacter = f.EmbedChar;
+            data.Clock = f.Clock;
+            data.Serial = f.Serial;
+        }
+        else if (any)
+        {
+            string cmd = f.FieldNumber is not null ? "^FN" : f.EmbedChar is not null ? "^FE" : f.Clock is not null ? "^FC" : f.Serial?.Kind == PrinterSerialKind.Mask ? "^SF" : "^SN";
+            Warn("Import.Field.OptionNotApplicable", f.StartPosition, cmd, null, cmd);
+            return false;
+        }
+        return true;
     }
 
     private LabelElement BuildRawField(Field f, ZplCommand? terminator)
@@ -611,6 +1022,12 @@ internal sealed class ZplImporter
         int end = terminator?.End ?? f.EndOffset;
         string text = _s[f.StartOffset..Math.Max(f.StartOffset, Math.Min(end, _s.Length))].Trim();
         if (terminator is null && !text.EndsWith("^FS", StringComparison.OrdinalIgnoreCase)) text += "^FS";
+        if (f.LabelReverse && !f.Reverse)
+        {
+            // The kept text must still print reversed: put ^FR right behind the first command (normally ^FO or ^FT).
+            int next = text.IndexOf('^', 1);
+            if (next > 0) text = text.Insert(next, "^FR");
+        }
         var raw = new RawZplElement { Zpl = text, IsVisual = true };
         WarnIfNonAscii(raw, f.StartPosition);
         return raw;
@@ -633,7 +1050,9 @@ internal sealed class ZplImporter
         if (f.RecallCommand is not null)
         {
             var placeholder = MakeRecall(f.RecallCommand, f.RecallParams, asField: true);
-            Warn("Import.Recall.Graphic.Unavailable", f.StartPosition, "^XG", placeholder.Id, placeholder.Reference);
+            // A graphic downloaded earlier in the same file can be drawn, so only a recall of something unseen is reported.
+            bool known = StoredGraphic.Find(_stored.Where(x => x.Position < f.StartPosition).Select(x => x.Graphic), placeholder.Reference) is not null;
+            if (!known) Warn("Import.Recall.Graphic.Unavailable", f.StartPosition, "^" + f.RecallCommand, placeholder.Id, placeholder.Reference);
             return placeholder;
         }
         return BuildText(d, f);
@@ -703,6 +1122,50 @@ internal sealed class ZplImporter
                     ThicknessDots = Math.Clamp(Int(p, 1, c, scale: true) ?? 1, 1, 4095),
                     Color = UpperChar(p, 2) == 'W' ? GraphicColor.White : GraphicColor.Black,
                 };
+            case "GE":
+            {
+                int t = Math.Clamp(Int(p, 2, c, scale: true) ?? 1, 1, 4095);
+                // Omitted sizes become the thickness, as the guide's defaults say.
+                return new EllipseElement
+                {
+                    WidthDots = Math.Clamp(Int(p, 0, c, scale: true) ?? t, 3, 4095),
+                    HeightDots = Math.Clamp(Int(p, 1, c, scale: true) ?? t, 3, 4095),
+                    ThicknessDots = t,
+                    Color = UpperChar(p, 3) == 'W' ? GraphicColor.White : GraphicColor.Black,
+                };
+            }
+            case "GD":
+            {
+                int t = Math.Clamp(Int(p, 2, c, scale: true) ?? 1, 1, 32000);
+                string lean = Opt(p, 4) ?? string.Empty;
+                // R or / lean right (rise to the right), L or \ lean left; right is the default.
+                return new DiagonalLineElement
+                {
+                    WidthDots = Math.Clamp(Int(p, 0, c, scale: true) ?? t, 3, 32000),
+                    HeightDots = Math.Clamp(Int(p, 1, c, scale: true) ?? t, 3, 32000),
+                    ThicknessDots = t,
+                    Color = UpperChar(p, 3) == 'W' ? GraphicColor.White : GraphicColor.Black,
+                    Lean = lean.Length > 0 && (char.ToUpperInvariant(lean[0]) == 'L' || lean[0] == '\\') ? DiagonalLean.Left : DiagonalLean.Right,
+                };
+            }
+            case "GS":
+            {
+                string symbol = (f.Data ?? string.Empty).Trim();
+                char letter = symbol.Length > 0 ? char.ToUpperInvariant(symbol[0]) : '\0';
+                if (letter is < 'A' or > 'E' || symbol.Length > 1)
+                {
+                    Warn("Import.Parameter.Invalid", f.StartPosition, "^GS", null, "^GS", symbol);
+                    return BuildRawField(f, null);
+                }
+                return new SymbolElement
+                {
+                    Symbol = (GraphicSymbol)(letter - 'A'),
+                    // The guide's default for both sizes is the last ^CF value.
+                    HeightDots = Math.Clamp(Int(p, 1, c, scale: true) ?? _cf.Height, 0, 32000),
+                    WidthDots = Math.Clamp(Int(p, 2, c, scale: true) ?? _cf.Width, 0, 32000),
+                    Rotation = ResolveRotation(d, UpperChar(p, 0)),
+                };
+            }
             default:
                 return BuildImage(d, f);
         }
@@ -771,106 +1234,7 @@ internal sealed class ZplImporter
         Warn(c.Name == "IL" ? "Import.Recall.Image.Unavailable" : "Import.Recall.Format.Unavailable", c.Start, c.Display, placeholder.Id, placeholder.Reference);
     }
 
-    // ---- barcodes --------------------------------------------------------------------------
-
-    private LabelElement BuildBarcode(DocCtx d, Field f)
-    {
-        var c = new ZplCommand('^', f.BarcodeCommand!, string.Empty, f.StartPosition, f.StartPosition);
-        string[] p = f.BarcodeParams;
-        string data = f.Data ?? string.Empty;
-        var b = new BarcodeElement { Data = data };
-
-        int HeightAt(int i) => Math.Clamp(Int(p, i, c, scale: true) ?? _byHeight, 1, 32000);
-        void Linear(BarcodeSymbology symbology)
-        {
-            b.Symbology = symbology;
-            b.ModuleWidth = _byWidth;
-            b.WideBarRatio = _byRatio;
-        }
-        // Parameter positions differ per symbology; this reads the common "height, human readable, above" triple.
-        void Line(int heightIndex)
-        {
-            b.Height = HeightAt(heightIndex);
-            b.HumanReadable = YesNo(p, heightIndex + 1, true);
-            b.HumanReadablePosition = YesNo(p, heightIndex + 2, false) ? HumanReadablePosition.Above : HumanReadablePosition.Below;
-        }
-
-        switch (f.BarcodeCommand)
-        {
-            case "BC":
-                Linear(BarcodeSymbology.Code128);
-                b.Rotation = ResolveRotation(d, UpperChar(p, 0));
-                Line(1);
-                b.Code128Mode = UpperChar(p, 5) switch { 'U' => Code128Mode.Ucc, 'A' => Code128Mode.Automatic, 'D' => Code128Mode.Ean, _ => Code128Mode.None };
-                b.Data = NormalizeCode128(b, data, f);
-                break;
-            case "B3":
-                Linear(BarcodeSymbology.Code39);
-                b.Rotation = ResolveRotation(d, UpperChar(p, 0));
-                b.CheckDigit = YesNo(p, 1, false);
-                Line(2);
-                break;
-            case "BA":
-                Linear(BarcodeSymbology.Code93);
-                b.Rotation = ResolveRotation(d, UpperChar(p, 0));
-                Line(1);
-                b.CheckDigit = YesNo(p, 4, false);
-                break;
-            case "BE":
-                Linear(BarcodeSymbology.Ean13);
-                b.Rotation = ResolveRotation(d, UpperChar(p, 0));
-                Line(1);
-                break;
-            case "BU":
-                Linear(BarcodeSymbology.UpcA);
-                b.Rotation = ResolveRotation(d, UpperChar(p, 0));
-                Line(1);
-                b.CheckDigit = YesNo(p, 4, true);
-                break;
-            case "B2":
-                Linear(BarcodeSymbology.Interleaved2Of5);
-                b.Rotation = ResolveRotation(d, UpperChar(p, 0));
-                Line(1);
-                b.CheckDigit = YesNo(p, 4, false);
-                break;
-            case "BQ":
-                b.Symbology = BarcodeSymbology.QrCode;
-                b.Rotation = ResolveRotation(d, UpperChar(p, 0));
-                b.QrModel = Int(p, 1, c) is 1 ? 1 : 2;
-                b.ModuleSize = Math.Clamp(Int(p, 2, c) ?? 1, 1, 10);
-                b.QrErrorCorrection = UpperChar(p, 3) switch { 'L' => QrErrorCorrection.Low, 'M' => QrErrorCorrection.Medium, 'H' => QrErrorCorrection.High, _ => QrErrorCorrection.Quartile };
-                var qr = QrHeader.Match(data);
-                if (qr.Success)
-                {
-                    b.QrErrorCorrection = qr.Groups[1].Value switch { "L" => QrErrorCorrection.Low, "M" => QrErrorCorrection.Medium, "H" => QrErrorCorrection.High, _ => QrErrorCorrection.Quartile };
-                    b.Data = qr.Groups[3].Value;
-                    if (qr.Groups[2].Value == "M")
-                        Warn("Import.Barcode.Qr.ManualMode", f.StartPosition, "^BQ", b.Id);
-                }
-                break;
-            case "BX":
-                b.Symbology = BarcodeSymbology.DataMatrix;
-                b.Rotation = ResolveRotation(d, UpperChar(p, 0));
-                b.ModuleSize = Math.Clamp(Int(p, 1, c) ?? 1, 1, 10);
-                if (Int(p, 2, c) is { } quality && quality != 200)
-                    Warn("Import.Barcode.DataMatrix.Quality", f.StartPosition, "^BX", b.Id, quality.ToString(CultureInfo.InvariantCulture));
-                b.Columns = Math.Clamp(Int(p, 3, c) ?? 0, 0, 144);
-                b.Rows = Math.Clamp(Int(p, 4, c) ?? 0, 0, 144);
-                break;
-            case "B7":
-                b.Symbology = BarcodeSymbology.Pdf417;
-                b.ModuleWidth = _byWidth;
-                b.Rotation = ResolveRotation(d, UpperChar(p, 0));
-                b.Height = HeightAt(1);
-                // ZPL's "0" security level means automatic; the model's smallest is 1.
-                b.Pdf417SecurityLevel = Int(p, 2, c) is { } sec and >= 1 ? Math.Min(sec, 8) : 2;
-                b.Columns = Math.Clamp(Int(p, 3, c) ?? 0, 0, 30);
-                b.Rows = Math.Clamp(Int(p, 4, c) ?? 0, 0, 90);
-                b.Pdf417Truncate = YesNo(p, 5, false);
-                break;
-        }
-        return b;
-    }
+    // Barcode commands are interpreted in ZplImporter.Barcodes.cs.
 
     /// <summary>
     /// Code 128 data may start with a ZPL invocation (<c>&gt;:</c> B, <c>&gt;;</c> C, <c>&gt;9</c> A) that picks the start subset. The

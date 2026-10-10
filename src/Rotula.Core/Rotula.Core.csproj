@@ -9,6 +9,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- The bundled stock library; the logical name is what StockCatalog.LoadBundled() reads. -->
+    <EmbeddedResource Include="Stocks\stocks.json" LogicalName="Rotula.Core.Stocks.stocks.json" />
+    <!-- The ZPL command catalogue (status of every ZPL II command); read by ZplCommandCatalog and used to generate docs/zpl-coverage.md. -->
+    <EmbeddedResource Include="Zpl\Catalog\commands.json" LogicalName="Rotula.Core.Zpl.Catalog.commands.json" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="MiniExcel" Version="1.46.0" />
   </ItemGroup>
 

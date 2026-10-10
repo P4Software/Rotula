@@ -25,7 +25,19 @@
     <ProjectReference Include="..\..\src\Rotula.Data\Rotula.Data.csproj" />
     <ProjectReference Include="..\..\src\Rotula.Rendering\Rotula.Rendering.csproj" />
     <ProjectReference Include="..\..\src\Rotula.Printing\Rotula.Printing.csproj" />
+    <ProjectReference Include="..\..\src\Rotula.Files\Rotula.Files.csproj" />
+    <ProjectReference Include="..\..\src\Rotula.Mcp\Rotula.Mcp.csproj" />
     <ProjectReference Include="..\..\src\Rotula.App\Rotula.App.csproj" />
+    <!-- The sample provider pack: built before the tests, never referenced (a reference would make the default load context
+         resolve it and the isolation tests would prove nothing). Its output is copied to testpacks/sample below. -->
+    <ProjectReference Include="..\Rotula.Data.SamplePack\Rotula.Data.SamplePack.csproj" ReferenceOutputAssembly="false" Private="false" />
   </ItemGroup>
+
+  <Target Name="CopySamplePack" AfterTargets="Build">
+    <ItemGroup>
+      <SamplePackFiles Include="..\Rotula.Data.SamplePack\bin\$(Configuration)\net10.0\**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(SamplePackFiles)" DestinationFiles="@(SamplePackFiles->'$(OutDir)testpacks\sample\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+  </Target>
 
 </Project>

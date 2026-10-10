@@ -48,6 +48,9 @@ public interface IFileDialogService
 
     /// <summary>Asks for a CSV or Excel (.xlsx) data file for the data merge.</summary>
     string? PickOpenData();
+
+    /// <summary>Asks for a SQLite database file.</summary>
+    string? PickOpenDatabaseFile();
 }
 
 /// <summary>Message boxes.</summary>
@@ -132,4 +135,7 @@ public interface IToolDialogService
 
     /// <summary>Shows a larger preview of the label as the printer will draw it.</summary>
     void ShowPreviewDialog(Rotula.App.Editing.PreviewCache preview, string title);
+
+    /// <summary>Shows the connection manager modally; returns when it is closed.</summary>
+    void ShowConnectionManager(Rotula.App.ViewModels.ConnectionManagerViewModel viewModel);
 }

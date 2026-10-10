@@ -53,6 +53,15 @@ internal static class ZplParserTestSupport
         Eq("Print.PauseEvery", a.Print.PauseEvery, b.Print.PauseEvery);
         Eq("Print.Replicates", a.Print.Replicates, b.Print.Replicates);
         Eq("Print.OverridePause", a.Print.OverridePause, b.Print.OverridePause);
+        Eq("LabelShift", a.LabelShift, b.LabelShift);
+        Eq("LabelTop", a.LabelTop, b.LabelTop);
+        Eq("PrintMode", (a.PrintMode, a.PrePeel), (b.PrintMode, b.PrePeel));
+        Eq("MirrorImage", a.MirrorImage, b.MirrorImage);
+        Eq("PrintRate", Rate(a.PrintRate), Rate(b.PrintRate));
+        Eq("MediaDarkness", a.MediaDarkness, b.MediaDarkness);
+        Eq("FontAliases", string.Join(";", a.FontAliases.Select(f => f.Letter + "=" + f.Path)), string.Join(";", b.FontAliases.Select(f => f.Letter + "=" + f.Path)));
+        Eq("StoredGraphics", string.Join(";", a.StoredGraphics.Select(g => g.Path + "/" + g.BytesPerRow + "/" + Convert.ToHexString(g.Data))),
+            string.Join(";", b.StoredGraphics.Select(g => g.Path + "/" + g.BytesPerRow + "/" + Convert.ToHexString(g.Data))));
         Eq("Element count", a.Elements.Count, b.Elements.Count);
         if (a.Elements.Count != b.Elements.Count) return d;
 
@@ -79,9 +88,25 @@ internal static class ZplParserTestSupport
                     Eq(at + ".Font", EffectiveFont(a, tx), EffectiveFont(b, ty));
                     Eq(at + ".Rotation", tx.Rotation ?? a.DefaultRotation, ty.Rotation ?? b.DefaultRotation);
                     Eq(at + ".Block", Block(tx.Block), Block(ty.Block));
+                    Eq<object?>(at + ".TextBox", tx.TextBox is null ? null : (tx.TextBox.WidthDots, tx.TextBox.HeightDots), ty.TextBox is null ? null : (ty.TextBox.WidthDots, ty.TextBox.HeightDots));
+                    Eq(at + ".Direction", (tx.Direction, tx.InterCharacterGap), (ty.Direction, ty.InterCharacterGap));
+                    DiffFieldOptions(at, tx, ty, d);
                     break;
                 case BarcodeElement bx:
                     DiffBarcode(at, a, b, bx, (BarcodeElement)y, d);
+                    DiffFieldOptions(at, bx, (BarcodeElement)y, d);
+                    break;
+                case DiagonalLineElement da:
+                    var db2 = (DiagonalLineElement)y;
+                    Eq(at + ".Shape", (da.WidthDots, da.HeightDots, da.ThicknessDots, da.Color, da.Lean), (db2.WidthDots, db2.HeightDots, db2.ThicknessDots, db2.Color, db2.Lean));
+                    break;
+                case EllipseElement ea:
+                    var eb = (EllipseElement)y;
+                    Eq(at + ".Shape", (ea.WidthDots, ea.HeightDots, ea.ThicknessDots, ea.Color), (eb.WidthDots, eb.HeightDots, eb.ThicknessDots, eb.Color));
+                    break;
+                case SymbolElement sa:
+                    var sb2 = (SymbolElement)y;
+                    Eq(at + ".Symbol", (sa.Symbol, sa.HeightDots, sa.WidthDots, sa.Rotation ?? a.DefaultRotation), (sb2.Symbol, sb2.HeightDots, sb2.WidthDots, sb2.Rotation ?? b.DefaultRotation));
                     break;
                 case BoxElement boxA:
                     var boxB = (BoxElement)y;
@@ -121,6 +146,20 @@ internal static class ZplParserTestSupport
     {
         var diff = Diff(expected, actual);
         Assert.True(diff.Count == 0, "Documents differ:\n" + string.Join("\n", diff));
+    }
+
+    private static (int?, int?, int?)? Rate(PrintRateOptions? r) => r is null || r.IsEmpty ? null : (r.Speed, r.SlewSpeed, r.BackfeedSpeed);
+
+    private static void DiffFieldOptions(string at, FieldDataElement x, FieldDataElement y, List<string> d)
+    {
+        void Eq<T>(string what, T p, T q)
+        {
+            if (!EqualityComparer<T>.Default.Equals(p, q)) d.Add($"{at}.{what}: expected {p}, got {q}");
+        }
+        Eq("FieldNumber", (x.FieldNumber, x.FieldPrompt, x.EmbedCharacter), (y.FieldNumber, y.FieldPrompt, y.EmbedCharacter));
+        Eq<object?>("Clock", x.Clock is null ? null : (x.Clock.Primary, x.Clock.Secondary, x.Clock.Third), y.Clock is null ? null : (y.Clock.Primary, y.Clock.Secondary, y.Clock.Third));
+        Eq<object?>("Serial", x.Serial is null ? null : (x.Serial.Kind, x.Serial.Increment, x.Serial.LeadingZeros, x.Serial.Mask, x.Serial.IncrementText),
+            y.Serial is null ? null : (y.Serial.Kind, y.Serial.Increment, y.Serial.LeadingZeros, y.Serial.Mask, y.Serial.IncrementText));
     }
 
     private static (char, int, int)? Font(FontSpec? f) => f is null ? null : (f.FontId, f.Height, f.Width);

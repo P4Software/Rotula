@@ -150,6 +150,8 @@ public static class LabelRenderer
             RenderPlaceholder p => new PlaceholderLayout(p),
             RenderCircle c => new CircleLayout(c),
             RenderLine l => new LineLayout(l),
+            RenderEllipse el => new EllipseLayout(el),
+            RenderDiagonal dg => new DiagonalLayout(dg),
             RenderBarcode bc => new BarcodeLayout(bc, issues),
             RenderImage im => new ImageLayout(im, issues),
             _ => new EmptyLayout(),
@@ -201,8 +203,15 @@ public static class LabelRenderer
                 Edging = SKFontEdging.Antialias,
                 Subpixel = true,
             };
-            _lines = WrapText(t.Text, _font, t.WidthDots, t.MaxLines);
             _lineHeight = _font.Spacing + (float)t.LineSpacingDots;
+            int maxLines = t.MaxLines;
+            if (t.HeightDots > 0 && _lineHeight > 0)
+            {
+                // A fixed-height box shows only the lines that fit completely (at least one, so a tiny box is not invisible).
+                int fit = Math.Max(1, (int)Math.Floor(t.HeightDots / _lineHeight));
+                maxLines = maxLines > 0 ? Math.Min(maxLines, fit) : fit;
+            }
+            _lines = WrapText(t.Text, _font, t.WidthDots, maxLines);
             // Skia reports ascent as a negative number; the first baseline sits one ascent below the top edge.
             _ascent = -_font.Metrics.Ascent;
             Width = t.WidthDots > 0 ? t.WidthDots : _lines.Max(l => _font.MeasureText(l));
@@ -410,6 +419,69 @@ public static class LabelRenderer
         }
     }
 
+    private sealed class EllipseLayout : Layout
+    {
+        private readonly RenderEllipse _e;
+
+        public EllipseLayout(RenderEllipse e)
+        {
+            _e = e;
+            Width = Math.Max(0, e.WidthDots);
+            Height = Math.Max(0, e.HeightDots);
+        }
+
+        public override void Paint(SKCanvas canvas)
+        {
+            if (Width <= 0 || Height <= 0) return;
+            float w = (float)Width, h = (float)Height;
+            float th = (float)Math.Max(1, _e.ThicknessDots);
+            using var paint = MakePaint(_e, _e.White, antiAlias: true);
+            if (th * 2 >= Math.Min(w, h))
+            {
+                canvas.DrawOval(w / 2, h / 2, w / 2, h / 2, paint);
+                return;
+            }
+            // A stroke is centred on its path, so inset by half the thickness to keep the outer edge on the bounds.
+            paint.Style = SKPaintStyle.Stroke;
+            paint.StrokeWidth = th;
+            canvas.DrawOval(w / 2, h / 2, (w - th) / 2, (h - th) / 2, paint);
+        }
+    }
+
+    private sealed class DiagonalLayout : Layout
+    {
+        private readonly RenderDiagonal _d;
+
+        public DiagonalLayout(RenderDiagonal d)
+        {
+            _d = d;
+            Width = Math.Max(0, d.WidthDots);
+            Height = Math.Max(0, d.HeightDots);
+        }
+
+        public override void Paint(SKCanvas canvas)
+        {
+            if (Width <= 0 || Height <= 0) return;
+            float w = (float)Width, h = (float)Height;
+            float t = (float)Math.Min(Math.Max(1, _d.ThicknessDots), w);
+            using var paint = MakePaint(_d, _d.White, antiAlias: true);
+            // SkiaSharp 4 marks SKPath's own MoveTo/LineTo obsolete; paths are now built with SKPathBuilder.
+            using var builder = new SKPathBuilder();
+            // The bar keeps its horizontal width t along the whole length, which is how the printer draws it.
+            if (_d.LeansRight)
+            {
+                builder.MoveTo(0, h); builder.LineTo(t, h); builder.LineTo(w, 0); builder.LineTo(w - t, 0);
+            }
+            else
+            {
+                builder.MoveTo(0, 0); builder.LineTo(t, 0); builder.LineTo(w, h); builder.LineTo(w - t, h);
+            }
+            builder.Close();
+            using var path = builder.Detach();
+            canvas.DrawPath(path, paint);
+        }
+    }
+
     private sealed class LineLayout : Layout
     {
         private readonly RenderLine _l;
@@ -489,7 +561,9 @@ public static class LabelRenderer
         private readonly RenderBarcode _bc;
         private readonly BarcodeMatrix? _matrix;
         private readonly int _module;
-        private readonly float _rowHeight;
+        private readonly float[] _rowTops = Array.Empty<float>();    // top of every matrix row, relative to the top of the bars
+        private readonly float[] _rowHeights = Array.Empty<float>(); // height of every matrix row
+        private readonly float _barsHeight;                          // height of all rows together
         private readonly float _textBand;   // vertical space taken by the human-readable line, 0 when none
         private readonly string _text = string.Empty;
 
@@ -503,6 +577,15 @@ public static class LabelRenderer
                 Pdf417SecurityLevel = bc.Pdf417SecurityLevel,
                 Pdf417Truncate = bc.Pdf417Truncate,
                 CheckDigit = bc.CheckDigit,
+                Code11CheckDigits = bc.Code11CheckDigits,
+                MsiCheckDigit = bc.MsiCheckDigit,
+                MsiCheckDigitInText = bc.MsiCheckDigitInText,
+                CodabarStart = bc.CodabarStart,
+                CodabarStop = bc.CodabarStop,
+                DataBarType = bc.DataBarType,
+                DataBarSegmentsPerRow = bc.DataBarSegmentsPerRow,
+                DataBarSeparatorHeight = bc.DataBarSeparatorHeight,
+                AztecErrorControl = bc.AztecErrorControl,
             };
             _matrix = BarcodeEncoder.TryEncode(bc.Symbology, bc.Data, options, out var error);
             if (_matrix is null)
@@ -514,23 +597,60 @@ public static class LabelRenderer
             }
 
             Width = _matrix.Width * _module;
-            if (_matrix.IsLinear)
+            var tops = new float[_matrix.Height];
+            var heights = new float[_matrix.Height];
+            switch (_matrix.Layout)
             {
-                _rowHeight = Math.Max(1, bc.HeightDots);
-                if (bc.ShowText)
+                case BarcodeRowLayout.Stretched:
+                    heights[0] = Math.Max(1, bc.HeightDots);
+                    break;
+                case BarcodeRowLayout.Proportional:
                 {
-                    _text = BarcodeEncoder.HumanReadableText(bc.Symbology, bc.Data, options);
-                    _textBand = TextSize + 4;
+                    // The rows split the requested height in the proportion of their weights.
+                    var weights = _matrix.RowHeights ?? Enumerable.Repeat(1, _matrix.Height).ToArray();
+                    float total = weights.Sum(), cursor = 0;
+                    for (int y = 0; y < heights.Length; y++)
+                    {
+                        tops[y] = cursor;
+                        heights[y] = Math.Max(1, bc.HeightDots) * weights[y] / total;
+                        cursor += heights[y];
+                    }
+                    break;
                 }
-                Height = _rowHeight + _textBand;
+                case BarcodeRowLayout.ModuleRows:
+                {
+                    float cursor = 0;
+                    for (int y = 0; y < heights.Length; y++)
+                    {
+                        tops[y] = cursor;
+                        heights[y] = (_matrix.RowHeights?[y] ?? 1) * _module;
+                        cursor += heights[y];
+                    }
+                    break;
+                }
+                default:
+                {
+                    // ZXing repeats each PDF417 row 4 times, and ZPL's height is the height of one PDF417 row,
+                    // so one matrix row is a quarter of it. QR, Data Matrix and Aztec modules are square.
+                    float rowHeight = _matrix.Layout == BarcodeRowLayout.Pdf417Rows ? Math.Max(1f, bc.HeightDots / 4f) : _module;
+                    for (int y = 0; y < heights.Length; y++)
+                    {
+                        tops[y] = y * rowHeight;
+                        heights[y] = rowHeight;
+                    }
+                    break;
+                }
             }
-            else
+            _rowTops = tops;
+            _rowHeights = heights;
+            _barsHeight = tops[^1] + heights[^1];
+
+            if (_matrix.HasTextBand && bc.ShowText)
             {
-                // ZXing repeats each PDF417 row 4 times, and ZPL's height is the height of one PDF417 row,
-                // so one matrix row is a quarter of it. QR and Data Matrix modules are square.
-                _rowHeight = bc.Symbology == BarcodeSymbology.Pdf417 ? Math.Max(1f, bc.HeightDots / 4f) : _module;
-                Height = _matrix.Height * _rowHeight;
+                _text = BarcodeEncoder.HumanReadableText(bc.Symbology, bc.Data, options);
+                _textBand = TextSize + 4;
             }
+            Height = _barsHeight + _textBand;
         }
 
         private float TextSize => Math.Clamp(_module * 8f, 14f, 36f);
@@ -555,7 +675,7 @@ public static class LabelRenderer
                     if (!_matrix.IsDark(x, y)) { x++; continue; }
                     int start = x;
                     while (x < _matrix.Width && _matrix.IsDark(x, y)) x++;
-                    canvas.DrawRect(start * _module, top + y * _rowHeight, (x - start) * _module, _rowHeight, paint);
+                    canvas.DrawRect(start * _module, top + _rowTops[y], (x - start) * _module, _rowHeights[y], paint);
                 }
             }
 
@@ -571,7 +691,7 @@ public static class LabelRenderer
             // Centered on the bars; the 4-dot gap mimics the printer's spacing between bars and text.
             float baseline = _bc.TextAbove
                 ? -font.Metrics.Ascent
-                : barsTop + _rowHeight + 4 - font.Metrics.Ascent;
+                : barsTop + _barsHeight + 4 - font.Metrics.Ascent;
             canvas.DrawText(_text, ((float)Width - textWidth) / 2f, baseline, SKTextAlign.Left, font, paint);
         }
     }

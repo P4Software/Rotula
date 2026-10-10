@@ -22,6 +22,10 @@ public enum ToolboxKind
     Circle,
     /// <summary>Picture.</summary>
     Image,
+    /// <summary>Ellipse.</summary>
+    Ellipse,
+    /// <summary>Diagonal line.</summary>
+    DiagonalLine,
 }
 
 /// <summary>Creates new elements with sensible defaults for the toolbox.</summary>
@@ -47,11 +51,25 @@ public static class ElementFactory
             ToolboxKind.Line => new LineElement { LengthDots = 200, ThicknessDots = 3 },
             ToolboxKind.Circle => new CircleElement { DiameterDots = 100, ThicknessDots = 3 },
             ToolboxKind.Image => new ImageElement(),
+            ToolboxKind.Ellipse => new EllipseElement { WidthDots = 160, HeightDots = 100, ThicknessDots = 3 },
+            ToolboxKind.DiagonalLine => new DiagonalLineElement { WidthDots = 150, HeightDots = 150, ThicknessDots = 3 },
             _ => throw new ArgumentOutOfRangeException(nameof(kind)),
         };
         e.X = offset;
         e.Y = offset;
         return e;
+    }
+
+    /// <summary>
+    /// A new barcode of any symbology, filled with the catalogue's example data so that it validates and exports to ZPL straight away
+    /// (the options keep their defaults, which are the values ZPL assumes).
+    /// </summary>
+    public static BarcodeElement CreateBarcode(BarcodeSymbology symbology)
+    {
+        var info = Core.Barcodes.BarcodeCatalog.Get(symbology);
+        var element = new BarcodeElement { Symbology = symbology, Data = info.ExampleData, Height = 80, X = 24, Y = 24 };
+        if (info.AlwaysPrintsHumanReadable) element.HumanReadable = true;
+        return element;
     }
 
     /// <summary>The change that declares the default variable when a data field is added to a label that has none.</summary>

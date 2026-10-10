@@ -9,11 +9,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Presets\presets.json" LogicalName="Rotula.Data.Presets.presets.json" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="Rotula.Tests" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Rotula.Core\Rotula.Core.csproj" />
+    <ProjectReference Include="..\Rotula.Data.Abstractions\Rotula.Data.Abstractions.csproj" />
   </ItemGroup>
 
   <ItemGroup>

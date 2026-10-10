@@ -217,7 +217,7 @@ public sealed class EditorCommands
     /// </summary>
     public void Rotate90(bool clockwise = true)
     {
-        var targets = _s.SelectedElements.Where(e => e is not CircleElement).ToList();
+        var targets = _s.SelectedElements.Where(e => e is not (CircleElement or EllipseElement or DiagonalLineElement)).ToList();
         if (targets.Count == 0) return;
         _s.Edit("Undo.Rotate", d =>
         {
@@ -361,6 +361,18 @@ public static class ElementResizer
             case CircleElement c:
                 c.DiameterDots = Math.Max(3, (int)Math.Round(c.DiameterDots * Math.Max(sx, sy)));
                 break;
+            case EllipseElement el:
+                el.WidthDots = Math.Max(3, (int)Math.Round(el.WidthDots * sx));
+                el.HeightDots = Math.Max(3, (int)Math.Round(el.HeightDots * sy));
+                break;
+            case DiagonalLineElement dl:
+                dl.WidthDots = Math.Max(3, (int)Math.Round(dl.WidthDots * sx));
+                dl.HeightDots = Math.Max(3, (int)Math.Round(dl.HeightDots * sy));
+                break;
+            case SymbolElement sym:
+                sym.HeightDots = Math.Clamp((int)Math.Round(sym.HeightDots * uy), 1, 32000);
+                if (sym.WidthDots > 0) sym.WidthDots = Math.Clamp((int)Math.Round(sym.WidthDots * uy), 1, 32000);
+                break;
             case ImageElement i when i.Source is not null:
             {
                 var (w, h) = Imaging(i);
@@ -390,19 +402,16 @@ public static class ElementResizer
 
     private static void ScaleBarcode(BarcodeElement b, double ux, double uy)
     {
-        switch (b.Symbology)
-        {
-            case BarcodeSymbology.QrCode:
-            case BarcodeSymbology.DataMatrix:
-                // 2D codes have a fixed aspect ratio; the module size is the only knob (1-10).
-                b.ModuleSize = Math.Clamp((int)Math.Round(b.ModuleSize * Math.Max(ux, uy)), 1, 10);
-                break;
-            default:
-                b.Height = Math.Clamp((int)Math.Round(b.Height * uy), 1, 32000);
-                // Width follows the module width, so dragging horizontally changes it in whole dots.
-                b.ModuleWidth = Math.Clamp((int)Math.Round(b.ModuleWidth * ux), 1, 10);
-                break;
-        }
+        var info = Core.Barcodes.BarcodeCatalog.Get(b.Symbology);
+        // Symbologies sized by their own magnification (QR, Data Matrix, Aztec, DataBar, ...) have a fixed aspect ratio,
+        // so the module size is the knob (1-10). Stacked ones with a bar height (DataBar) keep it in step.
+        if (info.UsesModuleSize)
+            b.ModuleSize = Math.Clamp((int)Math.Round(b.ModuleSize * Math.Max(ux, uy)), 1, 10);
+        if (info.Supports(Core.Barcodes.BarcodeOption.Height))
+            b.Height = Math.Clamp((int)Math.Round(b.Height * uy), 1, 32000);
+        // Width follows the module width, so dragging horizontally changes it in whole dots.
+        if (info.Supports(Core.Barcodes.BarcodeOption.ModuleWidth))
+            b.ModuleWidth = Math.Clamp((int)Math.Round(b.ModuleWidth * ux), 1, 10);
     }
 
     private static int Dots(double v) => Math.Max(1, (int)Math.Round(v));

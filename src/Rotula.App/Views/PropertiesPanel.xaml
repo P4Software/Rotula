@@ -26,7 +26,7 @@
       <StackPanel ToolTip="{Binding Hint}" Margin="0,0,0,12">
         <TextBlock Text="{Binding Label}" Style="{StaticResource RowLabel}" />
         <TextBox Style="{StaticResource MonoTextBox}" Text="{Binding Text, UpdateSourceTrigger=LostFocus}" IsUndoEnabled="False"
-                 ctl:FieldState.HasError="{Binding HasError}" AutomationProperties.Name="{Binding Label}" />
+                 ctl:FieldState.HasError="{Binding HasError}" AutomationProperties.Name="{Binding Label}" AutomationProperties.HelpText="{Binding Hint}" />
         <TextBlock Text="{Binding Error}" Style="{StaticResource ErrorText}" AutomationProperties.LiveSetting="Polite">
           <TextBlock.Visibility><Binding Path="HasError" Converter="{StaticResource BoolToVisibility}" /></TextBlock.Visibility>
         </TextBlock>
@@ -37,7 +37,7 @@
       <StackPanel ToolTip="{Binding Hint}" Margin="0,0,0,12">
         <TextBlock Text="{Binding Label}" Style="{StaticResource RowLabel}" />
         <TextBox Style="{StaticResource MonoTextBox}" Text="{Binding Text, UpdateSourceTrigger=LostFocus}" IsUndoEnabled="False"
-                 ctl:FieldState.HasError="{Binding HasError}" AutomationProperties.Name="{Binding Label}" />
+                 ctl:FieldState.HasError="{Binding HasError}" AutomationProperties.Name="{Binding Label}" AutomationProperties.HelpText="{Binding Hint}" />
         <TextBlock Text="{Binding Error}" Style="{StaticResource ErrorText}" AutomationProperties.LiveSetting="Polite">
           <TextBlock.Visibility><Binding Path="HasError" Converter="{StaticResource BoolToVisibility}" /></TextBlock.Visibility>
         </TextBlock>
@@ -48,7 +48,7 @@
       <StackPanel ToolTip="{Binding Hint}" Margin="0,0,0,12">
         <TextBlock Text="{Binding Label}" Style="{StaticResource RowLabel}" />
         <TextBox Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}" IsUndoEnabled="False" ctl:FieldState.HasError="{Binding HasError}"
-                 AutomationProperties.Name="{Binding Label}" TextWrapping="Wrap" AcceptsReturn="{Binding IsMultiline}">
+                 AutomationProperties.Name="{Binding Label}" AutomationProperties.HelpText="{Binding Hint}" TextWrapping="Wrap" AcceptsReturn="{Binding IsMultiline}">
           <TextBox.Style>
             <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
               <Style.Triggers>
@@ -76,9 +76,28 @@
     <DataTemplate DataType="{x:Type vm:ChoiceRow}">
       <StackPanel ToolTip="{Binding Hint}" Margin="0,0,0,12">
         <TextBlock Text="{Binding Label}" Style="{StaticResource RowLabel}" />
-        <ComboBox ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" DisplayMemberPath="Display"
-                  AutomationProperties.Name="{Binding Label}" />
+        <ComboBox ItemsSource="{Binding View}" SelectedItem="{Binding Selected}" DisplayMemberPath="Display"
+                  AutomationProperties.Name="{Binding Label}" AutomationProperties.HelpText="{Binding Hint}">
+          <!-- Group headings (barcode families); a list without groups never shows them. -->
+          <ComboBox.GroupStyle>
+            <GroupStyle>
+              <GroupStyle.HeaderTemplate>
+                <DataTemplate>
+                  <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="11.5" Foreground="{StaticResource AccentBrush}" Margin="6,6,0,2" />
+                </DataTemplate>
+              </GroupStyle.HeaderTemplate>
+            </GroupStyle>
+          </ComboBox.GroupStyle>
+        </ComboBox>
       </StackPanel>
+    </DataTemplate>
+
+    <!-- Explanatory note (for example what the preview of a barcode does differently); hidden while empty. -->
+    <DataTemplate DataType="{x:Type vm:NoteRow}">
+      <Border Style="{StaticResource InfoBanner}" Margin="0,0,0,12" Visibility="{Binding HasText, Converter={StaticResource BoolToVisibility}}">
+        <TextBlock Text="{Binding Text}" TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" FontSize="12"
+                   AutomationProperties.Name="{Binding Label}" AutomationProperties.HelpText="{Binding Text}" />
+      </Border>
     </DataTemplate>
 
     <DataTemplate DataType="{x:Type vm:ActionRow}">

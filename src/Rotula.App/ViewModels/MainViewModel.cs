@@ -4,7 +4,7 @@ using System.Reflection;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Rotula.App.Editing;
-using Rotula.App.Files;
+using Rotula.Files;
 using Rotula.App.Localization;
 using Rotula.App.Services;
 using Rotula.Core.Elements;
@@ -61,7 +61,8 @@ public sealed record MainServices(
     IZplImporter ZplImporter,
     IPrintService Printing,
     ISettingsStore Settings,
-    IToolDialogService Dialogs);
+    IToolDialogService Dialogs,
+    IDatabaseServices? Database = null);
 
 /// <summary>
 /// View-model of the main window: the open label, its files, editing commands, view settings (zoom, unit, grid),
@@ -96,7 +97,7 @@ public sealed partial class MainViewModel : ObservableObject
         // Handles and selection frames are measured with the record shown on the canvas, not only the sample values.
         Session.Bounds.DataProvider = () => Preview.Data;
         Printer = new PrinterSettingsViewModel(services.Printing, _settings.Print, SaveSettings, () => Session.Document, applyLabelDpi: SetLabelDpi);
-        Data = new DataMergeViewModel(services.Printing, Printer, () => Session.Document, () => DocumentName, services.Files, services.Messages);
+        Data = new DataMergeViewModel(services.Printing, Printer, () => Session.Document, () => DocumentName, services.Files, services.Messages, services.Database, services.Dialogs);
         Data.SettingsEdited += (_, _) => Session.MarkDirty();
         Data.PreviewDataChanged += (_, _) => OnPreviewDataChanged();
         Data.PropertyChanged += (_, e) =>
@@ -168,6 +169,8 @@ public sealed partial class MainViewModel : ObservableObject
         Toolbox.Add(new ToolboxItem(ToolboxKind.Box, "Tool.Box", "▭"));
         Toolbox.Add(new ToolboxItem(ToolboxKind.Line, "Tool.Line", "─"));
         Toolbox.Add(new ToolboxItem(ToolboxKind.Circle, "Tool.Circle", "◯"));
+        Toolbox.Add(new ToolboxItem(ToolboxKind.Ellipse, "Tool.Ellipse", "⬭"));
+        Toolbox.Add(new ToolboxItem(ToolboxKind.DiagonalLine, "Tool.DiagonalLine", "╲"));
         Toolbox.Add(new ToolboxItem(ToolboxKind.Image, "Tool.Image", "▨"));
     }
 
@@ -352,6 +355,9 @@ public sealed partial class MainViewModel : ObservableObject
         BoxElement => Loc.Get("Tool.Box"),
         LineElement => Loc.Get("Tool.Line"),
         CircleElement => Loc.Get("Tool.Circle"),
+        EllipseElement => Loc.Get("Tool.Ellipse"),
+        DiagonalLineElement => Loc.Get("Tool.DiagonalLine"),
+        SymbolElement => Loc.Get("Tool.Symbol"),
         ImageElement => Loc.Get("Tool.Image"),
         _ => e.GetType().Name,
     };
@@ -397,6 +403,12 @@ public sealed partial class MainViewModel : ObservableObject
             return Loc.Get(total == 1 ? "Status.ObjectsOne" : "Status.Objects", total) + " \u00B7 " + Loc.Get(sel == 0 ? "Status.NoneSelected" : "Status.SomeSelected", sel);
         }
     }
+
+    /// <summary>
+    /// What the preview does differently for the selected barcode (for example "the printer draws this barcode; the preview shows a placeholder"),
+    /// or empty when nothing is selected or the preview is exact. Shown in the status bar.
+    /// </summary>
+    public string BarcodePreviewNote => Session.SelectedElements is [BarcodeElement barcode] ? Editing.BarcodePreviewNotes.For(barcode) ?? string.Empty : string.Empty;
 
     /// <summary>Small type tag at the right of the Properties heading ("Barcode", "Text", or "Label" when nothing is selected).</summary>
     public string SelectionTypeTag
@@ -482,6 +494,7 @@ public sealed partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(StatusLabelText));
         OnPropertyChanged(nameof(ObjectsText));
         OnPropertyChanged(nameof(SelectionTypeTag));
+        OnPropertyChanged(nameof(BarcodePreviewNote));
     }
 
     /// <summary>Opens a larger preview of the label (what the printer will draw, with the shown record's values).</summary>

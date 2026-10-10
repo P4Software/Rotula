@@ -1,4 +1,4 @@
-namespace Rotula.App.Files;
+namespace Rotula.Files;
 
 /// <summary>
 /// Decides whether a path that was stored in a file (a .rotula data-source hint, the recent files list in settings.json)

@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    A complete example of a Rotula provider pack, and the fixture the pack tests load. It shows what a pack needs: the entry class
+    (IDatabaseProviderPack), its own managed dependency (SamplePack.Dep) and its own native library (e_sqlite3, called through
+    DllImport from a folder the host does not search). pack.json sits next to the output.
+    Rotula.Data is referenced for compilation only (Private=false, no runtime assets): at run time the host copy is shared, which is
+    what makes IDatabaseProviderPack the same type on both sides.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsPackable>false</IsPackable>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Rotula.Data\Rotula.Data.csproj" Private="false" ExcludeAssets="runtime" />
+    <ProjectReference Include="..\Rotula.Data.SamplePack.Dep\Rotula.Data.SamplePack.Dep.csproj" />
+    <!-- Apache-2.0, already a Rotula dependency; here it only supplies a native library for the loader tests. -->
+    <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" Version="2.1.12" />
+    <None Include="pack.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="NOTICES.txt" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

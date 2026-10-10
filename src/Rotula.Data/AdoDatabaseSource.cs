@@ -3,10 +3,6 @@ using System.Data.Common;
 using System.Data.Odbc;
 using System.Runtime.CompilerServices;
 using System.Text;
-using Microsoft.Data.SqlClient;
-using Microsoft.Data.Sqlite;
-using MySqlConnector;
-using Npgsql;
 using Rotula.Core.Merge;
 using Rotula.Core.Validation;
 
@@ -20,17 +16,27 @@ internal sealed class AdoDatabaseSource : IDatabaseSource
 {
     private readonly string? _password;
     private readonly string _connectionString;
+    private readonly IProviderDescriptor _provider;
+    private readonly SqlDialect _dialect;
 
-    public AdoDatabaseSource(DatabaseConnectionSettings settings, string? password)
+    public AdoDatabaseSource(DatabaseConnectionSettings settings, string? password, ProviderRegistry? registry = null)
     {
+        registry ??= ProviderRegistry.Default;
         Settings = settings;
         _password = password;
-        _connectionString = ConnectionStrings.Build(settings, password);
+        _connectionString = ConnectionStrings.Build(settings, password, registry);
+        _provider = registry.Resolve(settings);
+        // The dialect may be refined by the settings (MariaDB flavour, the engine behind an ODBC driver).
+        _dialect = _provider.ResolveDialect(settings);
     }
 
     public DatabaseConnectionSettings Settings { get; }
 
-    private DatabaseProvider Provider => Settings.Provider;
+    /// <summary>
+    /// The secret-bearing connection string, for tests only (the assembly shares internals with the test project alone). It lets a test
+    /// prove WHICH password a source was built with without the production API ever exposing one.
+    /// </summary>
+    internal string ConnectionStringForTests => _connectionString;
 
     // ---------------------------------------------------------------- public API
 
@@ -38,7 +44,7 @@ internal sealed class AdoDatabaseSource : IDatabaseSource
         => Offload(() => RunAsync<object?>(async (conn, tx, ct) =>
         {
             // SQLite opens lazily: touching the catalog proves the file really is a database.
-            if (Provider == DatabaseProvider.Sqlite) await ExecuteInternalAsync(conn, tx, "SELECT COUNT(*) FROM sqlite_master", ct).ConfigureAwait(false);
+            if (_dialect.ConnectivityProbeSql is { } probe) await ExecuteInternalAsync(conn, tx, probe, ct).ConfigureAwait(false);
             return null;
         }, cancellationToken));
 
@@ -46,7 +52,7 @@ internal sealed class AdoDatabaseSource : IDatabaseSource
         => Offload(() => RunAsync<IReadOnlyList<DatabaseObject>>(async (conn, tx, ct) =>
         {
             var list = new List<DatabaseObject>();
-            if (Provider == DatabaseProvider.Odbc)
+            if (_dialect.CatalogueSql is null)
             {
                 // Drivers disagree: some list views inside "Tables", others only under "Views", and SQL Server's lists sys.* tables.
                 AddOdbcObjects(list, conn, "Tables", viewsCollection: false);
@@ -58,7 +64,7 @@ internal sealed class AdoDatabaseSource : IDatabaseSource
             }
             else
             {
-                using var cmd = CreateCommand(conn, tx, ListObjectsSql(Provider), Array.Empty<string>(), null, ct);
+                using var cmd = CreateCommand(conn, tx, _dialect.CatalogueSql, Array.Empty<string>(), null, ct);
                 await using var reader = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
                 while (await reader.ReadAsync(ct).ConfigureAwait(false))
                 {
@@ -130,8 +136,8 @@ internal sealed class AdoDatabaseSource : IDatabaseSource
     public string BuildSelectAll(DatabaseObject table)
     {
         ArgumentNullException.ThrowIfNull(table);
-        string name = SqlNames.Quote(Provider, table.Name);
-        return "SELECT * FROM " + (string.IsNullOrEmpty(table.Schema) ? name : SqlNames.Quote(Provider, table.Schema) + "." + name);
+        string name = _dialect.QuoteIdentifier(table.Name);
+        return "SELECT * FROM " + (string.IsNullOrEmpty(table.Schema) ? name : _dialect.QuoteIdentifier(table.Schema) + "." + name);
     }
 
     public Task<DatabaseQueryResult> PreviewAsync(DatabaseObject table, int maxRows = 100, CancellationToken cancellationToken = default)
@@ -193,7 +199,7 @@ internal sealed class AdoDatabaseSource : IDatabaseSource
     /// <summary>Guard, parameter check and (for ODBC) positional rewrite, all before any connection is opened.</summary>
     private QueryPlan Plan(string sql, IReadOnlyDictionary<string, object?>? parameters)
     {
-        var verdict = SqlGuard.Check(sql, Provider);
+        var verdict = SqlGuard.Check(sql, _dialect);
         if (!verdict.IsAllowed) throw verdict.ToException();
 
         var values = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
@@ -202,9 +208,8 @@ internal sealed class AdoDatabaseSource : IDatabaseSource
             if (!values.ContainsKey(name))
                 throw new DatabaseException(DataKeys.QueryRejected, DataKeys.RejectMissingParameter, new[] { name });
 
-        if (Provider != DatabaseProvider.Odbc) return new QueryPlan(sql, verdict.ParameterTokens.Select(t => t.Text).ToList(), values);
-
-        var (rewritten, order) = OdbcParameters.Rewrite(sql, verdict.ParameterTokens);
+        // Users write @name everywhere; the driver may want ?, :name or $name (see SqlDialect.ParameterStyle).
+        var (rewritten, order) = ParameterRewriter.Rewrite(sql, verdict.ParameterTokens, _dialect.ParameterStyle);
         return new QueryPlan(rewritten, order, values);
     }
 
@@ -212,19 +217,17 @@ internal sealed class AdoDatabaseSource : IDatabaseSource
 
     private static Task<T> Offload<T>(Func<Task<T>> work) => Task.Run(work);
 
-    private DbConnection CreateConnection() => Provider switch
-    {
-        DatabaseProvider.SqlServer => new SqlConnection(_connectionString),
-        DatabaseProvider.PostgreSql => new NpgsqlConnection(_connectionString),
-        DatabaseProvider.MySql => new MySqlConnection(_connectionString),
-        DatabaseProvider.Sqlite => new SqliteConnection(_connectionString),
-        _ => new OdbcConnection(_connectionString) { ConnectionTimeout = Settings.ConnectTimeoutSeconds },
-    };
+    private DbConnection CreateConnection() => _provider.CreateConnection(_connectionString, Settings);
 
     private DatabaseException Map(Exception ex, bool connecting, CancellationToken caller, CancellationTokenSource? ours)
     {
         bool timedOut = ours is { IsCancellationRequested: true } && !caller.IsCancellationRequested;
-        return DatabaseErrorMapper.Map(Provider, ex, connecting, caller, timedOut, _password, _connectionString);
+        var mapped = DatabaseErrorMapper.Map(_provider, ex, connecting, caller, timedOut, _password, _connectionString);
+        // A missing driver of a preset (Microsoft Access, Excel, text) gets the preset's "what to install" hint as the reason.
+        if (mapped.Key == DataKeys.DriverNotInstalled && mapped.ReasonKey is null
+            && ProviderPresets.Find(Settings.PresetId)?.DriverMissingHintKey is { } hint)
+            return new DatabaseException(mapped.Key, hint, mapped.Args, mapped.Detail);
+        return mapped;
     }
 
     /// <summary>Opens, prepares the read-only session, runs <paramref name="body"/> in a transaction that is always rolled back.</summary>
@@ -237,7 +240,7 @@ internal sealed class AdoDatabaseSource : IDatabaseSource
         bool connecting = true;
         try
         {
-            EnsureFileExists();
+            _provider.Preflight(Settings);
             await using var conn = CreateConnection();
             await conn.OpenAsync(cts.Token).ConfigureAwait(false);
             connecting = false;
@@ -269,7 +272,7 @@ internal sealed class AdoDatabaseSource : IDatabaseSource
         bool connecting = true;
         try
         {
-            EnsureFileExists();
+            _provider.Preflight(Settings);
             conn = CreateConnection();
             await conn.OpenAsync(connectCts.Token).ConfigureAwait(false);
             connecting = false;
@@ -335,46 +338,27 @@ internal sealed class AdoDatabaseSource : IDatabaseSource
         catch (Exception) { /* best effort: stops the server from sending rows nobody will read */ }
     }
 
-    private void EnsureFileExists()
-    {
-        // Mode=ReadOnly would report a vague "unable to open"; a missing file deserves its own key.
-        if (Provider == DatabaseProvider.Sqlite && !File.Exists(Settings.FilePath))
-            throw new DatabaseException(DataKeys.DatabaseNotFound);
-    }
-
     /// <summary>
-    /// Starts the transaction every query runs in (always rolled back, never committed) and asks the engine to treat it as
-    /// read-only where it can. ODBC drivers that cannot do transactions fall back to the guard alone.
+    /// Starts the transaction every query runs in (always rolled back, never committed) and applies the provider's read-only steps
+    /// (see <see cref="ReadOnlyPolicy"/>). Engines whose drivers cannot do transactions fall back to the guard alone.
     /// </summary>
     private async Task<DbTransaction?> BeginReadOnlyAsync(DbConnection conn, CancellationToken ct)
     {
-        switch (Provider)
-        {
-            case DatabaseProvider.Sqlite:
-                // Belt and braces next to Mode=ReadOnly in the connection string.
-                await ExecuteInternalAsync(conn, null, "PRAGMA query_only = ON", ct).ConfigureAwait(false);
-                break;
-            case DatabaseProvider.MySql:
-                await ExecuteInternalAsync(conn, null, "SET SESSION TRANSACTION READ ONLY", ct).ConfigureAwait(false);
-                break;
-        }
+        var policy = _provider.ReadOnly;
+        foreach (string statement in policy.SessionStatements)
+            await ExecuteInternalAsync(conn, null, statement, ct).ConfigureAwait(false);
 
-        // SQLite needs no transaction: the file is opened Mode=ReadOnly with query_only on, and Microsoft.Data.Sqlite cannot
-        // start any transaction but ReadUncommitted on a read-only file (the others issue BEGIN IMMEDIATE and fail).
-        if (Provider == DatabaseProvider.Sqlite) return null;
+        if (!policy.StartTransaction) return null;
 
         DbTransaction tx;
         try
         {
-            // MySqlConnector can issue START TRANSACTION READ ONLY, the strongest server-side guard MySQL offers.
-            tx = conn is MySqlConnection my
-                ? await my.BeginTransactionAsync(IsolationLevel.ReadCommitted, isReadOnly: true, ct).ConfigureAwait(false)
-                : await conn.BeginTransactionAsync(IsolationLevel.ReadCommitted, ct).ConfigureAwait(false);
+            tx = await _provider.BeginTransactionAsync(conn, ct).ConfigureAwait(false);
         }
-        catch (Exception) when (Provider == DatabaseProvider.Odbc) { return null; }
+        catch (Exception) when (policy.TransactionIsOptional) { return null; }
 
-        if (Provider == DatabaseProvider.PostgreSql)
-            await ExecuteInternalAsync(conn, tx, "SET TRANSACTION READ ONLY", ct).ConfigureAwait(false);
+        foreach (string statement in policy.TransactionStatements)
+            await ExecuteInternalAsync(conn, tx, statement, ct).ConfigureAwait(false);
         return tx;
     }
 
@@ -398,16 +382,17 @@ internal sealed class AdoDatabaseSource : IDatabaseSource
         {
             // ODBC lists one entry per '?' (duplicates included); everyone else binds each distinct name once.
             // SQLite matches parameter names case-sensitively, so @a and @A in one query are two parameters there.
-            var bound = Provider == DatabaseProvider.Odbc ? parameterOrder
-                : parameterOrder.Distinct(Provider == DatabaseProvider.Sqlite ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase);
+            var bound = _dialect.ParameterStyle == ParameterStyle.Positional ? parameterOrder
+                : parameterOrder.Distinct(_dialect.ParameterNamesCaseSensitive ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase);
             foreach (string name in bound)
             {
                 var p = cmd.CreateParameter();
-                p.ParameterName = "@" + name;
+                p.ParameterName = _provider.ParameterName(name);
                 p.Value = values[name] ?? DBNull.Value;
                 cmd.Parameters.Add(p);
             }
         }
+        _provider.ConfigureCommand(cmd);
         return cmd;
     }
 
@@ -424,42 +409,13 @@ internal sealed class AdoDatabaseSource : IDatabaseSource
         for (int i = 0; i < width; i++) row[i] = reader.IsDBNull(i) ? string.Empty : DatabaseValueFormatter.Format(reader.GetValue(i));
         return row;
     }
-
-    private static string ListObjectsSql(DatabaseProvider p) => p switch
-    {
-        DatabaseProvider.SqlServer =>
-            "SELECT TABLE_SCHEMA, TABLE_NAME, TABLE_TYPE FROM INFORMATION_SCHEMA.TABLES " +
-            "WHERE TABLE_TYPE IN ('BASE TABLE','VIEW') AND TABLE_SCHEMA NOT IN ('sys','INFORMATION_SCHEMA') ORDER BY 1, 2",
-        DatabaseProvider.PostgreSql =>
-            "SELECT table_schema, table_name, table_type FROM information_schema.tables " +
-            "WHERE table_type IN ('BASE TABLE','VIEW') AND table_schema NOT IN ('pg_catalog','information_schema') ORDER BY 1, 2",
-        DatabaseProvider.MySql =>
-            "SELECT TABLE_SCHEMA, TABLE_NAME, TABLE_TYPE FROM information_schema.TABLES " +
-            "WHERE TABLE_TYPE IN ('BASE TABLE','VIEW') AND TABLE_SCHEMA NOT IN ('mysql','information_schema','performance_schema','sys') " +
-            "AND (DATABASE() IS NULL OR TABLE_SCHEMA = DATABASE()) ORDER BY 1, 2",
-        _ =>
-            "SELECT NULL, name, type FROM sqlite_master WHERE type IN ('table','view') AND name NOT LIKE 'sqlite\\_%' ESCAPE '\\' ORDER BY name",
-    };
 }
 
 /// <summary>Identifier quoting and splitting (the only place user-supplied object names reach SQL text).</summary>
 internal static class SqlNames
 {
-    /// <summary>Quotes one identifier part for the dialect, doubling the closing quote so the name cannot break out.</summary>
-    public static string Quote(DatabaseProvider provider, string part)
-    {
-        if (string.IsNullOrEmpty(part) || part.Any(char.IsControl)) throw new DatabaseException(DataKeys.InvalidSettings, null, new[] { "table" });
-        switch (provider)
-        {
-            case DatabaseProvider.SqlServer: return "[" + part.Replace("]", "]]", StringComparison.Ordinal) + "]";
-            case DatabaseProvider.MySql: return "`" + part.Replace("`", "``", StringComparison.Ordinal) + "`";
-            case DatabaseProvider.Odbc:
-                // The backing engine's quote character is unknown; plain names need none, anything else uses ANSI double quotes.
-                return part.All(c => char.IsAsciiLetterOrDigit(c) || c == '_') && !char.IsAsciiDigit(part[0])
-                    ? part : "\"" + part.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
-            default: return "\"" + part.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
-        }
-    }
+    /// <summary>Quotes one identifier part for the built-in provider, doubling the closing quote so the name cannot break out.</summary>
+    public static string Quote(DatabaseProvider provider, string part) => SqlDialects.For(provider).QuoteIdentifier(part);
 
     /// <summary>Splits <c>a.b</c> on dots outside quotes; understands "x", [x] and `x` (doubled closers are literals).</summary>
     public static IReadOnlyList<string> Split(string name)
@@ -502,13 +458,31 @@ internal static class OdbcParameters
 {
     /// <summary>Replaces every parameter token with <c>?</c> and returns the names in binding order (duplicates included).</summary>
     public static (string Sql, List<string> Order) Rewrite(string sql, IReadOnlyList<SqlToken> parameterTokens)
+        => ParameterRewriter.Rewrite(sql, parameterTokens, ParameterStyle.Positional);
+}
+
+/// <summary>Rewrites the parameter markers Rotula's users type (<c>@name</c>) into the marker the driver understands.</summary>
+internal static class ParameterRewriter
+{
+    /// <summary>
+    /// Returns the SQL to send and the parameter names in binding order (one entry per occurrence, duplicates included; named styles
+    /// bind each distinct name once).
+    /// </summary>
+    public static (string Sql, List<string> Order) Rewrite(string sql, IReadOnlyList<SqlToken> parameterTokens, ParameterStyle style)
     {
         var sb = new StringBuilder();
         var order = new List<string>();
         int pos = 0;
         foreach (var t in parameterTokens)
         {
-            sb.Append(sql, pos, t.Start - pos).Append('?');
+            sb.Append(sql, pos, t.Start - pos);
+            sb.Append(style switch
+            {
+                ParameterStyle.Positional => "?",
+                ParameterStyle.ColonName => ":" + t.Text,
+                ParameterStyle.DollarName => "$" + t.Text,
+                _ => "@" + t.Text,
+            });
             order.Add(t.Text);
             pos = t.Start + t.Length;
         }
