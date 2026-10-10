@@ -1,0 +1,27 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.9.0.schema.json
+PackageIdentifier: P4Software.Rotula
+PackageVersion: __VERSION__
+PackageLocale: en-US
+Publisher: P4 Software
+PublisherUrl: https://github.com/glenntosco
+PublisherSupportUrl: https://github.com/glenntosco/Rotula/issues
+PackageName: Rotula
+PackageUrl: https://github.com/glenntosco/Rotula
+License: MIT
+LicenseUrl: https://github.com/glenntosco/Rotula/blob/main/LICENSE
+Copyright: Copyright (c) P4 Software
+ShortDescription: Offline label designer for Windows with ZPL-compatible output.
+Description: >-
+  Rotula is a free, open source, offline-first label designer. Lay out text, barcodes, QR codes, boxes and
+  images, merge data from CSV or Excel files, preview the label and print ZPL-compatible output to USB,
+  spooler or network (port 9100) printers. It makes no network calls and sends no telemetry.
+Moniker: rotula
+Tags:
+  - label
+  - label-designer
+  - barcode
+  - zpl
+  - printing
+ReleaseNotesUrl: __RELEASE_NOTES_URL__
+ManifestType: defaultLocale
+ManifestVersion: 1.9.0

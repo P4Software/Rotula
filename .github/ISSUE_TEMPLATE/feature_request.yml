@@ -1,0 +1,34 @@
+name: Feature request
+description: Suggest an improvement
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Rotula is offline-first and Windows-only for now. Check the roadmap in the README first: EPL, TSPL and CPCL output, RFID,
+        database connections, a template marketplace, cloud sync, macOS and Linux, and multi-label sheets are known and not
+        yet planned work.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: Describe the task or problem, not only the solution.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like Rotula to do?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives or workarounds you tried
+  - type: checkboxes
+    id: offline
+    attributes:
+      label: Project rules
+      options:
+        - label: This does not need network access or telemetry.
+          required: true

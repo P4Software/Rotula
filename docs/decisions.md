@@ -47,3 +47,36 @@ Arrow = 1 dot, Shift+arrow = 8 dots (about 1 mm at 203 DPI).
 ### Tests
 `tests/Rotula.Tests` targets `net10.0-windows` (it references the WPF app). All App tests share the xUnit collection "App"
 because the language is process-wide state.
+
+## Release packaging
+
+### Portable build: self-contained single file
+`dotnet publish -r win-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+-p:EnableCompressionInSingleFile=true -p:DebugType=none` produces one `Rotula.App.exe` (about 68 MB) that needs no installed
+.NET. Verified by publishing locally and launching the exe: the window opens and stays up, so the WPF resources, the
+satellite resource assemblies and the SkiaSharp native library all load from the single file. The native library is unpacked
+to a temporary folder on first start, which is why the first launch can take a second or two longer.
+
+### Installer: Inno Setup, not MSIX
+An MSIX package must be signed with a certificate the machine trusts before Windows will install it, and the project has
+no signing certificate (and the CI has no secrets). An unsigned MSIX cannot be installed by double-clicking it, which
+breaks the "works by double-click" goal. WiX 4+ is under the Open Source Maintenance Fee and MS-RL terms, which does not fit
+the "permissive licences only" rule as cleanly. Inno Setup is a free build-time tool (nothing from it is shipped inside the
+app), installs per user without administrator rights, handles the Spanish and English wizard, and winget supports it natively
+(`InstallerType: inno`). Unsigned installers only trigger the SmartScreen "unknown publisher" prompt, which the README
+documents. The script lives in `packaging/installer/Rotula.iss`; the CI installs Inno Setup with Chocolatey. If a signing
+certificate becomes available, signing both the exe and the installer is the only change needed.
+
+### Winget
+`packaging/winget/` holds templates for the version, installer and en-US locale manifests (schema 1.9.0).
+`scripts/New-WingetManifest.ps1` fills version, installer URL, SHA-256 and date from the tag, and the release workflow attaches
+the result as a zip. Submitting it to the winget-pkgs repository is a manual step because it needs a personal token.
+
+### Coverage gate
+CI fails when line coverage of `Rotula.Core` drops below 80% (`scripts/check-coverage.ps1`, reading the Cobertura report from
+coverlet). The script counts hit lines itself rather than trusting the rounded `line-rate` attribute.
+
+### Hygiene gate
+`scripts/check-hygiene.sh` runs in CI and can be run locally. It fails when the tree contains tooling directories or files
+that must not be published, or when a commit message in the pushed range carries a co-author trailer or generated-with
+footer naming an automated tool.

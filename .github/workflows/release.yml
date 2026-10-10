@@ -1,0 +1,142 @@
+name: Release
+
+# Runs when a version tag such as v0.1.0 (or v0.2.0-rc1) is pushed.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write # needed to create the GitHub Release and upload assets
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_NOLOGO: "1"
+
+jobs:
+  release:
+    name: Build, test, package and publish
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Hygiene check
+        shell: bash
+        run: bash scripts/check-hygiene.sh
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Work out the version from the tag
+        id: ver
+        shell: pwsh
+        run: |
+          $version = '${{ github.ref_name }}'.TrimStart('v')
+          if ($version -notmatch '^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$') { throw "Tag '${{ github.ref_name }}' is not a v<major>.<minor>.<patch>[-suffix] version." }
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "prerelease=$($version.Contains('-').ToString().ToLower())" >> $env:GITHUB_OUTPUT
+
+      - name: Restore
+        run: dotnet restore Rotula.sln
+
+      - name: Build
+        run: dotnet build Rotula.sln -c Release --no-restore -p:Version=${{ steps.ver.outputs.version }}
+
+      - name: Test with coverage
+        run: >
+          dotnet test Rotula.sln -c Release --no-build
+          --collect:"XPlat Code Coverage"
+          --results-directory coverage/raw
+
+      - name: Coverage gate (Rotula.Core >= 80% lines)
+        shell: pwsh
+        run: |
+          $report = Get-ChildItem coverage/raw -Recurse -Filter coverage.cobertura.xml | Select-Object -First 1
+          if (-not $report) { throw 'No coverage report was produced.' }
+          ./scripts/check-coverage.ps1 -Report $report.FullName -Package Rotula.Core -Threshold 80
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      # Self-contained so users need no .NET install. Native SkiaSharp libraries are packed into the
+      # single file and unpacked to a temp folder on first start (IncludeNativeLibrariesForSelfExtract).
+      - name: Publish single-file win-x64
+        run: >
+          dotnet publish src/Rotula.App/Rotula.App.csproj -c Release -r win-x64 --self-contained true
+          -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:EnableCompressionInSingleFile=true -p:DebugType=none
+          -p:Version=${{ steps.ver.outputs.version }}
+          -o publish/win-x64
+
+      - name: Stage files and create the portable zip
+        shell: pwsh
+        run: |
+          $v = '${{ steps.ver.outputs.version }}'
+          New-Item -ItemType Directory -Force artifacts, stage | Out-Null
+          Copy-Item publish/win-x64/Rotula.App.exe stage/
+          Copy-Item LICENSE, THIRD-PARTY-NOTICES.md, README.md stage/
+          Compress-Archive -Path stage/* -DestinationPath "artifacts/Rotula-$v-win-x64-portable.zip" -Force
+
+      # Inno Setup is a build-time tool only; nothing from it ships inside the app.
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup --no-progress -y
+
+      - name: Build the installer
+        shell: pwsh
+        run: |
+          $iscc = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'
+          & $iscc "/DAppVersion=${{ steps.ver.outputs.version }}" "/DSourceDir=$PWD\stage" "/DOutputDir=$PWD\artifacts" packaging/installer/Rotula.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Generate the winget manifests
+        shell: pwsh
+        run: |
+          $v = '${{ steps.ver.outputs.version }}'
+          ./scripts/New-WingetManifest.ps1 -Version $v -InstallerPath "artifacts/Rotula-$v-win-x64-setup.exe" -OutputDir winget-out -Repository '${{ github.repository }}'
+          Compress-Archive -Path winget-out/* -DestinationPath "artifacts/Rotula-$v-winget-manifests.zip" -Force
+
+      - name: Checksums
+        shell: pwsh
+        run: |
+          Get-ChildItem artifacts -File | Where-Object Name -ne 'SHA256SUMS.txt' | ForEach-Object {
+            '{0}  {1}' -f (Get-FileHash -Algorithm SHA256 $_.FullName).Hash.ToLowerInvariant(), $_.Name
+          } | Set-Content -Encoding ascii artifacts/SHA256SUMS.txt
+
+      # Smoke test: the published exe must start and stay up (a missing native asset would crash it at once).
+      - name: Smoke test the published exe
+        shell: pwsh
+        run: |
+          $p = Start-Process publish/win-x64/Rotula.App.exe -PassThru
+          Start-Sleep -Seconds 8
+          $alive = -not $p.HasExited
+          if ($alive) { $p.Kill() }
+          if (-not $alive) { throw "Rotula.App.exe exited early with code $($p.ExitCode)." }
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts
+          path: artifacts/
+
+      - name: Create the GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $v = '${{ steps.ver.outputs.version }}'
+          $ghArgs = @('release', 'create', '${{ github.ref_name }}', '--title', "Rotula $v", '--verify-tag')
+          if ('${{ steps.ver.outputs.prerelease }}' -eq 'true') { $ghArgs += '--prerelease' }
+          # Use the matching CHANGELOG section as the notes when it exists, otherwise let GitHub generate them.
+          $m = Select-String -Path CHANGELOG.md -Pattern "^## \[$([regex]::Escape($v))\]" | Select-Object -First 1
+          if ($m) {
+            $lines = Get-Content CHANGELOG.md
+            $start = $m.LineNumber
+            $end = ($start..($lines.Count - 1) | Where-Object { $lines[$_] -match '^(## \[|\[[^\]]+\]: )' } | Select-Object -First 1)
+            if (-not $end) { $end = $lines.Count }
+            $lines[$start..($end - 1)] -join "`n" | Set-Content -Encoding utf8 release-notes.md
+            $ghArgs += @('--notes-file', 'release-notes.md')
+          } else { $ghArgs += '--generate-notes' }
+          $files = Get-ChildItem artifacts -File | ForEach-Object FullName
+          gh @args @files
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

@@ -1,0 +1,103 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# A newer push to the same branch or PR makes the older run pointless.
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_NOLOGO: "1"
+
+jobs:
+  hygiene:
+    name: Repository hygiene
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history so every commit message in the range can be inspected.
+          fetch-depth: 0
+      - name: Check tree and commit messages
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_SHA: ${{ github.sha }}
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            range="$PR_BASE..$PR_HEAD"
+          elif [ -n "$PUSH_BEFORE" ] && [ "$PUSH_BEFORE" != "0000000000000000000000000000000000000000" ]; then
+            range="$PUSH_BEFORE..$PUSH_SHA"
+          else
+            range=""
+          fi
+          bash scripts/check-hygiene.sh "$range"
+
+  build-test:
+    name: Build, test and coverage
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore Rotula.sln
+
+      # Warnings stay visible in the log; Rotula.Core already treats them as errors in its own project.
+      - name: Build
+        run: dotnet build Rotula.sln -c Release --no-restore
+
+      - name: Test with coverage
+        run: >
+          dotnet test Rotula.sln -c Release --no-build
+          --collect:"XPlat Code Coverage"
+          --results-directory coverage/raw
+          --logger "trx;LogFileName=test-results.trx"
+
+      - name: Coverage gate (Rotula.Core >= 80% lines)
+        shell: pwsh
+        run: |
+          $report = Get-ChildItem coverage/raw -Recurse -Filter coverage.cobertura.xml | Select-Object -First 1
+          if (-not $report) { throw 'No coverage report was produced.' }
+          ./scripts/check-coverage.ps1 -Report $report.FullName -Package Rotula.Core -Threshold 80 | Tee-Object -FilePath coverage/gate.txt
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      # Runs even when the gate fails so the report is there to explain why.
+      - name: Build HTML coverage report
+        if: always()
+        shell: pwsh
+        run: |
+          dotnet tool install --global dotnet-reportgenerator-globaltool
+          reportgenerator "-reports:coverage/raw/**/coverage.cobertura.xml" "-targetdir:coverage/report" "-reporttypes:Html;MarkdownSummaryGithub;Cobertura"
+          if (Test-Path coverage/report/SummaryGithub.md) { Get-Content coverage/report/SummaryGithub.md | Add-Content $env:GITHUB_STEP_SUMMARY }
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          if-no-files-found: warn
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: "**/test-results.trx"
+          if-no-files-found: ignore

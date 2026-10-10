@@ -1,0 +1,52 @@
+name: Bug report
+description: Something does not work as expected
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Please do not include private data in attachments. For security problems use the private
+        reporting route described in SECURITY.md instead of this form.
+  - type: input
+    id: version
+    attributes:
+      label: Rotula version
+      description: Shown in Help > About, or in the name of the file you downloaded.
+    validations:
+      required: true
+  - type: dropdown
+    id: package
+    attributes:
+      label: How did you install it?
+      options: [Portable zip, Installer, winget, Built from source]
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+      placeholder: Windows 11 23H2
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. ...
+        2. ...
+  - type: textarea
+    id: zpl
+    attributes:
+      label: ZPL or label sample
+      description: For import or printing problems, paste the smallest ZPL that shows it, or attach a .rotula file. Remove private data.
+      render: text
+  - type: input
+    id: printer
+    attributes:
+      label: Printer model and connection (if printing is involved)
+      placeholder: USB, Windows queue, or TCP 9100

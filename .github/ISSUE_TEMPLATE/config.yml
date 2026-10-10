@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security problem privately
+    url: https://github.com/glenntosco/Rotula/security/advisories/new
+    about: Use a private security advisory, not a public issue.
