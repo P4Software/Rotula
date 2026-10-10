@@ -1,13 +1,19 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
     <ProjectReference Include="..\Rotula.Core\Rotula.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Lets the test project exercise the Win32 error mapping without making it public API. -->
+    <InternalsVisibleTo Include="Rotula.Tests" />
   </ItemGroup>
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
 </Project>
