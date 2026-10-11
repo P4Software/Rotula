@@ -5,6 +5,8 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-10-11
+
 ### Changed
 - **The Print dialog is where you choose what to print**: when data is loaded, the Print dialog lists the records with their tick boxes (the same ticks as in the Data window), says how many are selected, and prints exactly the ticked records, or saves them as a ZPL file. If no record is ticked, Print stays off and explains why. Without data the dialog works as before.
 
