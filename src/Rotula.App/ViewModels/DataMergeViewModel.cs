@@ -923,9 +923,11 @@ public sealed partial class DataMergeViewModel : OperationViewModel
     /// <param name="doc">The private copy of the label.</param>
     /// <param name="dataSet">The merge data set built on that copy.</param>
     /// <param name="convertToPrinter">True to convert the copy to the chosen printer resolution (printing, or exporting for a chosen printer).</param>
-    private string? Snapshot(out LabelDocument doc, out MergeDataSet dataSet, bool convertToPrinter = false)
+    /// <param name="quantity">When set, replaces the copy's print quantity (the Print dialog's copies); the open label is never touched.</param>
+    private string? Snapshot(out LabelDocument doc, out MergeDataSet dataSet, bool convertToPrinter = false, int? quantity = null)
     {
         doc = ElementCloner.CloneDocument(_document());
+        if (quantity is { } q) doc.Print.Quantity = q;
         dataSet = null!;
         if (convertToPrinter)
         {
@@ -1022,12 +1024,26 @@ public sealed partial class DataMergeViewModel : OperationViewModel
     private async Task PrintAllAsync()
     {
         if (IsBusy) return;
-        string? error = Snapshot(out var doc, out var ds, convertToPrinter: true);
+        var outcome = await PrintBatchAsync(RunAsync, p => Progress = p, null);
+        if (outcome is { } o) SetResult(o.Text, o.IsError);
+    }
+
+    /// <summary>
+    /// The batch print shared by this window and the Print dialog, so both go through one tested path (serial numbers reserved first and confirmed
+    /// only for labels that reached the printer, print-time questions, jobs, partial and cancel handling).
+    /// </summary>
+    /// <param name="run">The host window's single-operation runner (busy state and cancel); it shows its own message when the work is cancelled or crashes.</param>
+    /// <param name="progress">Receives 0-100 while jobs go out.</param>
+    /// <param name="labelCopies">The Print dialog's copies per record, used when the copies setting is the label's own quantity; null keeps the label's own.</param>
+    /// <returns>The result line to show, or null when nothing more is to be said (declined, cancelled, or the host already showed the outcome).</returns>
+    internal async Task<BatchOutcome?> PrintBatchAsync(Func<string, Func<CancellationToken, Task>, Task<bool>> run, Action<double> progress, int? labelCopies)
+    {
+        string? error = Snapshot(out var doc, out var ds, convertToPrinter: true, quantity: labelCopies);
         PrinterTarget? target = null;
         PrinterProfile? profile = null;
         error ??= Printer.TryBuildTarget(out target);
         error ??= Printer.TryBuildProfile(out profile, doc.Encoding);
-        if (error is not null) { SetResult(error, true); return; }
+        if (error is not null) return new BatchOutcome(error, true);
         // The question says exactly what will leave: the ticked records, and how many labels that is once copies are counted.
         long labels = CountLabels(ds, doc.Print.Quantity);
         string question = ds.BatchCount < ds.RecordCount
@@ -1035,8 +1051,8 @@ public sealed partial class DataMergeViewModel : OperationViewModel
             : labels != ds.BatchCount
                 ? Loc.Get("Data.PrintAll.ConfirmCopies", ds.BatchCount, Printer.Summary, labels)
                 : Loc.Get("Data.PrintAll.Confirm", ds.BatchCount, Printer.Summary);
-        if (!_messages.Confirm(Loc.Get("Data.PrintAll.Title"), question)) return;
-        if (!AskBatchPrompts(ds)) return;
+        if (!_messages.Confirm(Loc.Get("Data.PrintAll.Title"), question)) return null;
+        if (!AskBatchPrompts(ds)) return null;
 
         var report = new MergeReport();
         int jobs = 0;
@@ -1056,8 +1072,8 @@ public sealed partial class DataMergeViewModel : OperationViewModel
         string setup = PrinterSetup.BuildSetupZpl(profile!);
         // Raw ZPL imported from bytes must reach the printer byte for byte; collected once, not per record.
         var rawBlocks = ByteExactBlocks.From(doc);
-        var progress = new Progress<double>(p => Progress = p);
-        bool ok = await RunAsync(Loc.Get("Data.Busy.Printing"), async ct =>
+        var progressReporter = new Progress<double>(progress);
+        bool ok = await run(Loc.Get("Data.Busy.Printing"), async ct =>
         {
             int inFlight = 0; // last record of the job being sent right now
             try
@@ -1079,7 +1095,7 @@ public sealed partial class DataMergeViewModel : OperationViewModel
                         confirmedThrough = inFlight;
                         inFlight = 0;
                         jobs++;
-                        ((IProgress<double>)progress).Report(100.0 * report.Processed / ds.BatchCount);
+                        ((IProgress<double>)progressReporter).Report(100.0 * report.Processed / ds.BatchCount);
                     }
                 }, ct);
             }
@@ -1095,23 +1111,22 @@ public sealed partial class DataMergeViewModel : OperationViewModel
                 if (serials is not null) closing.AddRange(serials.Complete(confirmedThrough));
             }
         });
-        if (!ok) return;
+        if (!ok) return null;
         ShowReport(report);
         string notes = string.Join(" ", closing.Select(Loc.FormatIssue));
         if (failure is not null)
         {
-            SetResult(PrintMessages.Describe(failure) + " " + Loc.Get("Data.Batch.Partial", jobs) + (notes.Length > 0 ? " " + notes : string.Empty),
+            return new BatchOutcome(PrintMessages.Describe(failure) + " " + Loc.Get("Data.Batch.Partial", jobs) + (notes.Length > 0 ? " " + notes : string.Empty),
                 failure.Kind != PrintErrorKind.Cancelled);
-            return;
         }
         if (cancelled)
-        {
-            SetResult(Loc.Get("Data.Batch.CancelledPartial", jobs) + (notes.Length > 0 ? " " + notes : string.Empty), false);
-            return;
-        }
+            return new BatchOutcome(Loc.Get("Data.Batch.CancelledPartial", jobs) + (notes.Length > 0 ? " " + notes : string.Empty), false);
         Printer.Persist();
-        SetResult(BatchSummary("Data.PrintAll.Done", report, jobs) + (notes.Length > 0 ? " " + notes : string.Empty), report.HasErrors || report.Emitted == 0);
+        return new BatchOutcome(BatchSummary("Data.PrintAll.Done", report, jobs) + (notes.Length > 0 ? " " + notes : string.Empty), report.HasErrors || report.Emitted == 0);
     }
+
+    /// <summary>The result line of a batch print or export, and whether it reports a problem.</summary>
+    internal readonly record struct BatchOutcome(string Text, bool IsError);
 
     private static string BatchSummary(string doneKey, MergeReport report, int units)
     {
@@ -1127,11 +1142,18 @@ public sealed partial class DataMergeViewModel : OperationViewModel
     private async Task ExportBatchAsync()
     {
         if (IsBusy) return;
+        var outcome = await ExportBatchCoreAsync(RunAsync, p => Progress = p, null);
+        if (outcome is { } o) SetResult(o.Text, o.IsError);
+    }
+
+    /// <summary>The batch export shared by this window and the Print dialog. Parameters and result as in <see cref="PrintBatchAsync"/>.</summary>
+    internal async Task<BatchOutcome?> ExportBatchCoreAsync(Func<string, Func<CancellationToken, Task>, Task<bool>> run, Action<double> progress, int? labelCopies)
+    {
         // With no printer chosen the file keeps the design's own resolution; with one, it matches what that printer would receive.
-        string? error = Snapshot(out var doc, out var ds, convertToPrinter: Printer.PrinterChosen);
-        if (error is not null) { SetResult(error, true); return; }
+        string? error = Snapshot(out var doc, out var ds, convertToPrinter: Printer.PrinterChosen, quantity: labelCopies);
+        if (error is not null) return new BatchOutcome(error, true);
         string? path = _files.PickExportFile(ExportKind.Zpl, _documentName() + ".zpl");
-        if (path is null) return;
+        if (path is null) return null;
 
         int max = ds.Options.MaxRecordsPerJob;
         bool perJob = OneFilePerJob && max > 0;
@@ -1143,12 +1165,12 @@ public sealed partial class DataMergeViewModel : OperationViewModel
             int possible = (ds.BatchCount + max - 1) / max;
             int existing = Enumerable.Range(1, possible).Count(i => File.Exists(NameFor(i)));
             if (existing > 0 && !_messages.Confirm(Loc.Get("Data.Export.ReplaceTitle"), Loc.Get("Data.Export.ReplaceBody", existing)))
-                return;
+                return null;
         }
 
         // The file will be printed later, so its serial numbers count as used (the safe side). Only numbers that really reached a file are
         // confirmed: if the export fails before the file is complete, the numbers go back.
-        if (!AskBatchPrompts(ds)) return;
+        if (!AskBatchPrompts(ds)) return null;
         VariableJob? serials = null;
         if (VariableEngine.HasDefinitions(doc))
         {
@@ -1163,8 +1185,8 @@ public sealed partial class DataMergeViewModel : OperationViewModel
         string? writeError = null;
         bool encodingFailed = false;
         var rawBlocks = ByteExactBlocks.From(doc);
-        var progress = new Progress<double>(p => Progress = p);
-        bool ok = await RunAsync(Loc.Get("Data.Busy.Exporting"), ct => Task.Run(() =>
+        var progressReporter = new Progress<double>(progress);
+        bool ok = await run(Loc.Get("Data.Busy.Exporting"), ct => Task.Run(() =>
         {
             string temp = path + ".tmp";
             try
@@ -1180,7 +1202,7 @@ public sealed partial class DataMergeViewModel : OperationViewModel
                         File.WriteAllBytes(NameFor(++job), bytes);
                         files++;
                         writtenThrough = merged.ItemsThrough;
-                        ((IProgress<double>)progress).Report(100.0 * report.Processed / ds.BatchCount);
+                        ((IProgress<double>)progressReporter).Report(100.0 * report.Processed / ds.BatchCount);
                     }
                 }
                 else
@@ -1196,7 +1218,7 @@ public sealed partial class DataMergeViewModel : OperationViewModel
                             if (bytes is null) { encodingFailed = true; return; }
                             fs.Write(bytes);
                             lastInTemp = merged.ItemsThrough;
-                            ((IProgress<double>)progress).Report(100.0 * report.Processed / ds.BatchCount);
+                            ((IProgress<double>)progressReporter).Report(100.0 * report.Processed / ds.BatchCount);
                         }
                     }
                     if (report.Emitted > 0) { File.Move(temp, path, overwrite: true); files = 1; writtenThrough = lastInTemp; }
@@ -1212,12 +1234,12 @@ public sealed partial class DataMergeViewModel : OperationViewModel
                 if (serials is not null) closing.AddRange(serials.Complete(writtenThrough));
             }
         }, ct));
-        if (!ok) return;
+        if (!ok) return null;
         ShowReport(report);
         string notes = string.Join(" ", closing.Select(Loc.FormatIssue));
-        if (writeError is not null) { SetResult(writeError, true); return; }
-        if (encodingFailed) { SetResult(Loc.Get("Print.Error.EncodingFailed", doc.Encoding.ToString(), string.Empty), true); return; }
-        SetResult(BatchSummary(perJob ? "Data.Export.DonePerJob" : "Data.Export.Done", report, files) + (notes.Length > 0 ? " " + notes : string.Empty),
+        if (writeError is not null) return new BatchOutcome(writeError, true);
+        if (encodingFailed) return new BatchOutcome(Loc.Get("Print.Error.EncodingFailed", doc.Encoding.ToString(), string.Empty), true);
+        return new BatchOutcome(BatchSummary(perJob ? "Data.Export.DonePerJob" : "Data.Export.Done", report, files) + (notes.Length > 0 ? " " + notes : string.Empty),
             report.HasErrors || report.Emitted == 0);
     }
 

@@ -17,7 +17,12 @@ public partial class PrintWindow : DialogWindow
         InitializeComponent();
         viewModel.CloseRequested += (_, _) => Close();
         // Printer discovery runs async, so the dialog appears at once and fills in when Windows answers.
-        Loaded += async (_, _) => await _vm.Printer.RefreshPrintersAsync();
+        Loaded += async (_, _) =>
+        {
+            // With records to choose from, the list is the first thing the operator works with, so the keyboard starts there (Tab moves on to the printer).
+            if (_vm.HasRecords) RecordsList.Grid.Focus();
+            await _vm.Printer.RefreshPrintersAsync();
+        };
     }
 
     /// <inheritdoc />
@@ -33,5 +38,6 @@ public partial class PrintWindow : DialogWindow
     {
         base.OnClosed(e);
         _vm.Printer.Persist();
+        _vm.Detach();
     }
 }

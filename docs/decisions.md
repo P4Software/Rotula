@@ -196,6 +196,16 @@ Tests use a fake `IPrintService` that records calls: no test can reach a printer
 Known gap: `PrintZplAsync` does not do the byte-exact encoding of imported raw ZPL blocks that `PrintAsync` does, so a batch
 containing raw blocks with high bytes could be altered. This needs an API change in Rotula.Printing.
 
+### Print dialog: the place where the records to print are chosen
+When a data file or database is loaded and has records, `PrintViewModel` receives the `DataMergeViewModel` and the dialog shows a Records card
+(the same `DataRecordsView`, bound to the same view-model, so ticks stay in step with the Data window). Print then sends the ticked records as a
+batch, in data order, through `DataMergeViewModel.PrintBatchAsync` (the code behind the Data window's own print button: serial numbers reserved
+first and confirmed only for labels that reached the printer, print-time questions, jobs, partial and cancel handling, the "Print N labels on ..."
+question). Save as ZPL goes through `ExportBatchCoreAsync` the same way, so it follows the Data window's one-file or one-file-per-job setting and, like
+that export, does not add the printer set-up commands. The copies typed in the dialog are the copies of each record's label, unless the Data window
+sets copies per record (fixed or from a column); the dialog says so then. With records but nothing ticked, Print is disabled and the reason is shown.
+With no data loaded the dialog is the single-label dialog it always was. The dialog subscribes to the data view-model and unsubscribes when it closes.
+
 ### Data merge
 `DataMergeViewModel` (window opened with Ctrl+M, not modal so the canvas can be watched) wraps Core.Merge: CSV (delimiter auto
 detected and shown; UTF-8 with fallback to Windows-1252 as Excel writes it) or .xlsx (sheet picker), read off the UI thread with

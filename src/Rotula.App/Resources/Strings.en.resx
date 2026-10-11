@@ -1441,6 +1441,18 @@
   <data name="Print.UsesRecord" xml:space="preserve">
     <value>The label will be printed with the values of the data record shown on the canvas.</value>
   </data>
+  <data name="Print.Records.Title" xml:space="preserve">
+    <value>Records to print</value>
+  </data>
+  <data name="Print.Records.Hint" xml:space="preserve">
+    <value>Tick the records you want to print. Each ticked record prints its own label, in the order of the data, using the printer and copies chosen here.</value>
+  </data>
+  <data name="Print.Records.NoneSelected" xml:space="preserve">
+    <value>No record is ticked, so there is nothing to print. Tick at least one record in the list above.</value>
+  </data>
+  <data name="Print.Copies.FromData" xml:space="preserve">
+    <value>The Data window sets the copies for each record, so that setting is used instead of this number.</value>
+  </data>
   <data name="Print.Busy.Printing" xml:space="preserve">
     <value>Sending the label to the printer...</value>
   </data>

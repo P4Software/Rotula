@@ -945,7 +945,7 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void Print()
     {
-        var vm = new PrintViewModel(_svc.Printing, Printer, () => Session.Document, () => Data.CurrentData, _svc.Files, DocumentName, Variables);
+        var vm = new PrintViewModel(_svc.Printing, Printer, () => Session.Document, () => Data.CurrentData, _svc.Files, DocumentName, Variables, Data);
         _svc.Dialogs.ShowPrintDialog(vm);
     }
 

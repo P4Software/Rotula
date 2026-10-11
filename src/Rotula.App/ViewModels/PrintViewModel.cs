@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -14,7 +15,8 @@ namespace Rotula.App.ViewModels;
 
 /// <summary>
 /// The Print dialog: choose where to print and how the printer is set up, print the label (or a test label), or save the
-/// ZPL to a file. Sending is async and cancellable, so the window never freezes.
+/// ZPL to a file. Sending is async and cancellable, so the window never freezes. When a data file or database is loaded, this dialog is also where
+/// the operator picks the records (the same ticks as in the Data merge window) and prints them as a batch.
 /// </summary>
 public sealed partial class PrintViewModel : OperationViewModel
 {
@@ -33,9 +35,12 @@ public sealed partial class PrintViewModel : OperationViewModel
     /// <param name="files">File dialogs (Save as ZPL).</param>
     /// <param name="documentName">File name stem suggested for the ZPL file.</param>
     /// <param name="variables">Counter memory and the print-time questions; null means no counter memory and no questions (tests).</param>
+    /// <param name="records">The data merge view-model that holds the loaded records and their ticks; null (or no records) keeps the single-label dialog.</param>
     public PrintViewModel(IPrintService service, PrinterSettingsViewModel printer, Func<LabelDocument> document,
-        Func<IReadOnlyDictionary<string, string>?> data, IFileDialogService files, string documentName = "label", IVariableServices? variables = null)
+        Func<IReadOnlyDictionary<string, string>?> data, IFileDialogService files, string documentName = "label", IVariableServices? variables = null,
+        DataMergeViewModel? records = null)
     {
+        Records = records;
         _variables = variables ?? new VariableServices(null, null);
         _service = service;
         Printer = printer;
@@ -48,7 +53,50 @@ public sealed partial class PrintViewModel : OperationViewModel
         printer.UseDesignSize();
         printer.RefreshDpiMismatch();
         RefreshLabelProblems();
+        // A plain subscription, removed by Detach when the dialog closes: the data view-model outlives this dialog and must not keep it alive.
+        if (records is not null) records.PropertyChanged += OnRecordsChanged;
+        PropertyChanged += (_, e) => { if (e.PropertyName == nameof(IsBusy)) OnPropertyChanged(nameof(CanPrint)); };
     }
+
+    /// <summary>Stops listening to the data view-model; called when the dialog closes.</summary>
+    public void Detach()
+    {
+        if (Records is not null) Records.PropertyChanged -= OnRecordsChanged;
+    }
+
+    private void OnRecordsChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        // Ticks, the loaded data and the copies setting all change what the Records card says and whether Print may run.
+        OnPropertyChanged(nameof(HasRecords));
+        OnPropertyChanged(nameof(UsesRecordData));
+        OnPropertyChanged(nameof(ShowRecordBanner));
+        OnPropertyChanged(nameof(SelectionLine));
+        OnPropertyChanged(nameof(RecordsBlockedText));
+        OnPropertyChanged(nameof(HasRecordsBlockedText));
+        OnPropertyChanged(nameof(CopiesFromData));
+        OnPropertyChanged(nameof(CanPrint));
+    }
+
+    /// <summary>The loaded records and their ticks (shared with the Data merge window), or null when this dialog has no data.</summary>
+    public DataMergeViewModel? Records { get; }
+
+    /// <summary>True when data with at least one record is loaded: the Records card shows and Print prints the ticked records.</summary>
+    public bool HasRecords => Records is { HasRecords: true };
+
+    /// <summary>"3 of 5 selected", always visible while records exist.</summary>
+    public string SelectionLine => Records?.SelectionSummary ?? string.Empty;
+
+    /// <summary>Why Print is disabled (records exist but none is ticked), in plain language, or empty.</summary>
+    public string RecordsBlockedText => HasRecords && Records!.SelectedCount == 0 ? Loc.Get("Print.Records.NoneSelected") : string.Empty;
+
+    /// <summary>True when <see cref="RecordsBlockedText"/> has something to say.</summary>
+    public bool HasRecordsBlockedText => RecordsBlockedText.Length > 0;
+
+    /// <summary>True when the Data window sets the copies per record (a fixed number or a column), which then wins over the number typed here.</summary>
+    public bool CopiesFromData => HasRecords && Records!.CopiesSource != CopiesSource.LabelDefault;
+
+    /// <summary>True when the Print button may run: idle, and when records exist at least one is ticked.</summary>
+    public bool CanPrint => IsIdle && !HasRecordsBlockedText && Records is not { IsBusy: true };
 
     /// <summary>Printer selection and profile fields.</summary>
     public PrinterSettingsViewModel Printer { get; }
@@ -67,6 +115,9 @@ public sealed partial class PrintViewModel : OperationViewModel
 
     /// <summary>True when the label is printed with the values of the record shown on the canvas.</summary>
     public bool UsesRecordData => _data() is not null;
+
+    /// <summary>True when the "printed with the record on the canvas" note shows: data is shown on the canvas but there is no records card to pick from.</summary>
+    public bool ShowRecordBanner => UsesRecordData && !HasRecords;
 
     /// <summary>Re-checks the label for errors that block printing. The test label does not depend on this.</summary>
     public void RefreshLabelProblems()
@@ -118,6 +169,7 @@ public sealed partial class PrintViewModel : OperationViewModel
     private async Task PrintAsync()
     {
         if (IsBusy) return;
+        if (HasRecords) { await PrintRecordsAsync(); return; }
         if (!TryCopies(out int copies) || !TryPrepare(out var target, out var profile)) return;
         RefreshLabelProblems();
         if (HasLabelProblems)
@@ -139,6 +191,25 @@ public sealed partial class PrintViewModel : OperationViewModel
         var options = VariableServices.Options(_variables, answers);
         await SendAsync(Loc.Get("Print.Busy.Printing"), ct => _service.PrintAsync(target!, doc, data, profile, options, ct),
             Loc.Get("Print.Done.Label", copies));
+    }
+
+    /// <summary>
+    /// Prints the ticked records through the same path as the Data merge window's print button. The copies typed here are the copies of each
+    /// record's label (unless the Data window sets copies per record itself).
+    /// </summary>
+    private async Task PrintRecordsAsync()
+    {
+        if (Records!.IsBusy) return;
+        if (Records.SelectedCount == 0) { SetResult(RecordsBlockedText, true); return; }
+        if (!TryCopies(out int copies)) return;
+        RefreshLabelProblems();
+        if (HasLabelProblems)
+        {
+            SetResult(Loc.Get("Print.Error.InvalidLabel") + Environment.NewLine + LabelProblems, true);
+            return;
+        }
+        var outcome = await Records.PrintBatchAsync(RunAsync, p => Progress = p, copies);
+        if (outcome is { } o) SetResult(o.Text, o.IsError);
     }
 
     /// <summary>Prints the built-in test label (checks the connection, the width and the character set).</summary>
@@ -175,6 +246,7 @@ public sealed partial class PrintViewModel : OperationViewModel
     private async Task SaveZplAsync()
     {
         if (IsBusy) return;
+        if (HasRecords) { await SaveRecordsZplAsync(); return; }
         if (!TryCopies(out int copies) || !TryPrepare(out _, out var profile, needTarget: false)) return;
         var doc = ElementCloner.CloneDocument(_document());
         doc.Print.Quantity = copies;
@@ -235,11 +307,24 @@ public sealed partial class PrintViewModel : OperationViewModel
         SetResult(notes.Length == 0 ? saved : saved + Environment.NewLine + notes, false);
     }
 
+    /// <summary>Saves the ticked records as ZPL (one file, or one per job as set in the Data window), through the Data window's export path.</summary>
+    private async Task SaveRecordsZplAsync()
+    {
+        if (Records!.IsBusy) return;
+        if (Records.SelectedCount == 0) { SetResult(RecordsBlockedText, true); return; }
+        if (!TryCopies(out int copies)) return;
+        var outcome = await Records.ExportBatchCoreAsync(RunAsync, p => Progress = p, copies);
+        if (outcome is not { } o) return;
+        SetResult(o.Text, o.IsError);
+        if (!o.IsError) Printer.Persist();
+    }
+
     /// <summary>Closes the dialog (stopping any running job first).</summary>
     [RelayCommand]
     private void Close()
     {
         Printer.Persist();
+        Detach();
         RequestClose();
     }
 }

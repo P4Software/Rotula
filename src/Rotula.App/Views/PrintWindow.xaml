@@ -4,7 +4,7 @@
         xmlns:ctl="clr-namespace:Rotula.App.Controls"
         xmlns:loc="clr-namespace:Rotula.App.Localization"
         xmlns:views="clr-namespace:Rotula.App.Views"
-        Title="{loc:T Print.Title}" Width="660" Height="800" MinWidth="520" MinHeight="520"
+        Title="{loc:T Print.Title}" Width="720" Height="900" MinWidth="560" MinHeight="520"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
         AutomationProperties.Name="{loc:T Print.Title}">
   <Window.Resources>
@@ -18,7 +18,7 @@
           <Button Content="{loc:T Common.Close}" IsCancel="True" MinWidth="88" Margin="0,0,8,0" Command="{Binding CloseCommand}"
                   AutomationProperties.Name="{loc:T Common.Close}" />
           <Button Content="{loc:T Print.Button.Print}" IsDefault="True" Style="{StaticResource PrimaryButton}" MinWidth="110" Command="{Binding PrintCommand}"
-                  IsEnabled="{Binding IsIdle}" AutomationProperties.Name="{loc:T Print.Button.Print}" />
+                  IsEnabled="{Binding CanPrint}" AutomationProperties.Name="{loc:T Print.Button.Print}" />
         </StackPanel>
         <!-- A WrapPanel: in Spanish the two secondary buttons are long, and in a narrow window they drop to a second line instead of overlapping Close/Print. -->
         <WrapPanel IsEnabled="{Binding IsIdle}" VerticalAlignment="Center" Margin="0,0,12,0">
@@ -61,8 +61,22 @@
             <TextBlock Text="{Binding LabelProblems}" Foreground="{StaticResource ErrorBrush}" TextWrapping="Wrap" Margin="0,4,0,0" />
           </StackPanel>
         </Border>
-        <Border Style="{StaticResource WarningBanner}" Margin="0,0,0,16" Visibility="{Binding UsesRecordData, Converter={StaticResource B2V}}">
+        <!-- Data is on the canvas but there is no record list to pick from: the single label is printed with the shown record. -->
+        <Border Style="{StaticResource WarningBanner}" Margin="0,0,0,16" Visibility="{Binding ShowRecordBanner, Converter={StaticResource B2V}}">
           <TextBlock Text="{loc:T Print.UsesRecord}" Foreground="{StaticResource WarningBrush}" TextWrapping="Wrap" />
+        </Border>
+
+        <!-- ============================== records: the place where the operator decides what is printed -->
+        <Border Style="{StaticResource Card}" Margin="0,0,0,16" Visibility="{Binding HasRecords, Converter={StaticResource B2V}}"
+                AutomationProperties.Name="{loc:T Print.Records.Title}">
+          <StackPanel>
+            <TextBlock Text="{loc:T Print.Records.Title}" FontWeight="SemiBold" FontSize="15" AutomationProperties.HeadingLevel="Level2" />
+            <TextBlock Text="{loc:T Print.Records.Hint}" Style="{StaticResource MutedText}" TextWrapping="Wrap" Margin="0,2,0,10" />
+            <!-- DataRecordsView needs a bounded height so its grid scrolls inside its own frame; the dialog's scroll viewer handles the rest. -->
+            <views:DataRecordsView x:Name="RecordsList" DataContext="{Binding Records}" Height="400" />
+            <TextBlock Text="{Binding RecordsBlockedText}" Foreground="{StaticResource ErrorBrush}" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,10,0,0"
+                       Visibility="{Binding HasRecordsBlockedText, Converter={StaticResource B2V}}" AutomationProperties.LiveSetting="Polite" />
+          </StackPanel>
         </Border>
 
         <Border Style="{StaticResource Card}">
@@ -74,6 +88,8 @@
             <TextBlock Text="{loc:T Print.Copies}" Style="{StaticResource FieldLabel}" />
             <TextBox Style="{StaticResource MonoTextBox}" Width="140" HorizontalAlignment="Left" Text="{Binding CopiesText, UpdateSourceTrigger=PropertyChanged}"
                      AutomationProperties.Name="{loc:T Print.Copies}"  ctl:FieldState.HasError="{Binding Text, RelativeSource={RelativeSource Self}, Converter={StaticResource FieldInvalid}, ConverterParameter=int:1:99999999}" />
+            <TextBlock Text="{loc:T Print.Copies.FromData}" Style="{StaticResource MutedText}" TextWrapping="Wrap" Margin="0,6,0,0"
+                       Visibility="{Binding CopiesFromData, Converter={StaticResource B2V}}" />
           </StackPanel>
         </Border>
       </StackPanel>

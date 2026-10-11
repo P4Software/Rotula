@@ -1441,6 +1441,18 @@
   <data name="Print.UsesRecord" xml:space="preserve">
     <value>La etiqueta se imprimirá con los valores del registro de datos que se muestra en el lienzo.</value>
   </data>
+  <data name="Print.Records.Title" xml:space="preserve">
+    <value>Registros a imprimir</value>
+  </data>
+  <data name="Print.Records.Hint" xml:space="preserve">
+    <value>Marque los registros que desea imprimir. Cada registro marcado imprime su propia etiqueta, en el orden de los datos, con la impresora y las copias elegidas aquí.</value>
+  </data>
+  <data name="Print.Records.NoneSelected" xml:space="preserve">
+    <value>No hay ningún registro marcado, así que no hay nada que imprimir. Marque al menos un registro en la lista de arriba.</value>
+  </data>
+  <data name="Print.Copies.FromData" xml:space="preserve">
+    <value>La ventana de Datos define las copias de cada registro, así que se usa esa configuración en lugar de este número.</value>
+  </data>
   <data name="Print.Busy.Printing" xml:space="preserve">
     <value>Enviando la etiqueta a la impresora...</value>
   </data>
