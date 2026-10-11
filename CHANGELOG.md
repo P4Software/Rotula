@@ -16,6 +16,25 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   file with external access off and locked settings, ClickHouse `readonly=1` on every request) behind the query check, and carries its own licence
   notices. The query check now also refuses Oracle quoted database links (`table@"link"`), treats DuckDB block comments as nesting, and reads
   ClickHouse quoted names with backslash escapes like the vendor documents. Provider API 1.1 (`FormatCell`, `IdentifierBackslashEscapes`).
+- **QR content builder and GS1 builder**: pick what the code holds (web address, text, Wi-Fi, contact card, calendar event, email, phone,
+  SMS, location, GS1 Digital Link), fill in the fields (each can be bound to a data field), and see the code, its printed size and how
+  full it is. QR options show the recovery percentage per error-correction level. GS1-128 and GS1 Data Matrix get an identifier picker
+  with plain-language checks.
+- **Database name drop-down**: after you enter the server and login, the database list is loaded from the server.
+- **App icon and logo**.
+
+## [0.1.2] - 2026-10-11
+
+### Fixed
+- The app no longer crashes when you open the Data merge window a second time, or open Print and then Data merge. Closed windows were
+  still sharing the printer-type and counter option buttons with the next window, which made them switch each other back and forth
+  until the app ran out of memory.
+
+## [0.1.1] - 2026-10-10
+
+### Fixed
+- The app no longer crashes (stack overflow) when switching between Windows printer and Network printer in the print dialog and the data merge window.
+- The database table list no longer freezes or crashes the app when the server has thousands of tables; the list now scrolls inside its own area.
 
 ## [0.1.0] - 2026-10-10
 
@@ -57,5 +76,6 @@ First public version.
 - Releases are signed with Azure Artifact Signing, but Windows SmartScreen can still show a reputation warning for a new,
   little-downloaded file until downloads build trust (More info, then Run anyway).
 
-[Unreleased]: https://github.com/P4Software/Rotula/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/P4Software/Rotula/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/P4Software/Rotula/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/P4Software/Rotula/releases/tag/v0.1.0

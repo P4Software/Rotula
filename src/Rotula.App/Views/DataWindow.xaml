@@ -60,9 +60,9 @@
           <!-- source switch: a CSV / Excel file or a saved database connection -->
           <StackPanel Orientation="Horizontal" Margin="0,8,0,4" AutomationProperties.Name="{loc:T Data.Source}">
             <TextBlock Text="{loc:T Data.Source}" Style="{StaticResource MutedText}" VerticalAlignment="Center" Margin="0,0,12,0" />
-            <RadioButton GroupName="DataSourceKind" Content="{loc:T Data.Source.File}" IsChecked="{Binding IsFileMode}" IsEnabled="{Binding IsIdle}"
+            <RadioButton Content="{loc:T Data.Source.File}" IsChecked="{Binding IsFileMode}" IsEnabled="{Binding IsIdle}"
                          AutomationProperties.Name="{loc:T Data.Source.File}" />
-            <RadioButton GroupName="DataSourceKind" Content="{loc:T Data.Source.Database}" IsChecked="{Binding IsDatabaseMode}" IsEnabled="{Binding IsIdle}"
+            <RadioButton Content="{loc:T Data.Source.Database}" IsChecked="{Binding IsDatabaseMode}" IsEnabled="{Binding IsIdle}"
                          AutomationProperties.Name="{loc:T Data.Source.Database}" />
           </StackPanel>
           <StackPanel Orientation="Horizontal" Margin="0,4,0,0" Visibility="{Binding IsDatabaseMode, Converter={StaticResource B2V}}">
@@ -385,8 +385,8 @@
 
                 <TextBlock Text="{loc:T Data.Counter.Kind}" Style="{StaticResource FieldLabel}" Margin="0,16,0,2" />
                 <StackPanel Orientation="Horizontal">
-                  <RadioButton GroupName="CounterKind" Content="{loc:T Enum.CounterKind.Numeric}" IsChecked="{Binding IsNumeric}" AutomationProperties.Name="{loc:T Enum.CounterKind.Numeric}" />
-                  <RadioButton GroupName="CounterKind" Content="{loc:T Enum.CounterKind.Alphanumeric}" IsChecked="{Binding IsAlphanumeric}" AutomationProperties.Name="{loc:T Enum.CounterKind.Alphanumeric}" />
+                  <RadioButton Content="{loc:T Enum.CounterKind.Numeric}" IsChecked="{Binding IsNumeric}" AutomationProperties.Name="{loc:T Enum.CounterKind.Numeric}" />
+                  <RadioButton Content="{loc:T Enum.CounterKind.Alphanumeric}" IsChecked="{Binding IsAlphanumeric}" AutomationProperties.Name="{loc:T Enum.CounterKind.Alphanumeric}" />
                 </StackPanel>
 
                 <Grid Margin="0,12,0,0">
@@ -423,8 +423,8 @@
 
                 <TextBlock Text="{loc:T Data.Counter.Overflow}" Style="{StaticResource FieldLabel}" Margin="0,16,0,2" />
                 <StackPanel Orientation="Horizontal">
-                  <RadioButton GroupName="CounterOverflow" Content="{loc:T Enum.CounterOverflow.Wrap}" IsChecked="{Binding WrapOnOverflow}" AutomationProperties.Name="{loc:T Enum.CounterOverflow.Wrap}" />
-                  <RadioButton GroupName="CounterOverflow" Content="{loc:T Enum.CounterOverflow.Error}" IsChecked="{Binding StopOnOverflow}" AutomationProperties.Name="{loc:T Enum.CounterOverflow.Error}" />
+                  <RadioButton Content="{loc:T Enum.CounterOverflow.Wrap}" IsChecked="{Binding WrapOnOverflow}" AutomationProperties.Name="{loc:T Enum.CounterOverflow.Wrap}" />
+                  <RadioButton Content="{loc:T Enum.CounterOverflow.Error}" IsChecked="{Binding StopOnOverflow}" AutomationProperties.Name="{loc:T Enum.CounterOverflow.Error}" />
                 </StackPanel>
 
                 <StackPanel Margin="0,16,0,0">
