@@ -15,11 +15,15 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   text that does not fit its box raises a warning. `.rotula` files that use a Windows font or a stored font are saved as format version 8.
 - **Word wrap** now sizes its block from the label (width to the right edge, as many lines as fit below) instead of a fixed 400 x 1 block.
 - The **Objects** list can be collapsed (closed by default; the choice is remembered) so the Properties panel gets its height.
-- **Variables that work out their own value** (engine, file format and MCP; see `docs/variables.md`): date and time variables with offsets
+
+## [0.2.0] - 2026-10-11
+
+### Added
+- **Variables that work out their own value** (engine, file format and MCP only for now; printing and the editor come next; see `docs/variables.md`): date and time variables with offsets
   (including business days), rounding, formats such as GS1 `YYMMDD` or the day of the year, and a choice of the computer clock or the printer's own
   clock; serial-number counters that can remember their last value between sessions (reserve, then confirm, so a crash or a second window never
-  repeats a number); print-time prompts with validation; and computed variables from a small, safe formula language. Batch merge resolves all of
-  them per record. `.rotula` files that use them are saved as format version 7; other files are unchanged.
+  repeats a number); print-time prompts with validation; and computed variables from a small, safe formula language. (Batch merge in the Rotula engine resolves all of
+  them per record; the print screens do not use them yet.) `.rotula` files that use them are saved as format version 7; other files are unchanged.
 - **Database add-ons (provider packs) for Oracle, Firebird, DuckDB and ClickHouse**, built as separate folders by `scripts\build-packs.cmd` (see
   `docs/data-providers.md`). Each opens its data read-only (Oracle `SET TRANSACTION READ ONLY`, Firebird READ ONLY transaction, DuckDB read-only
   file with external access off and locked settings, ClickHouse `readonly=1` on every request) behind the query check, and carries its own licence
@@ -30,7 +34,7 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   full it is. QR options show the recovery percentage per error-correction level. GS1-128 and GS1 Data Matrix get an identifier picker
   with plain-language checks.
 - **Database name drop-down**: after you enter the server and login, the database list is loaded from the server.
-- **App icon and logo**.
+- **App icon and logo** on the program, the installer, the uninstaller entry and `.rotula` files.
 
 ## [0.1.2] - 2026-10-11
 
