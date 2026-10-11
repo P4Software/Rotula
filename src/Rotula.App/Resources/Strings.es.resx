@@ -920,7 +920,7 @@
     <value>Altura de las barras (puntos)</value>
   </data>
   <data name="Prop.Block" xml:space="preserve">
-    <value>Ajustar el texto en un bloque</value>
+    <value>Ajuste de texto (encajar el texto en un cuadro)</value>
   </data>
   <data name="Prop.Block.Alignment" xml:space="preserve">
     <value>Alineación</value>
@@ -935,7 +935,7 @@
     <value>Líneas máximas</value>
   </data>
   <data name="Prop.Block.Width" xml:space="preserve">
-    <value>Ancho del bloque (puntos)</value>
+    <value>Ancho del cuadro (puntos)</value>
   </data>
   <data name="Prop.CheckDigit" xml:space="preserve">
     <value>Añadir dígito de control</value>
@@ -1639,6 +1639,102 @@
   <data name="Data.Record.Of" xml:space="preserve">
     <value>Registro {0} de {1}</value>
   </data>
+  <data name="Data.Record.OfSelected" xml:space="preserve">
+    <value>Seleccionado {0} de {1} (fila {2})</value>
+  </data>
+  <data name="Data.Record.NotSelected" xml:space="preserve">
+    <value>Fila {0} (no seleccionada; {1} seleccionados)</value>
+  </data>
+  <data name="Data.Record.NoneSelected" xml:space="preserve">
+    <value>Registro {0} de {1} (ninguno seleccionado)</value>
+  </data>
+  <data name="Data.Records.Grid" xml:space="preserve">
+    <value>Registros a imprimir</value>
+  </data>
+  <data name="Data.Records.Hint" xml:space="preserve">
+    <value>Marque los registros que desea imprimir. Espacio marca la fila resaltada, Mayús+clic marca un rango y Ctrl+A marca todas las filas mostradas. Solo se imprimen, revisan o exportan los registros marcados.</value>
+  </data>
+  <data name="Data.Records.Number" xml:space="preserve">
+    <value>N.º</value>
+  </data>
+  <data name="Data.Records.NumberName" xml:space="preserve">
+    <value>Número de fila</value>
+  </data>
+  <data name="Data.Records.SelectColumn" xml:space="preserve">
+    <value>Seleccionar o quitar todos los registros mostrados</value>
+  </data>
+  <data name="Data.Records.SelectRow" xml:space="preserve">
+    <value>Seleccionar el registro {0}</value>
+  </data>
+  <data name="Data.Records.SelectAll" xml:space="preserve">
+    <value>Seleccionar todos</value>
+  </data>
+  <data name="Data.Records.SelectAllShown" xml:space="preserve">
+    <value>Seleccionar los mostrados: {0}</value>
+  </data>
+  <data name="Data.Records.SelectNone" xml:space="preserve">
+    <value>Quitar la selección</value>
+  </data>
+  <data name="Data.Records.SelectNoneShown" xml:space="preserve">
+    <value>Quitar los mostrados: {0}</value>
+  </data>
+  <data name="Data.Records.Invert" xml:space="preserve">
+    <value>Invertir la selección</value>
+  </data>
+  <data name="Data.Records.InvertShown" xml:space="preserve">
+    <value>Invertir los mostrados: {0}</value>
+  </data>
+  <data name="Data.Records.Summary" xml:space="preserve">
+    <value>{0} de {1} seleccionados</value>
+  </data>
+  <data name="Data.Records.Shown" xml:space="preserve">
+    <value>Mostrando {0} de {1} registros</value>
+  </data>
+  <data name="Data.Records.NoMatch" xml:space="preserve">
+    <value>Ningún registro coincide con el filtro. Cambie el texto o quite el filtro.</value>
+  </data>
+  <data name="Data.Filter.Label" xml:space="preserve">
+    <value>Filtro</value>
+  </data>
+  <data name="Data.Filter.Box" xml:space="preserve">
+    <value>Filtrar registros</value>
+  </data>
+  <data name="Data.Filter.Tip" xml:space="preserve">
+    <value>Escriba un texto para ver solo los registros que lo contienen (no importan las mayúsculas).</value>
+  </data>
+  <data name="Data.Filter.Column" xml:space="preserve">
+    <value>Columna donde buscar</value>
+  </data>
+  <data name="Data.Filter.AllColumns" xml:space="preserve">
+    <value>Todas las columnas</value>
+  </data>
+  <data name="Data.Filter.OnlySelected" xml:space="preserve">
+    <value>Mostrar solo los seleccionados</value>
+  </data>
+  <data name="Data.Filter.Clear" xml:space="preserve">
+    <value>Quitar el filtro</value>
+  </data>
+  <data name="Data.Batch.PrintSelected" xml:space="preserve">
+    <value>Imprimir {0} etiquetas seleccionadas</value>
+  </data>
+  <data name="Data.Batch.PrintSelected.One" xml:space="preserve">
+    <value>Imprimir 1 etiqueta seleccionada</value>
+  </data>
+  <data name="Data.Batch.PrintEvery" xml:space="preserve">
+    <value>Imprimir las {0} etiquetas</value>
+  </data>
+  <data name="Data.Batch.NoneSelected" xml:space="preserve">
+    <value>No hay ningún registro seleccionado, así que no hay nada que imprimir, revisar ni exportar. Primero seleccione registros en la pestaña Datos.</value>
+  </data>
+  <data name="Data.Error.NoneSelected" xml:space="preserve">
+    <value>No hay ningún registro seleccionado. Seleccione al menos uno en la pestaña Datos.</value>
+  </data>
+  <data name="Data.PrintAll.ConfirmSelected" xml:space="preserve">
+    <value>¿Enviar los {0} registros seleccionados (de {3}) a {1}? Son {2} etiquetas contando las copias. Las etiquetas empezarán a imprimirse de inmediato.</value>
+  </data>
+  <data name="Data.PrintAll.ConfirmCopies" xml:space="preserve">
+    <value>¿Enviar {0} registros a {1}? Son {2} etiquetas contando las copias. Las etiquetas empezarán a imprimirse de inmediato.</value>
+  </data>
   <data name="Data.ShowOnCanvas" xml:space="preserve">
     <value>Mostrar este registro en el lienzo</value>
   </data>
@@ -1763,13 +1859,13 @@
     <value>Los registros por trabajo deben ser un número entero de 0 a 1000000.</value>
   </data>
   <data name="Data.Batch.Heading" xml:space="preserve">
-    <value>Revisar e imprimir todos los registros</value>
+    <value>Revisar e imprimir los registros seleccionados</value>
   </data>
   <data name="Data.Batch.Intro" xml:space="preserve">
-    <value>Revise primero para ver qué registros tienen problemas. Al imprimir se envía cada registro válido a la impresora de la izquierda.</value>
+    <value>Revise primero para ver qué registros seleccionados tienen problemas. Al imprimir se envía cada registro seleccionado y válido a la impresora de la izquierda, en el orden de los datos. Elija los registros en la pestaña Datos.</value>
   </data>
   <data name="Data.Batch.Check" xml:space="preserve">
-    <value>Revisar todos los registros</value>
+    <value>Revisar los registros seleccionados</value>
   </data>
   <data name="Data.Batch.Export" xml:space="preserve">
     <value>Exportar ZPL...</value>
@@ -5440,5 +5536,140 @@ Las marcas y los nombres de producto pertenecen a sus dueños; Rotula no está a
   </data>
   <data name="Issue.Variable.Copies.TooMany" xml:space="preserve">
     <value>Esta etiqueta tiene un contador, así que cada copia necesita su propio número, y eso está limitado a {0} copias por impresión. Imprima menos copias a la vez o use la ventana de combinar datos.</value>
+  </data>
+  <data name="Panel.Format" xml:space="preserve">
+    <value>Formato</value>
+  </data>
+  <data name="Panel.Format.Wrap" xml:space="preserve">
+    <value>Ajuste de texto</value>
+  </data>
+  <data name="Panel.Format.Advanced" xml:space="preserve">
+    <value>Tamaño en puntos de la impresora (avanzado)</value>
+  </data>
+  <data name="Panel.Format.Toolbar" xml:space="preserve">
+    <value>Formato del texto</value>
+  </data>
+  <data name="Prop.Format.Font" xml:space="preserve">
+    <value>Fuente</value>
+  </data>
+  <data name="Prop.Format.Size" xml:space="preserve">
+    <value>Tamaño (pt)</value>
+  </data>
+  <data name="Prop.Format.Size.Tip" xml:space="preserve">
+    <value>Tamaño en puntos tipográficos (1 punto es 1/72 de pulgada), como en un procesador de texto. Elija un tamaño o escriba el suyo.</value>
+  </data>
+  <data name="Prop.Format.Font.Tip" xml:space="preserve">
+    <value>Elija una fuente de la impresora (se imprime como texto) o una fuente de Windows (se imprime como imagen). Escriba para buscar.</value>
+  </data>
+  <data name="Panel.Format.Group.Printer" xml:space="preserve">
+    <value>Fuentes de la impresora</value>
+  </data>
+  <data name="Panel.Format.Group.Windows" xml:space="preserve">
+    <value>Fuentes de Windows</value>
+  </data>
+  <data name="Panel.Format.Font.PrinterScalable" xml:space="preserve">
+    <value>Fuente de la impresora {0} (escalable)</value>
+  </data>
+  <data name="Panel.Format.Font.PrinterBitmap" xml:space="preserve">
+    <value>Fuente de la impresora {0} (forma fija)</value>
+  </data>
+  <data name="Panel.Format.Font.PrinterOther" xml:space="preserve">
+    <value>Fuente de la impresora {0}</value>
+  </data>
+  <data name="Panel.Format.Font.Stored" xml:space="preserve">
+    <value>Fuente guardada en la impresora ({0})</value>
+  </data>
+  <data name="Panel.Format.Font.Missing" xml:space="preserve">
+    <value>{0} (no instalada)</value>
+  </data>
+  <data name="Panel.Format.Bold" xml:space="preserve">
+    <value>Negrita</value>
+  </data>
+  <data name="Panel.Format.Italic" xml:space="preserve">
+    <value>Cursiva</value>
+  </data>
+  <data name="Panel.Format.Underline" xml:space="preserve">
+    <value>Subrayado</value>
+  </data>
+  <data name="Panel.Format.Tip.Bold" xml:space="preserve">
+    <value>Negrita (Ctrl+B)</value>
+  </data>
+  <data name="Panel.Format.Tip.Italic" xml:space="preserve">
+    <value>Cursiva (Ctrl+I)</value>
+  </data>
+  <data name="Panel.Format.Tip.Underline" xml:space="preserve">
+    <value>Subrayado (Ctrl+U)</value>
+  </data>
+  <data name="Panel.Format.Tip.NeedsWindowsFont" xml:space="preserve">
+    <value>La negrita, la cursiva y el subrayado no existen en las fuentes propias de la impresora. Elija una fuente de Windows en la lista para usarlos.</value>
+  </data>
+  <data name="Panel.Format.Tip.NeedsWrap" xml:space="preserve">
+    <value>La alineación funciona dentro de un cuadro de texto. Active el ajuste de texto para usarla.</value>
+  </data>
+  <data name="Panel.Format.Align.Left" xml:space="preserve">
+    <value>Alinear a la izquierda</value>
+  </data>
+  <data name="Panel.Format.Align.Center" xml:space="preserve">
+    <value>Centrar</value>
+  </data>
+  <data name="Panel.Format.Align.Right" xml:space="preserve">
+    <value>Alinear a la derecha</value>
+  </data>
+  <data name="Panel.Format.Align.Justified" xml:space="preserve">
+    <value>Justificar</value>
+  </data>
+  <data name="Panel.Format.Notice.Picture" xml:space="preserve">
+    <value>Este texto se imprime como una imagen. Se ve nítido a la resolución de la impresora, pero la impresora no puede editarlo ni tomarlo de sus propios campos. Las fuentes de la impresora se imprimen como texto real.</value>
+  </data>
+  <data name="Panel.Format.Notice.Dismiss" xml:space="preserve">
+    <value>Entendido</value>
+  </data>
+  <data name="Panel.Format.Note.Picture" xml:space="preserve">
+    <value>Fuente de Windows: se imprime como imagen</value>
+  </data>
+  <data name="Panel.Format.Fix.Room" xml:space="preserve">
+    <value>Agrandar el cuadro</value>
+  </data>
+  <data name="Panel.Format.Fix.Smaller" xml:space="preserve">
+    <value>Reducir el texto</value>
+  </data>
+  <data name="Panel.Format.Overflow.Tip" xml:space="preserve">
+    <value>Pulse uno de los botones de abajo para corregirlo de una vez.</value>
+  </data>
+  <data name="Panel.Format.Font.Missing.Note" xml:space="preserve">
+    <value>Este equipo no tiene la fuente "{0}", así que se usa "{1}". Instale la fuente o elija otra; si no, el texto impreso se verá distinto.</value>
+  </data>
+  <data name="Status.Format.NeedsWindowsFont" xml:space="preserve">
+    <value>La negrita, la cursiva y el subrayado necesitan una fuente de Windows. Elija una en la lista de fuentes.</value>
+  </data>
+  <data name="Status.Format.WrapWidth" xml:space="preserve">
+    <value>Ancho del cuadro: {0} puntos ({1} mm)</value>
+  </data>
+  <data name="Status.Format.Fixed" xml:space="preserve">
+    <value>El texto ya cabe en su cuadro.</value>
+  </data>
+  <data name="Status.Format.NotFixed" xml:space="preserve">
+    <value>El texto sigue sin caber; pruebe un cuadro mayor o un tamaño menor.</value>
+  </data>
+  <data name="Undo.Format.Font" xml:space="preserve">
+    <value>cambio de fuente</value>
+  </data>
+  <data name="Undo.Format.Style" xml:space="preserve">
+    <value>estilo del texto</value>
+  </data>
+  <data name="Undo.Format.Size" xml:space="preserve">
+    <value>tamaño de fuente</value>
+  </data>
+  <data name="Undo.Format.Align" xml:space="preserve">
+    <value>alineación</value>
+  </data>
+  <data name="Undo.Format.Wrap" xml:space="preserve">
+    <value>ajuste de texto</value>
+  </data>
+  <data name="Undo.Format.Fit" xml:space="preserve">
+    <value>ajustar el texto a su cuadro</value>
+  </data>
+  <data name="Preview.Unavailable" xml:space="preserve">
+    <value>La vista previa no se puede dibujar ahora. Reduzca el zoom o haga la etiqueta más pequeña e inténtelo de nuevo; su etiqueta no se ve afectada.</value>
   </data>
 </root>

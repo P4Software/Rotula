@@ -101,13 +101,15 @@ public sealed partial class MainViewModel : ObservableObject
         Loc.Instance.SetLanguage(_settings.Language);
         Session = session ?? new EditorSession();
         Commands = new EditorCommands(Session);
-        Properties = new PropertyPanelViewModel(Session, ChooseImageFor);
+        // Without a counter store (tests, headless use) a counter that remembers its value refuses to print instead of repeating numbers.
+        // Created before the property panel: the panel's font list and overflow check need the text rasterizer it carries.
+        Variables = services.Variables ?? new VariableServices(null, services.Dialogs);
+        Properties = new PropertyPanelViewModel(Session, ChooseImageFor, () => Variables.TextRasterizer);
         Preview = new PreviewCache(Session);
+        ConnectFormatting();
         // Handles and selection frames are measured with the record shown on the canvas, not only the sample values.
         Session.Bounds.DataProvider = () => Preview.Data;
         Printer = new PrinterSettingsViewModel(services.Printing, _settings.Print, SaveSettings, () => Session.Document, applyLabelDpi: SetLabelDpi);
-        // Without a counter store (tests, headless use) a counter that remembers its value refuses to print instead of repeating numbers.
-        Variables = services.Variables ?? new VariableServices(null, services.Dialogs);
         Data = new DataMergeViewModel(services.Printing, Printer, () => Session.Document, () => DocumentName, services.Files, services.Messages, services.Database, services.Dialogs, Variables);
         Data.SettingsEdited += (_, _) => Session.MarkDirty();
         Data.PreviewDataChanged += (_, _) => OnPreviewDataChanged();
@@ -119,7 +121,8 @@ public sealed partial class MainViewModel : ObservableObject
         Fields.FieldsChanged += (_, _) => RefreshLayers();
         Data.PropertyChanged += (_, e) =>
         {
-            if (e.PropertyName is nameof(DataMergeViewModel.RecordCount) or nameof(DataMergeViewModel.CurrentIndex) or nameof(DataMergeViewModel.HasData))
+            if (e.PropertyName is nameof(DataMergeViewModel.RecordCount) or nameof(DataMergeViewModel.CurrentIndex) or nameof(DataMergeViewModel.HasData)
+                or nameof(DataMergeViewModel.SelectedCount) or nameof(DataMergeViewModel.RecordText))
             {
                 OnPropertyChanged(nameof(DataRecordText));
                 RefreshCommandStates();
@@ -164,6 +167,31 @@ public sealed partial class MainViewModel : ObservableObject
 
     /// <summary>The property panel.</summary>
     public PropertyPanelViewModel Properties { get; }
+
+    /// <summary>The text formatting state (font, size, styles, alignment, overflow) shared by the property panel and the toolbar over the canvas.</summary>
+    public TextFormatViewModel Format => Properties.Format;
+
+    private void ConnectFormatting()
+    {
+        Format.DataProvider = () => Preview.Data;
+        Format.Status = text => StatusMessage = text;
+        Format.RasterNoticeDismissed = _settings.RasterNoticeDismissed;
+        Format.RasterNoticeDismissedChanged = () => { _settings.RasterNoticeDismissed = true; SaveSettings(); };
+    }
+
+    /// <summary>Toggles bold on the selected text (Ctrl+B). A printer font cannot be bold; the status bar says so.</summary>
+    [RelayCommand(CanExecute = nameof(CanFormatText))]
+    private void ToggleBold() => Format.ToggleBold();
+
+    /// <summary>Toggles italic on the selected text (Ctrl+I).</summary>
+    [RelayCommand(CanExecute = nameof(CanFormatText))]
+    private void ToggleItalic() => Format.ToggleItalic();
+
+    /// <summary>Toggles underline on the selected text (Ctrl+U).</summary>
+    [RelayCommand(CanExecute = nameof(CanFormatText))]
+    private void ToggleUnderline() => Format.ToggleUnderline();
+
+    private bool CanFormatText() => Format.IsActive;
 
     /// <summary>Cache of the rendered preview.</summary>
     public PreviewCache Preview { get; }
@@ -352,6 +380,8 @@ public sealed partial class MainViewModel : ObservableObject
         Data.OnDocumentChanged();
         Fields.Refresh();
         Preview.Data = Data.CurrentData;
+        // The formatting block measures the text of the record shown, and Preview.Data was only just brought up to date.
+        Format.Refresh();
         RefreshZplView();
 
         RefreshLayers(force: true);
@@ -389,6 +419,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         Preview.Data = Data.CurrentData;
         Session.Touch();
+        Format.Refresh();
         RefreshZplView();
         RefreshCommandStates();
     }
@@ -561,8 +592,9 @@ public sealed partial class MainViewModel : ObservableObject
     {
         try
         {
-            _zplResult = ZplGenerator.Generate(Session.Document);
-            var view = Preview.Data is null ? _zplResult : ZplGenerator.Generate(Session.Document, Preview.Data);
+            // The rasterizer draws the text of Windows fonts; without it such a text would be an error and Save ZPL would stay blocked.
+            _zplResult = ZplGenerator.Generate(Session.Document, null, Variables.TextRasterizer);
+            var view = Preview.Data is null ? _zplResult : ZplGenerator.Generate(Session.Document, Preview.Data, Variables.TextRasterizer);
             ZplText = view.Zpl;
             Properties.SetIssues(view.Issues);
             ErrorCount = view.Issues.Count(i => i.Severity == ValidationSeverity.Error);
@@ -926,19 +958,19 @@ public sealed partial class MainViewModel : ObservableObject
 
     /// <summary>Shows the first record on the canvas.</summary>
     [RelayCommand(CanExecute = nameof(HasDataRecords))]
-    private void FirstRecord() => Data.CurrentIndex = 0;
+    private void FirstRecord() => Data.MoveFirst();
 
-    /// <summary>Shows the previous record.</summary>
+    /// <summary>Shows the previous record (the previous ticked one when only some records are ticked).</summary>
     [RelayCommand(CanExecute = nameof(HasDataRecords))]
-    private void PreviousRecord() => Data.CurrentIndex = Math.Max(0, Data.CurrentIndex - 1);
+    private void PreviousRecord() => Data.MovePrevious();
 
-    /// <summary>Shows the next record.</summary>
+    /// <summary>Shows the next record (the next ticked one when only some records are ticked).</summary>
     [RelayCommand(CanExecute = nameof(HasDataRecords))]
-    private void NextRecord() => Data.CurrentIndex = Math.Min(Data.RecordCount - 1, Data.CurrentIndex + 1);
+    private void NextRecord() => Data.MoveNext();
 
     /// <summary>Shows the last record.</summary>
     [RelayCommand(CanExecute = nameof(HasDataRecords))]
-    private void LastRecord() => Data.CurrentIndex = Data.RecordCount - 1;
+    private void LastRecord() => Data.MoveLast();
 
     private bool HasDataRecords() => Data.RecordCount > 0;
 

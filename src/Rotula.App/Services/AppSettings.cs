@@ -29,6 +29,9 @@ public sealed class AppSettings
     /// <summary>The Objects list under the Properties panel is open. Closed by default: the fields show their values, so the list is rarely needed.</summary>
     public bool ObjectsPanelExpanded { get; set; }
 
+    /// <summary>The user has dismissed the one-time notice that a text in a Windows font is printed as a picture.</summary>
+    public bool RasterNoticeDismissed { get; set; }
+
     /// <summary>Grid spacing in millimetres.</summary>
     public double GridSpacingMm { get; set; } = 2.0;
 

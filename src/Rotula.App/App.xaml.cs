@@ -22,6 +22,9 @@ public partial class App : Application
         ToolTipService.InitialShowDelayProperty.OverrideMetadata(typeof(DependencyObject), new FrameworkPropertyMetadata(450));
         ToolTipService.ShowDurationProperty.OverrideMetadata(typeof(DependencyObject), new FrameworkPropertyMetadata(12000));
         DispatcherUnhandledException += OnDispatcherUnhandledException;
+        // Measuring and drawing failures are survivable (the editor keeps the last size / shows "preview unavailable"); log the first one only.
+        Editing.ElementBoundsCalculator.ProbeFailed += LogCrash;
+        Editing.PreviewCache.RenderFailed += LogCrash;
         AppDomain.CurrentDomain.UnhandledException += (_, args) => LogCrash(args.ExceptionObject as Exception);
 
         try
@@ -36,7 +39,8 @@ public partial class App : Application
                 new WpfFileDialogService(), new WpfMessageService(), new WpfClipboardService(), new WpfImageLoader(),
                 new WpfNewLabelDialogService(), CreateZplImporter(), new Rotula.Printing.PrintService(), new JsonSettingsStore(), dialogs, new DatabaseServices(),
                 // Serial numbers that remember their value live in %AppData%\Rotula\counters.json (see docs/variables.md).
-                new VariableServices(Rotula.Files.FileCounterStore.OpenDefault(), dialogs));
+                // Windows-font text is drawn to a picture by the SkiaSharp rasterizer, so Print, Save ZPL, Check All and Export can all print it.
+                new VariableServices(Rotula.Files.FileCounterStore.OpenDefault(), dialogs, textRasterizer: new Rotula.Rendering.SkiaTextRasterizer()));
             var vm = new MainViewModel(services);
             var window = new MainWindow(vm);
             MainWindow = window;

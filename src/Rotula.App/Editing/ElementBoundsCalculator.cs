@@ -1,5 +1,6 @@
 using Rotula.Core.Elements;
 using Rotula.Core.Imaging;
+using Rotula.Core.Text;
 using Rotula.Core.Model;
 using Rotula.Rendering;
 using Rotula.Rendering.Input;
@@ -57,6 +58,44 @@ public sealed class ElementBoundsCalculator
     /// <summary>Empty space around the probe drawing so ^FT elements (which extend left and up) are not clipped.</summary>
     private const int ProbePad = 400;
     private const int FallbackSize = 24;
+
+    // The probe canvas is never larger than this in either direction nor in total: 4400 x 3500 dots (600 dpi, 4 x 3 in label) used to be
+    // allocated on every mouse move of a resize, about 60 MB of native memory each time, and the allocation eventually failed.
+    private const int MaxProbeSide = 6000;
+    private const long MaxProbePixels = 12_000_000;
+
+    private readonly Dictionary<string, (int W, int H, int OffX, int OffY)> _lastGood = new();
+    private static int _failureReported;
+
+    /// <summary>
+    /// Raised once per process, the first time measuring an element by drawing it fails (for example when the bitmap cannot be allocated).
+    /// Later failures are silent so a drag does not write a log line per frame; the element then keeps its last known size.
+    /// </summary>
+    public static event Action<Exception>? ProbeFailed;
+
+    /// <summary>How many probes failed in this calculator (exposed for tests).</summary>
+    public int ProbeFailureCount { get; private set; }
+
+    /// <summary>The size of the probe canvas for an element: what it needs, not a multiple of the label.</summary>
+    public static (int Width, int Height) ProbeSize(LabelElement e, LabelDocument doc)
+    {
+        int w = Math.Max(1000, doc.WidthDots * 3 / 2) + 2 * ProbePad;
+        int h = Math.Max(1000, doc.HeightDots * 3 / 2) + 2 * ProbePad;
+        if (e is TextElement { Block: { } block } t)
+        {
+            // A wrapped text is as wide as its block and as tall as its lines; a rotated one swaps the two.
+            double lineDots = t.Font is { IsWindows: true } f ? FontChoice.PointsToDots(f.PointSize, (int)doc.Dpi) * 1.5 : (t.FontHeight ?? doc.DefaultFont?.Height ?? 30) * 1.5;
+            double along = Math.Clamp(block.WidthDots, 1, 9999);
+            double across = Math.Clamp(block.MaxLines, 1, 9999) * (lineDots + Math.Abs(block.LineSpacing));
+            bool swap = EffectiveRotation(t, doc) is FieldRotation.Rotated90 or FieldRotation.Rotated270;
+            w = (int)Math.Min(MaxProbeSide, (swap ? across : along) + 2 * ProbePad);
+            h = (int)Math.Min(MaxProbeSide, (swap ? along : across) + 2 * ProbePad);
+        }
+        w = Math.Clamp(w, 2 * ProbePad + 1, MaxProbeSide);
+        h = Math.Clamp(h, 2 * ProbePad + 1, MaxProbeSide);
+        while ((long)w * h > MaxProbePixels && h > 2 * ProbePad + 1) h = Math.Max(2 * ProbePad + 1, h * 3 / 4);
+        return (w, h);
+    }
 
     private readonly Func<LabelDocument> _document;
     private readonly Dictionary<string, (int W, int H, int OffX, int OffY)> _cache = new();
@@ -124,6 +163,24 @@ public sealed class ElementBoundsCalculator
         }
     }
 
+    /// <summary>
+    /// The frame the canvas draws selection handles on. For almost every element it is <see cref="GetBounds"/>; for a text that wraps in a
+    /// block it is the block's own box (its full width, the height of the lines), so the right-hand handle sits where the wrap width ends and
+    /// dragging it changes that width. Only an upright text anchored at its top-left corner has such a box; others use their ink.
+    /// </summary>
+    public RectD GetFrame(LabelElement e)
+    {
+        var bounds = GetBounds(e);
+        if (!HasTextBoxFrame(e)) return bounds;
+        var block = ((TextElement)e).Block!;
+        // The ink may start right of the origin (centred or right-aligned lines), but the box always starts at the origin.
+        return new RectD(e.X, bounds.Y, Math.Max(1, block.WidthDots), bounds.Height);
+    }
+
+    /// <summary>True when <see cref="GetFrame"/> is a text block's box rather than the element's ink (the frame can then be resized by width).</summary>
+    public bool HasTextBoxFrame(LabelElement e) =>
+        e is TextElement { Block: not null } text && text.OriginKind == FieldOriginKind.Origin && EffectiveRotation(text, _document()) == FieldRotation.Normal;
+
     /// <summary>Bounds of every element, same order as the document.</summary>
     public RectD GetSelectionBounds(IEnumerable<LabelElement> elements) => RectD.UnionAll(elements.Select(GetBounds));
 
@@ -160,9 +217,15 @@ public sealed class ElementBoundsCalculator
         string key = DataKey(data) + "" + MeasureKey(e, doc);
         if (!_cache.TryGetValue(key, out var m))
         {
-            m = Probe(e, doc, data);
-            if (_cache.Count > 2000) _cache.Clear();
-            _cache[key] = m;
+            bool failed = false;
+            m = Probe(e, doc, data, ref failed);
+            if (failed && _lastGood.TryGetValue(e.Id, out var known)) return new RectD(e.X + known.OffX, e.Y + known.OffY, known.W, known.H);
+            if (!failed)
+            {
+                if (_cache.Count > 2000) _cache.Clear();
+                _cache[key] = m;
+                _lastGood[e.Id] = m;
+            }
         }
         return new RectD(e.X + m.OffX, e.Y + m.OffY, m.W, m.H);
     }
@@ -176,13 +239,14 @@ public sealed class ElementBoundsCalculator
         return $"{(int)doc.Dpi}|{doc.DefaultRotation}|{f?.FontId}{f?.Height}x{f?.Width}|{vars}|{content}";
     }
 
-    private (int W, int H, int OffX, int OffY) Probe(LabelElement e, LabelDocument doc, IReadOnlyDictionary<string, string>? data)
+    private (int W, int H, int OffX, int OffY) Probe(LabelElement e, LabelDocument doc, IReadOnlyDictionary<string, string>? data, ref bool failed)
     {
         ProbeCount++;
+        var (probeW, probeH) = ProbeSize(e, doc);
         var temp = new LabelDocument
         {
-            Width = Measure.Dots(Math.Max(1000, doc.WidthDots * 3 / 2) + 2 * ProbePad),
-            Height = Measure.Dots(Math.Max(1000, doc.HeightDots * 3 / 2) + 2 * ProbePad),
+            Width = Measure.Dots(probeW),
+            Height = Measure.Dots(probeH),
             Dpi = doc.Dpi,
             DefaultFont = doc.DefaultFont,
             DefaultRotation = doc.DefaultRotation,
@@ -203,9 +267,13 @@ public sealed class ElementBoundsCalculator
             if (x1 < x0) return (FallbackSize, FallbackSize, 0, e.OriginKind == FieldOriginKind.Typeset ? -FallbackSize : 0);
             return (x1 - x0 + 1, y1 - y0 + 1, x0 - ProbePad, y0 - ProbePad);
         }
-        catch (ArgumentException)
+        catch (Exception ex)
         {
-            // Too large to draw: fall back to a small placeholder so the element can still be selected and moved.
+            // Too large to draw, or the bitmap could not be allocated: never let a measurement take the editor down. The caller keeps the
+            // last known size when there is one; otherwise a small placeholder lets the element still be selected and moved.
+            failed = true;
+            ProbeFailureCount++;
+            if (Interlocked.Exchange(ref _failureReported, 1) == 0) ProbeFailed?.Invoke(ex);
             return (FallbackSize, FallbackSize, 0, 0);
         }
     }

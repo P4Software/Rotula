@@ -13,7 +13,10 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - **Text formatting core** (see `docs/text-formatting.md`): a text can use a Windows font, which is drawn to a picture at the printer's resolution
   when the label is printed (data values are in the text before it is drawn); printer fonts keep real text, `^A@` stored fonts are supported, and a
   text that does not fit its box raises a warning. `.rotula` files that use a Windows font or a stored font are saved as format version 8.
+- **Record picker in Data merge**: a list of the loaded records (file or database) with a tick box on each, a filter, column sorting, and Select all / Select none / Invert. Only ticked records are previewed, printed, checked or exported, and serial numbers are reserved only for them.
+- **Text formatting controls**: font choice (printer fonts and Windows fonts), size in points, bold, italic, underline, alignment, a formatting bar above the selected text, Ctrl+B/I/U, an overflow warning with one-click fixes, and drag handles that change the wrap width.
 - **Word wrap** now sizes its block from the label (width to the right edge, as many lines as fit below) instead of a fixed 400 x 1 block.
+- Resizing an element no longer builds a very large scratch bitmap on every mouse move, and a failed preview shows "preview unavailable" instead of an error dialog.
 - The **Objects** list can be collapsed (closed by default; the choice is remembered) so the Properties panel gets its height.
 
 ## [0.2.0] - 2026-10-11

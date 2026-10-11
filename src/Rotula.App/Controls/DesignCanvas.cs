@@ -245,9 +245,9 @@ public sealed class DesignCanvas : FrameworkElement
         if (selected.Count == 0) return;
         var pen = new Pen(AccentBrush, 1);
         foreach (var e in selected)
-            dc.DrawRectangle(null, pen, ToPixelRect(_vm.Session.Bounds.GetBounds(e)));
+            dc.DrawRectangle(null, pen, ToPixelRect(_vm.Session.Bounds.GetFrame(e)));
 
-        var union = _vm.Session.Bounds.GetSelectionBounds(selected);
+        var union = RectD.UnionAll(selected.Select(_vm.Session.Bounds.GetFrame));
         if (selected.Count > 1) dc.DrawRectangle(null, new Pen(AccentBrush, 1), ToPixelRect(union));
 
         if (selected.Count != 1) return;
@@ -294,7 +294,7 @@ public sealed class DesignCanvas : FrameworkElement
         var selected = session.SelectedElements;
         if (selected.Count == 1)
         {
-            var b = session.Bounds.GetBounds(selected[0]);
+            var b = session.Bounds.GetFrame(selected[0]);
             if (HitTesting.HitRotateHandle(b, x, y, Snapping.ThresholdDots(HitTesting.RotateHandleOffsetPixels, Ppd), handleTol))
             {
                 _mode = Mode.Rotate;
@@ -357,7 +357,10 @@ public sealed class DesignCanvas : FrameworkElement
             return;
         }
         if (!_dragStarted && (Math.Abs(pixel.X - _downPixel.X) > DragStartPixels || Math.Abs(pixel.Y - _downPixel.Y) > DragStartPixels))
+        {
             _dragStarted = true;
+            RaiseInteraction();
+        }
         if (!_dragStarted) return;
 
         switch (_mode)
@@ -408,6 +411,11 @@ public sealed class DesignCanvas : FrameworkElement
             double step = _vm.Grid.SpacingDots(Dpi);
             pointer = (Snapping.SnapToGrid(x + HomeX, step) - HomeX, Snapping.SnapToGrid(y + HomeY, step) - HomeY);
         }
+        if (original is TextElement && session.Bounds.HasTextBoxFrame(original))
+        {
+            DoResizeTextBox(pointer.Item1);
+            return;
+        }
         var target = HitTesting.ResizeRect(_startBounds, _handle, pointer.Item1, pointer.Item2, 4);
         // Start every update from the untouched original, so scaling is never compounded by rounding.
         int index = session.Document.Elements.FindIndex(el => el.Id == original.Id);
@@ -416,6 +424,57 @@ public sealed class DesignCanvas : FrameworkElement
         session.Document.Elements[index] = fresh;
         _vm.Commands.ApplyResize(fresh, _startBounds, _handle, target.Width, target.Height);
         session.Touch();
+    }
+
+    /// <summary>
+    /// Dragging a side handle of a wrapped text changes the width of its box and nothing else (the height is the lines, the font stays).
+    /// The width comes straight from the pointer, not from scaling the ink: the ink of a short or centred line is narrower than the box.
+    /// </summary>
+    private void DoResizeTextBox(double pointerX)
+    {
+        var session = _vm!.Session;
+        var original = (TextElement)_resizeOriginal!;
+        bool left = _handle is ResizeHandle.TopLeft or ResizeHandle.Left or ResizeHandle.BottomLeft;
+        bool right = _handle is ResizeHandle.TopRight or ResizeHandle.Right or ResizeHandle.BottomRight;
+        if (!left && !right) return; // top and bottom handles have nothing to change: the box is as tall as its lines
+        int index = session.Document.Elements.FindIndex(el => el.Id == original.Id);
+        if (index < 0) return;
+        var fresh = (TextElement)ElementCloner.Clone(original);
+        session.Document.Elements[index] = fresh;
+        double boxRight = original.X + original.Block!.WidthDots;
+        if (right) fresh.Block!.WidthDots = Math.Clamp((int)Math.Round(pointerX - original.X), 1, 9999);
+        else
+        {
+            // The right edge stays where it is; the origin follows the pointer.
+            int width = Math.Clamp((int)Math.Round(boxRight - pointerX), 1, 9999);
+            fresh.Block!.WidthDots = width;
+            fresh.X = (int)Math.Round(boxRight - width);
+        }
+        int dots = fresh.Block.WidthDots;
+        _vm.StatusMessage = Localization.Loc.Get("Status.Format.WrapWidth", dots, (dots * 25.4 / Dpi).ToString("0.#", CultureInfo.CurrentCulture));
+        _widthStatusShown = true;
+        session.Touch();
+    }
+
+    private bool _widthStatusShown;
+
+    /// <summary>True while the user is dragging or resizing (the formatting bar hides itself so it does not cover what is being moved).</summary>
+    public bool IsInteracting => _mode != Mode.None && _dragStarted;
+
+    /// <summary>Raised when <see cref="IsInteracting"/> may have changed.</summary>
+    public event EventHandler? InteractionChanged;
+
+    private void RaiseInteraction() => InteractionChanged?.Invoke(this, EventArgs.Empty);
+
+    /// <summary>
+    /// Where the selected element's frame is on the canvas, in the canvas' own pixels, or null when exactly one element is not selected.
+    /// The formatting bar uses it to float above the selected text.
+    /// </summary>
+    public Rect? SelectionPixelRect()
+    {
+        if (_vm is null) return null;
+        var sel = _vm.Session.SelectedElements;
+        return sel.Count == 1 ? ToPixelRect(_vm.Session.Bounds.GetFrame(sel[0])) : null;
     }
 
     /// <inheritdoc />
@@ -462,7 +521,16 @@ public sealed class DesignCanvas : FrameworkElement
         _gesture = null;
         _resizeOriginal = null;
         _dragStarted = false;
+        ClearWidthStatus();
+        RaiseInteraction();
         InvalidateVisual();
+    }
+
+    private void ClearWidthStatus()
+    {
+        if (!_widthStatusShown || _vm is null) return;
+        _widthStatusShown = false;
+        _vm.StatusMessage = string.Empty;
     }
 
     /// <inheritdoc />
@@ -476,6 +544,9 @@ public sealed class DesignCanvas : FrameworkElement
             _gesture = null;
         }
         _mode = Mode.None;
+        _dragStarted = false;
+        ClearWidthStatus();
+        RaiseInteraction();
         _vGuides.Clear();
         _hGuides.Clear();
         InvalidateVisual();
@@ -496,7 +567,7 @@ public sealed class DesignCanvas : FrameworkElement
             var sel = _vm.Session.SelectedElements;
             if (sel.Count == 1)
             {
-                var b = _vm.Session.Bounds.GetBounds(sel[0]);
+                var b = _vm.Session.Bounds.GetFrame(sel[0]);
                 double handleTol = Snapping.ThresholdDots(HandleSize, Ppd);
                 if (HitTesting.HitRotateHandle(b, x, y, Snapping.ThresholdDots(HitTesting.RotateHandleOffsetPixels, Ppd), handleTol)) cursor = Cursors.Hand;
                 else if (HitTesting.HitHandle(b, x, y, handleTol) is { } h)

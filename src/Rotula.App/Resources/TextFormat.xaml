@@ -1,0 +1,90 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!--
+    Styles and icons of the text formatting controls (the block in the Properties panel and the toolbar over the canvas). They live in their own
+    dictionary so the shared theme stays untouched. Brushes are DynamicResource because this file is loaded on its own, before the theme
+    dictionary that defines them is necessarily in scope.
+  -->
+
+  <!-- Paragraph alignment icons on the 24 x 24 grid of the icon set: lines of different length. -->
+  <Geometry x:Key="FmtIconAlignLeft">M4,6 H20 M4,10.5 H14 M4,15 H20 M4,19.5 H14</Geometry>
+  <Geometry x:Key="FmtIconAlignCenter">M4,6 H20 M7,10.5 H17 M4,15 H20 M7,19.5 H17</Geometry>
+  <Geometry x:Key="FmtIconAlignRight">M4,6 H20 M10,10.5 H20 M4,15 H20 M10,19.5 H20</Geometry>
+  <Geometry x:Key="FmtIconAlignJustify">M4,6 H20 M4,10.5 H20 M4,15 H20 M4,19.5 H20</Geometry>
+
+  <!-- Bold / Italic / Underline: a quiet square that fills with the accent tint while it is on. -->
+  <Style x:Key="FormatToggle" TargetType="ToggleButton">
+    <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Width" Value="36" />
+    <Setter Property="Height" Value="40" />
+    <Setter Property="Margin" Value="0,0,4,0" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="FocusVisualStyle" Value="{DynamicResource FocusRing}" />
+    <Setter Property="ToolTipService.ShowOnDisabled" Value="True" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="ToggleButton">
+          <Border x:Name="Chrome" Background="{TemplateBinding Background}" BorderBrush="{DynamicResource BorderStrongBrush}" BorderThickness="1" CornerRadius="6">
+            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" TextElement.Foreground="{TemplateBinding Foreground}" />
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Chrome" Property="Background" Value="{DynamicResource HoverBrush}" /></Trigger>
+            <Trigger Property="IsChecked" Value="True">
+              <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource AccentTintBrush}" />
+              <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+              <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+              <Setter TargetName="Chrome" Property="Opacity" Value="0.4" />
+              <Setter Property="Cursor" Value="Arrow" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <!-- One segment of the alignment control: flat on the grey track, white and accent-coloured while it is on. -->
+  <Style x:Key="FormatSegment" TargetType="ToggleButton">
+    <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+    <Setter Property="Height" Value="32" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="FocusVisualStyle" Value="{DynamicResource FocusRing}" />
+    <Setter Property="ToolTipService.ShowOnDisabled" Value="True" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="ToggleButton">
+          <Border x:Name="Chrome" Background="Transparent" CornerRadius="5" Margin="1">
+            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" TextElement.Foreground="{TemplateBinding Foreground}" />
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Chrome" Property="Background" Value="{DynamicResource PressedBrush}" /></Trigger>
+            <Trigger Property="IsChecked" Value="True">
+              <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource SurfaceBrush}" />
+              <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+              <Setter TargetName="Chrome" Property="Opacity" Value="0.4" />
+              <Setter Property="Cursor" Value="Arrow" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <!-- A font in the list: its name drawn in its own typeface, so the list is a specimen sheet. -->
+  <DataTemplate x:Key="FormatFontItem">
+    <TextBlock Text="{Binding Display}" FontFamily="{Binding PreviewFamily}" FontSize="15" TextTrimming="CharacterEllipsis" />
+  </DataTemplate>
+
+  <!-- The heading of a group in the font list ("Printer fonts", "Windows fonts"). -->
+  <GroupStyle x:Key="FormatFontGroup">
+    <GroupStyle.HeaderTemplate>
+      <DataTemplate>
+        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="11.5" Foreground="{DynamicResource AccentBrush}" Margin="8,8,0,3" />
+      </DataTemplate>
+    </GroupStyle.HeaderTemplate>
+  </GroupStyle>
+</ResourceDictionary>

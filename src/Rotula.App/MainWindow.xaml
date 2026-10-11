@@ -96,6 +96,10 @@
     <KeyBinding Key="A" Modifiers="Ctrl" Command="{Binding SelectAllCommand}" />
     <KeyBinding Key="R" Modifiers="Ctrl" Command="{Binding RotateClockwiseCommand}" />
     <KeyBinding Key="R" Modifiers="Ctrl+Shift" Command="{Binding RotateCounterClockwiseCommand}" />
+    <!-- Text formatting, as in a word processor; they act on the selected text. -->
+    <KeyBinding Key="B" Modifiers="Ctrl" Command="{Binding ToggleBoldCommand}" />
+    <KeyBinding Key="I" Modifiers="Ctrl" Command="{Binding ToggleItalicCommand}" />
+    <KeyBinding Key="U" Modifiers="Ctrl" Command="{Binding ToggleUnderlineCommand}" />
     <KeyBinding Key="F3" Command="{Binding SelectNextCommand}" />
     <KeyBinding Key="F3" Modifiers="Shift" Command="{Binding SelectPreviousCommand}" />
     <KeyBinding Key="OemPlus" Modifiers="Ctrl" Command="{Binding ZoomInCommand}" />

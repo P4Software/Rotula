@@ -17,6 +17,12 @@ public sealed class PreviewCache : IDisposable
     private RenderResult? _bitmap;
     private long _bitmapRevision = -1;
     private double _bitmapScale;
+    private long _failedRevision = -1;
+    private double _failedScale;
+    private static int _failureReported;
+
+    /// <summary>Raised once per process when the preview cannot be drawn for a reason other than size (for example the bitmap cannot be allocated).</summary>
+    public static event Action<Exception>? RenderFailed;
 
     /// <summary>Creates a cache for a session.</summary>
     public PreviewCache(EditorSession session) => _session = session;
@@ -53,6 +59,8 @@ public sealed class PreviewCache : IDisposable
     public RenderResult? GetBitmap(double scale, out string? errorKey)
     {
         errorKey = null;
+        // A render that failed for this very state is not tried again on every repaint of the pointer.
+        if (_failedRevision == _session.Revision && Math.Abs(_failedScale - scale) < 1e-9) { errorKey = "Preview.Unavailable"; return null; }
         if (_bitmap is not null && _bitmapRevision == _session.Revision && Math.Abs(_bitmapScale - scale) < 1e-9)
             return _bitmap;
 
@@ -75,6 +83,15 @@ public sealed class PreviewCache : IDisposable
         catch (ArgumentOutOfRangeException)
         {
             errorKey = "Preview.TooLarge";
+            return null;
+        }
+        catch (Exception ex)
+        {
+            // "Unable to allocate pixels", a font that cannot be loaded...: show "preview unavailable" instead of the unexpected-error dialog.
+            _failedRevision = _session.Revision;
+            _failedScale = scale;
+            errorKey = "Preview.Unavailable";
+            if (System.Threading.Interlocked.Exchange(ref _failureReported, 1) == 0) RenderFailed?.Invoke(ex);
             return null;
         }
     }

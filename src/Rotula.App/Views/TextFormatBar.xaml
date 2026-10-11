@@ -1,0 +1,84 @@
+<UserControl x:Class="Rotula.App.Views.TextFormatBar"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:Rotula.App.Localization"
+             xmlns:vm="clr-namespace:Rotula.App.ViewModels"
+             xmlns:ctl="clr-namespace:Rotula.App.Controls"
+             AutomationProperties.Name="{loc:T Panel.Format.Toolbar}">
+  <!--
+    The small formatting bar that floats over the selected text on the canvas: font, size, bold / italic / underline and alignment.
+    It shares its view-model with the Properties panel. The toggle buttons do not take the keyboard focus, so arrow-key nudging and Delete keep working on the canvas.
+  -->
+  <UserControl.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="/Rotula.App;component/Resources/TextFormat.xaml" />
+      </ResourceDictionary.MergedDictionaries>
+      <Style x:Key="BarToggle" TargetType="ToggleButton" BasedOn="{StaticResource FormatToggle}">
+        <Setter Property="Width" Value="30" />
+        <Setter Property="Height" Value="30" />
+        <Setter Property="Margin" Value="0,0,2,0" />
+        <Setter Property="Focusable" Value="False" />
+      </Style>
+      <Style x:Key="BarSegment" TargetType="ToggleButton" BasedOn="{StaticResource FormatSegment}">
+        <Setter Property="Width" Value="30" />
+        <Setter Property="Height" Value="30" />
+        <Setter Property="Focusable" Value="False" />
+      </Style>
+      <Style x:Key="BarCombo" TargetType="ComboBox" BasedOn="{StaticResource {x:Type ComboBox}}">
+        <Setter Property="MinHeight" Value="30" />
+        <Setter Property="Height" Value="30" />
+        <Setter Property="FontSize" Value="12.5" />
+        <Setter Property="Padding" Value="9,0,26,0" />
+      </Style>
+    </ResourceDictionary>
+  </UserControl.Resources>
+
+  <Border Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderStrongBrush}" BorderThickness="1" CornerRadius="8" Padding="6,5">
+    <Border.Effect><DropShadowEffect BlurRadius="12" ShadowDepth="2" Opacity="0.2" Color="#000000" /></Border.Effect>
+    <StackPanel Orientation="Horizontal">
+      <ComboBox x:Name="BarFontBox" Style="{StaticResource BarCombo}" Width="224" IsEditable="True" ctl:FontSearch.Enabled="True" Margin="0,0,6,0"
+                ItemsSource="{Binding FontsView}" SelectedItem="{Binding SelectedFont, Mode=TwoWay}" ItemTemplate="{StaticResource FormatFontItem}"
+                TextSearch.TextPath="Display" MaxDropDownHeight="360" VirtualizingPanel.IsVirtualizingWhenGrouping="True" ToolTip="{loc:T Prop.Format.Font.Tip}"
+                AutomationProperties.Name="{loc:T Prop.Format.Font}" AutomationProperties.HelpText="{loc:T Prop.Format.Font.Tip}">
+        <ComboBox.GroupStyle><StaticResource ResourceKey="FormatFontGroup" /></ComboBox.GroupStyle>
+        <ComboBox.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel /></ItemsPanelTemplate></ComboBox.ItemsPanel>
+      </ComboBox>
+      <ComboBox x:Name="BarSizeBox" Style="{StaticResource BarCombo}" Width="72" IsEditable="True" Margin="0,0,8,0"
+                ItemsSource="{x:Static vm:TextFormatViewModel.SizePresets}" Text="{Binding SizeText, UpdateSourceTrigger=PropertyChanged}"
+                ToolTip="{loc:T Prop.Format.Size.Tip}" AutomationProperties.Name="{loc:T Prop.Format.Size}" AutomationProperties.HelpText="{loc:T Prop.Format.Size.Tip}" />
+      <ToggleButton Style="{StaticResource BarToggle}" IsChecked="{Binding IsBold, Mode=TwoWay}" IsEnabled="{Binding StylesEnabled}" ToolTip="{Binding BoldTip}"
+                    AutomationProperties.Name="{loc:T Panel.Format.Bold}" AutomationProperties.HelpText="{Binding BoldTip}" AutomationProperties.AcceleratorKey="Ctrl+B">
+        <TextBlock Text="B" FontWeight="Bold" FontSize="15" />
+      </ToggleButton>
+      <ToggleButton Style="{StaticResource BarToggle}" IsChecked="{Binding IsItalic, Mode=TwoWay}" IsEnabled="{Binding StylesEnabled}" ToolTip="{Binding ItalicTip}"
+                    AutomationProperties.Name="{loc:T Panel.Format.Italic}" AutomationProperties.HelpText="{Binding ItalicTip}" AutomationProperties.AcceleratorKey="Ctrl+I">
+        <TextBlock Text="I" FontStyle="Italic" FontFamily="Georgia" FontSize="15" />
+      </ToggleButton>
+      <ToggleButton Style="{StaticResource BarToggle}" IsChecked="{Binding IsUnderline, Mode=TwoWay}" IsEnabled="{Binding StylesEnabled}" ToolTip="{Binding UnderlineTip}"
+                    Margin="0,0,8,0" AutomationProperties.Name="{loc:T Panel.Format.Underline}" AutomationProperties.HelpText="{Binding UnderlineTip}" AutomationProperties.AcceleratorKey="Ctrl+U">
+        <TextBlock Text="U" FontSize="15" TextDecorations="Underline" />
+      </ToggleButton>
+      <Border Background="{StaticResource HoverBrush}" CornerRadius="7" Padding="2" AutomationProperties.Name="{loc:T Prop.Block.Alignment}">
+        <StackPanel Orientation="Horizontal">
+          <ToggleButton Style="{StaticResource BarSegment}" IsChecked="{Binding AlignLeft, Mode=TwoWay}" IsEnabled="{Binding IsWrap}" ToolTip="{Binding LeftTip}"
+                        AutomationProperties.Name="{loc:T Panel.Format.Align.Left}" AutomationProperties.HelpText="{Binding LeftTip}">
+            <Path Style="{StaticResource Icon}" Data="{StaticResource FmtIconAlignLeft}" Width="15" Height="15" />
+          </ToggleButton>
+          <ToggleButton Style="{StaticResource BarSegment}" IsChecked="{Binding AlignCenter, Mode=TwoWay}" IsEnabled="{Binding IsWrap}" ToolTip="{Binding CenterTip}"
+                        AutomationProperties.Name="{loc:T Panel.Format.Align.Center}" AutomationProperties.HelpText="{Binding CenterTip}">
+            <Path Style="{StaticResource Icon}" Data="{StaticResource FmtIconAlignCenter}" Width="15" Height="15" />
+          </ToggleButton>
+          <ToggleButton Style="{StaticResource BarSegment}" IsChecked="{Binding AlignRight, Mode=TwoWay}" IsEnabled="{Binding IsWrap}" ToolTip="{Binding RightTip}"
+                        AutomationProperties.Name="{loc:T Panel.Format.Align.Right}" AutomationProperties.HelpText="{Binding RightTip}">
+            <Path Style="{StaticResource Icon}" Data="{StaticResource FmtIconAlignRight}" Width="15" Height="15" />
+          </ToggleButton>
+          <ToggleButton Style="{StaticResource BarSegment}" IsChecked="{Binding AlignJustified, Mode=TwoWay}" IsEnabled="{Binding IsWrap}" ToolTip="{Binding JustifiedTip}"
+                        AutomationProperties.Name="{loc:T Panel.Format.Align.Justified}" AutomationProperties.HelpText="{Binding JustifiedTip}">
+            <Path Style="{StaticResource Icon}" Data="{StaticResource FmtIconAlignJustify}" Width="15" Height="15" />
+          </ToggleButton>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </Border>
+</UserControl>

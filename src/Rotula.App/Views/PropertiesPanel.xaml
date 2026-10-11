@@ -35,7 +35,7 @@
 
     <!-- Number fields: left-aligned monospace text, the unit is part of the label ("Width (dots)"), red border and a plain message when rejected. -->
     <DataTemplate DataType="{x:Type vm:IntRow}">
-      <StackPanel ToolTip="{Binding Hint}" Margin="0,0,0,12">
+      <StackPanel ToolTip="{Binding Hint}" Margin="0,0,0,12" Visibility="{Binding IsVisible, Converter={StaticResource BoolToVisibility}}">
         <TextBlock Text="{Binding Label}" Style="{StaticResource RowLabel}" />
         <TextBox Style="{StaticResource MonoTextBox}" Text="{Binding Text, UpdateSourceTrigger=LostFocus}" IsUndoEnabled="False"
                  ctl:FieldState.HasError="{Binding HasError}" AutomationProperties.Name="{Binding Label}" AutomationProperties.HelpText="{Binding Hint}" />
@@ -65,7 +65,7 @@
       when the field has no column in the loaded data.
     -->
     <DataTemplate DataType="{x:Type vm:TextRow}">
-      <StackPanel ToolTip="{Binding Hint}" Margin="0,0,0,12">
+      <StackPanel ToolTip="{Binding Hint}" Margin="0,0,0,12" Visibility="{Binding IsVisible, Converter={StaticResource BoolToVisibility}}">
         <Grid Margin="0,0,0,4">
           <TextBlock Text="{Binding Label}" Style="{StaticResource RowLabel}" Margin="0" VerticalAlignment="Center" HorizontalAlignment="Left" />
           <Border HorizontalAlignment="Right" Background="{StaticResource HoverBrush}" CornerRadius="7" Padding="2" Visibility="{Binding IsFieldTarget, Converter={StaticResource BoolToVisibility}}"
@@ -169,6 +169,11 @@
           <TextBlock.Visibility><Binding Path="HasError" Converter="{StaticResource BoolToVisibility}" /></TextBlock.Visibility>
         </TextBlock>
       </StackPanel>
+    </DataTemplate>
+
+    <!-- Text formatting: font, size, bold / italic / underline, alignment and the warnings that go with them (see TextFormatPanel). -->
+    <DataTemplate DataType="{x:Type vm:TextFormatRow}">
+      <views:TextFormatPanel DataContext="{Binding Format}" Margin="0,0,0,14" />
     </DataTemplate>
 
     <DataTemplate DataType="{x:Type vm:BoolRow}">

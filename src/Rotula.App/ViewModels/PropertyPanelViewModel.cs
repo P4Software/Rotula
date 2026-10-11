@@ -29,10 +29,13 @@ public sealed partial class PropertyPanelViewModel : ObservableObject
     /// <summary>Creates the panel.</summary>
     /// <param name="session">The editing session.</param>
     /// <param name="replaceImage">Called with an element id when the user presses "Choose image"; returns true when it changed the image.</param>
-    public PropertyPanelViewModel(EditorSession session, Func<string, bool>? replaceImage = null)
+    /// <param name="textRasterizer">Gives the rasterizer that lists and measures Windows fonts for the formatting controls; may be null or return null.</param>
+    public PropertyPanelViewModel(EditorSession session, Func<string, bool>? replaceImage = null, Func<Rotula.Core.Text.ITextRasterizer?>? textRasterizer = null)
     {
         _session = session;
         _replaceImage = replaceImage ?? (_ => false);
+        // Created before the panel listens to the session itself, so the formatting state is already refreshed when the rows are refreshed.
+        Format = new TextFormatViewModel(session, textRasterizer ?? (() => null));
         _session.SelectionChanged += (_, _) => Rebuild();
         _session.DocumentChanged += (_, _) => OnDocumentChanged();
         Loc.Instance.LanguageChanged += (_, _) => Rebuild(force: true);
@@ -51,6 +54,9 @@ public sealed partial class PropertyPanelViewModel : ObservableObject
         fields.FieldsChanged += (_, _) => { _fieldsVersion++; foreach (var r in Rows) r.Refresh(); };
         Rebuild(force: true);
     }
+
+    /// <summary>The text formatting state shared by the panel's formatting block and the toolbar over the canvas.</summary>
+    public TextFormatViewModel Format { get; }
 
     /// <summary>The rows currently shown.</summary>
     public ObservableCollection<PropertyRow> Rows { get; } = new();
@@ -86,7 +92,7 @@ public sealed partial class PropertyPanelViewModel : ObservableObject
         // Same selection: only refresh the values, so the box the user is typing in keeps its focus and caret.
         string key = SelectionKey();
         if (key != _builtFor) { Rebuild(); return; }
-        foreach (var r in Rows) r.Refresh();
+        foreach (var r in Rows) { r.Refresh(); r.RefreshVisibility(); }
     }
 
     private string SelectionKey()
@@ -142,6 +148,8 @@ public sealed partial class PropertyPanelViewModel : ObservableObject
         foreach (var i in _issues)
         {
             bool relevant = sel.Count == 0 ? i.ElementId is null : i.ElementId is not null && sel.Contains(i.ElementId);
+            // The formatting block shows these three itself, next to the controls that fix them; listing them again would say everything twice.
+            if (relevant && sel.Count == 1 && i.MessageKey is ("Text.Overflow" or "Text.Overflow.Estimated" or "Text.Font.Missing") && Format.IsActive) continue;
             if (relevant) IssueMessages.Add((i.Severity == ValidationSeverity.Error ? Loc.Get("Issue.ErrorPrefix") : Loc.Get("Issue.WarningPrefix")) + " " + Loc.FormatIssue(i));
         }
     }
@@ -192,6 +200,9 @@ public sealed partial class PropertyPanelViewModel : ObservableObject
     {
         string id = element.Id;
 
+        // A text starts with what it says and how it looks (content first); the rest of the panel follows.
+        if (element is TextElement textElement) BuildTextRows(textElement);
+
         Rows.Add(new HeadingRow("Panel.Position"));
         AddInt<LabelElement>(id, "Prop.X", e => e.X, (e, v) => e.X = v, 0, 32000);
         AddInt<LabelElement>(id, "Prop.Y", e => e.Y, (e, v) => e.Y = v, 0, 32000);
@@ -216,7 +227,7 @@ public sealed partial class PropertyPanelViewModel : ObservableObject
         switch (element)
         {
             case TextElement t:
-                BuildTextRows(t);
+                BuildTextAdvancedRows(t);
                 break;
             case BarcodeElement b:
                 BuildBarcodeRows(b);
@@ -330,26 +341,57 @@ public sealed partial class PropertyPanelViewModel : ObservableObject
         Rows.Add(new HeadingRow("Panel.Text"));
         // A legacy data-field element is shown as the text it is: its content is the field, written {{name}}.
         Rows.Add(ContentRow(id, "Prop.Text", multiline: true, () => El<TextElement>(id).GetTemplate()));
-        Rows.Add(new TextRow("Prop.FontId", () => El<TextElement>(id).FontId?.ToString() ?? string.Empty,
-            v => Edit<TextElement>(id, "fontid", e => e.FontId = v.Length == 0 ? null : v[0]), maxLength: 1, hintKey: "Prop.FontId.Hint",
-            validate: v => v.Length == 1 && !char.IsLetterOrDigit(v[0]) ? Loc.Get("Validation.FontId") : null));
-        AddNullableInt<TextElement>(id, "Prop.FontHeight", e => e.FontHeight, (e, v) => e.FontHeight = v, 10, 32000, "Prop.Inherit.Hint");
-        AddNullableInt<TextElement>(id, "Prop.FontWidth", e => e.FontWidth, (e, v) => e.FontWidth = v, 0, 32000, "Prop.Inherit.Hint");
 
-        Rows.Add(new BoolRow("Prop.Block", () => El<TextElement>(id).Block is not null,
-            v => _session.Edit("Undo.Property", d =>
-            {
-                var e = (TextElement)d.Elements.First(x => x.Id == id);
-                e.Block = v ? DefaultBlockFor(d, e) : null;
-            }, mergeKey: $"prop:{id}:block")) { RebuildOnChange = true });
+        // Font, size, bold / italic / underline, alignment and the overflow warning live in one block that shares its state with the canvas toolbar.
+        Rows.Add(new HeadingRow("Panel.Format"));
+        Rows.Add(new TextFormatRow(Format));
+
+        // Word wrap: switching it on sizes the box from the label (DefaultBlockFor); the box width and line count follow.
+        Rows.Add(new BoolRow("Prop.Block", () => El<TextElement>(id).Block is not null, v => Format.SetWrap(v)) { RebuildOnChange = true });
         if (element.Block is not null)
         {
             AddInt<TextElement>(id, "Prop.Block.Width", e => e.Block!.WidthDots, (e, v) => e.Block!.WidthDots = v, 1, 9999);
             AddInt<TextElement>(id, "Prop.Block.MaxLines", e => e.Block!.MaxLines, (e, v) => e.Block!.MaxLines = v, 1, 9999);
             AddInt<TextElement>(id, "Prop.Block.LineSpacing", e => e.Block!.LineSpacing, (e, v) => e.Block!.LineSpacing = v, -9999, 9999);
-            AddEnum<TextElement, TextAlignment>(id, "Prop.Block.Alignment", e => e.Block!.Alignment, (e, v) => e.Block!.Alignment = v);
             AddInt<TextElement>(id, "Prop.Block.HangingIndent", e => e.Block!.HangingIndent, (e, v) => e.Block!.HangingIndent = v, 0, 9999);
         }
+    }
+
+    /// <summary>
+    /// The size in printer dots, for people who think in dots (the ZPL way). For a printer font it is the font height and width the printer
+    /// gets; for a Windows font the height is the same size as the points box, converted with the label's resolution.
+    /// </summary>
+    private void BuildTextAdvancedRows(TextElement element)
+    {
+        string id = element.Id;
+        Rows.Add(new HeadingRow("Panel.Format.Advanced"));
+        // The font letter for people who know a printer's own ids (the list offers the common ones). Only a printer font has one.
+        Rows.Add(new TextRow("Prop.FontId", () => El<TextElement>(id).FontId?.ToString() ?? string.Empty,
+            v => Edit<TextElement>(id, "fontid", e => e.FontId = v.Length == 0 ? null : v[0]), maxLength: 1, hintKey: "Prop.FontId.Hint",
+            validate: v => v.Length == 1 && !char.IsLetterOrDigit(v[0]) ? Loc.Get("Validation.FontId") : null)
+        { VisibleWhen = () => _session.Document.Elements.FirstOrDefault(x => x.Id == id) is TextElement { Font: not { IsWindows: true } } });
+        Rows.Add(new IntRow("Prop.FontHeight", () => HeightDots(El<TextElement>(id)),
+            v => { if (v is not null) Edit<TextElement>(id, "fontheight", e => SetHeightDots(e, v.Value)); else Edit<TextElement>(id, "fontheight", e => { if (e.Font is not { IsWindows: true }) e.FontHeight = null; }); },
+            10, 32000, nullable: true, hintKey: "Prop.Inherit.Hint"));
+        // A Windows font has no separate width; the box is only shown while the font is a printer font.
+        Rows.Add(new IntRow("Prop.FontWidth", () => El<TextElement>(id).FontWidth,
+            v => Edit<TextElement>(id, "fontwidth", e => e.FontWidth = v), 0, 32000, nullable: true, hintKey: "Prop.Inherit.Hint")
+        { VisibleWhen = () => _session.Document.Elements.FirstOrDefault(x => x.Id == id) is TextElement { Font: not { IsWindows: true } } });
+    }
+
+    private int? HeightDots(TextElement e) => e.Font is { IsWindows: true } w
+        ? (int)Math.Round(FontChoice.PointsToDots(w.PointSize, (int)_session.Document.Dpi))
+        : e.FontHeight;
+
+    private void SetHeightDots(TextElement e, int dots)
+    {
+        if (e.Font is { IsWindows: true } w)
+        {
+            var f = w.Clone();
+            f.PointSize = Math.Clamp(Math.Round(FontChoice.DotsToPoints(dots, (int)_session.Document.Dpi), 2), 1, FontChoice.MaxPointSize);
+            f.ApplyTo(e);
+        }
+        else e.FontHeight = dots;
     }
 
     /// <summary>

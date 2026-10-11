@@ -45,6 +45,18 @@ public abstract partial class PropertyRow : ObservableObject
     /// <summary>Set when changing this row changes which other rows exist (for example the symbology), so the panel rebuilds.</summary>
     public bool RebuildOnChange { get; init; }
 
+    /// <summary>
+    /// Decides whether the row is shown. Unlike a rebuild of the panel it keeps the controls (and their keyboard focus) alive, so a row can
+    /// come and go while the user works in the one next to it (the printer-font width while the font changes to a Windows font).
+    /// </summary>
+    public Func<bool>? VisibleWhen { get; init; }
+
+    /// <summary>False while <see cref="VisibleWhen"/> says the row does not apply.</summary>
+    public bool IsVisible => VisibleWhen?.Invoke() ?? true;
+
+    /// <summary>Tells the view to ask <see cref="IsVisible"/> again.</summary>
+    public void RefreshVisibility() => OnPropertyChanged(nameof(IsVisible));
+
     private Func<RowDetail?>? _detailSource;
 
     /// <summary>
@@ -544,4 +556,20 @@ public sealed partial class NoteRow : PropertyRow
 
     /// <inheritdoc />
     public override void Refresh() => Text = _get() ?? string.Empty;
+}
+
+/// <summary>
+/// The text formatting block (font, size, bold / italic / underline, alignment and the overflow warning). It has no value of its own: the
+/// controls bind to the shared <see cref="TextFormatViewModel"/>, which refreshes itself on every selection and document change.
+/// </summary>
+public sealed class TextFormatRow : PropertyRow
+{
+    /// <summary>Creates the row around the shared formatting view-model.</summary>
+    public TextFormatRow(TextFormatViewModel format) : base("Panel.Format") => Format = format;
+
+    /// <summary>What the controls show and change.</summary>
+    public TextFormatViewModel Format { get; }
+
+    /// <inheritdoc />
+    public override void Refresh() { }
 }

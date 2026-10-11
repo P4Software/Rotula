@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using Rotula.App.Controls;
+using Rotula.App.Editing;
 using Rotula.App.ViewModels;
 using Rotula.Rendering.View;
 
@@ -17,6 +18,47 @@ public partial class DesignArea : UserControl
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
+        Canvas.InteractionChanged += (_, _) => ScheduleBarUpdate();
+        BarLayer.SizeChanged += (_, _) => ScheduleBarUpdate();
+        FormatBar.SizeChanged += (_, _) => ScheduleBarUpdate();
+    }
+
+    private bool _barUpdatePending;
+
+    /// <summary>Places the formatting bar after layout has settled (zoom and scrolling change the canvas' size first).</summary>
+    private void ScheduleBarUpdate()
+    {
+        if (_barUpdatePending) return;
+        _barUpdatePending = true;
+        Dispatcher.BeginInvoke(new Action(() => { _barUpdatePending = false; UpdateFormatBar(); }), System.Windows.Threading.DispatcherPriority.Loaded);
+    }
+
+    /// <summary>
+    /// Floats the formatting bar above the selected text (below it when there is no room above), keeps it inside the visible area, and hides it
+    /// while the user drags, when no single text is selected or when the text is scrolled out of view.
+    /// </summary>
+    private void UpdateFormatBar()
+    {
+        if (_vm is null) return;
+        var rect = _vm.Format.IsActive && !Canvas.IsInteracting ? Canvas.SelectionPixelRect() : null;
+        if (rect is not { } r) { FormatBar.Visibility = Visibility.Collapsed; return; }
+        var topLeft = Canvas.TranslatePoint(r.TopLeft, BarLayer);
+        double layerW = BarLayer.ActualWidth, layerH = BarLayer.ActualHeight;
+        if (layerW <= 0 || layerH <= 0 || topLeft.Y + r.Height < 0 || topLeft.Y > layerH || topLeft.X + r.Width < 0 || topLeft.X > layerW)
+        {
+            FormatBar.Visibility = Visibility.Collapsed;
+            return;
+        }
+        FormatBar.Visibility = Visibility.Visible;
+        FormatBar.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+        double w = FormatBar.DesiredSize.Width, h = FormatBar.DesiredSize.Height;
+        // Above the rotate handle, which sits a fixed distance over the top edge; below the text when the top of the area is too close.
+        double y = topLeft.Y - HitTesting.RotateHandleOffsetPixels - h - 10;
+        if (y < 4) y = topLeft.Y + r.Height + 12;
+        y = Math.Clamp(y, 4, Math.Max(4, layerH - h - 4));
+        double x = Math.Clamp(topLeft.X, 4, Math.Max(4, layerW - w - 4));
+        System.Windows.Controls.Canvas.SetLeft(FormatBar, x);
+        System.Windows.Controls.Canvas.SetTop(FormatBar, y);
     }
 
     private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
@@ -26,6 +68,9 @@ public partial class DesignArea : UserControl
             _vm.PropertyChanged -= OnVmChanged;
             _vm.ZoomToFitRequested -= OnFitRequested;
             _vm.Session.DocumentChanged -= OnDocChanged;
+            _vm.Session.SelectionChanged -= OnBarTrigger;
+            _vm.Session.LiveChanged -= OnBarTrigger;
+            _vm.Format.PropertyChanged -= OnFormatChanged;
         }
         _vm = e.NewValue as MainViewModel;
         if (_vm is not null)
@@ -33,16 +78,28 @@ public partial class DesignArea : UserControl
             _vm.PropertyChanged += OnVmChanged;
             _vm.ZoomToFitRequested += OnFitRequested;
             _vm.Session.DocumentChanged += OnDocChanged;
+            _vm.Session.SelectionChanged += OnBarTrigger;
+            _vm.Session.LiveChanged += OnBarTrigger;
+            _vm.Format.PropertyChanged += OnFormatChanged;
             UpdateRulers();
+            ScheduleBarUpdate();
         }
     }
 
     private void OnVmChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName is nameof(MainViewModel.Zoom) or nameof(MainViewModel.Unit)) UpdateRulers();
+        if (e.PropertyName is nameof(MainViewModel.Zoom)) ScheduleBarUpdate();
     }
 
-    private void OnDocChanged(object? sender, EventArgs e) => UpdateRulers();
+    private void OnDocChanged(object? sender, EventArgs e) { UpdateRulers(); ScheduleBarUpdate(); }
+
+    private void OnBarTrigger(object? sender, EventArgs e) => ScheduleBarUpdate();
+
+    private void OnFormatChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(TextFormatViewModel.IsActive) or "") ScheduleBarUpdate();
+    }
 
     private void UpdateRulers()
     {
@@ -63,6 +120,7 @@ public partial class DesignArea : UserControl
 
     private void OnScrollChanged(object sender, ScrollChangedEventArgs e)
     {
+        ScheduleBarUpdate();
         HRuler.ScrollOffset = Scroller.HorizontalOffset;
         VRuler.ScrollOffset = Scroller.VerticalOffset;
     }

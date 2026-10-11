@@ -2,7 +2,8 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:loc="clr-namespace:Rotula.App.Localization"
-             xmlns:ctl="clr-namespace:Rotula.App.Controls">
+             xmlns:ctl="clr-namespace:Rotula.App.Controls"
+             xmlns:views="clr-namespace:Rotula.App.Views">
   <Grid>
     <Grid.RowDefinitions>
       <RowDefinition Height="22" />
@@ -28,5 +29,10 @@
                         AutomationProperties.HelpText="{loc:T Canvas.Help}"
                         ZoomRequested="OnZoomRequested" />
     </ScrollViewer>
+
+    <!-- The formatting bar floats over the selected text. It is placed in code from the selection's position, and sits above the scroll area so it does not scroll with the label. -->
+    <Canvas x:Name="BarLayer" Grid.Row="1" Grid.Column="1" ClipToBounds="True">
+      <views:TextFormatBar x:Name="FormatBar" DataContext="{Binding Format}" Visibility="Collapsed" />
+    </Canvas>
   </Grid>
 </UserControl>
