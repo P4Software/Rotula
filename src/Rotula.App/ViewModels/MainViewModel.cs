@@ -881,16 +881,19 @@ public sealed partial class MainViewModel : ObservableObject
         try
         {
             IReadOnlyList<Rendering.RenderIssue> issues = Array.Empty<Rendering.RenderIssue>();
+            // The pictures show what the canvas shows: the record picked in the Data window fills the fields, as it does on screen.
+            // Without it a field barcode is drawn as a crossed red box and a field text as its raw {{name}}.
+            var record = Data.CurrentData;
             switch (kind)
             {
                 case ExportKind.Png:
-                    issues = LabelExporter.SavePng(LabelDocumentAdapter.ToRenderLabel(Session.Document), path);
+                    issues = LabelExporter.SavePng(LabelDocumentAdapter.ToRenderLabel(Session.Document, record), path);
                     break;
                 case ExportKind.Jpeg:
-                    issues = LabelExporter.SaveJpeg(LabelDocumentAdapter.ToRenderLabel(Session.Document), path);
+                    issues = LabelExporter.SaveJpeg(LabelDocumentAdapter.ToRenderLabel(Session.Document, record), path);
                     break;
                 case ExportKind.Pdf:
-                    issues = LabelExporter.SavePdf(LabelDocumentAdapter.ToRenderLabel(Session.Document), path);
+                    issues = LabelExporter.SavePdf(LabelDocumentAdapter.ToRenderLabel(Session.Document, record), path);
                     break;
                 default:
                     LabelExporter.SaveZpl(_zplResult!.GetZplOrThrow(), path);

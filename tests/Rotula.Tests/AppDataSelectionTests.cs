@@ -66,6 +66,33 @@ public class AppDataSelectionTests : IDisposable
     private static string[] Items(IEnumerable<string> jobs) =>
         jobs.SelectMany(j => Regex.Matches(j, @"Item (\d+)").Select(m => m.Value)).ToArray();
 
+    // ------------------------------------------------------------------------------------ image exports
+
+    /// <summary>True when the image has any strongly red pixel, which is how the renderer marks a barcode it cannot draw (a crossed red box).</summary>
+    private static bool HasPlaceholderRed(string path)
+    {
+        using var bitmap = SkiaSharp.SKBitmap.Decode(path);
+        for (int y = 0; y < bitmap.Height; y++)
+            for (int x = 0; x < bitmap.Width; x++)
+            {
+                var c = bitmap.GetPixel(x, y);
+                if (c.Red > 200 && c.Green < 80 && c.Blue < 80) return true;
+            }
+        return false;
+    }
+
+    [Theory]
+    [InlineData("png")]
+    [InlineData("jpg")]
+    public async Task ImageExports_UseTheRecordShownOnTheCanvas_SoABarcodeOfAFieldIsDrawnNotACrossedBox(string extension)
+    {
+        await Load(3);
+        _main.Session.Edit("Undo.Property", d => d.Elements.Add(new BarcodeElement { Data = "{{name}}", X = 20, Y = 120 }));
+        _fake.ExportPath = Path.Combine(_dir, "out." + extension);
+        if (extension == "png") _main.ExportPngCommand.Execute(null); else _main.ExportJpegCommand.Execute(null);
+        Assert.False(HasPlaceholderRed(_fake.ExportPath), "The export drew the placeholder instead of the barcode of the shown record.");
+    }
+
     // ------------------------------------------------------------------------------------ ticking
 
     [Fact]
