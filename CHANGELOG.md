@@ -5,6 +5,8 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-11
+
 ### Added
 - **Variables are used when printing**: the Print dialog and the data merge window now work out dates, computed values and serial numbers for every
   label, ask the label's print-time questions in a dialog, and confirm remembered serial numbers only for labels that really reached the printer

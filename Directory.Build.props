@@ -8,7 +8,7 @@
     <Company>P4 Software</Company>
     <Product>Rotula</Product>
     <!-- Single source of truth for the release version: build-installer.ps1 reads it, CI overrides it from the tag. -->
-    <Version>0.2.0</Version>
+    <Version>0.3.0</Version>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/P4Software/Rotula</RepositoryUrl>
   </PropertyGroup>
