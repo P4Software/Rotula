@@ -33,6 +33,61 @@ public sealed class MergeDataSet
         _counters = Options.Counters;
         Placeholders = CollectPlaceholders(doc);
         BuildMapping();
+        _selected = NormalizeSelection(Options.SelectedRecords, table.RowCount);
+    }
+
+    // Rows to merge (null = all). Copied from the options so later edits of the caller's list cannot change a running batch.
+    private readonly int[]? _selected;
+    private bool _selectedAscending = true;
+    private Dictionary<int, int>? _positions; // only built for a selection that is not in ascending order
+
+    private int[]? NormalizeSelection(IReadOnlyList<int>? requested, int rowCount)
+    {
+        if (requested is null) return null;
+        var copy = new int[requested.Count];
+        var seen = new HashSet<int>();
+        for (int i = 0; i < copy.Length; i++)
+        {
+            int row = requested[i];
+            if (row < 0 || row >= rowCount) throw new ArgumentOutOfRangeException(nameof(MergeOptions.SelectedRecords), "Selected row " + row + " does not exist.");
+            if (!seen.Add(row)) throw new ArgumentException("Selected row " + row + " is listed twice.", nameof(MergeOptions.SelectedRecords));
+            if (i > 0 && row < copy[i - 1]) _selectedAscending = false;
+            copy[i] = row;
+        }
+        return copy;
+    }
+
+    /// <summary>
+    /// How many records a batch processes: the selected rows (<see cref="MergeOptions.SelectedRecords"/>) or every row. This is the item count
+    /// to start a <c>VariableJob</c> with, because serial numbers are reserved per processed record.
+    /// </summary>
+    public int BatchCount => _selected?.Length ?? Table.RowCount;
+
+    /// <summary>The zero-based row at batch position <paramref name="position"/> (0 to <see cref="BatchCount"/> - 1).</summary>
+    public int RecordAt(int position)
+    {
+        if (position < 0 || position >= BatchCount) throw new ArgumentOutOfRangeException(nameof(position));
+        return _selected is null ? position : _selected[position];
+    }
+
+    /// <summary>
+    /// The batch position of <paramref name="recordIndex"/>, which is what its serial number follows. A row outside the selection gets the
+    /// position it would take if it were added in data order (so a preview of it shows a plausible next number).
+    /// </summary>
+    public int PositionOf(int recordIndex)
+    {
+        if (_selected is null) return recordIndex;
+        if (_selectedAscending)
+        {
+            int at = Array.BinarySearch(_selected, recordIndex);
+            return at >= 0 ? at : ~at;
+        }
+        if (_positions is null)
+        {
+            _positions = new Dictionary<int, int>(_selected.Length);
+            for (int i = 0; i < _selected.Length; i++) _positions[_selected[i]] = i;
+        }
+        return _positions.TryGetValue(recordIndex, out int p) ? p : _selected.Length;
     }
 
     /// <summary>The bound table.</summary>
@@ -95,7 +150,7 @@ public sealed class MergeDataSet
         if (recordIndex < 0 || recordIndex >= Table.RowCount) throw new ArgumentOutOfRangeException(nameof(recordIndex));
         var raw = BuildData(recordIndex, null);
         if (!VariableEngine.HasDefinitions(_doc)) return raw;
-        return new Dictionary<string, string>(VariableEngine.Resolve(_doc, CreateContext(recordIndex, raw, null)).Values, StringComparer.OrdinalIgnoreCase);
+        return new Dictionary<string, string>(VariableEngine.Resolve(_doc, CreateContext(PositionOf(recordIndex), raw, null)).Values, StringComparer.OrdinalIgnoreCase);
     }
 
     /// <summary>
@@ -131,25 +186,29 @@ public sealed class MergeDataSet
     public VariableContext CreateRecordContext(int recordIndex)
     {
         if (recordIndex < 0 || recordIndex >= Table.RowCount) throw new ArgumentOutOfRangeException(nameof(recordIndex));
-        return CreateContext(recordIndex, BuildData(recordIndex, null), null);
+        return CreateContext(PositionOf(recordIndex), BuildData(recordIndex, null), null);
     }
 
     /// <summary>
-    /// The variable context for the record at <paramref name="recordIndex"/>: its raw data, the options' prompt answers, counter store and clock.
+    /// The variable context for the label at batch position <paramref name="position"/>: its raw data, the options' prompt answers, counter store and clock.
     /// <paramref name="now"/> fixes the instant (batch start), or null to read the clock.
     /// </summary>
-    internal VariableContext CreateContext(int recordIndex, Dictionary<string, string> raw, DateTimeOffset? now) => new()
+    internal VariableContext CreateContext(int position, Dictionary<string, string> raw, DateTimeOffset? now) => new()
     {
         Time = Options.Time ?? TimeProvider.System,
         Now = now,
         Record = raw,
         PromptAnswers = Options.PromptAnswers.Count == 0 ? null : Options.PromptAnswers,
         CounterStore = Options.CounterStore,
-        ItemIndex = recordIndex,
+        ItemIndex = position,
     };
 
-    internal Dictionary<string, string> BuildData(int recordIndex, List<ValidationIssue>? problems)
+    /// <param name="recordIndex">Zero-based row to read.</param>
+    /// <param name="problems">Receives counter overflows, or null.</param>
+    /// <param name="position">Batch position that merge counters number by; null derives it from the selection.</param>
+    internal Dictionary<string, string> BuildData(int recordIndex, List<ValidationIssue>? problems, int? position = null)
     {
+        int counterPosition = position ?? PositionOf(recordIndex);
         var row = Table.Rows[recordIndex];
         var data = new Dictionary<string, string>(Table.Columns.Count + _counters.Count, StringComparer.OrdinalIgnoreCase);
         for (int c = 0; c < Table.Columns.Count; c++) data[Table.Columns[c]] = row[c];
@@ -158,7 +217,7 @@ public sealed class MergeDataSet
         foreach (var counter in _counters)
         {
             if (counter.Validate() is not null) continue;
-            if (counter.TryGetValue(recordIndex, out var v)) data[counter.VirtualColumn] = v;
+            if (counter.TryGetValue(counterPosition, out var v)) data[counter.VirtualColumn] = v;
             else problems?.Add(new ValidationIssue(ValidationSeverity.Error, "Merge.Counter.Overflow", null, counter.Name));
         }
         return data;

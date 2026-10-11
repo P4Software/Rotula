@@ -219,9 +219,8 @@
               <ItemsControl.ItemTemplate><DataTemplate><TextBlock Text="{Binding}" TextWrapping="Wrap" Foreground="{StaticResource WarningBrush}" /></DataTemplate></ItemsControl.ItemTemplate>
             </ItemsControl>
           </Border>
-          <TextBlock DockPanel.Dock="Bottom" Text="{Binding PreviewNote}" Style="{StaticResource MutedText}" FontSize="12" Margin="0,8,0,0" Visibility="{Binding PreviewTruncated, Converter={StaticResource B2V}}" />
-          <DataGrid x:Name="PreviewGrid" ItemsSource="{Binding PreviewRows}" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
-                    AutomationProperties.Name="{loc:T Data.Preview}" />
+          <!-- The records list fills what is left of the tab (a bounded height), so it scrolls inside its own frame. -->
+          <views:DataRecordsView x:Name="RecordsView" />
         </DockPanel>
       </TabItem>
 
@@ -499,8 +498,12 @@
                 <WrapPanel>
                   <Button Content="{loc:T Data.Batch.Check}" Command="{Binding CheckAllCommand}" Margin="0,0,8,8" AutomationProperties.Name="{loc:T Data.Batch.Check}" />
                   <Button Content="{loc:T Data.Batch.Export}" Command="{Binding ExportBatchCommand}" Margin="0,0,8,8" AutomationProperties.Name="{loc:T Data.Batch.Export}" />
-                  <Button Content="{loc:T Data.Batch.PrintAll}" Command="{Binding PrintAllCommand}" Style="{StaticResource PrimaryButton}" Margin="0,0,0,8" AutomationProperties.Name="{loc:T Data.Batch.PrintAll}" />
+                  <Button Content="{Binding PrintAllText}" Command="{Binding PrintAllCommand}" Style="{StaticResource PrimaryButton}" Margin="0,0,0,8" AutomationProperties.Name="{Binding PrintAllText}" />
                 </WrapPanel>
+                <TextBlock Text="{Binding SelectionSummary}" FontWeight="SemiBold" Margin="0,0,0,4" AutomationProperties.Name="{Binding SelectionSummary}" />
+                <!-- Why the buttons above are disabled, in plain words. -->
+                <TextBlock Text="{Binding BatchBlockedText}" TextWrapping="Wrap" Foreground="{StaticResource WarningBrush}" Margin="0,0,0,8"
+                           Visibility="{Binding HasBatchBlockedText, Converter={StaticResource B2V}}" AutomationProperties.LiveSetting="Polite" />
                 <CheckBox Content="{loc:T Data.Batch.OneFilePerJob}" IsChecked="{Binding OneFilePerJob}" AutomationProperties.Name="{loc:T Data.Batch.OneFilePerJob}" />
               </StackPanel>
             </Border>

@@ -1,0 +1,62 @@
+<UserControl x:Class="Rotula.App.Views.DataRecordsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:Rotula.App.Localization"
+             AutomationProperties.Name="{loc:T Data.Records.Grid}">
+  <UserControl.Resources>
+    <BooleanToVisibilityConverter x:Key="B2V" />
+  </UserControl.Resources>
+
+  <!-- The grid is the only star-sized part: the host must give this view a bounded height (a tab page does), so the grid scrolls inside its own frame
+       and only the rows on screen are built, whatever the number of records. -->
+  <DockPanel>
+    <!-- ============================== filter -->
+    <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+      <StackPanel Margin="0,0,12,0">
+        <TextBlock Text="{loc:T Data.Filter.Label}" Style="{StaticResource FieldLabel}" />
+        <TextBox x:Name="FilterBox" Width="260" MinHeight="32" Style="{StaticResource MonoTextBox}" Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged}"
+                 ToolTip="{loc:T Data.Filter.Tip}" AutomationProperties.Name="{loc:T Data.Filter.Box}" />
+      </StackPanel>
+      <StackPanel Margin="0,0,12,0">
+        <TextBlock Text="{loc:T Data.Filter.Column}" Style="{StaticResource FieldLabel}" />
+        <ComboBox MinWidth="180" MinHeight="32" ItemsSource="{Binding FilterColumns}" DisplayMemberPath="Name" SelectedItem="{Binding SelectedFilterColumn}"
+                  AutomationProperties.Name="{loc:T Data.Filter.Column}" />
+      </StackPanel>
+      <CheckBox Content="{loc:T Data.Filter.OnlySelected}" IsChecked="{Binding ShowOnlySelected}" VerticalAlignment="Bottom" Margin="0,0,12,6"
+                AutomationProperties.Name="{loc:T Data.Filter.OnlySelected}" />
+      <Button Content="{loc:T Data.Filter.Clear}" Command="{Binding ClearFilterCommand}" VerticalAlignment="Bottom" MinHeight="32" Margin="0,0,0,2"
+              AutomationProperties.Name="{loc:T Data.Filter.Clear}" />
+    </WrapPanel>
+
+    <!-- ============================== select all / none / invert and the counts -->
+    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+      <StackPanel DockPanel.Dock="Right" VerticalAlignment="Center" HorizontalAlignment="Right">
+        <TextBlock Text="{Binding SelectionSummary}" FontWeight="SemiBold" TextAlignment="Right" AutomationProperties.LiveSetting="Polite"
+                   AutomationProperties.Name="{Binding SelectionSummary}" />
+        <TextBlock Text="{Binding ShownSummary}" Style="{StaticResource MutedText}" FontSize="12" TextAlignment="Right"
+                   Visibility="{Binding IsFiltered, Converter={StaticResource B2V}}" />
+      </StackPanel>
+      <WrapPanel>
+        <Button Content="{Binding SelectAllText}" Command="{Binding SelectAllShownCommand}" MinHeight="32" Margin="0,0,8,0" AutomationProperties.Name="{Binding SelectAllText}" />
+        <Button Content="{Binding SelectNoneText}" Command="{Binding SelectNoneShownCommand}" MinHeight="32" Margin="0,0,8,0" AutomationProperties.Name="{Binding SelectNoneText}" />
+        <Button Content="{Binding InvertText}" Command="{Binding InvertShownCommand}" MinHeight="32" AutomationProperties.Name="{Binding InvertText}" />
+      </WrapPanel>
+    </DockPanel>
+
+    <TextBlock DockPanel.Dock="Bottom" Text="{loc:T Data.Records.Hint}" Style="{StaticResource MutedText}" FontSize="12" TextWrapping="Wrap" Margin="0,8,0,0" />
+
+    <Grid>
+      <DataGrid x:Name="RecordsGrid" ItemsSource="{Binding VisibleRows}" SelectedItem="{Binding CurrentRow, Mode=TwoWay}"
+                AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False" CanUserReorderColumns="False"
+                SelectionMode="Single" SelectionUnit="FullRow" HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                RowHeight="28" MinHeight="140"
+                EnableRowVirtualization="True" EnableColumnVirtualization="True"
+                VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling" ScrollViewer.CanContentScroll="True"
+                FontFamily="{StaticResource UiFont}" FontSize="13"
+                AutomationProperties.Name="{loc:T Data.Records.Grid}"
+                Sorting="OnGridSorting" PreviewKeyDown="OnGridKeyDown" />
+      <TextBlock Text="{loc:T Data.Records.NoMatch}" Style="{StaticResource MutedText}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="24,40,24,0"
+                 TextWrapping="Wrap" Visibility="{Binding ShowNoMatches, Converter={StaticResource B2V}}" IsHitTestVisible="False" />
+    </Grid>
+  </DockPanel>
+</UserControl>

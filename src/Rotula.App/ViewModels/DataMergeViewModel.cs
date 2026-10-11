@@ -45,7 +45,6 @@ public enum DataSourceMode
 /// </summary>
 public sealed partial class DataMergeViewModel : OperationViewModel
 {
-    private const int PreviewRowLimit = 50;
     private const int IssueRowLimit = 500;
 
     private readonly IPrintService _service;
@@ -335,20 +334,11 @@ public sealed partial class DataMergeViewModel : OperationViewModel
     /// <summary>Notes from reading the file (for example an unclosed quote).</summary>
     public ObservableCollection<string> LoadWarnings { get; } = new();
 
-    /// <summary>Column names of the preview grid.</summary>
+    /// <summary>Column names of the records grid.</summary>
     public IReadOnlyList<string> PreviewColumns => Table?.Columns ?? Array.Empty<string>();
-
-    /// <summary>The first rows of the data for the preview grid.</summary>
-    public IReadOnlyList<string[]> PreviewRows => Table is null ? Array.Empty<string[]>() : Table.Rows.Take(PreviewRowLimit).ToList();
 
     /// <summary>Text such as "120 records, 5 columns".</summary>
     public string TableSummary => Table is null ? string.Empty : Loc.Get("Data.Summary", Table.RowCount, Table.Columns.Count);
-
-    /// <summary>True when only the first rows are shown.</summary>
-    public bool PreviewTruncated => Table is not null && Table.RowCount > PreviewRowLimit;
-
-    /// <summary>Text for the truncated-preview note.</summary>
-    public string PreviewNote => Loc.Get("Data.PreviewNote", PreviewRowLimit);
 
     private void SourceOptionEdited()
     {
@@ -507,6 +497,8 @@ public sealed partial class DataMergeViewModel : OperationViewModel
     {
         Table = table;
         DataSet = null;
+        // New data starts with every record ticked, no filter and the original order (the selection is never kept across data sets).
+        ResetRecords(table);
         _detectedDelimiter = delimiter;
         Sheets.Clear();
         foreach (var s in sheets) Sheets.Add(s);
@@ -521,9 +513,7 @@ public sealed partial class DataMergeViewModel : OperationViewModel
         OnPropertyChanged(nameof(ShowReloadHint));
         OnPropertyChanged(nameof(CanReload));
         OnPropertyChanged(nameof(PreviewColumns));
-        OnPropertyChanged(nameof(PreviewRows));
         OnPropertyChanged(nameof(TableSummary));
-        OnPropertyChanged(nameof(PreviewTruncated));
         OnPropertyChanged(nameof(HasLoadWarnings));
         NotifyLayout();
         ChangeDatabaseSourceCommand.NotifyCanExecuteChanged();
@@ -670,14 +660,15 @@ public sealed partial class DataMergeViewModel : OperationViewModel
     partial void OnCurrentIndexChanged(int value)
     {
         UpdateNavigator();
+        OnPropertyChanged(nameof(CurrentRow));
         RaisePreviewChanged();
     }
 
     /// <summary>Number of records.</summary>
     public int RecordCount => DataSet?.RecordCount ?? 0;
 
-    /// <summary>"Record 3 of 120", or a hint when there is no data.</summary>
-    public string RecordText => RecordCount == 0 ? Loc.Get("Data.Record.None") : Loc.Get("Data.Record.Of", CurrentIndex + 1, RecordCount);
+    /// <summary>"Record 3 of 120", or a hint when there is no data. With only some records ticked it counts the ticked ones (see the records list).</summary>
+    public string RecordText => BuildRecordText();
 
     /// <summary>Record number typed in the "go to" box.</summary>
     [ObservableProperty]
@@ -719,6 +710,7 @@ public sealed partial class DataMergeViewModel : OperationViewModel
         OnPropertyChanged(nameof(Ready));
         PrintAllCommand.NotifyCanExecuteChanged();
         ExportBatchCommand.NotifyCanExecuteChanged();
+        CheckAllCommand.NotifyCanExecuteChanged();
     }
 
     /// <summary>True when there is at least one record.</summary>
@@ -727,27 +719,26 @@ public sealed partial class DataMergeViewModel : OperationViewModel
     /// <summary>1-based number of the shown record.</summary>
     public string RecordNumberText => RecordCount == 0 ? string.Empty : (CurrentIndex + 1).ToString(CultureInfo.CurrentCulture);
 
-    /// <summary>True when data is loaded and records exist (enables the batch buttons).</summary>
-    public bool Ready => HasRecords;
+    /// <summary>True when data is loaded and at least one record is ticked (enables the batch buttons).</summary>
+    public bool Ready => HasRecords && SelectedCount > 0;
 
-    /// <summary>Goes to the first record.</summary>
+    // The four navigator commands step through the TICKED records in data order; see MoveFirst, MovePrevious, MoveNext and MoveLast.
+
+    /// <summary>Goes to the first ticked record.</summary>
     [RelayCommand(CanExecute = nameof(CanGoBack))]
-    private void FirstRecord() => CurrentIndex = 0;
+    private void FirstRecord() => MoveFirst();
 
-    /// <summary>Goes to the previous record.</summary>
-    [RelayCommand(CanExecute = nameof(CanGoBack))]
-    private void PreviousRecord() => CurrentIndex = Math.Max(0, CurrentIndex - 1);
+    /// <summary>Goes to the previous ticked record.</summary>
+    [RelayCommand(CanExecute = nameof(CanStepBack))]
+    private void PreviousRecord() => MovePrevious();
 
-    /// <summary>Goes to the next record.</summary>
+    /// <summary>Goes to the next ticked record.</summary>
+    [RelayCommand(CanExecute = nameof(CanStepForward))]
+    private void NextRecord() => MoveNext();
+
+    /// <summary>Goes to the last ticked record.</summary>
     [RelayCommand(CanExecute = nameof(CanGoForward))]
-    private void NextRecord() => CurrentIndex = Math.Min(RecordCount - 1, CurrentIndex + 1);
-
-    /// <summary>Goes to the last record.</summary>
-    [RelayCommand(CanExecute = nameof(CanGoForward))]
-    private void LastRecord() => CurrentIndex = RecordCount - 1;
-
-    private bool CanGoBack() => RecordCount > 0 && CurrentIndex > 0;
-    private bool CanGoForward() => RecordCount > 0 && CurrentIndex < RecordCount - 1;
+    private void LastRecord() => MoveLast();
 
     /// <summary>Goes to the record number typed in the box.</summary>
     [RelayCommand(CanExecute = nameof(HasRecords))]
@@ -891,6 +882,8 @@ public sealed partial class DataMergeViewModel : OperationViewModel
         foreach (var ed in Counters)
             if (ed.TryBuild() is { } counter) o.Counters.Add(counter);
         foreach (var kv in _overrides) o.ColumnOverrides[kv.Key] = kv.Value;
+        // Only the ticked records are merged, in data order. "Everything ticked" is passed as null, which is the plain path with the old behaviour.
+        if (Table is not null && SelectedCount < Table.RowCount) o.SelectedRecords = SelectedArray();
 
         string error = string.Empty;
         switch (CopiesSource)
@@ -953,6 +946,7 @@ public sealed partial class DataMergeViewModel : OperationViewModel
         var blocking = dataSet.Issues.FirstOrDefault(i => i.Severity == ValidationSeverity.Error);
         if (blocking is not null) return Loc.FormatIssue(blocking);
         if (dataSet.RecordCount == 0) return Loc.Get("Data.Error.NoRecords");
+        if (dataSet.BatchCount == 0) return Loc.Get("Data.Error.NoneSelected");
         return null;
     }
 
@@ -988,8 +982,8 @@ public sealed partial class DataMergeViewModel : OperationViewModel
         foreach (var item in ds.BuildPromptSet(_variables.PromptMemory).Items) ds.Options.PromptAnswers[item.Name] = item.InitialValue;
     }
 
-    /// <summary>Generates every record in the background and lists the problems, without printing or writing anything.</summary>
-    [RelayCommand]
+    /// <summary>Generates every ticked record in the background and lists the problems, without printing or writing anything.</summary>
+    [RelayCommand(CanExecute = nameof(Ready))]
     private async Task CheckAllAsync()
     {
         if (IsBusy) return;
@@ -1002,7 +996,7 @@ public sealed partial class DataMergeViewModel : OperationViewModel
         VariableJob? checkJob = null;
         if (VariableEngine.HasDefinitions(doc))
         {
-            checkJob = VariableJob.Begin(doc, ds.CreateBatchContext(), ds.RecordCount);
+            checkJob = VariableJob.Begin(doc, ds.CreateBatchContext(), ds.BatchCount);
             ds.Options.Job = checkJob;
         }
         bool ok = await RunAsync(Loc.Get("Data.Busy.Checking"), ct => Task.Run(() =>
@@ -1013,7 +1007,7 @@ public sealed partial class DataMergeViewModel : OperationViewModel
                 foreach (var _ in MergeBatch.Labels(doc, ds, report))
                 {
                     ct.ThrowIfCancellationRequested();
-                    if (++n % 256 == 0) ((IProgress<double>)progress).Report(100.0 * report.Processed / ds.RecordCount);
+                    if (++n % 256 == 0) ((IProgress<double>)progress).Report(100.0 * report.Processed / ds.BatchCount);
                 }
             }
             finally { checkJob?.Cancel(); }
@@ -1023,7 +1017,7 @@ public sealed partial class DataMergeViewModel : OperationViewModel
         SetResult(report.HasErrors ? Loc.Get("Data.Check.Problems", report.SkippedRecords.Count) : Loc.Get("Data.Check.Ok", report.Emitted), report.HasErrors);
     }
 
-    /// <summary>Sends every record to the printer, in jobs of at most the chosen number of records.</summary>
+    /// <summary>Sends the ticked records to the printer (in data order), in jobs of at most the chosen number of records.</summary>
     [RelayCommand(CanExecute = nameof(Ready))]
     private async Task PrintAllAsync()
     {
@@ -1034,7 +1028,14 @@ public sealed partial class DataMergeViewModel : OperationViewModel
         error ??= Printer.TryBuildTarget(out target);
         error ??= Printer.TryBuildProfile(out profile, doc.Encoding);
         if (error is not null) { SetResult(error, true); return; }
-        if (!_messages.Confirm(Loc.Get("Data.PrintAll.Title"), Loc.Get("Data.PrintAll.Confirm", ds.RecordCount, Printer.Summary))) return;
+        // The question says exactly what will leave: the ticked records, and how many labels that is once copies are counted.
+        long labels = CountLabels(ds, doc.Print.Quantity);
+        string question = ds.BatchCount < ds.RecordCount
+            ? Loc.Get("Data.PrintAll.ConfirmSelected", ds.BatchCount, Printer.Summary, labels, ds.RecordCount)
+            : labels != ds.BatchCount
+                ? Loc.Get("Data.PrintAll.ConfirmCopies", ds.BatchCount, Printer.Summary, labels)
+                : Loc.Get("Data.PrintAll.Confirm", ds.BatchCount, Printer.Summary);
+        if (!_messages.Confirm(Loc.Get("Data.PrintAll.Title"), question)) return;
         if (!AskBatchPrompts(ds)) return;
 
         var report = new MergeReport();
@@ -1046,7 +1047,7 @@ public sealed partial class DataMergeViewModel : OperationViewModel
         VariableJob? serials = null;
         if (VariableEngine.HasDefinitions(doc))
         {
-            serials = VariableJob.Begin(doc, ds.CreateBatchContext(), ds.RecordCount);
+            serials = VariableJob.Begin(doc, ds.CreateBatchContext(), ds.BatchCount);
             ds.Options.Job = serials;
         }
         int confirmedThrough = 0; // record number of the last label that was sent, or may have been (a send in doubt counts as sent)
@@ -1066,7 +1067,7 @@ public sealed partial class DataMergeViewModel : OperationViewModel
                     foreach (var job in MergeBatch.JobBlocks(doc, ds, report))
                     {
                         ct.ThrowIfCancellationRequested();
-                        inFlight = job.LastRecordNumber;
+                        inFlight = job.ItemsThrough;
                         var result = await _service.PrintZplAsync(target!, jobs == 0 ? setup + job.Zpl : job.Zpl, doc.Encoding, rawBlocks, ct);
                         if (!result.Succeeded)
                         {
@@ -1078,7 +1079,7 @@ public sealed partial class DataMergeViewModel : OperationViewModel
                         confirmedThrough = inFlight;
                         inFlight = 0;
                         jobs++;
-                        ((IProgress<double>)progress).Report(100.0 * report.Processed / ds.RecordCount);
+                        ((IProgress<double>)progress).Report(100.0 * report.Processed / ds.BatchCount);
                     }
                 }, ct);
             }
@@ -1139,7 +1140,7 @@ public sealed partial class DataMergeViewModel : OperationViewModel
         string NameFor(int job) => Path.Combine(dir, $"{stem}_{job:D3}{ext}");
         if (perJob)
         {
-            int possible = (ds.RecordCount + max - 1) / max;
+            int possible = (ds.BatchCount + max - 1) / max;
             int existing = Enumerable.Range(1, possible).Count(i => File.Exists(NameFor(i)));
             if (existing > 0 && !_messages.Confirm(Loc.Get("Data.Export.ReplaceTitle"), Loc.Get("Data.Export.ReplaceBody", existing)))
                 return;
@@ -1151,7 +1152,7 @@ public sealed partial class DataMergeViewModel : OperationViewModel
         VariableJob? serials = null;
         if (VariableEngine.HasDefinitions(doc))
         {
-            serials = VariableJob.Begin(doc, ds.CreateBatchContext(), ds.RecordCount);
+            serials = VariableJob.Begin(doc, ds.CreateBatchContext(), ds.BatchCount);
             ds.Options.Job = serials;
         }
         int writtenThrough = 0; // record number of the last label that is in a finished file
@@ -1178,8 +1179,8 @@ public sealed partial class DataMergeViewModel : OperationViewModel
                         if (bytes is null) { encodingFailed = true; return; }
                         File.WriteAllBytes(NameFor(++job), bytes);
                         files++;
-                        writtenThrough = merged.LastRecordNumber;
-                        ((IProgress<double>)progress).Report(100.0 * report.Processed / ds.RecordCount);
+                        writtenThrough = merged.ItemsThrough;
+                        ((IProgress<double>)progress).Report(100.0 * report.Processed / ds.BatchCount);
                     }
                 }
                 else
@@ -1194,8 +1195,8 @@ public sealed partial class DataMergeViewModel : OperationViewModel
                             var bytes = ZplFiles.TryEncode(merged.Zpl, doc.Encoding, rawBlocks);
                             if (bytes is null) { encodingFailed = true; return; }
                             fs.Write(bytes);
-                            lastInTemp = merged.LastRecordNumber;
-                            ((IProgress<double>)progress).Report(100.0 * report.Processed / ds.RecordCount);
+                            lastInTemp = merged.ItemsThrough;
+                            ((IProgress<double>)progress).Report(100.0 * report.Processed / ds.BatchCount);
                         }
                     }
                     if (report.Emitted > 0) { File.Move(temp, path, overwrite: true); files = 1; writtenThrough = lastInTemp; }
@@ -1304,6 +1305,7 @@ public sealed partial class DataMergeViewModel : OperationViewModel
         Rebind();
         NotifyLayout();
         OnPropertyChanged(nameof(TableSummary));
-        OnPropertyChanged(nameof(PreviewNote));
+        OnPropertyChanged(nameof(RecordText));
+        RefreshRecordsLanguage();
     }
 }

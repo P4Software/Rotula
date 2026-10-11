@@ -42,14 +42,17 @@ public sealed class MergeReport
 /// <summary>One generated label (all copies of one record).</summary>
 /// <param name="RecordNumber">1-based data row number.</param>
 /// <param name="Zpl">The ZPL text, one or more <c>^XA..^XZ</c> blocks each ending with a line feed.</param>
-public sealed record MergedLabel(int RecordNumber, string Zpl);
+/// <param name="ItemNumber">1-based position of the label in the batch (equal to <paramref name="RecordNumber"/> unless a selection is used).
+/// It is the count of serial numbers used through this label.</param>
+public sealed record MergedLabel(int RecordNumber, string Zpl, int ItemNumber = 0);
 
 /// <summary>One print job of a batch: the ZPL of consecutive labels and the records it covers.</summary>
 /// <param name="Zpl">The ZPL text of the labels of this job.</param>
-/// <param name="LastRecordNumber">1-based number of the last record in the job. After this job was sent, this is the value to confirm a
-/// <see cref="VariableJob"/> with, because serial numbers follow the record position.</param>
+/// <param name="LastRecordNumber">1-based data row number of the last record in the job (what to show the user).</param>
 /// <param name="Labels">How many records produced a label in this job.</param>
-public sealed record MergedJob(string Zpl, int LastRecordNumber, int Labels);
+/// <param name="ItemsThrough">1-based batch position of the last label in the job. After this job was sent, this is the value to confirm a
+/// <see cref="VariableJob"/> with: serial numbers follow the position in the batch, which differs from the row number when only some rows are selected.</param>
+public sealed record MergedJob(string Zpl, int LastRecordNumber, int Labels, int ItemsThrough = 0);
 
 /// <summary>
 /// Turns a <see cref="MergeDataSet"/> into ZPL. Everything is lazy (<see cref="IEnumerable{T}"/>) so 100k rows
@@ -71,6 +74,8 @@ public static class MergeBatch
         ArgumentNullException.ThrowIfNull(data);
         report ??= new MergeReport();
         var options = data.Options;
+        int batchCount = data.BatchCount;
+        if (batchCount == 0) yield break; // nothing selected: nothing to reserve and nothing to print
 
         // Variables with a definition (dates, counters, prompts, computed values) are resolved per record. A label without any keeps the plain path.
         bool defined = VariableEngine.HasDefinitions(doc);
@@ -83,7 +88,7 @@ public static class MergeBatch
             else
             {
                 // One instant for the whole batch unless asked otherwise (CreateBatchContext), so a run that crosses midnight does not mix two dates.
-                job = VariableJob.Begin(doc, data.CreateBatchContext(), data.RecordCount);
+                job = VariableJob.Begin(doc, data.CreateBatchContext(), batchCount);
                 ownsJob = true;
             }
             foreach (var issue in job.Issues) report.Add(0, issue);
@@ -107,17 +112,19 @@ public static class MergeBatch
         long usedThrough = 0; // highest record position handed out + 1: those serial numbers count as used, also when a record in between was skipped
         try
         {
-            for (int i = 0; i < data.RecordCount; i++)
+            // Row index i feeds the data and the report; position is what serial numbers follow, so an unselected row never uses up a number.
+            for (int position = 0; position < batchCount; position++)
             {
+                int i = data.RecordAt(position);
                 int number = i + 1;
                 report.Processed++;
                 var problems = new List<ValidationIssue>();
                 string? zpl = null;
                 try
                 {
-                    var values = data.BuildData(i, problems);
+                    var values = data.BuildData(i, problems, position);
                     int? copies = ResolveCopies(data, i, problems);
-                    var result = job is null ? ZplGenerator.Generate(doc, values, options.TextRasterizer) : ZplGenerator.GenerateWithVariables(doc, job.ContextFor(i, values), null, options.TextRasterizer);
+                    var result = job is null ? ZplGenerator.Generate(doc, values, options.TextRasterizer) : ZplGenerator.GenerateWithVariables(doc, job.ContextFor(position, values), null, options.TextRasterizer);
                     // Variable warnings are the same for every record; say each of them once.
                     problems.AddRange(result.Issues.Where(p => job is null || p.Severity == ValidationSeverity.Error || warned.Add(p.MessageKey + "|" + string.Join("|", p.Args))));
                     if (!problems.Any(p => p.Severity == ValidationSeverity.Error))
@@ -141,8 +148,8 @@ public static class MergeBatch
                     continue;
                 }
                 report.Emitted++;
-                usedThrough = i + 1;
-                yield return new MergedLabel(number, zpl);
+                usedThrough = position + 1;
+                yield return new MergedLabel(number, zpl, position + 1);
             }
         }
         finally
@@ -164,26 +171,27 @@ public static class MergeBatch
 
     /// <summary>
     /// Like <see cref="Jobs"/>, but each job also says which record it ends at. A caller that owns the serial-number reservation
-    /// (<see cref="MergeOptions.Job"/>) confirms with that number after the job was really sent, so a failed send never burns the labels after it.
+    /// (<see cref="MergeOptions.Job"/>) confirms with <see cref="MergedJob.ItemsThrough"/> after the job was really sent, so a failed send never burns the labels after it.
     /// </summary>
     public static IEnumerable<MergedJob> JobBlocks(LabelDocument doc, MergeDataSet data, MergeReport? report = null)
     {
         int max = Math.Max(0, data.Options.MaxRecordsPerJob);
         var sb = new StringBuilder();
-        int inJob = 0, last = 0;
+        int inJob = 0, last = 0, lastItem = 0;
         foreach (var label in Labels(doc, data, report))
         {
             sb.Append(label.Zpl);
             inJob++;
             last = label.RecordNumber;
+            lastItem = label.ItemNumber;
             if (max > 0 && inJob >= max)
             {
-                yield return new MergedJob(sb.ToString(), last, inJob);
+                yield return new MergedJob(sb.ToString(), last, inJob, lastItem);
                 sb.Clear();
                 inJob = 0;
             }
         }
-        if (inJob > 0) yield return new MergedJob(sb.ToString(), last, inJob);
+        if (inJob > 0) yield return new MergedJob(sb.ToString(), last, inJob, lastItem);
     }
 
     /// <summary>Streams every label to <paramref name="writer"/> without building the whole text in memory.</summary>

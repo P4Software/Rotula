@@ -77,11 +77,19 @@ public sealed class MergeOptions
     /// <summary>
     /// A print run the caller owns. Leave it null and the batch reserves the remembered serial numbers itself and confirms them when the
     /// enumeration ends, which counts every label as used from the moment it is handed out (a failed send afterwards burns those numbers, never
-    /// reuses them). Set it to a job started with <c>VariableJob.Begin(doc, set.CreateBatchContext(), set.RecordCount)</c> to confirm only
+    /// reuses them). Set it to a job started with <c>VariableJob.Begin(doc, set.CreateBatchContext(), set.BatchCount)</c> to confirm only
     /// what was really sent: the batch then reserves nothing and never completes the job, and after sending the caller calls
-    /// <c>job.Complete(n)</c> with the record number of the last label that reached the printer (or <c>Cancel()</c> if none did).
+    /// <c>job.Complete(n)</c> with <see cref="MergedJob.ItemsThrough"/> of the last job that reached the printer (or <c>Cancel()</c> if none did).
     /// </summary>
     public Rotula.Core.Variables.Counters.VariableJob? Job { get; set; }
+
+    /// <summary>
+    /// The zero-based rows to merge, or null for every row (the default, which keeps the behaviour of a batch without a selection). Rows are
+    /// processed in the order given (the Data window passes them in data order). Serial numbers and legacy <c>#Name</c> counters follow the
+    /// position inside this list, not the row number, so numbers are reserved only for rows that really print. Out-of-range or repeated rows make
+    /// the <see cref="MergeDataSet"/> constructor throw; the list is copied at that moment.
+    /// </summary>
+    public IReadOnlyList<int>? SelectedRecords { get; set; }
 
     /// <summary>
     /// Maximum number of records (data rows that produced a label) per job when producing jobs; 0 means a single
