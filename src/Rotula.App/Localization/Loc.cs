@@ -94,6 +94,26 @@ public sealed class Loc : INotifyPropertyChanged
     /// <summary>Raised after the language changed (for view-models that cache translated text).</summary>
     public event EventHandler? LanguageChanged;
 
+    /// <summary>
+    /// Subscribes <paramref name="owner"/> to <see cref="LanguageChanged"/> without keeping it alive. A plain <c>+=</c> from a
+    /// view-model's constructor is never undone, so every closed window or finished test would stay reachable from this
+    /// process-wide singleton and keep reacting to language switches (from any thread). The handler is removed by itself the first
+    /// time it runs after the owner was collected.
+    /// </summary>
+    /// <param name="owner">The object that wants the notification.</param>
+    /// <param name="handler">What to do; it receives the owner and must not capture it (use a <c>static</c> lambda), or the weak link is pointless.</param>
+    public void SubscribeWeak<T>(T owner, Action<T> handler) where T : class
+    {
+        var weak = new WeakReference<T>(owner);
+        EventHandler? relay = null;
+        relay = (_, _) =>
+        {
+            if (weak.TryGetTarget(out var target)) handler(target);
+            else LanguageChanged -= relay; // the owner is gone: stop listening
+        };
+        LanguageChanged += relay;
+    }
+
     /// <summary>Localized display name of an enum value, from the key <c>Enum.TypeName.Value</c>.</summary>
     public static string EnumName<T>(T value) where T : struct, Enum => Instance.Lookup($"Enum.{typeof(T).Name}.{value}");
 

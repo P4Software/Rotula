@@ -184,7 +184,7 @@ public sealed partial class FieldsViewModel : ObservableObject
         data.Counters.CollectionChanged += (_, _) => Refresh();
         // The label's own variables change with the document; the main view-model calls Refresh after the data was bound to the new document.
         _session.SelectionChanged += (_, _) => NotifySelection();
-        Loc.Instance.LanguageChanged += (_, _) => OnLanguageChanged();
+        Loc.Instance.SubscribeWeak(this, static self => self.OnLanguageChanged());
         Refresh();
     }
 

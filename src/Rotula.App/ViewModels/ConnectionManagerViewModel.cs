@@ -62,7 +62,7 @@ public sealed partial class ConnectionManagerViewModel : ObservableObject
         _provider = DatabaseProvider.SqlServer;
         _selectedEngine = Engines.FirstOrDefault(e => e.Id == ProviderIds.SqlServer);
         ApplyEngine(_selectedEngine, reset: true);
-        Loc.Instance.LanguageChanged += (_, _) => RefreshLanguage();
+        Loc.Instance.SubscribeWeak(this, static self => self.RefreshLanguage());
     }
 
     /// <summary>Raised when the window should close.</summary>

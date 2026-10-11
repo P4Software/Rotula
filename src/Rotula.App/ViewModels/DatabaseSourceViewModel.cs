@@ -88,7 +88,7 @@ public sealed partial class DatabaseSourceViewModel : ObservableObject
         _dialogs = dialogs;
         _messages = messages;
         _files = files;
-        Loc.Instance.LanguageChanged += (_, _) => RefreshLanguage();
+        Loc.Instance.SubscribeWeak(this, static self => self.RefreshLanguage());
     }
 
     /// <summary>Raised when "Use this data" produced rows.</summary>

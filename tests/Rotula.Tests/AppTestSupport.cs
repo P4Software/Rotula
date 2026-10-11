@@ -8,6 +8,8 @@ using Rotula.Core.Model;
 using Rotula.Core.Zpl;
 using Rotula.Printing;
 
+[assembly: Rotula.Tests.IsolateLanguageSubscribers]
+
 namespace Rotula.Tests;
 
 /// <summary>
@@ -16,6 +18,44 @@ namespace Rotula.Tests;
 /// </summary>
 [CollectionDefinition("App")]
 public sealed class AppCollection { }
+
+/// <summary>
+/// Gives every test its own set of <see cref="Loc.LanguageChanged"/> subscribers. View-models subscribe in their constructor and a
+/// finished test never unsubscribes them, so without this a later test that switches the language (even from another thread: xunit
+/// moves the tests of one collection between worker threads) would call into view-models of earlier tests, whose collection views
+/// belong to another thread and whose fakes are already disposed. That made the first run after a rebuild fail with cross-thread
+/// and NullReference errors depending on thread timing. The subscribers present when the test method starts (those of the test
+/// class's own constructor) are kept; everything added while the test ran is dropped when it ends, before <c>Dispose</c> runs.
+/// </summary>
+[AttributeUsage(AttributeTargets.Assembly)]
+public sealed class IsolateLanguageSubscribersAttribute : Xunit.Sdk.BeforeAfterTestAttribute
+{
+    private static readonly System.Reflection.FieldInfo LanguageChangedField =
+        typeof(Loc).GetField(nameof(Loc.LanguageChanged), System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
+
+    // An instance field, not a thread-static one: xunit uses the same attribute instance for Before and After of one test, but an
+    // async test may continue on another thread in between.
+    private Delegate? _saved;
+    private bool _active;
+
+    /// <summary>Only tests of the "App" collection are isolated; the other collections run in parallel and must not touch the shared event.</summary>
+    private static bool IsAppTest(System.Reflection.MethodInfo method) =>
+        method.DeclaringType?.GetCustomAttributesData().Any(a =>
+            a.AttributeType == typeof(CollectionAttribute) && a.ConstructorArguments.Count == 1 && Equals(a.ConstructorArguments[0].Value, "App")) == true;
+
+    /// <inheritdoc />
+    public override void Before(System.Reflection.MethodInfo methodUnderTest)
+    {
+        _active = IsAppTest(methodUnderTest);
+        if (_active) _saved = (Delegate?)LanguageChangedField.GetValue(Loc.Instance);
+    }
+
+    /// <inheritdoc />
+    public override void After(System.Reflection.MethodInfo methodUnderTest)
+    {
+        if (_active) LanguageChangedField.SetValue(Loc.Instance, _saved);
+    }
+}
 
 /// <summary>Helpers and fakes shared by the App tests.</summary>
 internal static class AppTestSupport

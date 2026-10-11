@@ -5,6 +5,10 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Fixed
+- A size such as "4in x 6in" typed or pasted right after the program started could be read as "no size" on a slow computer, because the first match was cut off after 250 ms; the limit is now 2 seconds.
+- Closed windows and finished screens no longer stay in memory listening for language changes.
+
 ## [0.3.1] - 2026-10-11
 
 ### Changed

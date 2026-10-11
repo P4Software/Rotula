@@ -146,7 +146,7 @@ public sealed partial class MainViewModel : ObservableObject
         Session.SelectionChanged += (_, _) => OnSelectionChanged();
         Session.DirtyChanged += (_, _) => OnDirtyChanged();
         Session.Undo.Changed += (_, _) => RefreshCommandStates();
-        Loc.Instance.LanguageChanged += (_, _) => OnLanguageChanged();
+        Loc.Instance.SubscribeWeak(this, static self => self.OnLanguageChanged());
 
         foreach (var p in GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance))
             if (p.PropertyType.IsAssignableTo(typeof(IRelayCommand)) && p.GetValue(this) is IRelayCommand c)

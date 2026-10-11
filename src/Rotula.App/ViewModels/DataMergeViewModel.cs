@@ -105,7 +105,7 @@ public sealed partial class DataMergeViewModel : OperationViewModel
             new Choice<InvalidRecordPolicy>(InvalidRecordPolicy.Skip, "Enum.InvalidRecordPolicy.Skip"),
             new Choice<InvalidRecordPolicy>(InvalidRecordPolicy.Stop, "Enum.InvalidRecordPolicy.Stop"),
         };
-        Loc.Instance.LanguageChanged += (_, _) => RefreshLanguage();
+        Loc.Instance.SubscribeWeak(this, static self => self.RefreshLanguage());
     }
 
     // ----------------------------------------------------------------------------------- choices

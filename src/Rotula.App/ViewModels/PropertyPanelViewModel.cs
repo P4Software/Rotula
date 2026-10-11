@@ -38,7 +38,7 @@ public sealed partial class PropertyPanelViewModel : ObservableObject
         Format = new TextFormatViewModel(session, textRasterizer ?? (() => null));
         _session.SelectionChanged += (_, _) => Rebuild();
         _session.DocumentChanged += (_, _) => OnDocumentChanged();
-        Loc.Instance.LanguageChanged += (_, _) => Rebuild(force: true);
+        Loc.Instance.SubscribeWeak(this, static self => self.Rebuild(force: true));
         Rebuild(force: true);
     }
 

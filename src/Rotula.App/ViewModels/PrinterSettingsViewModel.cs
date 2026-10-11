@@ -67,13 +67,13 @@ public sealed partial class PrinterSettingsViewModel : ObservableObject
             new Choice<MediaTracking>(MediaTracking.Mark, "Enum.MediaTracking.Mark"),
         };
         LoadFromSettings();
-        Loc.Instance.LanguageChanged += (_, _) =>
+        Loc.Instance.SubscribeWeak(this, static self =>
         {
-            foreach (var c in DpiChoices) c.Refresh();
-            foreach (var c in MediaChoices) c.Refresh();
-            RebuildPrinterDisplay();
-            NotifyToolbar();
-        };
+            foreach (var c in self.DpiChoices) c.Refresh();
+            foreach (var c in self.MediaChoices) c.Refresh();
+            self.RebuildPrinterDisplay();
+            self.NotifyToolbar();
+        });
     }
 
     /// <summary>Resolution choices.</summary>

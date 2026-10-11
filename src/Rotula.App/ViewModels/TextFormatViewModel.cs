@@ -121,11 +121,11 @@ public sealed partial class TextFormatViewModel : ObservableObject
         session.DocumentChanged += (_, _) => Refresh();
         // The font list's collection view belongs to the thread that made it; a language switch from another thread is handed over to it.
         var owner = System.Windows.Threading.Dispatcher.CurrentDispatcher;
-        Loc.Instance.LanguageChanged += (_, _) =>
+        Loc.Instance.SubscribeWeak(this, self =>
         {
-            void Rebuild() { _fontsBuilt = false; Refresh(); }
+            void Rebuild() { self._fontsBuilt = false; self.Refresh(); }
             if (owner.CheckAccess()) Rebuild(); else owner.BeginInvoke(Rebuild);
-        };
+        });
         Refresh();
     }
 

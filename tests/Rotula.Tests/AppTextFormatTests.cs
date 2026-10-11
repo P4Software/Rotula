@@ -464,7 +464,7 @@ public class AppTextFormatTests
 
     // ------------------------------------------------------------------------------------ main view-model: shortcuts, ZPL and the rasterizer
 
-    private static MainViewModel Main(out FakeServices fake, ITextRasterizer? rasterizer = null)
+    private static MainViewModel BuildMain(out FakeServices fake, ITextRasterizer? rasterizer = null)
     {
         fake = new FakeServices();
         fake.Settings.Current.Language = "en";
@@ -475,7 +475,7 @@ public class AppTextFormatTests
     [Fact]
     public void CtrlB_I_U_ToggleTheSelectedText_AndExplainThemselvesOnAPrinterFont()
     {
-        var vm = Main(out _);
+        var vm = BuildMain(out _);
         var text = new TextElement { Text = "Hello", X = 10, Y = 10, Font = FontChoice.ForWindows("Arial", 12) };
         vm.Session.Edit("Undo.Add", d => d.Elements.Add(text), selectionAfter: () => new[] { text.Id });
         Assert.True(vm.ToggleBoldCommand.CanExecute(null));
@@ -499,7 +499,7 @@ public class AppTextFormatTests
     [Fact]
     public void AWindowsFontText_IsAGraphicInTheZplView_WithTheRasterizerRegistered_AndNotABlockingError()
     {
-        var vm = Main(out _);
+        var vm = BuildMain(out _);
         var text = new TextElement { Text = "Hello", X = 10, Y = 10, Font = FontChoice.ForWindows("Arial", 12) };
         vm.Session.Edit("Undo.Add", d => d.Elements.Add(text));
         Assert.Equal(0, vm.ErrorCount);
@@ -510,7 +510,7 @@ public class AppTextFormatTests
     [Fact]
     public void TheRasterNotice_IsShownForAWindowsFont_UntilDismissed_AndTheChoiceIsSaved()
     {
-        var vm = Main(out var fake);
+        var vm = BuildMain(out var fake);
         var text = new TextElement { Text = "Hello", X = 10, Y = 10 };
         vm.Session.Edit("Undo.Add", d => d.Elements.Add(text), selectionAfter: () => new[] { text.Id });
         Assert.False(vm.Format.ShowRasterNotice);
@@ -519,7 +519,7 @@ public class AppTextFormatTests
         vm.Format.DismissRasterNoticeCommand.Execute(null);
         Assert.False(vm.Format.ShowRasterNotice);
         Assert.True(fake.Settings.Current.RasterNoticeDismissed);
-        Assert.False(Main(out fake).Format.ShowRasterNotice);   // (a new window starts from its own settings)
+        Assert.False(BuildMain(out fake).Format.ShowRasterNotice);   // (a new window starts from its own settings)
     }
 
     // ------------------------------------------------------------------------------------ preview and printed picture agree
@@ -604,7 +604,7 @@ public class AppTextFormatTests
     public void DraggingTheRightHandleOfAWrappedText_ChangesTheWrapWidth_AndShowsItInTheStatusBar()
     {
         // The main view-model is made here, not on the shared WPF thread: it listens to the language change for the rest of the run.
-        var main = Main(out _);
+        var main = BuildMain(out _);
         var text = new TextElement { Text = Long, X = 100, Y = 100, Font = FontChoice.ForWindows("Arial", 12), Block = new TextBlockOptions { WidthDots = 300, MaxLines = 10 } };
         main.Session.Edit("Undo.Add", d => d.Elements.Add(text), selectionAfter: () => new[] { text.Id });
         var result = WpfTestHost.Run(() =>
@@ -840,7 +840,7 @@ public class AppTextFormatTests
         {
             barShown.Add(WpfTestHost.Run(() =>
             {
-                var main = Main(out _);
+                var main = BuildMain(out _);
                 Loc.Instance.SetLanguage(lang);
                 var text = new TextElement { Text = Long, X = 60, Y = 220, Font = fontKind == "printer" ? null : FontChoice.ForWindows("Arial", 14), FontId = 'A', FontHeight = 40, FontWidth = 40 };
                 if (fontKind == "wrapped") text.Block = new TextBlockOptions { WidthDots = 500, MaxLines = 2, Alignment = TextAlignment.Center };

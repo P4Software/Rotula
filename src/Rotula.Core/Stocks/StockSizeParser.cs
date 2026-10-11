@@ -87,7 +87,10 @@ public static class StockSizeParser
 
     private static readonly Regex Pattern = new(
         $@"(?<![\d.,])(?<a>{Num})\s*(?<ua>{Unit})?\s*(?:x|×|\*|by|por)\s*(?<b>{Num})(?![.,]?\d)\s*(?<ub>{Unit})?(?![a-z\d])(?!\s*(?:m|meters?|metres?|ft|feet|yd|mil)\b)",
-        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled, TimeSpan.FromMilliseconds(250));
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled,
+        // A guard against runaway matching, not a speed target: the very first match also pays for compiling the pattern, and on a busy
+        // machine (the first run right after a build) that alone exceeded 250 ms and made a valid size look unparsable.
+        TimeSpan.FromSeconds(2));
 
     /// <summary>Returns every size found in <paramref name="text"/>, left to right. Never throws.</summary>
     public static IReadOnlyList<ParsedSize> FindAll(string? text)

@@ -112,11 +112,11 @@ public sealed partial class PackNoticeViewModel : ObservableObject
             Items.Add(new PackWarningItem(w, pending));
         }
         IsVisible = Items.Count > 0;
-        Loc.Instance.LanguageChanged += (_, _) =>
+        Loc.Instance.SubscribeWeak(this, static self =>
         {
-            foreach (var i in Items) i.Refresh();
-            OnPropertyChanged(nameof(NoticeText));
-        };
+            foreach (var i in self.Items) i.Refresh();
+            self.OnPropertyChanged(nameof(NoticeText));
+        });
     }
 
     /// <summary>The problems, one per add-on.</summary>
