@@ -121,7 +121,8 @@ public sealed partial class CounterEditor : ObservableObject
     public bool IsNumeric
     {
         get => !IsAlphanumeric;
-        set => IsAlphanumeric = !value;
+        // Ignore the "false" a radio group writes into the option that was just unchecked (see PrinterSettingsViewModel.UseWindowsPrinter).
+        set { if (value) IsAlphanumeric = false; }
     }
 
     /// <summary>First value.</summary>
@@ -153,7 +154,8 @@ public sealed partial class CounterEditor : ObservableObject
     public bool WrapOnOverflow
     {
         get => !StopOnOverflow;
-        set => StopOnOverflow = !value;
+        // Ignore the "false" a radio group writes into the option that was just unchecked (see PrinterSettingsViewModel.UseWindowsPrinter).
+        set { if (value) StopOnOverflow = false; }
     }
 
     /// <summary>The placeholder to type in the label.</summary>

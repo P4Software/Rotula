@@ -28,10 +28,12 @@
     </Border>
     <!-- ============================== where to print -->
     <TextBlock Text="{loc:T Print.Section.Printer}" Style="{StaticResource SectionHeading}" AutomationProperties.HeadingLevel="Level2" />
+    <!-- No GroupName on purpose: a named group is shared by every view instance (Print dialog, Data merge, closed windows not yet collected), so the radios of
+         different windows uncheck each other and their two-way bindings chase each other until the stack overflows. Radios with the same parent form their own group. -->
     <WrapPanel Margin="0,0,0,8">
-      <RadioButton GroupName="Transport" Content="{loc:T Print.Transport.Windows}" IsChecked="{Binding UseWindowsPrinter, Mode=TwoWay}"
+      <RadioButton Content="{loc:T Print.Transport.Windows}" IsChecked="{Binding UseWindowsPrinter, Mode=TwoWay}"
                    AutomationProperties.Name="{loc:T Print.Transport.Windows}" />
-      <RadioButton GroupName="Transport" Content="{loc:T Print.Transport.Network}" IsChecked="{Binding UseNetwork, Mode=TwoWay}"
+      <RadioButton Content="{loc:T Print.Transport.Network}" IsChecked="{Binding UseNetwork, Mode=TwoWay}"
                    AutomationProperties.Name="{loc:T Print.Transport.Network}" />
     </WrapPanel>
 

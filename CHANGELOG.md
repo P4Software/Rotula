@@ -5,6 +5,13 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-10-11
+
+### Fixed
+- The app no longer crashes when you open the Data merge window a second time, or open Print and then Data merge. Closed windows were
+  still sharing the printer-type and counter option buttons with the next window, which made them switch each other back and forth
+  until the app ran out of memory.
+
 ## [0.1.1] - 2026-10-10
 
 ### Fixed
