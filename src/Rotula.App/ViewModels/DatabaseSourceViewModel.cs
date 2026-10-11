@@ -24,10 +24,10 @@ public sealed class ConnectionChoice : ObservableObject
     public string Name => Saved.Settings.Name;
 
     /// <summary>Name plus engine, for example "Warehouse - SQL Server".</summary>
-    public string Display => Name + "  -  " + DataMessages.ProviderName(Saved.Settings.Provider);
+    public string Display => Name + "  -  " + DataMessages.ProviderName(Saved.Settings);
 
     /// <summary>Name of the engine, for example "SQL Server".</summary>
-    public string ProviderName => DataMessages.ProviderName(Saved.Settings.Provider);
+    public string ProviderName => DataMessages.ProviderName(Saved.Settings);
 
     /// <summary>Re-reads the translated text after a language change.</summary>
     public void Refresh()
@@ -327,11 +327,21 @@ public sealed partial class DatabaseSourceViewModel : ObservableObject
     /// <summary>True when the query has parameters.</summary>
     public bool HasParameters => Parameters.Count > 0;
 
-    private DatabaseProvider GuardProvider => SelectedConnection?.Saved.Settings.Provider ?? DatabaseProvider.Odbc;
+    /// <summary>
+    /// Checks the query against the dialect the selected connection really speaks (preset flavour, ODBC engine hint, pack provider).
+    /// When the add-on of a pack connection is missing the strictest dialect (unknown ODBC engine) is used; running then fails with
+    /// a clear "add-on not available" message from the engine layer.
+    /// </summary>
+    private SqlGuardResult CheckGuard()
+    {
+        if (SelectedConnection is null) return SqlGuard.Check(QueryText, DatabaseProvider.Odbc);
+        try { return SqlGuard.Check(QueryText, SelectedConnection.Saved.Settings); }
+        catch (DatabaseException) { return SqlGuard.Check(QueryText, DatabaseProvider.Odbc); }
+    }
 
     private void UpdateGuard()
     {
-        var verdict = SqlGuard.Check(QueryText, GuardProvider);
+        var verdict = CheckGuard();
         _queryAllowed = verdict.IsAllowed;
         // An empty box is not an error yet; the Run button just stays off.
         GuardMessage = verdict.IsAllowed || string.IsNullOrWhiteSpace(QueryText) ? string.Empty : DataMessages.DescribeReason(verdict.ReasonKey, verdict.Arg);
@@ -414,7 +424,7 @@ public sealed partial class DatabaseSourceViewModel : ObservableObject
         cap = 0;
         if (SelectedConnection is null) { SetResult(Loc.Get("Data.Db.PickConnection"), true); return false; }
         // The guard runs here for a friendlier message and again inside the engine, which is the real gate.
-        var verdict = SqlGuard.Check(QueryText, GuardProvider);
+        var verdict = CheckGuard();
         if (!verdict.IsAllowed)
         {
             SetResult(Loc.Get(DataKeys.QueryRejected, DataMessages.DescribeReason(verdict.ReasonKey, verdict.Arg)), true);

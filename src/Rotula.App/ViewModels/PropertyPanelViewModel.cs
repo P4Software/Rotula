@@ -3,6 +3,7 @@ using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Rotula.App.Editing;
 using Rotula.App.Localization;
+using Rotula.App.Services;
 using Rotula.Core.Barcodes;
 using Rotula.Core.Elements;
 using Rotula.Core.Model;
@@ -492,11 +493,14 @@ public sealed partial class PropertyPanelViewModel : ObservableObject
     {
         var doc = () => _session.Document;
         Rows.Add(new HeadingRow("Panel.Size"));
+        // The label stock the size came from, when it came from one (the stock picker of the New label dialog stores its id).
+        if (!string.IsNullOrEmpty(doc().StockId))
+            Rows.Add(new NoteRow("Prop.Stock", () => StockLibrary.Describe(doc().StockId, (what, id) => Loc.Get(StockKnown(id) ? "Stock.Panel.Line" : "Stock.Panel.LineMissing", what))));
         string unit = Loc.Get(doc().Width.Unit switch { LengthUnit.Inches => "Unit.Short.Inches", LengthUnit.Dots => "Unit.Short.Dots", _ => "Unit.Short.Millimeters" });
         Rows.Add(new DoubleRow("Prop.LabelWidth", () => doc().Width.Value,
-            v => EditDoc("w", d => d.Width = new Measure(v, d.Width.Unit)), 0.1, 100000) { Label = Loc.Get("Prop.LabelWidth.Unit", unit) });
+            v => EditDoc("w", d => { d.Width = new Measure(v, d.Width.Unit); d.StockId = null; }), 0.1, 100000) { Label = Loc.Get("Prop.LabelWidth.Unit", unit) });
         Rows.Add(new DoubleRow("Prop.LabelHeight", () => doc().Height.Value,
-            v => EditDoc("h", d => d.Height = new Measure(v, d.Height.Unit)), 0.1, 100000) { Label = Loc.Get("Prop.LabelHeight.Unit", unit) });
+            v => EditDoc("h", d => { d.Height = new Measure(v, d.Height.Unit); d.StockId = null; }), 0.1, 100000) { Label = Loc.Get("Prop.LabelHeight.Unit", unit) });
         Rows.Add(new ChoiceRow("Prop.LabelUnit", ChoiceRow.ForEnum<LengthUnit>(), () => doc().Width.Unit, v =>
             EditDoc("unit", d => ConvertSizeUnit(d, (LengthUnit)v!))) { RebuildOnChange = true });
         Rows.Add(new ChoiceRow("Prop.Dpi", ChoiceRow.ForEnum<PrinterDpi>(), () => doc().Dpi, v => EditDoc("dpi", d => d.Dpi = (PrinterDpi)v!)));
@@ -533,6 +537,9 @@ public sealed partial class PropertyPanelViewModel : ObservableObject
         Rows.Add(new TextRow("Prop.Variables", () => VariablesToText(doc()), v => EditDoc("vars", d => ApplyVariables(d, v)),
             multiline: true, hintKey: "Prop.Variables.Hint", validate: v => ParseVariables(v, out _) ? null : Loc.Get("Validation.Variables")));
     }
+
+    /// <summary>True when the stock id is in the library.</summary>
+    internal static bool StockKnown(string id) => StockLibrary.Current.Catalog.Find(id) is not null;
 
     /// <summary>Changes the unit of the label size and converts the numbers so the physical size stays the same.</summary>
     private static void ConvertSizeUnit(LabelDocument d, LengthUnit unit)

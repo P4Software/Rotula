@@ -124,6 +124,24 @@ internal sealed class FakeConnectionStore : IConnectionStore
         return Task.FromResult<IDatabaseSource>(source);
     }
 
+    /// <summary>Every call of <see cref="OpenWithSettingsAsync(DatabaseConnectionSettings, string?, CancellationToken)"/>: the settings and the password argument (null = reuse the saved one).</summary>
+    public readonly List<(DatabaseConnectionSettings Settings, string? PasswordArgument)> OpenedWithSettings = new();
+    /// <summary>Makes the source for settings tested with an explicit password (set by <see cref="FakeDatabaseServices"/> so existing tests can see them in <c>Created</c>).</summary>
+    public Func<DatabaseConnectionSettings, string?, IDatabaseSource>? CreateForExplicitPassword;
+
+    public Task<IDatabaseSource> OpenWithSettingsAsync(DatabaseConnectionSettings edited, string? newPassword, CancellationToken cancellationToken = default)
+    {
+        OpenedWithSettings.Add((edited, newPassword));
+        if (newPassword is null)
+        {
+            // Same rules as the real store: the saved password only follows an edit that keeps where and how the connection signs in.
+            if (!Entries.TryGetValue(edited.Name, out var saved)) throw new DatabaseException(DataKeys.ConnectionNotFound, null, new[] { edited.Name });
+            if (!SavedPasswordPolicy.CanReuse(saved.Settings, edited)) throw new DatabaseException(ProviderKeys.PasswordReenterRequired, null, new[] { edited.Name });
+            return OpenAsync(edited.Name, cancellationToken);
+        }
+        return Task.FromResult(CreateForExplicitPassword?.Invoke(edited, newPassword) ?? new FakeDatabaseSource(edited));
+    }
+
     /// <summary>Adds a saved connection and its scripted source.</summary>
     public FakeDatabaseSource Add(DatabaseConnectionSettings settings, string? password = null)
     {
@@ -140,6 +158,8 @@ internal sealed class FakeDatabaseServices : IDatabaseServices
     public FakeConnectionStore Store { get; } = new();
     public readonly List<(DatabaseConnectionSettings Settings, string? Password)> Created = new();
     public FakeDatabaseSource CreatedSource = new(new DatabaseConnectionSettings { Name = "created", Provider = DatabaseProvider.Sqlite, FilePath = "x.db" });
+
+    public FakeDatabaseServices() => Store.CreateForExplicitPassword = Create;
 
     public IConnectionStore Connections => Store;
 

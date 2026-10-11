@@ -26,6 +26,11 @@ public partial class App : Application
 
         try
         {
+            // Add-ons load on a background thread while the window opens; a failure of the loader itself only ends up in the log.
+            var packOptions = new Rotula.Data.Packs.PackLoadOptions();
+            var packLoading = PackStartup.Begin(packOptions, LogCrash);
+            // The first New label dialog should find the stock library already read.
+            StockLibrary.Preload();
             var services = new MainServices(
                 new WpfFileDialogService(), new WpfMessageService(), new WpfClipboardService(), new WpfImageLoader(),
                 new WpfNewLabelDialogService(), CreateZplImporter(), new Rotula.Printing.PrintService(), new JsonSettingsStore(), new WpfToolDialogService(), new DatabaseServices());
@@ -33,6 +38,8 @@ public partial class App : Application
             var window = new MainWindow(vm);
             MainWindow = window;
             window.Show();
+            // When loading is over, tell the user (non-modally) about add-ons that could not be loaded or wait for approval.
+            _ = ShowPackNoticeAsync(packLoading, packOptions, vm);
 
             // Double-clicking a .rotula file starts the program with the path as its only argument.
             if (e.Args.Length > 0 && File.Exists(e.Args[0])) vm.LoadFile(e.Args[0]);
@@ -42,6 +49,19 @@ public partial class App : Application
             LogCrash(ex);
             ShowCrashMessage(Loc.Get("Crash.Startup", LogPath));
             Shutdown(1);
+        }
+    }
+
+    private async Task ShowPackNoticeAsync(Task<Rotula.Data.Packs.PackLoadReport> loading, Rotula.Data.Packs.PackLoadOptions options, MainViewModel vm)
+    {
+        try
+        {
+            var report = await loading;
+            if (report.Warnings.Count > 0) vm.PackNotice = new PackNoticeViewModel(report, options, new WpfPackDialogService());
+        }
+        catch (Exception ex)
+        {
+            LogCrash(ex);
         }
     }
 

@@ -17,7 +17,7 @@ Diséñala, previsualízala, combina tus datos e imprímela. Sin cuenta, sin nub
 [Descargar](#descargar) ·
 [Funciones](#recorrido-de-funciones) ·
 [Inicio rápido](#inicio-rápido) ·
-[Compatibilidad ZPL](docs/zpl-support.md) ·
+[Cobertura ZPL](docs/zpl-coverage.md) ·
 [Impresión](docs/printing.md) ·
 [Historial de cambios](CHANGELOG.md)
 
@@ -35,7 +35,10 @@ Diséñala, previsualízala, combina tus datos e imprímela. Sin cuenta, sin nub
 - [Inicio rápido](#inicio-rápido)
 - [Importar ZPL existente](#importar-zpl-existente)
 - [Combinación de datos](#combinación-de-datos)
+- [Etiquetas y rollos de la biblioteca](#etiquetas-y-rollos-de-la-biblioteca)
+- [Fuentes de bases de datos](#fuentes-de-bases-de-datos)
 - [Impresión](#impresión)
+- [Servidor MCP](#servidor-mcp)
 - [Códigos de barras compatibles](#códigos-de-barras-compatibles)
 - [Idiomas](#idiomas)
 - [Privacidad](#privacidad)
@@ -154,11 +157,15 @@ salida es determinista y en ASCII puro, así que puedes versionarla, compararla 
 | Área | Qué obtienes |
 |---|---|
 | **Diseñador** | Reglas, cuadrícula, ajuste, guías, selección múltiple, alinear, distribuir, orden de capas, rotación de 90 grados, lista de capas, deshacer/rehacer sin límite |
-| **Elementos** | Texto, texto con ajuste de línea, campos de datos, 9 simbologías de códigos de barras, cuadros, líneas, círculos, imágenes |
+| **Elementos** | Texto, texto con ajuste de línea, campos de datos, 28 comandos ZPL de códigos de barras, cuadros, líneas, círculos, imágenes |
+| **Medios de etiqueta** | Una biblioteca de tamaños con búsqueda por número de parte: escribe un número de parte o un tamaño y obtén el tamaño exacto y los ajustes del medio ([detalles](#etiquetas-y-rollos-de-la-biblioteca)) |
 | **Archivos** | Archivos `.rotula` en JSON con versión; el guardado pasa por un archivo temporal, así que un guardado fallido conserva la versión anterior. Se recuerdan los archivos recientes |
 | **Exportación** | ZPL, PNG y PDF |
 | **Importación ZPL** | Abre archivos `.zpl` existentes, con avisos y paso directo de lo que no entiende ([detalles](#importar-zpl-existente)) |
-| **Combinación de datos** | CSV y `.xlsx`, `{{variables}}`, contadores, copias por registro, lotes |
+| **Combinación de datos** | CSV, `.xlsx` y consultas de solo lectura a bases de datos, `{{variables}}`, contadores, copias por registro, lotes |
+| **Bases de datos** | SQL Server, PostgreSQL, MySQL/MariaDB, SQLite y ODBC, más ajustes predefinidos para servicios en la nube comunes ([detalles](#fuentes-de-bases-de-datos)) |
+| **Cobertura ZPL** | 222 comandos ZPL revisados uno por uno en una [página de cobertura generada](docs/zpl-coverage.md) (en inglés) |
+| **Servidor MCP** | Un programa aparte que permite a los clientes compatibles con MCP diseñar y revisar etiquetas ([detalles](#servidor-mcp)) |
 | **Impresión** | Cola de Windows (RAW, incluido USB) y puerto TCP 9100, detección de DPI y papel, perfiles de impresora, etiqueta de prueba |
 | **Resolución** | Convierte una etiqueta entre 203, 300 y 600 dpi conservando su tamaño físico |
 | **Idiomas** | Español e inglés, con cambio en vivo |
@@ -192,11 +199,13 @@ trata de en qué se diferencia Rotula, no de quién es mejor.
 | **Uso de la red** | Ninguno, salvo imprimir a la dirección que indicas | Depende del producto |
 | **Código fuente** | Abierto, en GitHub | Propietario |
 | **Salida a la impresora** | ZPL (impresoras compatibles con ZPL II) | Normalmente muchos lenguajes y controladores de impresora |
-| **Fuentes de datos** | CSV y Excel (`.xlsx`) | Normalmente también bases de datos, ERP y otras integraciones |
+| **Fuentes de datos** | CSV, Excel (`.xlsx`) y consultas de solo lectura a bases de datos | Normalmente también bases de datos, ERP y otras integraciones |
+| **Medios de etiqueta** | Biblioteca integrada con búsqueda por número de parte | Depende del producto; algunos traen sus propias bibliotecas |
+| **Automatización** | Servidor MCP para clientes compatibles con MCP | Depende del producto |
 | **Plataforma** | Windows 10 y 11 | Depende del producto |
 | **Alcance** | Un diseñador de escritorio con impresión | A menudo incluyen servidor, flujos de trabajo y administración empresarial |
 
-Si necesitas bases de datos, RFID, administración centralizada, otros lenguajes de impresora o un contrato de soporte del
+Si necesitas RFID, escribir de vuelta en bases de datos, administración centralizada, otros lenguajes de impresora o un contrato de soporte del
 fabricante, hoy una de esas suites es la mejor opción. Si necesitas diseñar una etiqueta ZPL, combinar una hoja de cálculo e
 imprimir, sin instalar una plataforma, Rotula está hecho para eso. Todos los nombres de producto pertenecen a sus
 propietarios; Rotula no está afiliado a ellos. "Compatible con ZPL" describe el lenguaje de impresora que Rotula escribe.
@@ -251,7 +260,7 @@ empezar de cero. Esta es la parte que la mayoría de las herramientas de etiquet
 
 - **Un analizador real, no una búsqueda de texto.** Rotula lee ZPL II y lo convierte en un diseño: configuración de la
   etiqueta, campos y posicionamiento, bloques de campo, fuentes, cuadros, círculos, campos gráficos (incluidos los datos
-  comprimidos) y las nueve simbologías de códigos de barras. El texto se decodifica con el juego de caracteres `^CI`
+  comprimidos) y los 28 comandos ZPL de códigos de barras. El texto se decodifica con el juego de caracteres `^CI`
   vigente en ese punto del archivo.
 - **Los patrones de barras se convierten en Code 128.** Cuando un archivo dibuja un código de barras como una fila de barras
   verticales, Rotula reconoce el patrón y puede reemplazarlo por un código de barras Code 128 real y editable.
@@ -260,7 +269,7 @@ empezar de cero. Esta es la parte que la mayoría de las herramientas de etiquet
   indica la línea.
 - **Varias etiquetas en un archivo** se convierten en varios documentos.
 
-La matriz comando por comando está en [docs/zpl-support.md](docs/zpl-support.md) (en inglés). Lee las
+Los 222 comandos ZPL, con su estado, están en la [página de cobertura](docs/zpl-coverage.md) (generada, en inglés). Lee las
 [limitaciones conocidas](#limitaciones-conocidas) para saber qué no se conserva en un viaje de ida y vuelta.
 
 ---
@@ -279,6 +288,44 @@ Abre **Impresora > Combinar datos** (`Ctrl+M`). La ventana recorre cinco pestañ
 
 Recorre los registros con el navegador y ve cada uno en el lienzo. Los datos se quedan en tu PC: en el archivo de la
 etiqueta solo se guarda la configuración de la combinación, nunca los datos.
+
+---
+
+## Etiquetas y rollos de la biblioteca
+
+Existen cientos de tamaños de etiqueta. **Archivo > Nuevo** abre un selector: escribe un número de parte del fabricante (o una
+parte), un tamaño en casi cualquier forma (`4x6`, `4 x 6 in`, `102x152`, `100x150mm`) o una familia de producto, y la lista se
+reduce mientras escribes. Elige un resultado y Rotula ajusta el tamaño de la etiqueta, el tipo de medio (térmico directo o
+transferencia térmica) y el seguimiento.
+
+- **Qué sabe.** Tamaño en milímetros y pulgadas, radio de las esquinas, etiquetas a lo ancho, tamaño del núcleo, etiquetas por
+  rollo y de dónde sale el dato. Un medio cuyo tamaño no está contrastado aparece marcado y, al aplicarlo, se muestra un aviso.
+- **Sin inventar.** La separación entre etiquetas casi siempre se desconoce, así que Rotula indica que calibres la impresora en
+  lugar de adivinar. En medios con varias etiquetas por fila o en hojas solo se aplica el tamaño de una etiqueta, y Rotula lo dice.
+- **Tus propios medios.** Guarda un tamaño personalizado como medio, o importa una lista de suministros (`.csv` o `.xlsx`) y revisa
+  las filas antes de conservarlas. Los precios nunca se leen. Tus medios se guardan en `%AppData%\Rotula\stocks`.
+- **Favoritos y recientes** se recuerdan en tu PC.
+
+Las marcas y los nombres de producto pertenecen a sus dueños; Rotula no está afiliado a ellos. Formato del archivo, fuentes y cómo
+corregir una entrada: [docs/stock-catalog.md](docs/stock-catalog.md) (en inglés).
+
+---
+
+## Fuentes de bases de datos
+
+En la ventana Combinar datos elige **Base de datos** como origen para llenar etiquetas desde una conexión guardada y una consulta.
+
+- **Motores.** SQL Server, PostgreSQL, MySQL y MariaDB, archivos SQLite y orígenes ODBC. Los ajustes predefinidos completan el puerto
+  habitual y la configuración segura de servicios comunes (por ejemplo Amazon RDS y Redshift, Supabase, Neon, Azure SQL, Google Cloud
+  SQL, y archivos de Microsoft Access o Excel mediante ODBC).
+- **Solo lectura por diseño.** Solo se acepta una instrucción `SELECT`; todo lo que podría cambiar datos, ejecutar código o leer
+  archivos se rechaza antes de abrir una conexión. La mejor protección sigue siendo una cuenta de base de datos que solo pueda leer.
+- **Las contraseñas** se guardan protegidas por Windows para tu cuenta y nunca se escriben en un archivo de etiqueta. Las conexiones
+  van cifradas de forma predeterminada.
+- **Complementos.** Otros motores pueden instalarse como complementos aparte. Un complemento es un programa, por eso Rotula pide tu
+  aprobación antes de cargar uno de tu propia carpeta.
+
+Guía para desarrolladores: [docs/data-providers.md](docs/data-providers.md) (en inglés).
 
 ---
 
@@ -309,7 +356,8 @@ Más información en [docs/printing.md](docs/printing.md) (en inglés).
 
 ## Códigos de barras compatibles
 
-Cada simbología valida sus datos mientras escribes (dígitos verificadores, caracteres permitidos, longitudes).
+Rotula escribe y lee **28 comandos ZPL de códigos de barras** (lineales, 2D, apilados y postales; la lista completa está en la [página de cobertura](docs/zpl-coverage.md)).
+Cada simbología valida sus datos mientras escribes (dígitos verificadores, caracteres permitidos, longitudes). Las más comunes:
 
 | Simbología | Comando ZPL | Uso típico |
 |---|---|---|
@@ -322,6 +370,16 @@ Cada simbología valida sus datos mientras escribes (dígitos verificadores, car
 | Código QR | `^BQ` | URL, datos de contacto, cualquier texto |
 | Data Matrix | `^BX` | Piezas pequeñas, electrónica |
 | PDF417 | `^B7` | Documentos, boletos, cédulas |
+
+---
+
+## Servidor MCP
+
+`Rotula.Mcp.exe` es un programa de consola aparte, no forma parte de la ventana del diseñador. Habla el Protocolo de Contexto de
+Modelos (MCP), de modo que los clientes compatibles con MCP pueden crear y editar etiquetas, añadir códigos de barras, validarlos,
+previsualizarlos, guardarlos y generar ZPL. No tiene acceso a la red por sí mismo, solo trabaja en las carpetas que permitas y mantiene
+**desactivados** la impresión y el acceso a bases de datos hasta que los actives en `rotula-mcp.settings.json`. Imprimir exige una
+confirmación en dos pasos. Instalación, herramientas y ajustes de seguridad: [docs/mcp.md](docs/mcp.md) (en inglés).
 
 ---
 
@@ -403,10 +461,12 @@ flowchart LR
 | `src/Rotula.Core` | Modelo de etiqueta, generador y analizador ZPL, validación de códigos de barras, combinación de datos. Sin interfaz |
 | `src/Rotula.Rendering` | Motor de vista previa con SkiaSharp, dibujo de códigos de barras, exportación PNG y PDF |
 | `src/Rotula.Printing` | Impresión por la cola de Windows y por TCP 9100, detección de la impresora |
+| `src/Rotula.Data` | Proveedores de bases de datos, ajustes predefinidos, el filtro de consultas de solo lectura y el almacén de conexiones |
+| `src/Rotula.Mcp` | El servidor MCP (un ejecutable aparte) |
 | `src/Rotula.App` | La aplicación WPF |
 | `tests/` | Pruebas xUnit y los archivos ZPL de referencia |
 | `packaging/` | Script del instalador y plantillas del manifiesto de winget |
-| `docs/` | [Compatibilidad ZPL](docs/zpl-support.md), [impresión](docs/printing.md), [publicación de versiones](docs/releasing.md), [decisiones de diseño](docs/decisions.md) (en inglés) |
+| `docs/` | [Cobertura ZPL](docs/zpl-coverage.md), [catálogo de medios](docs/stock-catalog.md), [proveedores de datos](docs/data-providers.md), [servidor MCP](docs/mcp.md), [impresión](docs/printing.md), [publicación de versiones](docs/releasing.md), [decisiones de diseño](docs/decisions.md) (en inglés) |
 
 ---
 
@@ -428,7 +488,7 @@ No es compatible hoy, y está abierto a discusión:
 
 - Salida EPL, TSPL y CPCL
 - Codificación RFID
-- Conexiones a bases de datos (por ahora solo CSV y Excel)
+- Escribir en bases de datos (las consultas son de solo lectura por diseño)
 - Un mercado de plantillas de etiquetas
 - Sincronización en la nube
 - macOS y Linux
@@ -453,7 +513,7 @@ Léelas antes de depender de Rotula para etiquetas de producción, e **imprime s
   importado es texto simple hasta que lo edites.
 - **El ZPL sin procesar no se escala al convertir el DPI.** Los comandos desconocidos conservados como ZPL sin procesar
   mantienen sus puntos originales cuando una etiqueta se convierte a otra resolución, y Rotula te avisa.
-- **Los comandos no compatibles** (consulta [la matriz de compatibilidad](docs/zpl-support.md)) se conservan como ZPL sin
+- **Los comandos no compatibles** (consulta [la página de cobertura](docs/zpl-coverage.md)) se conservan como ZPL sin
   procesar cuando es posible, pero no se interpretan ni se previsualizan.
 - Rotula se prueba con decodificadores y archivos de referencia, no con todos los modelos de impresora.
 - Solo salida ZPL, y solo Windows.

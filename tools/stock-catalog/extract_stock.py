@@ -593,12 +593,15 @@ VERIFICATION_NOTE = (
     "by the ZipShip PDF extraction alone, so not verified. Entries with verified=false need a person to "
     "check them (see stock-catalog-unparsed.csv). Each entry lists its sources so one source can be dropped later.")
 
-OWNER_NOTE = ("Owner determined 2026-10-10 that part numbers and label dimensions are public product data; "
-              "Rotula is not affiliated with the brands listed; brand and product names belong to their owners.")
+DATA_NOTE = ("Part numbers and label dimensions are public product data. Brand and product names belong to their "
+             "owners; Rotula is not affiliated with them.")
+
+# Added to every entry that only one source states, so a reader of the entry sees why it is not verified.
+SINGLE_SOURCE_NOTE = "Stated by one public source only (the ZipShip catalogue), not cross-checked, so not verified."
 
 SOURCE_NAMES = {
     PDF_ID: "Zebra public ZipShip catalogue PDF",
-    EXPORT_ID: "ZebraDesigner stock library export (part numbers, label sizes, gaps, corner radii; owner-supplied)",
+    EXPORT_ID: "ZebraDesigner stock library export (part numbers, label sizes, gaps, corner radii)",
 }
 SOURCE_ALIASES = {"zipship": PDF_ID, "pdf": PDF_ID, PDF_ID: PDF_ID,
                   "export": EXPORT_ID, "designer": EXPORT_ID, "zebradesigner": EXPORT_ID, EXPORT_ID: EXPORT_ID}
@@ -616,7 +619,7 @@ def write_outputs(cat, unparsed, review, conflicts, outdir, counts, active):
         "generatedOn": dt.datetime.now().strftime("%Y-%m-%d"),
         "counts": counts,
         "sources": [{"id": i, "name": SOURCE_NAMES[i]} for i in ALL_SOURCES if i in active],
-        "notes": OWNER_NOTE + " Gap between labels along the roll is not stored by any source; leave it to "
+        "notes": DATA_NOTE + " Gap between labels along the roll is not stored by any source; leave it to "
                  "printer calibration unless an entry states a sensing mode. " + VERIFICATION_NOTE,
     }
     with open(os.path.join(outdir, "stock-catalog.json"), "w", encoding="utf-8") as f:
@@ -671,12 +674,15 @@ def build(seed_path, export_path, outdir, active):
             exp_only_fam[e.get("stockFamily") or ""] += 1
         for d in disagreements:
             conflicts.append({"partNumber": d["partNumber"], "what": d["what"], "other": d["other"], "export": d["export"]})
-    # ---- Zebra parts that only one PDF extraction states are not called verified
+    # ---- entries that only one PDF extraction states are not called verified (any brand: the generic
+    # standard sizes cite the same catalogue and have no second public source either)
     for e in cat:
-        if e.get("brand") == "Zebra" and e.get("sources") == [PDF_ID] and e.get("verified"):
+        if e.get("sources") == [PDF_ID] and e.get("verified"):
             e["verified"] = False
             e["verification"] = "catalogue-pdf-only"
             e["_reasons"] = ["stated only by the ZipShip PDF extraction, which has shown row-shift errors; no second source"]
+            if SINGLE_SOURCE_NOTE not in (e.get("notes") or ""):
+                e["notes"] = ((e.get("notes") or "").rstrip() + " " + SINGLE_SOURCE_NOTE).strip()
     # ---- tidy: private markers, empty extension fields
     review = []
     for e in cat:

@@ -43,6 +43,20 @@ public sealed class WpfFileDialogService : IFileDialogService
     public string? PickOpenDatabaseFile() => Open(Loc.Get("Conn.Sqlite.Pick"),
         $"{Loc.Get("Filter.Database")} (*.db;*.sqlite;*.sqlite3;*.db3)|*.db;*.sqlite;*.sqlite3;*.db3|{Loc.Get("Filter.AllFiles")} (*.*)|*.*");
 
+    /// <inheritdoc />
+    public string? PickFolder(string title)
+    {
+        var dialog = new OpenFolderDialog { Title = title };
+        return dialog.ShowDialog(Application.Current?.MainWindow) == true ? dialog.FolderName : null;
+    }
+
+    /// <inheritdoc />
+    public string? PickOpenFile(string title, IReadOnlyList<string> extensions)
+    {
+        string pattern = string.Join(";", extensions.Select(e => "*" + e));
+        return Open(title, $"{title} ({pattern})|{pattern}|{Loc.Get("Filter.AllFiles")} (*.*)|*.*");
+    }
+
     private static string? Open(string title, string filter)
     {
         var dialog = new OpenFileDialog { Title = title, Filter = filter, CheckFileExists = true };
@@ -149,9 +163,12 @@ public sealed class WpfImageLoader : IImageLoader
 public sealed class WpfNewLabelDialogService : INewLabelDialogService
 {
     /// <inheritdoc />
-    public LabelDocument? ShowNewLabelDialog()
+    public LabelDocument? ShowNewLabelDialog() => ShowNewLabelDialog(new NewLabelContext());
+
+    /// <inheritdoc />
+    public LabelDocument? ShowNewLabelDialog(NewLabelContext context)
     {
-        var window = new NewLabelWindow { Owner = Application.Current?.MainWindow };
+        var window = new NewLabelWindow(context) { Owner = Application.Current?.MainWindow };
         return window.ShowDialog() == true ? window.Result : null;
     }
 }
@@ -196,5 +213,38 @@ public sealed class WpfToolDialogService : IToolDialogService
         _dataWindow = new DataWindow(viewModel) { Owner = Application.Current?.MainWindow };
         _dataWindow.Closed += (_, _) => _dataWindow = null;
         _dataWindow.Show();
+    }
+}
+
+/// <summary>Shows the add-on details list and the approval prompt.</summary>
+public sealed class WpfPackDialogService : Rotula.App.ViewModels.IPackDialogService
+{
+    /// <inheritdoc />
+    public void ShowDetails(Rotula.App.ViewModels.PackNoticeViewModel viewModel)
+        => new PackDetailsWindow(viewModel) { Owner = Application.Current?.MainWindow }.ShowDialog();
+
+    /// <inheritdoc />
+    public bool ShowTrustPrompt(Rotula.Data.Packs.PackTrustPrompt prompt)
+    {
+        // The details window is the active window when the user presses Review, so it becomes the owner and the prompt stays on top of it.
+        var owner = Application.Current?.Windows.OfType<Window>().FirstOrDefault(w => w.IsActive) ?? Application.Current?.MainWindow;
+        return new PackTrustWindow(prompt) { Owner = owner }.ShowDialog() == true;
+    }
+}
+
+/// <summary>Shows the import preview and the text about the stock catalogue.</summary>
+public sealed class WpfStockDialogs : Rotula.App.ViewModels.IStockDialogs
+{
+    /// <inheritdoc />
+    public bool ShowImportPreview(Rotula.App.ViewModels.StockImportPreviewViewModel preview)
+    {
+        var owner = Application.Current?.Windows.OfType<Window>().FirstOrDefault(w => w.IsActive) ?? Application.Current?.MainWindow;
+        return new StockImportWindow(preview) { Owner = owner }.ShowDialog() == true;
+    }
+
+    /// <inheritdoc />
+    public void ShowAbout(string title, string body)
+    {
+        MessageDialogWindow.Show(MessageKind.Info, title, body, new DialogChoice(Loc.Get("Common.Close"), IsPrimary: true, IsDefault: true, IsCancel: true));
     }
 }

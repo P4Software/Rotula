@@ -152,15 +152,32 @@ public class AppDatabaseEndToEndTests : IDisposable
     }
 
     /// <summary>The real store with a recording factory, so the test can see which path "Test connection" took.</summary>
-    private sealed class StoreBackedServices(IConnectionStore store) : IDatabaseServices
+    private sealed class StoreBackedServices : IDatabaseServices
     {
+        public StoreBackedServices(IConnectionStore store) => Connections = new RecordingStore(store, Created);
+
+        /// <summary>Tests of edited settings with an explicit password (typed, or "" for none). A test that reuses the saved password is not listed.</summary>
         public readonly List<(DatabaseConnectionSettings Settings, string? Password)> Created = new();
-        public IConnectionStore Connections => store;
+        public IConnectionStore Connections { get; }
 
         public IDatabaseSource Create(DatabaseConnectionSettings settings, string? password)
         {
             Created.Add((settings, password));
             return DatabaseSource.Create(settings, password);
+        }
+    }
+
+    private sealed class RecordingStore(IConnectionStore inner, List<(DatabaseConnectionSettings Settings, string? Password)> created) : IConnectionStore
+    {
+        public Task<ConnectionStoreContent> LoadAsync(CancellationToken cancellationToken = default) => inner.LoadAsync(cancellationToken);
+        public Task SaveAsync(DatabaseConnectionSettings settings, string? password, CancellationToken cancellationToken = default) => inner.SaveAsync(settings, password, cancellationToken);
+        public Task<bool> DeleteAsync(string name, CancellationToken cancellationToken = default) => inner.DeleteAsync(name, cancellationToken);
+        public Task<IDatabaseSource> OpenAsync(string name, CancellationToken cancellationToken = default) => inner.OpenAsync(name, cancellationToken);
+
+        public Task<IDatabaseSource> OpenWithSettingsAsync(DatabaseConnectionSettings edited, string? newPassword, CancellationToken cancellationToken = default)
+        {
+            if (newPassword is not null) created.Add((edited, newPassword));
+            return inner.OpenWithSettingsAsync(edited, newPassword, cancellationToken);
         }
     }
 
@@ -205,7 +222,7 @@ public class AppDatabaseEndToEndTests : IDisposable
         // Editing it and leaving the password out is reported, not silently tested without one.
         m.Dsn = "SomethingElse";
         await m.TestAsync();
-        Assert.Contains("Type the password again", m.TestText);
+        Assert.Contains("Type the password in the Password box", m.TestText);
 
         // A new PWD= typed into the string replaces the saved password.
         m.OdbcConnectionString = "DSN=RotulaNoSuchSource;Uid=reader;Pwd=another-pw";

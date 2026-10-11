@@ -8,8 +8,8 @@
    "seedEntriesKept": 251,
    "seedEntriesDropped": 10,
    "catalogEntries": 837,
-   "verified": 809,
-   "inCatalogueNeedsReview": 28,
+   "verified": 797,
+   "inCatalogueNeedsReview": 40,
    "partsInBothSources": 209,
    "exportOnlyParts": 586,
    "disagreements": 15
@@ -21,10 +21,10 @@
    },
    {
     "id": "zebradesigner-stock-export",
-    "name": "ZebraDesigner stock library export (part numbers, label sizes, gaps, corner radii; owner-supplied)"
+    "name": "ZebraDesigner stock library export (part numbers, label sizes, gaps, corner radii)"
    }
   ],
-  "notes": "Owner determined 2026-10-10 that part numbers and label dimensions are public product data; Rotula is not affiliated with the brands listed; brand and product names belong to their owners. Gap between labels along the roll is not stored by any source; leave it to printer calibration unless an entry states a sensing mode. verified=true means the size was parsed consistently AND cross-checked by a second, independent statement. The 'verification' field says how: '2+ sources agree on size' = the ZipShip catalogue PDF and the ZebraDesigner stock export agree; 'export-name+units' = export only, where the stock name text, the micrometre columns and the display-unit columns all agree; 'catalogue-pdf-only' = stated by the ZipShip PDF extraction alone, so not verified. Entries with verified=false need a person to check them (see stock-catalog-unparsed.csv). Each entry lists its sources so one source can be dropped later."
+  "notes": "Part numbers and label dimensions are public product data. Brand and product names belong to their owners; Rotula is not affiliated with them. Gap between labels along the roll is not stored by any source; leave it to printer calibration unless an entry states a sensing mode. verified=true means the size was parsed consistently AND cross-checked by a second, independent statement. The 'verification' field says how: '2+ sources agree on size' = the ZipShip catalogue PDF and the ZebraDesigner stock export agree; 'export-name+units' = export only, where the stock name text, the micrometre columns and the display-unit columns all agree; 'catalogue-pdf-only' = stated by the ZipShip PDF extraction alone, so not verified. Entries with verified=false need a person to check them (see stock-catalog-unparsed.csv). Each entry lists its sources so one source can be dropped later."
  },
  "entries": [
   {
@@ -2348,7 +2348,7 @@
    ],
    "sourceUrl": "https://zebra.com/content/dam/zebra_dam/en/brochure/portfolio/zipship-brochure-catalog-apac-en-us.pdf",
    "verified": false,
-   "notes": "Perforated between labels. From the Zebra ZipShip catalog effective May 2022 (text extracted from the PDF); the catalog gives no gap value; confirm the item is still sold.",
+   "notes": "Perforated between labels. From the Zebra ZipShip catalog effective May 2022 (text extracted from the PDF); the catalog gives no gap value; confirm the item is still sold. Stated by one public source only (the ZipShip catalogue), not cross-checked, so not verified.",
    "format": "roll",
    "rollsPerCarton": 6,
    "sources": [
@@ -2383,7 +2383,7 @@
    ],
    "sourceUrl": "https://zebra.com/content/dam/zebra_dam/en/brochure/portfolio/zipship-brochure-catalog-apac-en-us.pdf",
    "verified": false,
-   "notes": "Perforated between labels. From the Zebra ZipShip catalog effective May 2022 (text extracted from the PDF); the catalog gives no gap value; confirm the item is still sold.",
+   "notes": "Perforated between labels. From the Zebra ZipShip catalog effective May 2022 (text extracted from the PDF); the catalog gives no gap value; confirm the item is still sold. Stated by one public source only (the ZipShip catalogue), not cross-checked, so not verified.",
    "format": "roll",
    "rollsPerCarton": 14,
    "sources": [
@@ -2455,7 +2455,7 @@
    ],
    "sourceUrl": "https://zebra.com/content/dam/zebra_dam/en/brochure/portfolio/zipship-brochure-catalog-apac-en-us.pdf",
    "verified": false,
-   "notes": "Perforated between labels. From the Zebra ZipShip catalog effective May 2022 (text extracted from the PDF); the catalog gives no gap value; confirm the item is still sold.",
+   "notes": "Perforated between labels. From the Zebra ZipShip catalog effective May 2022 (text extracted from the PDF); the catalog gives no gap value; confirm the item is still sold. Stated by one public source only (the ZipShip catalogue), not cross-checked, so not verified.",
    "format": "roll",
    "rollsPerCarton": 4,
    "sources": [
@@ -2860,7 +2860,7 @@
    ],
    "sourceUrl": "https://zebra.com/content/dam/zebra_dam/en/brochure/portfolio/zipship-brochure-catalog-apac-en-us.pdf",
    "verified": false,
-   "notes": "Perforated between labels. From the Zebra ZipShip catalog effective May 2022 (text extracted from the PDF); the catalog gives no gap value; confirm the item is still sold.",
+   "notes": "Perforated between labels. From the Zebra ZipShip catalog effective May 2022 (text extracted from the PDF); the catalog gives no gap value; confirm the item is still sold. Stated by one public source only (the ZipShip catalogue), not cross-checked, so not verified.",
    "format": "roll",
    "rollsPerCarton": 4,
    "sources": [
@@ -4375,7 +4375,7 @@
    ],
    "sourceUrl": "https://zebra.com/content/dam/zebra_dam/en/brochure/portfolio/zipship-brochure-catalog-apac-en-us.pdf",
    "verified": false,
-   "notes": "Perforated between labels. From the Zebra ZipShip catalog effective May 2022 (text extracted from the PDF); the catalog gives no gap value; confirm the item is still sold.",
+   "notes": "Perforated between labels. From the Zebra ZipShip catalog effective May 2022 (text extracted from the PDF); the catalog gives no gap value; confirm the item is still sold. Stated by one public source only (the ZipShip catalogue), not cross-checked, so not verified.",
    "format": "roll",
    "rollsPerCarton": 6,
    "sources": [
@@ -6334,7 +6334,7 @@
    ],
    "sourceUrl": "https://zebra.com/content/dam/zebra_dam/en/brochure/portfolio/zipship-brochure-catalog-apac-en-us.pdf",
    "verified": false,
-   "notes": "Perforated between labels. From the Zebra ZipShip catalog effective May 2022 (text extracted from the PDF); the catalog gives no gap value; confirm the item is still sold.",
+   "notes": "Perforated between labels. From the Zebra ZipShip catalog effective May 2022 (text extracted from the PDF); the catalog gives no gap value; confirm the item is still sold. Stated by one public source only (the ZipShip catalogue), not cross-checked, so not verified.",
    "format": "roll",
    "rollsPerCarton": 8,
    "sources": [
@@ -6443,7 +6443,7 @@
    ],
    "sourceUrl": "https://zebra.com/content/dam/zebra_dam/en/brochure/portfolio/zipship-brochure-catalog-apac-en-us.pdf",
    "verified": false,
-   "notes": "Perforated between labels. From the Zebra ZipShip catalog effective May 2022 (text extracted from the PDF); the catalog gives no gap value; confirm the item is still sold.",
+   "notes": "Perforated between labels. From the Zebra ZipShip catalog effective May 2022 (text extracted from the PDF); the catalog gives no gap value; confirm the item is still sold. Stated by one public source only (the ZipShip catalogue), not cross-checked, so not verified.",
    "format": "roll",
    "rollsPerCarton": 12,
    "sources": [
@@ -6552,7 +6552,7 @@
    ],
    "sourceUrl": "https://zebra.com/content/dam/zebra_dam/en/brochure/portfolio/zipship-brochure-catalog-apac-en-us.pdf",
    "verified": false,
-   "notes": "Perforated between labels. From the Zebra ZipShip catalog effective May 2022 (text extracted from the PDF); the catalog gives no gap value; confirm the item is still sold.",
+   "notes": "Perforated between labels. From the Zebra ZipShip catalog effective May 2022 (text extracted from the PDF); the catalog gives no gap value; confirm the item is still sold. Stated by one public source only (the ZipShip catalogue), not cross-checked, so not verified.",
    "format": "roll",
    "rollsPerCarton": 4,
    "sources": [
@@ -7367,7 +7367,7 @@
    ],
    "sourceUrl": "https://zebra.com/content/dam/zebra_dam/en/brochure/portfolio/zipship-brochure-catalog-apac-en-us.pdf",
    "verified": false,
-   "notes": "Perforated between labels. From the Zebra ZipShip catalog effective May 2022 (text extracted from the PDF); the catalog gives no gap value; confirm the item is still sold.",
+   "notes": "Perforated between labels. From the Zebra ZipShip catalog effective May 2022 (text extracted from the PDF); the catalog gives no gap value; confirm the item is still sold. Stated by one public source only (the ZipShip catalogue), not cross-checked, so not verified.",
    "format": "roll",
    "rollsPerCarton": 36,
    "sources": [
@@ -7402,7 +7402,7 @@
    ],
    "sourceUrl": "https://zebra.com/content/dam/zebra_dam/en/brochure/portfolio/zipship-brochure-catalog-apac-en-us.pdf",
    "verified": false,
-   "notes": "Perforated between labels. From the Zebra ZipShip catalog effective May 2022 (text extracted from the PDF); the catalog gives no gap value; confirm the item is still sold.",
+   "notes": "Perforated between labels. From the Zebra ZipShip catalog effective May 2022 (text extracted from the PDF); the catalog gives no gap value; confirm the item is still sold. Stated by one public source only (the ZipShip catalogue), not cross-checked, so not verified.",
    "format": "roll",
    "rollsPerCarton": 36,
    "sources": [
@@ -8020,7 +8020,7 @@
    ],
    "sourceUrl": "https://zebra.com/content/dam/zebra_dam/en/brochure/portfolio/zipship-brochure-catalog-apac-en-us.pdf",
    "verified": false,
-   "notes": "Size is the printable image area, not the whole band. 500 bands per roll, 2 rolls per carton.",
+   "notes": "Size is the printable image area, not the whole band. 500 bands per roll, 2 rolls per carton. Stated by one public source only (the ZipShip catalogue), not cross-checked, so not verified.",
    "sources": [
     "zipship-catalogue-pdf"
    ],
@@ -8277,8 +8277,8 @@
     "US"
    ],
    "sourceUrl": "https://zebra.com/content/dam/zebra_dam/en/brochure/portfolio/zipship-brochure-catalog-apac-en-us.pdf",
-   "verified": true,
-   "notes": "Size exists as a Zebra catalog item (see sourceUrl). A typical gap is about 3 mm (0.125 in) but that value is NOT in the cited source: let the user set it from their own stock.",
+   "verified": false,
+   "notes": "Size exists as a Zebra catalog item (see sourceUrl). A typical gap is about 3 mm (0.125 in) but that value is NOT in the cited source: let the user set it from their own stock. Stated by one public source only (the ZipShip catalogue), not cross-checked, so not verified.",
    "sources": [
     "zipship-catalogue-pdf"
    ],
@@ -8309,8 +8309,8 @@
     "US"
    ],
    "sourceUrl": "https://zebra.com/content/dam/zebra_dam/en/brochure/portfolio/zipship-brochure-catalog-apac-en-us.pdf",
-   "verified": true,
-   "notes": "Size exists as a Zebra catalog item (see sourceUrl). A typical gap is about 3 mm (0.125 in) but that value is NOT in the cited source: let the user set it from their own stock.",
+   "verified": false,
+   "notes": "Size exists as a Zebra catalog item (see sourceUrl). A typical gap is about 3 mm (0.125 in) but that value is NOT in the cited source: let the user set it from their own stock. Stated by one public source only (the ZipShip catalogue), not cross-checked, so not verified.",
    "sources": [
     "zipship-catalogue-pdf"
    ],
@@ -8341,8 +8341,8 @@
     "US"
    ],
    "sourceUrl": "https://zebra.com/content/dam/zebra_dam/en/brochure/portfolio/zipship-brochure-catalog-apac-en-us.pdf",
-   "verified": true,
-   "notes": "Size exists as a Zebra catalog item (see sourceUrl). A typical gap is about 3 mm (0.125 in) but that value is NOT in the cited source: let the user set it from their own stock.",
+   "verified": false,
+   "notes": "Size exists as a Zebra catalog item (see sourceUrl). A typical gap is about 3 mm (0.125 in) but that value is NOT in the cited source: let the user set it from their own stock. Stated by one public source only (the ZipShip catalogue), not cross-checked, so not verified.",
    "sources": [
     "zipship-catalogue-pdf"
    ],
@@ -8373,8 +8373,8 @@
     "US"
    ],
    "sourceUrl": "https://zebra.com/content/dam/zebra_dam/en/brochure/portfolio/zipship-brochure-catalog-apac-en-us.pdf",
-   "verified": true,
-   "notes": "Size exists as a Zebra catalog item (see sourceUrl). A typical gap is about 3 mm (0.125 in) but that value is NOT in the cited source: let the user set it from their own stock.",
+   "verified": false,
+   "notes": "Size exists as a Zebra catalog item (see sourceUrl). A typical gap is about 3 mm (0.125 in) but that value is NOT in the cited source: let the user set it from their own stock. Stated by one public source only (the ZipShip catalogue), not cross-checked, so not verified.",
    "sources": [
     "zipship-catalogue-pdf"
    ],
@@ -8405,8 +8405,8 @@
     "US"
    ],
    "sourceUrl": "https://zebra.com/content/dam/zebra_dam/en/brochure/portfolio/zipship-brochure-catalog-apac-en-us.pdf",
-   "verified": true,
-   "notes": "Size exists as a Zebra catalog item (see sourceUrl). A typical gap is about 3 mm (0.125 in) but that value is NOT in the cited source: let the user set it from their own stock.",
+   "verified": false,
+   "notes": "Size exists as a Zebra catalog item (see sourceUrl). A typical gap is about 3 mm (0.125 in) but that value is NOT in the cited source: let the user set it from their own stock. Stated by one public source only (the ZipShip catalogue), not cross-checked, so not verified.",
    "sources": [
     "zipship-catalogue-pdf"
    ],
@@ -8437,8 +8437,8 @@
     "US"
    ],
    "sourceUrl": "https://zebra.com/content/dam/zebra_dam/en/brochure/portfolio/zipship-brochure-catalog-apac-en-us.pdf",
-   "verified": true,
-   "notes": "Size exists as a Zebra catalog item (see sourceUrl). A typical gap is about 3 mm (0.125 in) but that value is NOT in the cited source: let the user set it from their own stock.",
+   "verified": false,
+   "notes": "Size exists as a Zebra catalog item (see sourceUrl). A typical gap is about 3 mm (0.125 in) but that value is NOT in the cited source: let the user set it from their own stock. Stated by one public source only (the ZipShip catalogue), not cross-checked, so not verified.",
    "sources": [
     "zipship-catalogue-pdf"
    ],
@@ -8469,8 +8469,8 @@
     "US"
    ],
    "sourceUrl": "https://zebra.com/content/dam/zebra_dam/en/brochure/portfolio/zipship-brochure-catalog-apac-en-us.pdf",
-   "verified": true,
-   "notes": "Size exists as a Zebra catalog item (see sourceUrl). A typical gap is about 3 mm (0.125 in) but that value is NOT in the cited source: let the user set it from their own stock.",
+   "verified": false,
+   "notes": "Size exists as a Zebra catalog item (see sourceUrl). A typical gap is about 3 mm (0.125 in) but that value is NOT in the cited source: let the user set it from their own stock. Stated by one public source only (the ZipShip catalogue), not cross-checked, so not verified.",
    "sources": [
     "zipship-catalogue-pdf"
    ],
@@ -8501,8 +8501,8 @@
     "US"
    ],
    "sourceUrl": "https://zebra.com/content/dam/zebra_dam/en/brochure/portfolio/zipship-brochure-catalog-apac-en-us.pdf",
-   "verified": true,
-   "notes": "Size exists as a Zebra catalog item (see sourceUrl). A typical gap is about 3 mm (0.125 in) but that value is NOT in the cited source: let the user set it from their own stock.",
+   "verified": false,
+   "notes": "Size exists as a Zebra catalog item (see sourceUrl). A typical gap is about 3 mm (0.125 in) but that value is NOT in the cited source: let the user set it from their own stock. Stated by one public source only (the ZipShip catalogue), not cross-checked, so not verified.",
    "sources": [
     "zipship-catalogue-pdf"
    ],
@@ -8533,8 +8533,8 @@
     "US"
    ],
    "sourceUrl": "https://zebra.com/content/dam/zebra_dam/en/brochure/portfolio/zipship-brochure-catalog-apac-en-us.pdf",
-   "verified": true,
-   "notes": "Size exists as a Zebra catalog item (see sourceUrl). A typical gap is about 3 mm (0.125 in) but that value is NOT in the cited source: let the user set it from their own stock.",
+   "verified": false,
+   "notes": "Size exists as a Zebra catalog item (see sourceUrl). A typical gap is about 3 mm (0.125 in) but that value is NOT in the cited source: let the user set it from their own stock. Stated by one public source only (the ZipShip catalogue), not cross-checked, so not verified.",
    "sources": [
     "zipship-catalogue-pdf"
    ],
@@ -8565,8 +8565,8 @@
     "US"
    ],
    "sourceUrl": "https://zebra.com/content/dam/zebra_dam/en/brochure/portfolio/zipship-brochure-catalog-apac-en-us.pdf",
-   "verified": true,
-   "notes": "Size exists as a Zebra catalog item (see sourceUrl). A typical gap is about 3 mm (0.125 in) but that value is NOT in the cited source: let the user set it from their own stock.",
+   "verified": false,
+   "notes": "Size exists as a Zebra catalog item (see sourceUrl). A typical gap is about 3 mm (0.125 in) but that value is NOT in the cited source: let the user set it from their own stock. Stated by one public source only (the ZipShip catalogue), not cross-checked, so not verified.",
    "sources": [
     "zipship-catalogue-pdf"
    ],
@@ -8597,8 +8597,8 @@
     "US"
    ],
    "sourceUrl": "https://zebra.com/content/dam/zebra_dam/en/brochure/portfolio/zipship-brochure-catalog-apac-en-us.pdf",
-   "verified": true,
-   "notes": "Size exists as a Zebra catalog item (see sourceUrl). A typical gap is about 3 mm (0.125 in) but that value is NOT in the cited source: let the user set it from their own stock.",
+   "verified": false,
+   "notes": "Size exists as a Zebra catalog item (see sourceUrl). A typical gap is about 3 mm (0.125 in) but that value is NOT in the cited source: let the user set it from their own stock. Stated by one public source only (the ZipShip catalogue), not cross-checked, so not verified.",
    "sources": [
     "zipship-catalogue-pdf"
    ],
@@ -8629,8 +8629,8 @@
     "US"
    ],
    "sourceUrl": "https://zebra.com/content/dam/zebra_dam/en/brochure/portfolio/zipship-brochure-catalog-apac-en-us.pdf",
-   "verified": true,
-   "notes": "Size exists as a Zebra catalog item (see sourceUrl). A typical gap is about 3 mm (0.125 in) but that value is NOT in the cited source: let the user set it from their own stock.",
+   "verified": false,
+   "notes": "Size exists as a Zebra catalog item (see sourceUrl). A typical gap is about 3 mm (0.125 in) but that value is NOT in the cited source: let the user set it from their own stock. Stated by one public source only (the ZipShip catalogue), not cross-checked, so not verified.",
    "sources": [
     "zipship-catalogue-pdf"
    ],

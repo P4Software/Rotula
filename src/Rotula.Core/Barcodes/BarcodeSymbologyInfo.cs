@@ -95,6 +95,17 @@ public enum BarcodeOption
     Code49StartMode,
 }
 
+/// <summary>How a <see cref="BarcodeOption"/> relates to the printer resolution; the DPI converter decides what to scale from it.</summary>
+public enum BarcodeDotKind
+{
+    /// <summary>Not a dot measure (flags, modes, counts, or modules-based values such as the DataBar separator height); never scaled.</summary>
+    NotDots,
+    /// <summary>A module / narrow-bar width in whole dots (1-10): scaled with rounding to whole dots and a warning when the symbol width would change noticeably.</summary>
+    Module,
+    /// <summary>A bar, row or symbol height in dots: scaled proportionally.</summary>
+    Length,
+}
+
 /// <summary>
 /// Everything the UI, the importer and tools need to know about one barcode symbology, as data: names, the ZPL command,
 /// the options that apply, and the rules for the data. It is descriptive; the authoritative checks are in <see cref="BarcodeValidator"/>.
@@ -143,6 +154,10 @@ public sealed record BarcodeSymbologyInfo(
 
     /// <summary>True when the module size comes from the symbology's own magnification instead of ^BY.</summary>
     public bool UsesModuleSize => Supports(BarcodeOption.ModuleSize);
+
+    /// <summary>The options of this symbology that are measured in printer dots, with how each one scales (never <see cref="BarcodeDotKind.NotDots"/>).</summary>
+    public IEnumerable<(BarcodeOption Option, BarcodeDotKind Kind)> DotOptions =>
+        Options.Select(o => (Option: o, Kind: BarcodeCatalog.GetDotKind(o))).Where(t => t.Kind != BarcodeDotKind.NotDots);
 }
 
 /// <summary>The catalogue of all barcode symbologies Rotula can write to and read from ZPL.</summary>
@@ -247,6 +262,18 @@ public static class BarcodeCatalog
     };
 
     private static readonly Dictionary<BarcodeSymbology, BarcodeSymbologyInfo> BySymbology = Entries.ToDictionary(e => e.Symbology);
+
+    /// <summary>
+    /// How <paramref name="option"/> depends on the printer resolution. Every option is classified explicitly (a test fails when a
+    /// new <see cref="BarcodeOption"/> is added without a decision), so a new dot-based option cannot silently skip DPI conversion.
+    /// </summary>
+    public static BarcodeDotKind GetDotKind(BarcodeOption option) => option switch
+    {
+        BarcodeOption.ModuleWidth or BarcodeOption.ModuleSize or BarcodeOption.Tlc39MicroModuleWidth => BarcodeDotKind.Module,
+        BarcodeOption.Height or BarcodeOption.Tlc39MicroRowHeight => BarcodeDotKind.Length,
+        // DataBarSeparatorHeight is 1 or 2 modules (not dots), so it follows the module size by itself.
+        _ => BarcodeDotKind.NotDots,
+    };
 
     /// <summary>Every symbology, in display order (the original nine first).</summary>
     public static IReadOnlyList<BarcodeSymbologyInfo> All => Entries;

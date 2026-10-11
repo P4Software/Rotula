@@ -2068,6 +2068,9 @@
   <data name="Issue.Dpi.Raw.NotScaled" xml:space="preserve">
     <value>"{0}" contains raw ZPL, which cannot be resized automatically. It keeps its original dot positions and may print smaller or larger than the rest. Edit it or replace it with regular elements.</value>
   </data>
+  <data name="Issue.Dpi.Graphic.NotScaled" xml:space="preserve">
+    <value>The stored graphic "{0}" is a fixed bitmap and cannot be resized for the new resolution. It will print at a different physical size. Replace it with a graphic made for this resolution.</value>
+  </data>
   <data name="Print.DpiConvert.Failed" xml:space="preserve">
     <value>This label contains an element that cannot be converted from {0} dpi to {1} dpi automatically. Nothing was changed.</value>
   </data>
@@ -3263,7 +3266,7 @@
     <value>The gap between labels of the stock "{0}" is not known. Calibrate the printer with this stock loaded.</value>
   </data>
   <data name="Issue.Stocks.Apply.ContinuousNoHeight" xml:space="preserve">
-    <value>The stock "{0}" is a continuous roll with no fixed label height, so the label height was left as it was. Set the height you need. The roll is {1} m long (empty if unknown).</value>
+    <value>The stock "{0}" is a continuous roll with no fixed label height, so the label height was left as it was. Set the height you need.</value>
   </data>
   <data name="Issue.Stocks.Apply.MultiUpNotSupported" xml:space="preserve">
     <value>This stock has {0} labels across and {1} down. Only one label is laid out for now, so place the other labels yourself if you need them.</value>
@@ -3324,5 +3327,739 @@
   </data>
   <data name="Issue.Stocks.Import.RowDuplicate" xml:space="preserve">
     <value>Row {0} repeats the part number {1}, so it was skipped. Keep one row per part number.</value>
+  </data>
+  <data name="Data.Option.Host" xml:space="preserve">
+    <value>Server address</value>
+  </data>
+  <data name="Data.Option.Host.Help" xml:space="preserve">
+    <value>The name or IP address of the database server, for example db.example.com. Your database administrator can tell you.</value>
+  </data>
+  <data name="Data.Option.Port" xml:space="preserve">
+    <value>Port</value>
+  </data>
+  <data name="Data.Option.Database" xml:space="preserve">
+    <value>Database name</value>
+  </data>
+  <data name="Data.Option.UserName" xml:space="preserve">
+    <value>User name</value>
+  </data>
+  <data name="Data.Option.FilePath" xml:space="preserve">
+    <value>Database file</value>
+  </data>
+  <data name="Data.Option.Dsn" xml:space="preserve">
+    <value>Data source name (DSN)</value>
+  </data>
+  <data name="Data.Option.OdbcConnectionString" xml:space="preserve">
+    <value>Connection string</value>
+  </data>
+  <data name="Data.Option.Encrypt" xml:space="preserve">
+    <value>Encrypt the connection</value>
+  </data>
+  <data name="Data.Option.Encrypt.Help" xml:space="preserve">
+    <value>Keep this on. Turn it off only for a trusted server on your own network.</value>
+  </data>
+  <data name="Data.Option.TrustServerCertificate" xml:space="preserve">
+    <value>Trust this server's certificate</value>
+  </data>
+  <data name="Data.Option.TrustServerCertificate.Help" xml:space="preserve">
+    <value>Only for a server you know and control, such as a test server. Otherwise someone could impersonate the server.</value>
+  </data>
+  <data name="Data.Option.CaCertificate" xml:space="preserve">
+    <value>Certificate authority file (optional)</value>
+  </data>
+  <data name="Data.Option.NoStartupOptions" xml:space="preserve">
+    <value>The server sits behind a connection pooler</value>
+  </data>
+  <data name="Data.Option.Flavor" xml:space="preserve">
+    <value>Server family</value>
+  </data>
+  <data name="Data.Option.Flavor.MySql" xml:space="preserve">
+    <value>MySQL</value>
+  </data>
+  <data name="Data.Option.Flavor.MariaDb" xml:space="preserve">
+    <value>MariaDB</value>
+  </data>
+  <data name="Data.Option.UnderlyingEngine" xml:space="preserve">
+    <value>Database behind the driver</value>
+  </data>
+  <data name="Data.Option.UnderlyingEngine.Help" xml:space="preserve">
+    <value>If you know which database the ODBC driver talks to, choose it so Rotula applies that database's safety rules. Never loosens the checks.</value>
+  </data>
+  <data name="Data.Option.UnderlyingEngine.Unknown" xml:space="preserve">
+    <value>Not sure</value>
+  </data>
+  <data name="Data.Dialect.sqlserver" xml:space="preserve">
+    <value>SQL Server</value>
+  </data>
+  <data name="Data.Dialect.postgresql" xml:space="preserve">
+    <value>PostgreSQL</value>
+  </data>
+  <data name="Data.Dialect.mysql" xml:space="preserve">
+    <value>MySQL</value>
+  </data>
+  <data name="Data.Dialect.mariadb" xml:space="preserve">
+    <value>MariaDB</value>
+  </data>
+  <data name="Data.Dialect.sqlite" xml:space="preserve">
+    <value>SQLite</value>
+  </data>
+  <data name="Data.Dialect.oracle" xml:space="preserve">
+    <value>Oracle</value>
+  </data>
+  <data name="Data.Dialect.duckdb" xml:space="preserve">
+    <value>DuckDB</value>
+  </data>
+  <data name="Data.Dialect.bigquery" xml:space="preserve">
+    <value>BigQuery</value>
+  </data>
+  <data name="Data.Dialect.snowflake" xml:space="preserve">
+    <value>Snowflake</value>
+  </data>
+  <data name="Data.Dialect.clickhouse" xml:space="preserve">
+    <value>ClickHouse</value>
+  </data>
+  <data name="Data.Dialect.informix" xml:space="preserve">
+    <value>Informix</value>
+  </data>
+  <data name="Data.Dialect.db2" xml:space="preserve">
+    <value>IBM Db2</value>
+  </data>
+  <data name="Data.Dialect.firebird" xml:space="preserve">
+    <value>Firebird</value>
+  </data>
+  <data name="Data.Dialect.jet" xml:space="preserve">
+    <value>Microsoft Access / Excel (Jet, ACE)</value>
+  </data>
+  <data name="Data.Hint.CaCertificate" xml:space="preserve">
+    <value>If the server's certificate comes from your own organisation, choose the certificate authority file here. Your administrator can give it to you.</value>
+  </data>
+  <data name="Data.Hint.EntraOnly" xml:space="preserve">
+    <value>This service only accepts Microsoft Entra sign-in, which needs an add-on that is not installed yet. You cannot connect to it with a user name and password.</value>
+  </data>
+  <data name="Data.Hint.InstallAce64" xml:space="preserve">
+    <value>The driver for this file type was not found on this computer. Install the 64-bit "Microsoft Access Database Engine" from Microsoft, then restart Rotula.</value>
+  </data>
+  <data name="Data.Hint.PoolerHost" xml:space="preserve">
+    <value>This server is a connection pooler. If something does not work, try the direct connection address instead.</value>
+  </data>
+  <data name="Data.Hint.ReadOnlyAccount" xml:space="preserve">
+    <value>Use a database account that can only read (SELECT). This data source cannot make a session read-only by itself, so the account is the real protection.</value>
+  </data>
+  <data name="Data.Preset.MariaDb" xml:space="preserve">
+    <value>MariaDB</value>
+  </data>
+  <data name="Data.Preset.AmazonRdsMySql" xml:space="preserve">
+    <value>Amazon RDS for MySQL</value>
+  </data>
+  <data name="Data.Preset.AmazonAuroraMySql" xml:space="preserve">
+    <value>Amazon Aurora (MySQL)</value>
+  </data>
+  <data name="Data.Preset.AmazonRdsPostgreSql" xml:space="preserve">
+    <value>Amazon RDS for PostgreSQL</value>
+  </data>
+  <data name="Data.Preset.AmazonAuroraPostgreSql" xml:space="preserve">
+    <value>Amazon Aurora (PostgreSQL)</value>
+  </data>
+  <data name="Data.Preset.AmazonRedshift" xml:space="preserve">
+    <value>Amazon Redshift</value>
+  </data>
+  <data name="Data.Preset.CockroachDb" xml:space="preserve">
+    <value>CockroachDB</value>
+  </data>
+  <data name="Data.Preset.YugabyteDb" xml:space="preserve">
+    <value>YugabyteDB (YSQL)</value>
+  </data>
+  <data name="Data.Preset.Supabase" xml:space="preserve">
+    <value>Supabase (direct connection)</value>
+  </data>
+  <data name="Data.Preset.SupabasePooler" xml:space="preserve">
+    <value>Supabase (connection pooler)</value>
+  </data>
+  <data name="Data.Preset.Neon" xml:space="preserve">
+    <value>Neon (direct connection)</value>
+  </data>
+  <data name="Data.Preset.NeonPooler" xml:space="preserve">
+    <value>Neon (connection pooler)</value>
+  </data>
+  <data name="Data.Preset.PlanetScale" xml:space="preserve">
+    <value>PlanetScale</value>
+  </data>
+  <data name="Data.Preset.TiDb" xml:space="preserve">
+    <value>TiDB</value>
+  </data>
+  <data name="Data.Preset.SingleStore" xml:space="preserve">
+    <value>SingleStore</value>
+  </data>
+  <data name="Data.Preset.AzureSqlDatabase" xml:space="preserve">
+    <value>Azure SQL Database</value>
+  </data>
+  <data name="Data.Preset.AzureSynapse" xml:space="preserve">
+    <value>Azure Synapse Analytics</value>
+  </data>
+  <data name="Data.Preset.MicrosoftFabric" xml:space="preserve">
+    <value>Microsoft Fabric</value>
+  </data>
+  <data name="Data.Preset.GoogleCloudSqlMySql" xml:space="preserve">
+    <value>Google Cloud SQL for MySQL</value>
+  </data>
+  <data name="Data.Preset.GoogleCloudSqlPostgreSql" xml:space="preserve">
+    <value>Google Cloud SQL for PostgreSQL</value>
+  </data>
+  <data name="Data.Preset.GoogleCloudSqlSqlServer" xml:space="preserve">
+    <value>Google Cloud SQL for SQL Server</value>
+  </data>
+  <data name="Data.Preset.MicrosoftAccess" xml:space="preserve">
+    <value>Microsoft Access (.mdb, .accdb)</value>
+  </data>
+  <data name="Data.Preset.MicrosoftExcel" xml:space="preserve">
+    <value>Microsoft Excel (.xls, .xlsx)</value>
+  </data>
+  <data name="Data.Preset.TextCsv" xml:space="preserve">
+    <value>Text and CSV files (a folder)</value>
+  </data>
+  <data name="Data.Pack.ManifestInvalid" xml:space="preserve">
+    <value>The add-on in the folder "{0}" has no valid description file (pack.json), so it was not loaded. Ask the person who gave you the add-on for a corrected copy.</value>
+  </data>
+  <data name="Data.Pack.NeedsNewerRotula" xml:space="preserve">
+    <value>The add-on "{0}" needs a newer version of Rotula (data interface {1}). Update Rotula, then restart it.</value>
+  </data>
+  <data name="Data.Pack.BuiltForOlderRotula" xml:space="preserve">
+    <value>The add-on "{0}" was made for an older version of Rotula and cannot be used. Ask for an updated add-on.</value>
+  </data>
+  <data name="Data.Pack.LoadFailed" xml:space="preserve">
+    <value>The add-on "{0}" could not be opened. A file may be missing or damaged, or built for another kind of computer. Reinstall the add-on.</value>
+  </data>
+  <data name="Data.Pack.StartupFailed" xml:space="preserve">
+    <value>The add-on "{0}" stopped with an error while starting, so it was turned off. Rotula itself is not affected. Reinstall or update the add-on.</value>
+  </data>
+  <data name="Data.Pack.EntryMismatch" xml:space="preserve">
+    <value>The add-on "{0}" does not match its description file, so it was not loaded. Reinstall the add-on.</value>
+  </data>
+  <data name="Data.Pack.InvalidProviderId" xml:space="preserve">
+    <value>An add-on offers a data source named "{0}", which is not a valid name, so the add-on was not loaded.</value>
+  </data>
+  <data name="Data.Pack.DuplicateProvider" xml:space="preserve">
+    <value>An add-on offers a data source named "{0}", which already exists, so the add-on was not loaded. An add-on can never replace a data source.</value>
+  </data>
+  <data name="Data.Pack.DuplicatePack" xml:space="preserve">
+    <value>An add-on named "{0}" is already loaded; the second copy was ignored.</value>
+  </data>
+  <data name="Data.Pack.UserPackNeedsApproval" xml:space="preserve">
+    <value>The add-on "{0}" in your own folder was not loaded. An add-on is a program: only approve it if you trust where it came from.</value>
+  </data>
+  <data name="Data.Pack.UserPackChanged" xml:space="preserve">
+    <value>The add-on "{0}" has changed since you approved it, so it was not loaded. Approve it again only if you expected the change.</value>
+  </data>
+  <data name="Data.Pack.UnsafeFolder" xml:space="preserve">
+    <value>The add-on folder "{0}" contains shortcuts (links) or is too large, so it was skipped.</value>
+  </data>
+  <data name="Data.Pack.Trust.Title" xml:space="preserve">
+    <value>Approve this add-on?</value>
+  </data>
+  <data name="Data.Pack.Trust.Warning" xml:space="preserve">
+    <value>"{0}" is an add-on from your own folder ({1}). An add-on is a program: if you approve it, it can do anything you can do on this computer, including reading your files. Only approve it if you know who made it and you got it from a source you trust. You can remove the approval later.</value>
+  </data>
+  <data name="Data.Pack.Unknown" xml:space="preserve">
+    <value>The add-on "{0}" could not be used.</value>
+  </data>
+  <data name="Pack.Notice.Warnings" xml:space="preserve">
+    <value>Some data source add-ons could not be loaded.</value>
+  </data>
+  <data name="Pack.Notice.Pending" xml:space="preserve">
+    <value>An add-on is waiting for your approval.</value>
+  </data>
+  <data name="Pack.Notice.Details" xml:space="preserve">
+    <value>Details</value>
+  </data>
+  <data name="Pack.Notice.Dismiss" xml:space="preserve">
+    <value>Close this notice</value>
+  </data>
+  <data name="Pack.Details.Title" xml:space="preserve">
+    <value>Data source add-ons</value>
+  </data>
+  <data name="Pack.Details.Intro" xml:space="preserve">
+    <value>These add-ons were found but not loaded. Rotula itself works normally.</value>
+  </data>
+  <data name="Pack.Details.Technical" xml:space="preserve">
+    <value>Technical detail</value>
+  </data>
+  <data name="Pack.Details.Review" xml:space="preserve">
+    <value>Review...</value>
+  </data>
+  <data name="Pack.Details.ReviewName" xml:space="preserve">
+    <value>Review the add-on {0}</value>
+  </data>
+  <data name="Pack.Details.Loaded" xml:space="preserve">
+    <value>The add-on "{0}" was approved and is now available.</value>
+  </data>
+  <data name="Pack.Trust.Publisher" xml:space="preserve">
+    <value>Publisher</value>
+  </data>
+  <data name="Pack.Trust.Version" xml:space="preserve">
+    <value>Version</value>
+  </data>
+  <data name="Pack.Trust.Fingerprint" xml:space="preserve">
+    <value>Fingerprint (SHA-256)</value>
+  </data>
+  <data name="Pack.Trust.Folder" xml:space="preserve">
+    <value>Folder</value>
+  </data>
+  <data name="Pack.Trust.Approve" xml:space="preserve">
+    <value>Approve and load</value>
+  </data>
+  <data name="Pack.Trust.Skip" xml:space="preserve">
+    <value>Skip</value>
+  </data>
+  <data name="Pack.Trust.SkipNote" xml:space="preserve">
+    <value>Skip keeps the add-on switched off. Rotula will ask again the next time it starts.</value>
+  </data>
+  <data name="Pack.Trust.Unknown" xml:space="preserve">
+    <value>not stated</value>
+  </data>
+  <data name="Data.Category.Server" xml:space="preserve">
+    <value>Database servers</value>
+  </data>
+  <data name="Data.Category.Cloud" xml:space="preserve">
+    <value>Cloud services</value>
+  </data>
+  <data name="Data.Category.File" xml:space="preserve">
+    <value>Files</value>
+  </data>
+  <data name="Data.Category.Document" xml:space="preserve">
+    <value>Document stores</value>
+  </data>
+  <data name="Data.Category.Web" xml:space="preserve">
+    <value>Web services</value>
+  </data>
+  <data name="Data.Category.Odbc" xml:space="preserve">
+    <value>Other (ODBC drivers)</value>
+  </data>
+  <data name="Conn.Advanced" xml:space="preserve">
+    <value>More options</value>
+  </data>
+  <data name="Conn.PackMissing" xml:space="preserve">
+    <value>This connection needs the add-on "{0}", which is not installed. Its settings are kept as they are. Install the add-on and restart Rotula to use or edit this connection.</value>
+  </data>
+  <data name="Conn.Preset.Unverified" xml:space="preserve">
+    <value>Rotula could not confirm this service's settings against the vendor's documentation. Check the address and port before you rely on them.</value>
+  </data>
+  <data name="Conn.Preset.File" xml:space="preserve">
+    <value>File</value>
+  </data>
+  <data name="Conn.Preset.Folder" xml:space="preserve">
+    <value>Folder</value>
+  </data>
+  <data name="Conn.BrowseFolder" xml:space="preserve">
+    <value>Choose a folder...</value>
+  </data>
+  <data name="Conn.Preset.Detected" xml:space="preserve">
+    <value>This address looks like {0}.</value>
+  </data>
+  <data name="Conn.Preset.UseDetected" xml:space="preserve">
+    <value>Use its settings</value>
+  </data>
+  <data name="Conn.Test.RetypeFocus" xml:space="preserve">
+    <value>You changed where or how this connection signs in, so the saved password was not used. Type the password in the Password box and test again.</value>
+  </data>
+  <data name="Conn.Choose" xml:space="preserve">
+    <value>Choose...</value>
+  </data>
+  <data name="Conn.Required" xml:space="preserve">
+    <value>{0} is required.</value>
+  </data>
+  <data name="Conn.Option.NumberInvalid" xml:space="preserve">
+    <value>{0} must be a whole number from {1} to {2}.</value>
+  </data>
+  <data name="Stock.Search.Label" xml:space="preserve">
+    <value>Search label stocks</value>
+  </data>
+  <data name="Stock.Search.Placeholder" xml:space="preserve">
+    <value>Search by part number, size or name</value>
+  </data>
+  <data name="Stock.Search.Hint" xml:space="preserve">
+    <value>Try a part number such as {0}, or a size such as 4x6 or 100x150mm.</value>
+  </data>
+  <data name="Stock.Filter.Brand" xml:space="preserve">
+    <value>Brand</value>
+  </data>
+  <data name="Stock.Filter.AllBrands" xml:space="preserve">
+    <value>All brands</value>
+  </data>
+  <data name="Stock.Filter.Unit" xml:space="preserve">
+    <value>Quoted in</value>
+  </data>
+  <data name="Stock.Filter.AllUnits" xml:space="preserve">
+    <value>Inches or mm</value>
+  </data>
+  <data name="Stock.Filter.Inches" xml:space="preserve">
+    <value>Inches</value>
+  </data>
+  <data name="Stock.Filter.Millimeters" xml:space="preserve">
+    <value>Millimetres</value>
+  </data>
+  <data name="Stock.Filter.Layout" xml:space="preserve">
+    <value>Type</value>
+  </data>
+  <data name="Stock.Filter.AllLayouts" xml:space="preserve">
+    <value>All types</value>
+  </data>
+  <data name="Stock.Layout.Roll" xml:space="preserve">
+    <value>Roll</value>
+  </data>
+  <data name="Stock.Layout.Sheet" xml:space="preserve">
+    <value>Sheet</value>
+  </data>
+  <data name="Stock.Layout.Round" xml:space="preserve">
+    <value>Round</value>
+  </data>
+  <data name="Stock.Filter.Verified" xml:space="preserve">
+    <value>Verified only</value>
+  </data>
+  <data name="Stock.Filter.Favorites" xml:space="preserve">
+    <value>Favourites only</value>
+  </data>
+  <data name="Stock.Group.Common" xml:space="preserve">
+    <value>Common sizes</value>
+  </data>
+  <data name="Stock.Group.Favorites" xml:space="preserve">
+    <value>Favourites</value>
+  </data>
+  <data name="Stock.Group.Recent" xml:space="preserve">
+    <value>Recent</value>
+  </data>
+  <data name="Stock.Group.Results" xml:space="preserve">
+    <value>Results</value>
+  </data>
+  <data name="Stock.Group.Near" xml:space="preserve">
+    <value>Close sizes</value>
+  </data>
+  <data name="Stock.Custom.Name" xml:space="preserve">
+    <value>Custom size...</value>
+  </data>
+  <data name="Stock.Custom.Sub" xml:space="preserve">
+    <value>Type your own width and height</value>
+  </data>
+  <data name="Stock.Common.Sub" xml:space="preserve">
+    <value>Common label size</value>
+  </data>
+  <data name="Stock.Result.Total" xml:space="preserve">
+    <value>{0} label stocks. Type to search.</value>
+  </data>
+  <data name="Stock.Result.Empty" xml:space="preserve">
+    <value>The stock library is not available. You can still use the common sizes or a custom size.</value>
+  </data>
+  <data name="Stock.Result.All" xml:space="preserve">
+    <value>{0} stocks found</value>
+  </data>
+  <data name="Stock.Result.Count" xml:space="preserve">
+    <value>Showing {0} of {1} stocks. Type more to narrow it down.</value>
+  </data>
+  <data name="Stock.Result.WithNear" xml:space="preserve">
+    <value>{0} stocks found, and {1} close sizes below</value>
+  </data>
+  <data name="Stock.Result.None" xml:space="preserve">
+    <value>No stock matches. Try fewer words, or only the part number or the size.</value>
+  </data>
+  <data name="Stock.Loading" xml:space="preserve">
+    <value>Loading the stock library...</value>
+  </data>
+  <data name="Stock.Verified" xml:space="preserve">
+    <value>Verified size</value>
+  </data>
+  <data name="Stock.Unverified" xml:space="preserve">
+    <value>Size not verified</value>
+  </data>
+  <data name="Stock.Verified.Tip" xml:space="preserve">
+    <value>The size was confirmed by two independent statements.</value>
+  </data>
+  <data name="Stock.Unverified.Tip" xml:space="preserve">
+    <value>The size comes from one statement or the statements disagree. Measure the real labels before you print a large run.</value>
+  </data>
+  <data name="Stock.Origin.User" xml:space="preserve">
+    <value>My stock</value>
+  </data>
+  <data name="Stock.Favorite.Add" xml:space="preserve">
+    <value>Add to favourites</value>
+  </data>
+  <data name="Stock.Favorite.Remove" xml:space="preserve">
+    <value>Remove from favourites</value>
+  </data>
+  <data name="Stock.Favorite.Is" xml:space="preserve">
+    <value>favourite</value>
+  </data>
+  <data name="Stock.CreateLabel" xml:space="preserve">
+    <value>Create label</value>
+  </data>
+  <data name="Stock.Dpi.FromPrinter" xml:space="preserve">
+    <value>Taken from your printer ({0} dpi). Change it if you will print on another one.</value>
+  </data>
+  <data name="Stock.Warnings.Heading" xml:space="preserve">
+    <value>Before you start</value>
+  </data>
+  <data name="Stock.Facts.Heading" xml:space="preserve">
+    <value>What is known about this stock</value>
+  </data>
+  <data name="Stock.Height.Required" xml:space="preserve">
+    <value>This is a continuous roll: type the height of the label you want.</value>
+  </data>
+  <data name="Stock.Height.Label" xml:space="preserve">
+    <value>Label height</value>
+  </data>
+  <data name="Stock.Apply.NoWidth" xml:space="preserve">
+    <value>This stock has no usable size, so it cannot be applied.</value>
+  </data>
+  <data name="Stock.RollLength.Sentence" xml:space="preserve">
+    <value>The roll is {0} m long.</value>
+  </data>
+  <data name="Stock.Size.Mm" xml:space="preserve">
+    <value>{0} x {1} mm</value>
+  </data>
+  <data name="Stock.Size.In" xml:space="preserve">
+    <value>{0} x {1} in</value>
+  </data>
+  <data name="Stock.Size.WidthMm" xml:space="preserve">
+    <value>{0} mm wide</value>
+  </data>
+  <data name="Stock.Size.WidthIn" xml:space="preserve">
+    <value>{0} in wide</value>
+  </data>
+  <data name="Stock.Size.Mm1" xml:space="preserve">
+    <value>{0} mm</value>
+  </data>
+  <data name="Stock.Size.Metres" xml:space="preserve">
+    <value>{0} m</value>
+  </data>
+  <data name="Stock.Size.CoreMm" xml:space="preserve">
+    <value>{0} mm ({1} in)</value>
+  </data>
+  <data name="Stock.Across.Format" xml:space="preserve">
+    <value>{0} across, {1} down</value>
+  </data>
+  <data name="Stock.Gap.Unknown" xml:space="preserve">
+    <value>Not known. Calibrate the printer with this stock loaded.</value>
+  </data>
+  <data name="Stock.Gap.Mark" xml:space="preserve">
+    <value>Black mark on the back</value>
+  </data>
+  <data name="Stock.Media.Unknown" xml:space="preserve">
+    <value>Not stated</value>
+  </data>
+  <data name="Stock.Media.DirectThermal" xml:space="preserve">
+    <value>Direct thermal</value>
+  </data>
+  <data name="Stock.Media.ThermalTransfer" xml:space="preserve">
+    <value>Thermal transfer</value>
+  </data>
+  <data name="Stock.Media.Either" xml:space="preserve">
+    <value>Direct thermal or thermal transfer</value>
+  </data>
+  <data name="Stock.Format.Unknown" xml:space="preserve">
+    <value>Not stated</value>
+  </data>
+  <data name="Stock.Format.Roll" xml:space="preserve">
+    <value>Roll of die-cut labels</value>
+  </data>
+  <data name="Stock.Format.Continuous" xml:space="preserve">
+    <value>Continuous roll</value>
+  </data>
+  <data name="Stock.Format.Linerless" xml:space="preserve">
+    <value>Linerless roll</value>
+  </data>
+  <data name="Stock.Format.Fanfold" xml:space="preserve">
+    <value>Fan-fold stack</value>
+  </data>
+  <data name="Stock.Format.Sheet" xml:space="preserve">
+    <value>Cut sheets</value>
+  </data>
+  <data name="Stock.Fact.Brand" xml:space="preserve">
+    <value>Brand</value>
+  </data>
+  <data name="Stock.Fact.Part" xml:space="preserve">
+    <value>Part number</value>
+  </data>
+  <data name="Stock.Fact.Family" xml:space="preserve">
+    <value>Product family</value>
+  </data>
+  <data name="Stock.Fact.Size" xml:space="preserve">
+    <value>Size</value>
+  </data>
+  <data name="Stock.Fact.Media" xml:space="preserve">
+    <value>Print type</value>
+  </data>
+  <data name="Stock.Fact.Format" xml:space="preserve">
+    <value>Supplied as</value>
+  </data>
+  <data name="Stock.Fact.Finish" xml:space="preserve">
+    <value>Surface and adhesive</value>
+  </data>
+  <data name="Stock.Fact.Core" xml:space="preserve">
+    <value>Core</value>
+  </data>
+  <data name="Stock.Fact.PerRoll" xml:space="preserve">
+    <value>Labels per roll</value>
+  </data>
+  <data name="Stock.Fact.RollLength" xml:space="preserve">
+    <value>Roll length</value>
+  </data>
+  <data name="Stock.Fact.Across" xml:space="preserve">
+    <value>Labels across</value>
+  </data>
+  <data name="Stock.Fact.Corner" xml:space="preserve">
+    <value>Corner radius</value>
+  </data>
+  <data name="Stock.Fact.Gap" xml:space="preserve">
+    <value>Gap between labels</value>
+  </data>
+  <data name="Stock.Fact.HGap" xml:space="preserve">
+    <value>Gap between columns</value>
+  </data>
+  <data name="Stock.Fact.VGap" xml:space="preserve">
+    <value>Gap between rows</value>
+  </data>
+  <data name="Stock.Fact.Sources" xml:space="preserve">
+    <value>Sources</value>
+  </data>
+  <data name="Stock.Fact.Verification" xml:space="preserve">
+    <value>Verification</value>
+  </data>
+  <data name="Stock.Own.Heading" xml:space="preserve">
+    <value>Keep this size as my own stock</value>
+  </data>
+  <data name="Stock.Own.Name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Stock.Own.Part" xml:space="preserve">
+    <value>Part number (optional)</value>
+  </data>
+  <data name="Stock.Own.Save" xml:space="preserve">
+    <value>Save as my stock</value>
+  </data>
+  <data name="Stock.Own.Saved" xml:space="preserve">
+    <value>Saved "{0}". You can find it by searching for its name or part number.</value>
+  </data>
+  <data name="Stock.Own.NeedName" xml:space="preserve">
+    <value>Give the stock a name or a part number.</value>
+  </data>
+  <data name="Stock.Own.Error" xml:space="preserve">
+    <value>The stock could not be saved: {0}</value>
+  </data>
+  <data name="Stock.Own.Refused" xml:space="preserve">
+    <value>That size cannot be kept as a stock: it is outside the sizes a label printer can use.</value>
+  </data>
+  <data name="Stock.Import.Button" xml:space="preserve">
+    <value>Import a supplies list...</value>
+  </data>
+  <data name="Stock.Import.Pick" xml:space="preserve">
+    <value>Choose a supplies list (CSV or Excel)</value>
+  </data>
+  <data name="Stock.Import.Title" xml:space="preserve">
+    <value>Import a supplies list</value>
+  </data>
+  <data name="Stock.Import.Intro" xml:space="preserve">
+    <value>Check what Rotula understood before it is kept. Only part numbers, descriptions and sizes are read; prices are never read.</value>
+  </data>
+  <data name="Stock.Import.Counts" xml:space="preserve">
+    <value>{0} rows read, {1} stocks found.</value>
+  </data>
+  <data name="Stock.Import.Nothing" xml:space="preserve">
+    <value>Nothing could be imported from this list.</value>
+  </data>
+  <data name="Stock.Import.Column.Row" xml:space="preserve">
+    <value>Row</value>
+  </data>
+  <data name="Stock.Import.Column.Part" xml:space="preserve">
+    <value>Part number</value>
+  </data>
+  <data name="Stock.Import.Column.Name" xml:space="preserve">
+    <value>Description</value>
+  </data>
+  <data name="Stock.Import.Column.SizeMm" xml:space="preserve">
+    <value>Size (mm)</value>
+  </data>
+  <data name="Stock.Import.Column.SizeIn" xml:space="preserve">
+    <value>Size (in)</value>
+  </data>
+  <data name="Stock.Import.Column.Confidence" xml:space="preserve">
+    <value>Certainty</value>
+  </data>
+  <data name="Stock.Import.High" xml:space="preserve">
+    <value>High</value>
+  </data>
+  <data name="Stock.Import.Medium" xml:space="preserve">
+    <value>Medium: check it</value>
+  </data>
+  <data name="Stock.Import.High.Tip" xml:space="preserve">
+    <value>The size has its own column with a unit, or two statements of it agree.</value>
+  </data>
+  <data name="Stock.Import.Medium.Tip" xml:space="preserve">
+    <value>The size was found in free text with a unit. Check it against the real label.</value>
+  </data>
+  <data name="Stock.Import.Warnings" xml:space="preserve">
+    <value>Notes about the list</value>
+  </data>
+  <data name="Stock.Import.Save" xml:space="preserve">
+    <value>Save {0} stocks</value>
+  </data>
+  <data name="Stock.Import.Saved" xml:space="preserve">
+    <value>{0} stocks saved in {1}. They are now part of the search.</value>
+  </data>
+  <data name="Stock.Disclaimer" xml:space="preserve">
+    <value>Brand and product names belong to their owners; Rotula is not affiliated.</value>
+  </data>
+  <data name="Stock.About.Link" xml:space="preserve">
+    <value>About the stock catalogue</value>
+  </data>
+  <data name="Stock.About.Title" xml:space="preserve">
+    <value>About the stock catalogue</value>
+  </data>
+  <data name="Stock.About.Body" xml:space="preserve">
+    <value>The stock library lists label stocks by manufacturer part number, with the label size in millimetres and inches, the print type and, where a source states it, the core size, labels per roll, labels across and the corner radius.
+
+It holds {0} stocks, {1} of them with a verified size (two independent statements agree). Part numbers and sizes are product facts that manufacturers publish; Rotula keeps no prices, pictures or marketing text.
+
+The gap between labels is almost never published, so Rotula leaves it to the printer: calibrate the printer with the stock loaded. For stocks with several labels across or down, and for cut sheets, only the size of one label is applied.
+
+Your own stocks and the supplies lists you import are kept in {2}. Delete a file there to remove its stocks.
+
+Brand and product names belong to their owners; Rotula is not affiliated with them. Found a wrong size? Corrections are welcome: see docs/stock-catalog.md in the project.</value>
+  </data>
+  <data name="Prop.Stock" xml:space="preserve">
+    <value>Label stock</value>
+  </data>
+  <data name="Stock.Panel.Line" xml:space="preserve">
+    <value>Label stock: {0}</value>
+  </data>
+  <data name="Stock.Panel.LineMissing" xml:space="preserve">
+    <value>Label stock: {0} (no longer in the library)</value>
+  </data>
+  <data name="Issue.Arg.part" xml:space="preserve">
+    <value>part number</value>
+  </data>
+  <data name="Issue.Arg.size" xml:space="preserve">
+    <value>size</value>
+  </data>
+  <data name="Dialog.New.Search" xml:space="preserve">
+    <value>Find a stock</value>
+  </data>
+  <data name="Dialog.New.SizeHeading" xml:space="preserve">
+    <value>Label size</value>
+  </data>
+  <data name="Dialog.New.Filters" xml:space="preserve">
+    <value>Filters</value>
+  </data>
+  <data name="Stock.Result.One" xml:space="preserve">
+    <value>1 stock found</value>
+  </data>
+  <data name="Stock.Filter.Family" xml:space="preserve">
+    <value>Product family</value>
+  </data>
+  <data name="Stock.Filter.AllFamilies" xml:space="preserve">
+    <value>All families</value>
+  </data>
+  <data name="Stock.Dpi.FromSettings" xml:space="preserve">
+    <value>Same as your last print settings ({0} dpi). Change it if you will print on another printer.</value>
+  </data>
+  <data name="Conn.Preset.HostHint" xml:space="preserve">
+    <value>Addresses of this service look like {0}.</value>
   </data>
 </root>

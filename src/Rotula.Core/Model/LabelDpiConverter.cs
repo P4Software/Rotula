@@ -1,4 +1,5 @@
 using System.Globalization;
+using Rotula.Core.Barcodes;
 using Rotula.Core.Elements;
 using Rotula.Core.Validation;
 
@@ -16,7 +17,8 @@ public sealed record DpiConversionResult(LabelDocument Document, IReadOnlyList<V
 /// <para>
 /// Issue keys: <c>Dpi.Barcode.ModuleRounded</c> (args: element name, old, new module size in dots),
 /// <c>Dpi.Value.Clamped</c> (args: element name, property, ideal, applied) and <c>Dpi.Raw.NotScaled</c>
-/// (args: element name; the element's coordinates stay in the original dots).
+/// (args: element name; the element's coordinates stay in the original dots) and <c>Dpi.Graphic.NotScaled</c>
+/// (args: stored graphic path; the bitmap keeps its pixels, so it prints at a different physical size).
 /// </para>
 /// </summary>
 public static class LabelDpiConverter
@@ -84,6 +86,9 @@ public static class LabelDpiConverter
         foreach (var a in source.FontAliases) doc.FontAliases.Add(new FontAlias(a.Letter, a.Path));
         // Stored graphics are fixed bitmaps; they are immutable data, so they are shared rather than rescaled.
         doc.StoredGraphics.AddRange(source.StoredGraphics);
+        if (!same)
+            foreach (var g in source.StoredGraphics)
+                issues.Add(new ValidationIssue(ValidationSeverity.Warning, "Dpi.Graphic.NotScaled", null, g.Path));
         foreach (var v in source.Variables) doc.Variables.Add(new LabelVariable(v.Name, v.SampleValue));
         foreach (var e in source.Elements) doc.Elements.Add(ConvertElement(e, c));
         return new DpiConversionResult(doc, issues);
@@ -341,23 +346,32 @@ public static class LabelDpiConverter
         };
         CopyBase(b, n, c);
         CopyFieldOptions(b, n);
-        // The options of the later symbologies (Aztec, DataBar, ...) are plain text and carry over unchanged.
+        // The options of the later symbologies (Aztec, DataBar, ...) are plain text and carry over unchanged,
+        // then the dot-based ones among them are scaled below.
         n.ImportExtraOptions(b.ExportExtraOptions());
-        // Height is the bar height (linear), row height (PDF417) and irrelevant for 2D matrix codes; scaling
-        // it everywhere keeps the stored value consistent and harmless.
-        n.Height = Ranged(b, nameof(BarcodeElement.Height), b.Height, 1, 32000, c);
 
-        bool matrix = b.Symbology is BarcodeSymbology.QrCode or BarcodeSymbology.DataMatrix;
+        // The catalogue says which options apply to the symbology and which of them are dot measures
+        // (BarcodeCatalog.GetDotKind). Options that do not apply are scaled too (silently) so that switching the
+        // symbology later does not resurrect a value from the wrong resolution.
+        var info = BarcodeCatalog.Get(b.Symbology);
         // Printers only accept whole-dot modules (1-10). Rounding the ideal value to the nearest integer already
         // gives the symbol width closest to the original physical width, since width = modules * module size.
-        int oldModule = matrix ? b.ModuleSize : b.ModuleWidth;
-        double ideal = oldModule * c.Ratio;
-        int module = Math.Clamp(c.Dots(oldModule, 1), 1, 10);
-        if (matrix) { n.ModuleSize = module; n.ModuleWidth = b.ModuleWidth; }
-        else { n.ModuleWidth = module; n.ModuleSize = b.ModuleSize; }
-
-        if (!c.Same && ideal > 0 && Math.Abs(module - ideal) / ideal > ModuleToleranceRatio)
-            c.Issues.Add(new ValidationIssue(ValidationSeverity.Warning, "Dpi.Barcode.ModuleRounded", b.Id, Label(b), Inv(oldModule), Inv(module)));
+        n.ModuleWidth = Module(b, info, BarcodeOption.ModuleWidth, b.ModuleWidth, c);
+        n.ModuleSize = Module(b, info, BarcodeOption.ModuleSize, b.ModuleSize, c);
+        n.Tlc39MicroModuleWidth = Module(b, info, BarcodeOption.Tlc39MicroModuleWidth, b.Tlc39MicroModuleWidth, c);
+        // Heights scale proportionally: bar height, PDF417/MicroPDF417/Codablock row height, DataBar symbol height.
+        n.Height = Ranged(b, nameof(BarcodeElement.Height), b.Height, 1, 32000, c);
+        n.Tlc39MicroRowHeight = Ranged(b, nameof(BarcodeElement.Tlc39MicroRowHeight), b.Tlc39MicroRowHeight, 1, 255, c);
         return n;
+    }
+
+    /// <summary>Scales one module-width option to whole dots (1-10) and warns when the rounding changes the symbol width noticeably.</summary>
+    private static int Module(BarcodeElement b, BarcodeSymbologyInfo info, BarcodeOption option, int old, Ctx c)
+    {
+        double ideal = old * c.Ratio;
+        int module = Math.Clamp(c.Dots(old, 1), 1, 10);
+        if (!c.Same && info.Supports(option) && ideal > 0 && Math.Abs(module - ideal) / ideal > ModuleToleranceRatio)
+            c.Issues.Add(new ValidationIssue(ValidationSeverity.Warning, "Dpi.Barcode.ModuleRounded", b.Id, Label(b), Inv(old), Inv(module)));
+        return module;
     }
 }

@@ -6,6 +6,14 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ## [Unreleased]
 
 ### Added
+- **Stock picker in the New label dialog**: search the stock library by part number, size (4x6, 4 x 6 in, 102x152, 100x150mm) or name as you
+  type, filter by brand, unit, type and verification, see every known fact and the warnings of applying a stock, choose the printer
+  resolution, star favourites, reuse recent stocks, save a custom size as your own stock and import a supplies list (CSV or Excel) after
+  previewing it. The label remembers its stock and the Label panel shows it.
+- **Data source add-ons at start-up**: add-ons load in the background; problems appear in a small notice with plain-language details, and an
+  add-on in your own folder runs only after an explicit approval.
+- **Connection manager drawn from the provider registry**: all engines and presets (Supabase, Neon, Amazon RDS and Redshift, Azure SQL, Google
+  Cloud SQL, Access, Excel and text files, and more) with their fields, hints and secure defaults, in English and Spanish.
 - GitHub Actions workflows: build and test with a Rotula.Core line-coverage gate (80%), a repository hygiene check, and a
   tag workflow that re-runs the checks and keeps an unsigned portable single-file win-x64 zip as a workflow artifact. CI
   does not sign or publish anything: signed releases (installer, portable zip, checksums and winget manifests) are built

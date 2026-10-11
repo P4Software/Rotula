@@ -114,7 +114,7 @@ public class AppDpiConversionTests : IDisposable
     public void EveryDpiIssueKey_HasText_AndUnknownDpiKeysGetAFallback(string lang)
     {
         Loc.Instance.SetLanguage(lang);
-        foreach (var key in new[] { "Dpi.Barcode.ModuleRounded", "Dpi.Raw.NotScaled", "Dpi.Value.Clamped" })
+        foreach (var key in new[] { "Dpi.Barcode.ModuleRounded", "Dpi.Raw.NotScaled", "Dpi.Graphic.NotScaled", "Dpi.Value.Clamped" })
         {
             string text = PrintMessages.DescribeDpiIssue(new ValidationIssue(ValidationSeverity.Warning, key, "id", "Name", "1", "2", "3"));
             Assert.DoesNotContain("{", text);

@@ -21,7 +21,13 @@ public partial class ConnectionManagerWindow : DialogWindow
         DataContext = viewModel;
         InitializeComponent();
         viewModel.CloseRequested += (_, _) => Close();
-        viewModel.PasswordCleared += (_, _) => PasswordInput.Clear();
+        viewModel.PasswordCleared += (_, _) => PasswordInput?.Clear();
+        viewModel.PasswordFocusRequested += (_, _) => PasswordInput?.Focus();
+    }
+
+    private void OnBrowseField(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: OptionFieldViewModel field }) field.Browse();
     }
 
     private void OnPasswordChanged(object sender, RoutedEventArgs e) => _vm.Password = PasswordInput.Password;
@@ -38,7 +44,7 @@ public partial class ConnectionManagerWindow : DialogWindow
     {
         base.OnClosed(e);
         // Do not leave the typed password in memory longer than the dialog lives.
-        PasswordInput.Clear();
+        PasswordInput?.Clear();
         _vm.Password = string.Empty;
     }
 }

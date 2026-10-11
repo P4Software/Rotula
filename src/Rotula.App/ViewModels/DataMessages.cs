@@ -43,4 +43,21 @@ public static class DataMessages
 
     /// <summary>Name of a provider for lists.</summary>
     public static string ProviderName(DatabaseProvider provider) => Loc.Get("Conn.Provider." + provider);
+
+    /// <summary>
+    /// Name of the engine a saved connection uses: its preset ("Supabase (direct connection)") when it has one, else its provider, else
+    /// the provider id (an add-on that is not installed). Texts come from the language files, with the registry's English name as fallback.
+    /// </summary>
+    public static string ProviderName(DatabaseConnectionSettings settings, ProviderRegistry? registry = null)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        registry ??= ProviderRegistry.Default;
+        string id = settings.GetEffectiveProviderId();
+        var preset = registry.FindPreset(settings.PresetId);
+        if (preset is not null && preset.ProviderId.Equals(id, StringComparison.OrdinalIgnoreCase))
+            return Loc.Instance.HasKey(preset.NameKey) ? Loc.Get(preset.NameKey) : preset.Name;
+        var descriptor = registry.TryGet(id);
+        if (descriptor is null) return id;
+        return Loc.Instance.HasKey(descriptor.DisplayNameKey) ? Loc.Get(descriptor.DisplayNameKey) : descriptor.DisplayName;
+    }
 }

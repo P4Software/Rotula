@@ -32,6 +32,12 @@ public sealed class AppSettings
     /// <summary>Most recently used files, newest first.</summary>
     public List<string> RecentFiles { get; set; } = new();
 
+    /// <summary>Ids of the label stocks the user starred in the New label dialog.</summary>
+    public List<string> StockFavorites { get; set; } = new();
+
+    /// <summary>Ids of the label stocks used last, most recent first.</summary>
+    public List<string> StockRecent { get; set; } = new();
+
     /// <summary>The printer and printer profile used last time, so the Print dialog opens ready to go.</summary>
     public PrintSettings Print { get; set; } = new();
 }

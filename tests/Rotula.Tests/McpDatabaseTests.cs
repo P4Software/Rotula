@@ -78,6 +78,17 @@ public sealed class McpDatabaseTests : IDisposable
     }
 
     [Fact]
+    public async Task AConnectionWhoseAddOnIsNotInstalled_IsRefusedWithAPlainSentence_BeforeAnyConnectionIsOpened()
+    {
+        var fake = new FakeConnectionStore();
+        fake.Add(new DatabaseConnectionSettings { Name = "ledger", Provider = DatabaseProvider.Custom, ProviderId = "no-such-pack", Host = "db.example.com" });
+        using var env = new McpTestEnv(s => s with { AllowDatabase = true }, connections: () => fake);
+        var ex = await Assert.ThrowsAsync<McpException>(() => env.Data.RunQueryTool("ledger", "SELECT 1"));
+        Assert.Contains("no-such-pack", ex.Message);
+        Assert.Empty(fake.Opened);
+    }
+
+    [Fact]
     public async Task AnUnknownConnectionIsRefused()
     {
         var ex = await Assert.ThrowsAsync<McpException>(() => _env.Data.RunQueryTool("nope", "SELECT 1"));

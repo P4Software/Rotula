@@ -66,7 +66,7 @@ public class AppLocalizationTests : IDisposable
                 used.Add(m.Groups[1].Value);
 
         // Literals in code that look like resource keys. Comment lines are skipped (they quote member names).
-        var keyShape = new Regex("\"((?:Prop|Panel|Menu|Tool|Status|Dialog|File|Undo|Element|Validation|Preview|Preset|Import|Print|Image|Issue|Document|Encoding|Layers|About|Ruler|Zpl|Toolbar|Canvas|Common|Crash|Filter|Splitter|Data|Conn)(?:\\.[A-Za-z0-9]+)+)\"");
+        var keyShape = new Regex("\"((?:Prop|Panel|Menu|Tool|Status|Dialog|File|Undo|Element|Validation|Preview|Preset|Import|Print|Image|Issue|Document|Encoding|Layers|About|Ruler|Zpl|Toolbar|Canvas|Common|Crash|Filter|Splitter|Data|Conn|Stock|Pack)(?:\\.[A-Za-z0-9]+)+)\"");
         // The .rotula serializer lives in Rotula.Files (moved out of the app); its File.Error.* keys must stay covered.
         var filesLib = Path.Combine(RepoRoot(), "src", "Rotula.Files");
         foreach (var cs in Directory.EnumerateFiles(src, "*.cs", SearchOption.AllDirectories).Concat(Directory.EnumerateFiles(filesLib, "*.cs", SearchOption.AllDirectories)).Where(f => !f.Contains(@"\obj\") && !f.Contains(@"\bin\")))
@@ -114,6 +114,62 @@ public class AppLocalizationTests : IDisposable
         Assert.Empty(keys.Where(k => !es.ContainsKey("Issue." + k)).OrderBy(k => k));
         Assert.Contains("Dpi.Barcode.ModuleRounded", keys);
         Assert.Contains("Dpi.Raw.NotScaled", keys);
+    }
+
+    [Fact]
+    public void EveryKeyEmittedByRotulaData_HasTextInBothLanguages()
+    {
+        var en = ReadResx("en");
+        var es = ReadResx("es");
+        var keys = new HashSet<string>();
+        var registry = Rotula.Data.ProviderRegistry.Default;
+        // Providers: name, every option label and help, every choice label (this reaches the Data.Dialect.* ids of the ODBC engine list).
+        foreach (var d in registry.Providers)
+        {
+            keys.Add(d.DisplayNameKey);
+            foreach (var o in d.Options)
+            {
+                keys.Add(o.LabelKey);
+                if (o.HelpKey is not null) keys.Add(o.HelpKey);
+                foreach (var c in o.Choices) keys.Add(c.LabelKey);
+            }
+        }
+        // Presets: names and hints, from presets.json.
+        foreach (var p in Rotula.Data.ProviderPresets.Builtin)
+        {
+            keys.Add(p.NameKey);
+            foreach (var h in p.HintKeys) keys.Add(h);
+            if (p.DriverMissingHintKey is not null) keys.Add(p.DriverMissingHintKey);
+        }
+        // Every SQL dialect id can appear in the ODBC "database behind the driver" list.
+        foreach (var dialect in Rotula.Data.SqlDialects.All.Where(x => x.Id != "odbc")) keys.Add("Data.Dialect." + dialect.Id);
+        // Constants of the pack and provider layers.
+        foreach (var type in new[] { typeof(Rotula.Data.PackKeys), typeof(Rotula.Data.ProviderKeys), typeof(Rotula.Data.DataKeys) })
+            foreach (var f in type.GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static).Where(f => f.IsLiteral && f.FieldType == typeof(string)))
+                keys.Add((string)f.GetRawConstantValue()!);
+
+        Assert.Contains("Data.Preset.Supabase", keys);
+        Assert.Contains("Data.Dialect.jet", keys);
+        Assert.Contains("Data.Pack.UnsafeFolder", keys);
+        Assert.Empty(keys.Where(k => !en.ContainsKey(k)).OrderBy(k => k));
+        Assert.Empty(keys.Where(k => !es.ContainsKey(k)).OrderBy(k => k));
+    }
+
+    [Theory]
+    [InlineData("en")]
+    [InlineData("es")]
+    public void EveryPackWarningKey_FormatsWithItsArguments_InBothLanguages(string lang)
+    {
+        Loc.Instance.SetLanguage(lang);
+        foreach (var f in typeof(Rotula.Data.PackKeys).GetFields().Where(f => f.IsLiteral))
+        {
+            string key = (string)f.GetRawConstantValue()!;
+            if (key.StartsWith("Data.Pack.Trust.", StringComparison.Ordinal)) continue;
+            var w = new Rotula.Data.Packs.PackWarning(key, "pack-x", new[] { "pack-x", "1.2" });
+            string text = Rotula.App.ViewModels.PackMessages.Describe(w);
+            Assert.DoesNotContain("{", text);
+            Assert.DoesNotContain("!Data.Pack", text);
+        }
     }
 
     [Fact]

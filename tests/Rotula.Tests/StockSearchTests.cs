@@ -213,7 +213,7 @@ public class StockSearchTests
     {
         var all = Run("", new StockSearchOptions { MaxResults = 5000 });
         var ok = Run("", new StockSearchOptions { MaxResults = 5000, VerifiedOnly = true });
-        Assert.Equal(809, ok.TotalHits);
+        Assert.Equal(797, ok.TotalHits);
         Assert.Equal(837, all.TotalHits);
         Assert.All(ok.Hits, h => Assert.True(h.Entry.Verified));
     }

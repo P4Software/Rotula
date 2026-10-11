@@ -112,6 +112,7 @@
       <RowDefinition Height="40" />
       <RowDefinition Height="Auto" />
       <RowDefinition Height="56" />
+      <RowDefinition Height="Auto" />
       <RowDefinition Height="*" />
       <RowDefinition Height="30" />
     </Grid.RowDefinitions>
@@ -339,8 +340,23 @@
       </DockPanel>
     </Border>
 
+    <!-- ================================ add-on notice (non-modal, only when something needs attention) ================================ -->
+    <Border Grid.Row="3" DataContext="{Binding PackNotice}" Visibility="{Binding IsVisible, Converter={StaticResource B2V}, FallbackValue=Collapsed}"
+            Background="{StaticResource WarningTintBrush}" BorderBrush="{StaticResource WarningBrush}" BorderThickness="0,1" Padding="16,6"
+            AutomationProperties.Name="{loc:T Pack.Details.Title}" AutomationProperties.LiveSetting="Polite">
+      <DockPanel>
+        <Button DockPanel.Dock="Right" Style="{StaticResource PanelIconButton}" Command="{Binding DismissCommand}" AutomationProperties.Name="{loc:T Pack.Notice.Dismiss}"
+                ToolTip="{loc:T Pack.Notice.Dismiss}" Content="&#x2715;" FontSize="12" />
+        <Path DockPanel.Dock="Left" Style="{StaticResource Icon}" Data="{StaticResource IconWarning}" Width="14" Height="14" TextElement.Foreground="{StaticResource WarningBrush}" Margin="0,0,8,0" />
+        <TextBlock DockPanel.Dock="Left" Text="{Binding NoticeText}" VerticalAlignment="Center" Foreground="{StaticResource TextBrush}" TextTrimming="CharacterEllipsis" />
+        <Button Style="{StaticResource LinkButton}" Command="{Binding ShowDetailsCommand}" Margin="12,0,0,0" VerticalAlignment="Center" AutomationProperties.Name="{loc:T Pack.Notice.Details}">
+          <TextBlock Text="{loc:T Pack.Notice.Details}" />
+        </Button>
+      </DockPanel>
+    </Border>
+
     <!-- ================================ workspace ================================ -->
-    <Grid Grid.Row="3">
+    <Grid Grid.Row="4">
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="76" />
         <ColumnDefinition Width="*" />
@@ -562,7 +578,7 @@
       A grid, not a StatusBar: only a star column can shrink, so the message and the notice are the parts that get an ellipsis when the window
       is narrow, while counts, problems, pointer and label size always stay readable. Segments are divided by hairlines.
     -->
-    <StatusBar Grid.Row="4" Background="{StaticResource StatusBarBrush}" BorderBrush="{StaticResource BorderBrushLight}" BorderThickness="0,1,0,0" Padding="16,0"
+    <StatusBar Grid.Row="5" Background="{StaticResource StatusBarBrush}" BorderBrush="{StaticResource BorderBrushLight}" BorderThickness="0,1,0,0" Padding="16,0"
                AutomationProperties.Name="{loc:T Status.Bar}">
       <StatusBarItem HorizontalContentAlignment="Stretch" Padding="0">
       <Grid>

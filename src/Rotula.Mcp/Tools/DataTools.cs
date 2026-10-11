@@ -77,7 +77,9 @@ public sealed class DataTools
                         ?? throw new McpException($"There is no saved connection called \"{connection}\". Call list_database_connections for the names.");
 
             // The guard runs here as well as inside the database layer: the refusal then comes back before any connection is opened.
-            var guard = SqlGuard.Check(query, entry.Settings.Provider);
+            // The settings overload resolves the dialect the connection really speaks (preset flavour, ODBC engine, pack provider) and throws
+            // ProviderUnavailable when the add-on of a pack connection is not installed; the catch below turns that into a plain sentence.
+            var guard = SqlGuard.Check(query, entry.Settings);
             if (!guard.IsAllowed)
                 throw new McpException("That query was refused because it is not a single read-only SELECT. " +
                                        Messages.Format(guard.ReasonKey ?? DataKeys.QueryRejected, "rejected", guard.Arg is null ? Array.Empty<string>() : [guard.Arg]));

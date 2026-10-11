@@ -12,10 +12,10 @@ format, where the data comes from, how to correct or add entries, how to rebuild
 
 - 837 entries: 810 Zebra part numbers, 24 generic sizes (4 x 6 in, 100 x 150 mm, GS1 logistics labels and similar) and
   3 Avery sheet labels.
-- 809 entries are `verified` (the size was read consistently and confirmed by a second, independent statement), 28 are
+- 797 entries are `verified` (the size was read consistently and confirmed by a second, independent statement), 40 are
   not. Unverified entries are in the library on purpose, so they can be found and corrected, but applying one raises a
-  warning. The 12 generic standard sizes (`std-*`) are marked verified although one source states them, because the
-  size itself is the definition of the stock.
+  warning. The 12 generic standard sizes (`std-*`) are unverified: only the ZipShip catalogue states them, and no
+  second public source has been found. Their `notes` say so.
 - The code lives in `src/Rotula.Core/Stocks` (namespace `Rotula.Core.Stocks`, no UI, no dependencies beyond
   `System.Text.Json`). The data is `src/Rotula.Core/Stocks/stocks.json`, embedded in `Rotula.Core.dll`.
 
@@ -111,8 +111,8 @@ Each entry lists its `sources`; the metadata names them:
 Where two sources disagree (15 parts), the entry uses the value whose name, micrometre and unit columns all agree, is
 marked `verified: false` and says so in `notes`.
 
-The project maintainer determined that part numbers and label dimensions are public product data. Nothing in this
-catalogue is a claim of a licence beyond that.
+Part numbers and label dimensions are public product data. Brand and product names belong to their owners; Rotula is
+not affiliated with them. Nothing in this catalogue is a claim of a licence beyond that.
 
 ## Fix or add an entry (pull request)
 
@@ -179,8 +179,8 @@ reported; it never stops Rotula from starting.
   printer on the stock.
 - Multi-up (several labels across, or label sheets) is not supported yet. `columns`, `rows` and the gaps are in the
   data and are reported by `StockApplier`, but the label document is laid out as a single label.
-- 28 entries are unverified: 15 where two sources disagree on size or series, 11 stated only by the PDF extraction, 2
-  where the export lists the part twice with different sizes. They are listed in the rebuild output.
+- 40 entries are unverified: 15 where two sources disagree on size or series, 23 stated only by the PDF extraction (11
+  Zebra part numbers and the 12 generic `std-*` sizes), 2 where the export lists the part twice with different sizes. They are listed in the rebuild output.
 - Roll length for long rolls comes from the stock name; the label height of those continuous rolls is the user's choice.
 - Corner radius is information only; the label model has no rounded outline.
 - The data reflects the sources at the time of the last rebuild; a part may since have been discontinued.

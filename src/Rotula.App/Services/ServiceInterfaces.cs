@@ -51,6 +51,12 @@ public interface IFileDialogService
 
     /// <summary>Asks for a SQLite database file.</summary>
     string? PickOpenDatabaseFile();
+
+    /// <summary>Asks for a folder (the folder of text files an ODBC preset reads). The default does not offer a picker.</summary>
+    string? PickFolder(string title) => null;
+
+    /// <summary>Asks for one file whose extension is in <paramref name="extensions"/> (lower case, with the dot). The default does not offer a picker.</summary>
+    string? PickOpenFile(string title, IReadOnlyList<string> extensions) => null;
 }
 
 /// <summary>Message boxes.</summary>
@@ -91,6 +97,9 @@ public interface INewLabelDialogService
 {
     /// <summary>Shows the dialog; returns a blank document of the chosen size, or null when cancelled.</summary>
     LabelDocument? ShowNewLabelDialog();
+
+    /// <summary>Shows the dialog with the application context (stock library, remembered favourites, printer resolution). The default ignores the context.</summary>
+    LabelDocument? ShowNewLabelDialog(NewLabelContext context) => ShowNewLabelDialog();
 }
 
 /// <summary>Outcome of importing ZPL text.</summary>

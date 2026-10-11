@@ -1,0 +1,86 @@
+<views:DialogWindow x:Class="Rotula.App.Views.StockImportWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:Rotula.App.Views"
+        xmlns:loc="clr-namespace:Rotula.App.Localization"
+        Title="{loc:T Stock.Import.Title}" Width="900" Height="620" MinWidth="640" MinHeight="420"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        AutomationProperties.Name="{loc:T Stock.Import.Title}">
+  <Window.Resources>
+    <BooleanToVisibilityConverter x:Key="B2V" />
+  </Window.Resources>
+  <DockPanel>
+    <Border DockPanel.Dock="Bottom" Background="{StaticResource ToolbarBrush}" BorderBrush="{StaticResource BorderBrushLight}" BorderThickness="0,1,0,0" Padding="24,14">
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+        <Button Content="{loc:T Common.Cancel}" IsCancel="True" MinWidth="96" Margin="0,0,8,0" AutomationProperties.Name="{loc:T Common.Cancel}" />
+        <Button x:Name="SaveButton" Content="{Binding SaveText}" IsDefault="True" Style="{StaticResource PrimaryButton}" MinWidth="140" IsEnabled="{Binding CanSave}" Click="OnSave"
+                AutomationProperties.Name="{Binding SaveText}" />
+      </StackPanel>
+    </Border>
+    <Grid Margin="24,20,24,16">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="*" />
+        <RowDefinition Height="Auto" MaxHeight="170" />
+      </Grid.RowDefinitions>
+      <StackPanel>
+        <TextBlock Text="{loc:T Stock.Import.Title}" FontSize="20" FontWeight="SemiBold" AutomationProperties.HeadingLevel="Level1" />
+        <TextBlock Text="{Binding FileName}" Style="{StaticResource MutedText}" FontFamily="{StaticResource MonoFont}" FontSize="12" Margin="0,4,0,0" />
+        <TextBlock Text="{loc:T Stock.Import.Intro}" Style="{StaticResource MutedText}" TextWrapping="Wrap" Margin="0,8,0,0" />
+        <TextBlock Text="{Binding Summary}" FontWeight="SemiBold" Margin="0,12,0,8" AutomationProperties.LiveSetting="Polite" />
+      </StackPanel>
+      <Border Grid.Row="1" Style="{StaticResource Card}" Padding="0">
+        <DataGrid ItemsSource="{Binding Rows}" AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                  CanUserAddRows="False" SelectionMode="Single" AutomationProperties.Name="{loc:T Stock.Import.Title}">
+          <DataGrid.Columns>
+            <DataGridTextColumn Header="{loc:T Stock.Import.Column.Row}" Binding="{Binding Row}" Width="60" />
+            <DataGridTextColumn Header="{loc:T Stock.Import.Column.Part}" Binding="{Binding Part}" Width="140" />
+            <DataGridTextColumn Header="{loc:T Stock.Import.Column.Name}" Binding="{Binding Name}" Width="*" />
+            <DataGridTextColumn Header="{loc:T Stock.Import.Column.SizeMm}" Binding="{Binding SizeMm}" Width="120" />
+            <DataGridTextColumn Header="{loc:T Stock.Import.Column.SizeIn}" Binding="{Binding SizeIn}" Width="120" />
+            <DataGridTemplateColumn Header="{loc:T Stock.Import.Column.Confidence}" Width="150">
+              <DataGridTemplateColumn.CellTemplate>
+                <DataTemplate>
+                  <StackPanel Orientation="Horizontal" ToolTip="{Binding ConfidenceTip}" VerticalAlignment="Center" Margin="12,0">
+                    <Path Style="{StaticResource Icon}" Width="14" Height="14" Margin="0,0,6,0" StrokeThickness="2">
+                      <Path.Resources>
+                        <Style TargetType="Path" BasedOn="{StaticResource Icon}">
+                          <Setter Property="Data" Value="{StaticResource IconCheck}" />
+                          <Setter Property="TextElement.Foreground" Value="{StaticResource SuccessBrush}" />
+                          <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsMedium}" Value="True">
+                              <Setter Property="Data" Value="{StaticResource IconWarning}" />
+                              <Setter Property="TextElement.Foreground" Value="{StaticResource WarningBrush}" />
+                            </DataTrigger>
+                          </Style.Triggers>
+                        </Style>
+                      </Path.Resources>
+                    </Path>
+                    <TextBlock Text="{Binding Confidence}" />
+                  </StackPanel>
+                </DataTemplate>
+              </DataGridTemplateColumn.CellTemplate>
+            </DataGridTemplateColumn>
+          </DataGrid.Columns>
+        </DataGrid>
+      </Border>
+      <Border Grid.Row="2" Style="{StaticResource WarningBanner}" Margin="0,12,0,0" Visibility="{Binding HasWarnings, Converter={StaticResource B2V}}">
+        <DockPanel>
+          <TextBlock DockPanel.Dock="Top" Text="{loc:T Stock.Import.Warnings}" FontWeight="SemiBold" Foreground="{StaticResource WarningBrush}" Margin="0,0,0,4" />
+          <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+            <ItemsControl ItemsSource="{Binding Warnings}" Focusable="False">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <DockPanel Margin="0,2">
+                    <TextBlock DockPanel.Dock="Left" Text="&#x2022;" Foreground="{StaticResource WarningBrush}" Margin="0,0,8,0" />
+                    <TextBlock Text="{Binding}" TextWrapping="Wrap" />
+                  </DockPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </DockPanel>
+      </Border>
+    </Grid>
+  </DockPanel>
+</views:DialogWindow>

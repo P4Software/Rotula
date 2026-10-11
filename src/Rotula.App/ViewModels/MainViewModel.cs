@@ -181,6 +181,10 @@ public sealed partial class MainViewModel : ObservableObject
     public ObservableCollection<RecentFileItem> RecentFiles { get; } = new();
 
     /// <summary>Path of the file the label was opened from or saved to; null for a label that has not been saved yet.</summary>
+    /// <summary>The notice about data source add-ons that could not be loaded; null until start-up loading finished with something to say.</summary>
+    [ObservableProperty]
+    private PackNoticeViewModel? _packNotice;
+
     [ObservableProperty]
     private string? _filePath;
 
@@ -443,6 +447,8 @@ public sealed partial class MainViewModel : ObservableObject
         {
             d.Width = new Measure(preset.Width, preset.Unit);
             d.Height = new Measure(preset.Height, preset.Unit);
+            // The size no longer comes from a library stock.
+            d.StockId = null;
         });
     }
 
@@ -624,7 +630,21 @@ public sealed partial class MainViewModel : ObservableObject
     private void New()
     {
         if (!EnsureSaved()) return;
-        var doc = _svc.NewLabelDialog.ShowNewLabelDialog();
+        // The stock picker remembers favourites and recent stocks in the same settings object this window saves, and starts from the
+        // resolution of the selected printer (detected from its driver when possible).
+        // Say "from your printer" only when the driver really reported it; otherwise the last print settings are the best guess, and are described as such.
+        var detected = Printer.DetectedDpi;
+        bool fromSettings = detected is null && _settings.Print.Configured;
+        var doc = _svc.NewLabelDialog.ShowNewLabelDialog(new NewLabelContext
+        {
+            Stocks = StockLibrary.Current,
+            Settings = _settings,
+            SaveSettings = SaveSettings,
+            DefaultDpi = detected ?? (fromSettings ? Printer.SelectedDpi : null),
+            DpiFromPrinter = detected is not null,
+            DpiFromLastUse = fromSettings,
+            Files = _svc.Files,
+        });
         if (doc is null) return;
         OpenDocument(doc, null);
         StatusMessage = Loc.Get("Status.NewCreated");

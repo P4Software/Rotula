@@ -2068,6 +2068,9 @@
   <data name="Issue.Dpi.Raw.NotScaled" xml:space="preserve">
     <value>"{0}" contiene ZPL sin procesar, que no se puede redimensionar automáticamente. Conserva sus posiciones originales en puntos y puede imprimirse más pequeño o más grande que el resto. Edítelo o sustitúyalo por elementos normales.</value>
   </data>
+  <data name="Issue.Dpi.Graphic.NotScaled" xml:space="preserve">
+    <value>El gráfico almacenado "{0}" es un mapa de bits fijo y no se puede redimensionar para la nueva resolución. Se imprimirá con otro tamaño físico. Sustitúyalo por un gráfico creado para esta resolución.</value>
+  </data>
   <data name="Print.DpiConvert.Failed" xml:space="preserve">
     <value>Esta etiqueta contiene un elemento que no se puede convertir automáticamente de {0} dpi a {1} dpi. No se cambió nada.</value>
   </data>
@@ -3263,7 +3266,7 @@
     <value>No se conoce el espacio entre etiquetas del rollo "{0}". Calibre la impresora con este rollo cargado.</value>
   </data>
   <data name="Issue.Stocks.Apply.ContinuousNoHeight" xml:space="preserve">
-    <value>El rollo "{0}" es continuo y no tiene una altura de etiqueta fija, así que la altura de la etiqueta se dejó como estaba. Indique la altura que necesite. El rollo mide {1} m de largo (vacío si se desconoce).</value>
+    <value>El rollo "{0}" es continuo y no tiene una altura de etiqueta fija, así que la altura de la etiqueta se dejó como estaba. Indique la altura que necesite.</value>
   </data>
   <data name="Issue.Stocks.Apply.MultiUpNotSupported" xml:space="preserve">
     <value>Este rollo tiene {0} etiquetas a lo ancho y {1} a lo largo. Por ahora solo se prepara una etiqueta, así que coloque usted las demás si las necesita.</value>
@@ -3324,5 +3327,739 @@
   </data>
   <data name="Issue.Stocks.Import.RowDuplicate" xml:space="preserve">
     <value>La fila {0} repite el número de parte {1}, así que se omitió. Deje una fila por número de parte.</value>
+  </data>
+  <data name="Data.Option.Host" xml:space="preserve">
+    <value>Dirección del servidor</value>
+  </data>
+  <data name="Data.Option.Host.Help" xml:space="preserve">
+    <value>El nombre o la dirección IP del servidor de base de datos, por ejemplo db.ejemplo.com. Su administrador de base de datos puede indicárselo.</value>
+  </data>
+  <data name="Data.Option.Port" xml:space="preserve">
+    <value>Puerto</value>
+  </data>
+  <data name="Data.Option.Database" xml:space="preserve">
+    <value>Nombre de la base de datos</value>
+  </data>
+  <data name="Data.Option.UserName" xml:space="preserve">
+    <value>Nombre de usuario</value>
+  </data>
+  <data name="Data.Option.FilePath" xml:space="preserve">
+    <value>Archivo de base de datos</value>
+  </data>
+  <data name="Data.Option.Dsn" xml:space="preserve">
+    <value>Nombre del origen de datos (DSN)</value>
+  </data>
+  <data name="Data.Option.OdbcConnectionString" xml:space="preserve">
+    <value>Cadena de conexión</value>
+  </data>
+  <data name="Data.Option.Encrypt" xml:space="preserve">
+    <value>Cifrar la conexión</value>
+  </data>
+  <data name="Data.Option.Encrypt.Help" xml:space="preserve">
+    <value>Déjelo activado. Desactívelo solo para un servidor de confianza en su propia red.</value>
+  </data>
+  <data name="Data.Option.TrustServerCertificate" xml:space="preserve">
+    <value>Confiar en el certificado de este servidor</value>
+  </data>
+  <data name="Data.Option.TrustServerCertificate.Help" xml:space="preserve">
+    <value>Solo para un servidor que usted conoce y controla, como uno de pruebas. De lo contrario alguien podría suplantar al servidor.</value>
+  </data>
+  <data name="Data.Option.CaCertificate" xml:space="preserve">
+    <value>Archivo de la autoridad certificadora (opcional)</value>
+  </data>
+  <data name="Data.Option.NoStartupOptions" xml:space="preserve">
+    <value>El servidor está detrás de un agrupador de conexiones</value>
+  </data>
+  <data name="Data.Option.Flavor" xml:space="preserve">
+    <value>Familia del servidor</value>
+  </data>
+  <data name="Data.Option.Flavor.MySql" xml:space="preserve">
+    <value>MySQL</value>
+  </data>
+  <data name="Data.Option.Flavor.MariaDb" xml:space="preserve">
+    <value>MariaDB</value>
+  </data>
+  <data name="Data.Option.UnderlyingEngine" xml:space="preserve">
+    <value>Base de datos detrás del controlador</value>
+  </data>
+  <data name="Data.Option.UnderlyingEngine.Help" xml:space="preserve">
+    <value>Si sabe con qué base de datos habla el controlador ODBC, elíjala para que Rotula aplique las reglas de seguridad de esa base de datos. Nunca relaja las comprobaciones.</value>
+  </data>
+  <data name="Data.Option.UnderlyingEngine.Unknown" xml:space="preserve">
+    <value>No estoy seguro</value>
+  </data>
+  <data name="Data.Dialect.sqlserver" xml:space="preserve">
+    <value>SQL Server</value>
+  </data>
+  <data name="Data.Dialect.postgresql" xml:space="preserve">
+    <value>PostgreSQL</value>
+  </data>
+  <data name="Data.Dialect.mysql" xml:space="preserve">
+    <value>MySQL</value>
+  </data>
+  <data name="Data.Dialect.mariadb" xml:space="preserve">
+    <value>MariaDB</value>
+  </data>
+  <data name="Data.Dialect.sqlite" xml:space="preserve">
+    <value>SQLite</value>
+  </data>
+  <data name="Data.Dialect.oracle" xml:space="preserve">
+    <value>Oracle</value>
+  </data>
+  <data name="Data.Dialect.duckdb" xml:space="preserve">
+    <value>DuckDB</value>
+  </data>
+  <data name="Data.Dialect.bigquery" xml:space="preserve">
+    <value>BigQuery</value>
+  </data>
+  <data name="Data.Dialect.snowflake" xml:space="preserve">
+    <value>Snowflake</value>
+  </data>
+  <data name="Data.Dialect.clickhouse" xml:space="preserve">
+    <value>ClickHouse</value>
+  </data>
+  <data name="Data.Dialect.informix" xml:space="preserve">
+    <value>Informix</value>
+  </data>
+  <data name="Data.Dialect.db2" xml:space="preserve">
+    <value>IBM Db2</value>
+  </data>
+  <data name="Data.Dialect.firebird" xml:space="preserve">
+    <value>Firebird</value>
+  </data>
+  <data name="Data.Dialect.jet" xml:space="preserve">
+    <value>Microsoft Access / Excel (Jet, ACE)</value>
+  </data>
+  <data name="Data.Hint.CaCertificate" xml:space="preserve">
+    <value>Si el certificado del servidor lo emitió tu propia organización, elija aquí el archivo de la autoridad certificadora. Su administrador puede dárselo.</value>
+  </data>
+  <data name="Data.Hint.EntraOnly" xml:space="preserve">
+    <value>Este servicio solo acepta el inicio de sesión de Microsoft Entra, que requiere un complemento que aún no está instalado. No puede conectarse con usuario y contraseña.</value>
+  </data>
+  <data name="Data.Hint.InstallAce64" xml:space="preserve">
+    <value>No se encontró en este equipo el controlador para este tipo de archivo. Instale el "Microsoft Access Database Engine" de 64 bits desde Microsoft y reinicie Rotula.</value>
+  </data>
+  <data name="Data.Hint.PoolerHost" xml:space="preserve">
+    <value>Este servidor es un agrupador de conexiones. Si algo no funciona, pruebe con la dirección de conexión directa.</value>
+  </data>
+  <data name="Data.Hint.ReadOnlyAccount" xml:space="preserve">
+    <value>Use una cuenta de base de datos que solo pueda leer (SELECT). Esta fuente de datos no puede hacer que una sesión sea de solo lectura por sí misma, así que la cuenta es la protección real.</value>
+  </data>
+  <data name="Data.Preset.MariaDb" xml:space="preserve">
+    <value>MariaDB</value>
+  </data>
+  <data name="Data.Preset.AmazonRdsMySql" xml:space="preserve">
+    <value>Amazon RDS para MySQL</value>
+  </data>
+  <data name="Data.Preset.AmazonAuroraMySql" xml:space="preserve">
+    <value>Amazon Aurora (MySQL)</value>
+  </data>
+  <data name="Data.Preset.AmazonRdsPostgreSql" xml:space="preserve">
+    <value>Amazon RDS para PostgreSQL</value>
+  </data>
+  <data name="Data.Preset.AmazonAuroraPostgreSql" xml:space="preserve">
+    <value>Amazon Aurora (PostgreSQL)</value>
+  </data>
+  <data name="Data.Preset.AmazonRedshift" xml:space="preserve">
+    <value>Amazon Redshift</value>
+  </data>
+  <data name="Data.Preset.CockroachDb" xml:space="preserve">
+    <value>CockroachDB</value>
+  </data>
+  <data name="Data.Preset.YugabyteDb" xml:space="preserve">
+    <value>YugabyteDB (YSQL)</value>
+  </data>
+  <data name="Data.Preset.Supabase" xml:space="preserve">
+    <value>Supabase (conexión directa)</value>
+  </data>
+  <data name="Data.Preset.SupabasePooler" xml:space="preserve">
+    <value>Supabase (agrupador de conexiones)</value>
+  </data>
+  <data name="Data.Preset.Neon" xml:space="preserve">
+    <value>Neon (conexión directa)</value>
+  </data>
+  <data name="Data.Preset.NeonPooler" xml:space="preserve">
+    <value>Neon (agrupador de conexiones)</value>
+  </data>
+  <data name="Data.Preset.PlanetScale" xml:space="preserve">
+    <value>PlanetScale</value>
+  </data>
+  <data name="Data.Preset.TiDb" xml:space="preserve">
+    <value>TiDB</value>
+  </data>
+  <data name="Data.Preset.SingleStore" xml:space="preserve">
+    <value>SingleStore</value>
+  </data>
+  <data name="Data.Preset.AzureSqlDatabase" xml:space="preserve">
+    <value>Azure SQL Database</value>
+  </data>
+  <data name="Data.Preset.AzureSynapse" xml:space="preserve">
+    <value>Azure Synapse Analytics</value>
+  </data>
+  <data name="Data.Preset.MicrosoftFabric" xml:space="preserve">
+    <value>Microsoft Fabric</value>
+  </data>
+  <data name="Data.Preset.GoogleCloudSqlMySql" xml:space="preserve">
+    <value>Google Cloud SQL para MySQL</value>
+  </data>
+  <data name="Data.Preset.GoogleCloudSqlPostgreSql" xml:space="preserve">
+    <value>Google Cloud SQL para PostgreSQL</value>
+  </data>
+  <data name="Data.Preset.GoogleCloudSqlSqlServer" xml:space="preserve">
+    <value>Google Cloud SQL para SQL Server</value>
+  </data>
+  <data name="Data.Preset.MicrosoftAccess" xml:space="preserve">
+    <value>Microsoft Access (.mdb, .accdb)</value>
+  </data>
+  <data name="Data.Preset.MicrosoftExcel" xml:space="preserve">
+    <value>Microsoft Excel (.xls, .xlsx)</value>
+  </data>
+  <data name="Data.Preset.TextCsv" xml:space="preserve">
+    <value>Archivos de texto y CSV (una carpeta)</value>
+  </data>
+  <data name="Data.Pack.ManifestInvalid" xml:space="preserve">
+    <value>El complemento de la carpeta "{0}" no tiene un archivo de descripción válido (pack.json), así que no se cargó. Pida una copia corregida a quien le dio el complemento.</value>
+  </data>
+  <data name="Data.Pack.NeedsNewerRotula" xml:space="preserve">
+    <value>El complemento "{0}" necesita una versión más nueva de Rotula (interfaz de datos {1}). Actualice Rotula y reiníciela.</value>
+  </data>
+  <data name="Data.Pack.BuiltForOlderRotula" xml:space="preserve">
+    <value>El complemento "{0}" se hizo para una versión anterior de Rotula y no se puede usar. Pida un complemento actualizado.</value>
+  </data>
+  <data name="Data.Pack.LoadFailed" xml:space="preserve">
+    <value>No se pudo abrir el complemento "{0}". Puede faltar un archivo, estar dañado o estar hecho para otro tipo de equipo. Reinstale el complemento.</value>
+  </data>
+  <data name="Data.Pack.StartupFailed" xml:space="preserve">
+    <value>El complemento "{0}" se detuvo con un error al iniciar, así que se desactivó. Rotula no se ve afectada. Reinstale o actualice el complemento.</value>
+  </data>
+  <data name="Data.Pack.EntryMismatch" xml:space="preserve">
+    <value>El complemento "{0}" no coincide con su archivo de descripción, así que no se cargó. Reinstale el complemento.</value>
+  </data>
+  <data name="Data.Pack.InvalidProviderId" xml:space="preserve">
+    <value>Un complemento ofrece un origen de datos llamado "{0}", que no es un nombre válido, así que el complemento no se cargó.</value>
+  </data>
+  <data name="Data.Pack.DuplicateProvider" xml:space="preserve">
+    <value>Un complemento ofrece un origen de datos llamado "{0}", que ya existe, así que el complemento no se cargó. Un complemento nunca puede reemplazar un origen de datos.</value>
+  </data>
+  <data name="Data.Pack.DuplicatePack" xml:space="preserve">
+    <value>Ya hay cargado un complemento llamado "{0}"; se ignoró la segunda copia.</value>
+  </data>
+  <data name="Data.Pack.UserPackNeedsApproval" xml:space="preserve">
+    <value>El complemento "{0}" de su propia carpeta no se cargó. Un complemento es un programa: apruébelo solo si confía en su origen.</value>
+  </data>
+  <data name="Data.Pack.UserPackChanged" xml:space="preserve">
+    <value>El complemento "{0}" cambió desde que lo aprobó, así que no se cargó. Vuelva a aprobarlo solo si esperaba el cambio.</value>
+  </data>
+  <data name="Data.Pack.UnsafeFolder" xml:space="preserve">
+    <value>La carpeta de complemento "{0}" contiene accesos directos (vínculos) o es demasiado grande, así que se omitió.</value>
+  </data>
+  <data name="Data.Pack.Trust.Title" xml:space="preserve">
+    <value>¿Aprobar este complemento?</value>
+  </data>
+  <data name="Data.Pack.Trust.Warning" xml:space="preserve">
+    <value>"{0}" es un complemento de su propia carpeta ({1}). Un complemento es un programa: si lo aprueba, puede hacer todo lo que usted puede hacer en este equipo, incluso leer sus archivos. Apruébelo solo si sabe quién lo hizo y lo obtuvo de una fuente de confianza. Puede quitar la aprobación más adelante.</value>
+  </data>
+  <data name="Data.Pack.Unknown" xml:space="preserve">
+    <value>No se pudo usar el complemento "{0}".</value>
+  </data>
+  <data name="Pack.Notice.Warnings" xml:space="preserve">
+    <value>Algunos complementos de orígenes de datos no se pudieron cargar.</value>
+  </data>
+  <data name="Pack.Notice.Pending" xml:space="preserve">
+    <value>Un complemento está esperando tu aprobación.</value>
+  </data>
+  <data name="Pack.Notice.Details" xml:space="preserve">
+    <value>Detalles</value>
+  </data>
+  <data name="Pack.Notice.Dismiss" xml:space="preserve">
+    <value>Cerrar este aviso</value>
+  </data>
+  <data name="Pack.Details.Title" xml:space="preserve">
+    <value>Complementos de orígenes de datos</value>
+  </data>
+  <data name="Pack.Details.Intro" xml:space="preserve">
+    <value>Se encontraron estos complementos pero no se cargaron. Rotula funciona con normalidad.</value>
+  </data>
+  <data name="Pack.Details.Technical" xml:space="preserve">
+    <value>Detalle técnico</value>
+  </data>
+  <data name="Pack.Details.Review" xml:space="preserve">
+    <value>Revisar...</value>
+  </data>
+  <data name="Pack.Details.ReviewName" xml:space="preserve">
+    <value>Revisar el complemento {0}</value>
+  </data>
+  <data name="Pack.Details.Loaded" xml:space="preserve">
+    <value>El complemento "{0}" fue aprobado y ya está disponible.</value>
+  </data>
+  <data name="Pack.Trust.Publisher" xml:space="preserve">
+    <value>Publicador</value>
+  </data>
+  <data name="Pack.Trust.Version" xml:space="preserve">
+    <value>Versión</value>
+  </data>
+  <data name="Pack.Trust.Fingerprint" xml:space="preserve">
+    <value>Huella (SHA-256)</value>
+  </data>
+  <data name="Pack.Trust.Folder" xml:space="preserve">
+    <value>Carpeta</value>
+  </data>
+  <data name="Pack.Trust.Approve" xml:space="preserve">
+    <value>Aprobar y cargar</value>
+  </data>
+  <data name="Pack.Trust.Skip" xml:space="preserve">
+    <value>Omitir</value>
+  </data>
+  <data name="Pack.Trust.SkipNote" xml:space="preserve">
+    <value>Omitir mantiene el complemento desactivado. Rotula volverá a preguntar la próxima vez que se inicie.</value>
+  </data>
+  <data name="Pack.Trust.Unknown" xml:space="preserve">
+    <value>no indicado</value>
+  </data>
+  <data name="Data.Category.Server" xml:space="preserve">
+    <value>Servidores de bases de datos</value>
+  </data>
+  <data name="Data.Category.Cloud" xml:space="preserve">
+    <value>Servicios en la nube</value>
+  </data>
+  <data name="Data.Category.File" xml:space="preserve">
+    <value>Archivos</value>
+  </data>
+  <data name="Data.Category.Document" xml:space="preserve">
+    <value>Almacenes de documentos</value>
+  </data>
+  <data name="Data.Category.Web" xml:space="preserve">
+    <value>Servicios web</value>
+  </data>
+  <data name="Data.Category.Odbc" xml:space="preserve">
+    <value>Otros (controladores ODBC)</value>
+  </data>
+  <data name="Conn.Advanced" xml:space="preserve">
+    <value>Más opciones</value>
+  </data>
+  <data name="Conn.PackMissing" xml:space="preserve">
+    <value>Esta conexión necesita el complemento "{0}", que no está instalado. Sus ajustes se conservan tal como están. Instale el complemento y reinicie Rotula para usar o editar esta conexión.</value>
+  </data>
+  <data name="Conn.Preset.Unverified" xml:space="preserve">
+    <value>Rotula no pudo confirmar los ajustes de este servicio con la documentación del proveedor. Revise la dirección y el puerto antes de confiar en ellos.</value>
+  </data>
+  <data name="Conn.Preset.File" xml:space="preserve">
+    <value>Archivo</value>
+  </data>
+  <data name="Conn.Preset.Folder" xml:space="preserve">
+    <value>Carpeta</value>
+  </data>
+  <data name="Conn.BrowseFolder" xml:space="preserve">
+    <value>Elegir una carpeta...</value>
+  </data>
+  <data name="Conn.Preset.Detected" xml:space="preserve">
+    <value>Esta dirección parece ser de {0}.</value>
+  </data>
+  <data name="Conn.Preset.UseDetected" xml:space="preserve">
+    <value>Usar sus ajustes</value>
+  </data>
+  <data name="Conn.Test.RetypeFocus" xml:space="preserve">
+    <value>Cambió dónde o cómo inicia sesión esta conexión, así que no se usó la contraseña guardada. Escriba la contraseña en el cuadro Contraseña y pruebe de nuevo.</value>
+  </data>
+  <data name="Conn.Choose" xml:space="preserve">
+    <value>Elegir...</value>
+  </data>
+  <data name="Conn.Required" xml:space="preserve">
+    <value>{0} es obligatorio.</value>
+  </data>
+  <data name="Conn.Option.NumberInvalid" xml:space="preserve">
+    <value>{0} debe ser un número entero de {1} a {2}.</value>
+  </data>
+  <data name="Stock.Search.Label" xml:space="preserve">
+    <value>Buscar medios de etiqueta</value>
+  </data>
+  <data name="Stock.Search.Placeholder" xml:space="preserve">
+    <value>Buscar por número de parte, tamaño o nombre</value>
+  </data>
+  <data name="Stock.Search.Hint" xml:space="preserve">
+    <value>Pruebe un número de parte como {0}, o un tamaño como 4x6 o 100x150mm.</value>
+  </data>
+  <data name="Stock.Filter.Brand" xml:space="preserve">
+    <value>Marca</value>
+  </data>
+  <data name="Stock.Filter.AllBrands" xml:space="preserve">
+    <value>Todas las marcas</value>
+  </data>
+  <data name="Stock.Filter.Unit" xml:space="preserve">
+    <value>Expresado en</value>
+  </data>
+  <data name="Stock.Filter.AllUnits" xml:space="preserve">
+    <value>Pulgadas o mm</value>
+  </data>
+  <data name="Stock.Filter.Inches" xml:space="preserve">
+    <value>Pulgadas</value>
+  </data>
+  <data name="Stock.Filter.Millimeters" xml:space="preserve">
+    <value>Milímetros</value>
+  </data>
+  <data name="Stock.Filter.Layout" xml:space="preserve">
+    <value>Tipo</value>
+  </data>
+  <data name="Stock.Filter.AllLayouts" xml:space="preserve">
+    <value>Todos los tipos</value>
+  </data>
+  <data name="Stock.Layout.Roll" xml:space="preserve">
+    <value>Rollo</value>
+  </data>
+  <data name="Stock.Layout.Sheet" xml:space="preserve">
+    <value>Hoja</value>
+  </data>
+  <data name="Stock.Layout.Round" xml:space="preserve">
+    <value>Redonda</value>
+  </data>
+  <data name="Stock.Filter.Verified" xml:space="preserve">
+    <value>Solo verificados</value>
+  </data>
+  <data name="Stock.Filter.Favorites" xml:space="preserve">
+    <value>Solo favoritos</value>
+  </data>
+  <data name="Stock.Group.Common" xml:space="preserve">
+    <value>Tamaños comunes</value>
+  </data>
+  <data name="Stock.Group.Favorites" xml:space="preserve">
+    <value>Favoritos</value>
+  </data>
+  <data name="Stock.Group.Recent" xml:space="preserve">
+    <value>Recientes</value>
+  </data>
+  <data name="Stock.Group.Results" xml:space="preserve">
+    <value>Resultados</value>
+  </data>
+  <data name="Stock.Group.Near" xml:space="preserve">
+    <value>Tamaños cercanos</value>
+  </data>
+  <data name="Stock.Custom.Name" xml:space="preserve">
+    <value>Tamaño personalizado...</value>
+  </data>
+  <data name="Stock.Custom.Sub" xml:space="preserve">
+    <value>Escribe tu propio ancho y alto</value>
+  </data>
+  <data name="Stock.Common.Sub" xml:space="preserve">
+    <value>Tamaño de etiqueta habitual</value>
+  </data>
+  <data name="Stock.Result.Total" xml:space="preserve">
+    <value>{0} medios de etiqueta. Escriba para buscar.</value>
+  </data>
+  <data name="Stock.Result.Empty" xml:space="preserve">
+    <value>La biblioteca de medios no está disponible. Aún puede usar los tamaños comunes o uno personalizado.</value>
+  </data>
+  <data name="Stock.Result.All" xml:space="preserve">
+    <value>{0} medios encontrados</value>
+  </data>
+  <data name="Stock.Result.Count" xml:space="preserve">
+    <value>Se muestran {0} de {1} medios. Escriba más para acotar.</value>
+  </data>
+  <data name="Stock.Result.WithNear" xml:space="preserve">
+    <value>{0} medios encontrados y {1} tamaños cercanos abajo</value>
+  </data>
+  <data name="Stock.Result.None" xml:space="preserve">
+    <value>Ningún medio coincide. Pruebe con menos palabras, o solo el número de parte o el tamaño.</value>
+  </data>
+  <data name="Stock.Loading" xml:space="preserve">
+    <value>Cargando la biblioteca de medios...</value>
+  </data>
+  <data name="Stock.Verified" xml:space="preserve">
+    <value>Tamaño verificado</value>
+  </data>
+  <data name="Stock.Unverified" xml:space="preserve">
+    <value>Tamaño sin verificar</value>
+  </data>
+  <data name="Stock.Verified.Tip" xml:space="preserve">
+    <value>El tamaño fue confirmado por dos fuentes independientes.</value>
+  </data>
+  <data name="Stock.Unverified.Tip" xml:space="preserve">
+    <value>El tamaño viene de una sola fuente o las fuentes no coinciden. Mida las etiquetas reales antes de imprimir una tirada grande.</value>
+  </data>
+  <data name="Stock.Origin.User" xml:space="preserve">
+    <value>Mi medio</value>
+  </data>
+  <data name="Stock.Favorite.Add" xml:space="preserve">
+    <value>Añadir a favoritos</value>
+  </data>
+  <data name="Stock.Favorite.Remove" xml:space="preserve">
+    <value>Quitar de favoritos</value>
+  </data>
+  <data name="Stock.Favorite.Is" xml:space="preserve">
+    <value>favorito</value>
+  </data>
+  <data name="Stock.CreateLabel" xml:space="preserve">
+    <value>Crear etiqueta</value>
+  </data>
+  <data name="Stock.Dpi.FromPrinter" xml:space="preserve">
+    <value>Tomada de su impresora ({0} dpi). Cámbiela si va a imprimir en otra.</value>
+  </data>
+  <data name="Stock.Warnings.Heading" xml:space="preserve">
+    <value>Antes de empezar</value>
+  </data>
+  <data name="Stock.Facts.Heading" xml:space="preserve">
+    <value>Qué se sabe de este medio</value>
+  </data>
+  <data name="Stock.Height.Required" xml:space="preserve">
+    <value>Es un rollo continuo: escriba la altura de la etiqueta que quiere.</value>
+  </data>
+  <data name="Stock.Height.Label" xml:space="preserve">
+    <value>Altura de la etiqueta</value>
+  </data>
+  <data name="Stock.Apply.NoWidth" xml:space="preserve">
+    <value>Este medio no tiene un tamaño utilizable, así que no se puede aplicar.</value>
+  </data>
+  <data name="Stock.RollLength.Sentence" xml:space="preserve">
+    <value>El rollo mide {0} m de largo.</value>
+  </data>
+  <data name="Stock.Size.Mm" xml:space="preserve">
+    <value>{0} x {1} mm</value>
+  </data>
+  <data name="Stock.Size.In" xml:space="preserve">
+    <value>{0} x {1} in</value>
+  </data>
+  <data name="Stock.Size.WidthMm" xml:space="preserve">
+    <value>{0} mm de ancho</value>
+  </data>
+  <data name="Stock.Size.WidthIn" xml:space="preserve">
+    <value>{0} in de ancho</value>
+  </data>
+  <data name="Stock.Size.Mm1" xml:space="preserve">
+    <value>{0} mm</value>
+  </data>
+  <data name="Stock.Size.Metres" xml:space="preserve">
+    <value>{0} m</value>
+  </data>
+  <data name="Stock.Size.CoreMm" xml:space="preserve">
+    <value>{0} mm ({1} in)</value>
+  </data>
+  <data name="Stock.Across.Format" xml:space="preserve">
+    <value>{0} a lo ancho, {1} a lo largo</value>
+  </data>
+  <data name="Stock.Gap.Unknown" xml:space="preserve">
+    <value>No se conoce. Calibra la impresora con este medio cargado.</value>
+  </data>
+  <data name="Stock.Gap.Mark" xml:space="preserve">
+    <value>Marca negra en el reverso</value>
+  </data>
+  <data name="Stock.Media.Unknown" xml:space="preserve">
+    <value>No indicado</value>
+  </data>
+  <data name="Stock.Media.DirectThermal" xml:space="preserve">
+    <value>Térmico directo</value>
+  </data>
+  <data name="Stock.Media.ThermalTransfer" xml:space="preserve">
+    <value>Transferencia térmica</value>
+  </data>
+  <data name="Stock.Media.Either" xml:space="preserve">
+    <value>Térmico directo o transferencia térmica</value>
+  </data>
+  <data name="Stock.Format.Unknown" xml:space="preserve">
+    <value>No indicado</value>
+  </data>
+  <data name="Stock.Format.Roll" xml:space="preserve">
+    <value>Rollo de etiquetas troqueladas</value>
+  </data>
+  <data name="Stock.Format.Continuous" xml:space="preserve">
+    <value>Rollo continuo</value>
+  </data>
+  <data name="Stock.Format.Linerless" xml:space="preserve">
+    <value>Rollo sin soporte</value>
+  </data>
+  <data name="Stock.Format.Fanfold" xml:space="preserve">
+    <value>Pila plegada en zigzag</value>
+  </data>
+  <data name="Stock.Format.Sheet" xml:space="preserve">
+    <value>Hojas cortadas</value>
+  </data>
+  <data name="Stock.Fact.Brand" xml:space="preserve">
+    <value>Marca</value>
+  </data>
+  <data name="Stock.Fact.Part" xml:space="preserve">
+    <value>Número de parte</value>
+  </data>
+  <data name="Stock.Fact.Family" xml:space="preserve">
+    <value>Familia de producto</value>
+  </data>
+  <data name="Stock.Fact.Size" xml:space="preserve">
+    <value>Tamaño</value>
+  </data>
+  <data name="Stock.Fact.Media" xml:space="preserve">
+    <value>Tipo de impresión</value>
+  </data>
+  <data name="Stock.Fact.Format" xml:space="preserve">
+    <value>Presentación</value>
+  </data>
+  <data name="Stock.Fact.Finish" xml:space="preserve">
+    <value>Superficie y adhesivo</value>
+  </data>
+  <data name="Stock.Fact.Core" xml:space="preserve">
+    <value>Núcleo</value>
+  </data>
+  <data name="Stock.Fact.PerRoll" xml:space="preserve">
+    <value>Etiquetas por rollo</value>
+  </data>
+  <data name="Stock.Fact.RollLength" xml:space="preserve">
+    <value>Largo del rollo</value>
+  </data>
+  <data name="Stock.Fact.Across" xml:space="preserve">
+    <value>Etiquetas a lo ancho</value>
+  </data>
+  <data name="Stock.Fact.Corner" xml:space="preserve">
+    <value>Radio de esquina</value>
+  </data>
+  <data name="Stock.Fact.Gap" xml:space="preserve">
+    <value>Separación entre etiquetas</value>
+  </data>
+  <data name="Stock.Fact.HGap" xml:space="preserve">
+    <value>Separación entre columnas</value>
+  </data>
+  <data name="Stock.Fact.VGap" xml:space="preserve">
+    <value>Separación entre filas</value>
+  </data>
+  <data name="Stock.Fact.Sources" xml:space="preserve">
+    <value>Fuentes</value>
+  </data>
+  <data name="Stock.Fact.Verification" xml:space="preserve">
+    <value>Verificación</value>
+  </data>
+  <data name="Stock.Own.Heading" xml:space="preserve">
+    <value>Guardar este tamaño como mi propio medio</value>
+  </data>
+  <data name="Stock.Own.Name" xml:space="preserve">
+    <value>Nombre</value>
+  </data>
+  <data name="Stock.Own.Part" xml:space="preserve">
+    <value>Número de parte (opcional)</value>
+  </data>
+  <data name="Stock.Own.Save" xml:space="preserve">
+    <value>Guardar como mi medio</value>
+  </data>
+  <data name="Stock.Own.Saved" xml:space="preserve">
+    <value>Se guardó "{0}". Puede encontrarlo buscando su nombre o número de parte.</value>
+  </data>
+  <data name="Stock.Own.NeedName" xml:space="preserve">
+    <value>Dele al medio un nombre o un número de parte.</value>
+  </data>
+  <data name="Stock.Own.Error" xml:space="preserve">
+    <value>No se pudo guardar el medio: {0}</value>
+  </data>
+  <data name="Stock.Own.Refused" xml:space="preserve">
+    <value>Ese tamaño no se puede guardar como medio: está fuera de los tamaños que puede usar una impresora de etiquetas.</value>
+  </data>
+  <data name="Stock.Import.Button" xml:space="preserve">
+    <value>Importar una lista de suministros...</value>
+  </data>
+  <data name="Stock.Import.Pick" xml:space="preserve">
+    <value>Elija una lista de suministros (CSV o Excel)</value>
+  </data>
+  <data name="Stock.Import.Title" xml:space="preserve">
+    <value>Importar una lista de suministros</value>
+  </data>
+  <data name="Stock.Import.Intro" xml:space="preserve">
+    <value>Revise lo que Rotula entendió antes de guardarlo. Solo se leen números de parte, descripciones y tamaños; los precios nunca se leen.</value>
+  </data>
+  <data name="Stock.Import.Counts" xml:space="preserve">
+    <value>{0} filas leídas, {1} medios encontrados.</value>
+  </data>
+  <data name="Stock.Import.Nothing" xml:space="preserve">
+    <value>No se pudo importar nada de esta lista.</value>
+  </data>
+  <data name="Stock.Import.Column.Row" xml:space="preserve">
+    <value>Fila</value>
+  </data>
+  <data name="Stock.Import.Column.Part" xml:space="preserve">
+    <value>Número de parte</value>
+  </data>
+  <data name="Stock.Import.Column.Name" xml:space="preserve">
+    <value>Descripción</value>
+  </data>
+  <data name="Stock.Import.Column.SizeMm" xml:space="preserve">
+    <value>Tamaño (mm)</value>
+  </data>
+  <data name="Stock.Import.Column.SizeIn" xml:space="preserve">
+    <value>Tamaño (in)</value>
+  </data>
+  <data name="Stock.Import.Column.Confidence" xml:space="preserve">
+    <value>Certeza</value>
+  </data>
+  <data name="Stock.Import.High" xml:space="preserve">
+    <value>Alta</value>
+  </data>
+  <data name="Stock.Import.Medium" xml:space="preserve">
+    <value>Media: revíselo</value>
+  </data>
+  <data name="Stock.Import.High.Tip" xml:space="preserve">
+    <value>El tamaño tiene su propia columna con unidad, o dos datos coinciden.</value>
+  </data>
+  <data name="Stock.Import.Medium.Tip" xml:space="preserve">
+    <value>El tamaño se encontró en texto libre con unidad. Compruébelo con la etiqueta real.</value>
+  </data>
+  <data name="Stock.Import.Warnings" xml:space="preserve">
+    <value>Notas sobre la lista</value>
+  </data>
+  <data name="Stock.Import.Save" xml:space="preserve">
+    <value>Guardar {0} medios</value>
+  </data>
+  <data name="Stock.Import.Saved" xml:space="preserve">
+    <value>Se guardaron {0} medios en {1}. Ya forman parte de la búsqueda.</value>
+  </data>
+  <data name="Stock.Disclaimer" xml:space="preserve">
+    <value>Las marcas y los nombres de producto pertenecen a sus dueños; Rotula no está afiliado.</value>
+  </data>
+  <data name="Stock.About.Link" xml:space="preserve">
+    <value>Acerca del catálogo de medios</value>
+  </data>
+  <data name="Stock.About.Title" xml:space="preserve">
+    <value>Acerca del catálogo de medios</value>
+  </data>
+  <data name="Stock.About.Body" xml:space="preserve">
+    <value>La biblioteca de medios lista medios de etiqueta por número de parte del fabricante, con el tamaño en milímetros y pulgadas, el tipo de impresión y, cuando una fuente lo indica, el tamaño del núcleo, las etiquetas por rollo, las etiquetas a lo ancho y el radio de las esquinas.
+
+Contiene {0} medios, {1} de ellos con el tamaño verificado (dos fuentes independientes coinciden). Los números de parte y los tamaños son datos de producto que publican los fabricantes; Rotula no guarda precios, imágenes ni textos de marketing.
+
+La separación entre etiquetas casi nunca se publica, así que Rotula se la deja a la impresora: calibre la impresora con el medio cargado. En los medios con varias etiquetas a lo ancho o a lo largo, y en las hojas cortadas, solo se aplica el tamaño de una etiqueta.
+
+Sus propios medios y las listas de suministros que importe se guardan en {2}. Borre un archivo de esa carpeta para quitar sus medios.
+
+Las marcas y los nombres de producto pertenecen a sus dueños; Rotula no está afiliado a ellos. ¿Encontró un tamaño incorrecto? Las correcciones son bienvenidas: consulta docs/stock-catalog.md en el proyecto.</value>
+  </data>
+  <data name="Prop.Stock" xml:space="preserve">
+    <value>Medio de etiqueta</value>
+  </data>
+  <data name="Stock.Panel.Line" xml:space="preserve">
+    <value>Medio de etiqueta: {0}</value>
+  </data>
+  <data name="Stock.Panel.LineMissing" xml:space="preserve">
+    <value>Medio de etiqueta: {0} (ya no está en la biblioteca)</value>
+  </data>
+  <data name="Issue.Arg.part" xml:space="preserve">
+    <value>número de parte</value>
+  </data>
+  <data name="Issue.Arg.size" xml:space="preserve">
+    <value>tamaño</value>
+  </data>
+  <data name="Dialog.New.Search" xml:space="preserve">
+    <value>Buscar un medio</value>
+  </data>
+  <data name="Dialog.New.SizeHeading" xml:space="preserve">
+    <value>Tamaño de la etiqueta</value>
+  </data>
+  <data name="Dialog.New.Filters" xml:space="preserve">
+    <value>Filtros</value>
+  </data>
+  <data name="Stock.Result.One" xml:space="preserve">
+    <value>1 medio encontrado</value>
+  </data>
+  <data name="Stock.Filter.Family" xml:space="preserve">
+    <value>Familia de producto</value>
+  </data>
+  <data name="Stock.Filter.AllFamilies" xml:space="preserve">
+    <value>Todas las familias</value>
+  </data>
+  <data name="Stock.Dpi.FromSettings" xml:space="preserve">
+    <value>Igual que su última configuración de impresión ({0} dpi). Cámbiela si va a imprimir en otra impresora.</value>
+  </data>
+  <data name="Conn.Preset.HostHint" xml:space="preserve">
+    <value>Las direcciones de este servicio tienen el aspecto {0}.</value>
   </data>
 </root>

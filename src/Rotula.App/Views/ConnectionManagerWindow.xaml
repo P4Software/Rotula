@@ -4,17 +4,55 @@
         xmlns:ctl="clr-namespace:Rotula.App.Controls"
         xmlns:loc="clr-namespace:Rotula.App.Localization"
         xmlns:views="clr-namespace:Rotula.App.Views"
+        xmlns:vms="clr-namespace:Rotula.App.ViewModels"
         Title="{loc:T Conn.Title}" Width="940" Height="760" MinWidth="720" MinHeight="520"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
         AutomationProperties.Name="{loc:T Conn.Title}">
   <Window.Resources>
     <BooleanToVisibilityConverter x:Key="B2V" />
+
+    <!-- One form field, drawn from the option schema of the provider: text, number, host, path with Browse, choice or switch. -->
+    <DataTemplate DataType="{x:Type vms:OptionFieldViewModel}">
+      <StackPanel Margin="0,0,0,12">
+        <TextBlock Text="{Binding Label}" Style="{StaticResource FieldLabel}" Visibility="{Binding ShowLabel, Converter={StaticResource B2V}}" />
+        <Grid Visibility="{Binding IsTextLike, Converter={StaticResource B2V}}">
+          <TextBox Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{Binding Label}">
+            <TextBox.Style>
+              <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+                <Style.Triggers>
+                  <DataTrigger Binding="{Binding IsMono}" Value="True"><Setter Property="FontFamily" Value="{StaticResource MonoFont}" /></DataTrigger>
+                </Style.Triggers>
+              </Style>
+            </TextBox.Style>
+          </TextBox>
+          <TextBlock Text="{Binding Placeholder}" FontFamily="{StaticResource MonoFont}" FontSize="12.5" Margin="13,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"
+                     Style="{StaticResource MutedText}" Visibility="{Binding ShowPlaceholder, Converter={StaticResource B2V}}" />
+        </Grid>
+        <DockPanel Visibility="{Binding IsPath, Converter={StaticResource B2V}}">
+          <Button DockPanel.Dock="Right" Content="{loc:T Conn.Browse}" Click="OnBrowseField" Margin="8,0,0,0" MinHeight="40" AutomationProperties.Name="{loc:T Conn.Browse}"
+                  Visibility="{Binding CanBrowse, Converter={StaticResource B2V}}" />
+          <TextBox Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource MonoTextBox}" AutomationProperties.Name="{Binding Label}" />
+        </DockPanel>
+        <ComboBox Visibility="{Binding IsChoice, Converter={StaticResource B2V}}" ItemsSource="{Binding Choices}" DisplayMemberPath="Name" SelectedValuePath="Value"
+                  SelectedValue="{Binding SelectedChoice}" AutomationProperties.Name="{Binding Label}" />
+        <CheckBox Visibility="{Binding IsBool, Converter={StaticResource B2V}}" Content="{Binding Label}" IsChecked="{Binding Flag}" AutomationProperties.Name="{Binding Label}" />
+        <TextBlock Text="{Binding Help}" Style="{StaticResource MutedText}" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,0" Visibility="{Binding HasHelp, Converter={StaticResource B2V}}" />
+        <TextBlock Text="{Binding PatternHelp}" Style="{StaticResource MutedText}" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,0" Visibility="{Binding HasPatternHelp, Converter={StaticResource B2V}}" />
+        <TextBlock Text="{Binding Help}" Foreground="{StaticResource WarningBrush}" FontSize="12" TextWrapping="Wrap" Margin="26,2,0,0" Visibility="{Binding HasSwitchHelp, Converter={StaticResource B2V}}" />
+        <Border Style="{StaticResource WarningBanner}" Margin="26,6,0,0" Visibility="{Binding HasWarning, Converter={StaticResource B2V}}" AutomationProperties.LiveSetting="Polite">
+          <DockPanel>
+            <Path DockPanel.Dock="Left" Style="{StaticResource Icon}" Data="{StaticResource IconWarning}" Width="14" Height="14" TextElement.Foreground="{StaticResource WarningBrush}" Margin="0,2,8,0" VerticalAlignment="Top" />
+            <TextBlock Text="{Binding WarningText}" TextWrapping="Wrap" Foreground="{StaticResource WarningBrush}" />
+          </DockPanel>
+        </Border>
+      </StackPanel>
+    </DataTemplate>
   </Window.Resources>
 
   <DockPanel>
     <!-- ============================== footer -->
     <Border DockPanel.Dock="Bottom" Background="{StaticResource ToolbarBrush}" BorderBrush="{StaticResource BorderBrushLight}" BorderThickness="0,1,0,0" Padding="24,12">
-      <DockPanel>
+      <DockPanel LastChildFill="False">
         <Button DockPanel.Dock="Right" Content="{loc:T Common.Close}" IsCancel="True" MinWidth="88" Command="{Binding CloseCommand}" AutomationProperties.Name="{loc:T Common.Close}" />
       </DockPanel>
     </Border>
@@ -83,108 +121,105 @@
             <TextBlock Text="{loc:T Conn.Name.Hint}" Style="{StaticResource MutedText}" FontSize="12" Margin="0,4,0,0" Visibility="{Binding CanEditName, Converter={StaticResource B2V}}" />
 
             <TextBlock Text="{loc:T Conn.Provider}" Style="{StaticResource FieldLabel}" Margin="0,16,0,8" />
-            <ComboBox ItemsSource="{Binding ProviderChoices}" DisplayMemberPath="Name" SelectedValuePath="Value" SelectedValue="{Binding Provider}"
-                      AutomationProperties.Name="{loc:T Conn.Provider}" />
+            <ComboBox x:Name="EngineBox" ItemsSource="{Binding EngineView}" SelectedItem="{Binding SelectedEngine}" DisplayMemberPath="Name" MaxDropDownHeight="420"
+                      AutomationProperties.Name="{loc:T Conn.Provider}">
+              <ComboBox.GroupStyle>
+                <GroupStyle>
+                  <GroupStyle.HeaderTemplate>
+                    <DataTemplate>
+                      <TextBlock Text="{Binding Name}" FontSize="11.5" FontWeight="SemiBold" Foreground="{StaticResource MutedBrush}" Margin="8,8,0,2" />
+                    </DataTemplate>
+                  </GroupStyle.HeaderTemplate>
+                </GroupStyle>
+              </ComboBox.GroupStyle>
+              <ComboBox.ItemContainerStyle>
+                <Style TargetType="ComboBoxItem" BasedOn="{StaticResource {x:Type ComboBoxItem}}">
+                  <Style.Triggers>
+                    <!-- Presets sit under their provider, indented. -->
+                    <DataTrigger Binding="{Binding IsPreset}" Value="True"><Setter Property="Padding" Value="28,6,12,6" /></DataTrigger>
+                  </Style.Triggers>
+                </Style>
+              </ComboBox.ItemContainerStyle>
+            </ComboBox>
 
-            <!-- server engines -->
-            <StackPanel Visibility="{Binding IsServer, Converter={StaticResource B2V}}">
-              <Grid Margin="0,16,0,0">
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="*" />
-                  <ColumnDefinition Width="12" />
-                  <ColumnDefinition Width="140" />
-                </Grid.ColumnDefinitions>
-                <StackPanel>
-                  <TextBlock Text="{loc:T Conn.Host}" Style="{StaticResource FieldLabel}" />
-                  <TextBox Text="{Binding Host, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{loc:T Conn.Host}" />
+            <!-- the address looks like a known service: offer its settings -->
+            <Border Style="{StaticResource InfoBanner}" Margin="0,8,0,0" Visibility="{Binding HasDetectedPreset, Converter={StaticResource B2V}}">
+              <DockPanel>
+                <Button DockPanel.Dock="Right" Content="{loc:T Conn.Preset.UseDetected}" Command="{Binding UseDetectedPresetCommand}" Margin="12,0,0,0" AutomationProperties.Name="{loc:T Conn.Preset.UseDetected}" />
+                <TextBlock Text="{Binding DetectedPresetText}" TextWrapping="Wrap" VerticalAlignment="Center" />
+              </DockPanel>
+            </Border>
+
+            <!-- a saved connection of an add-on that is not installed -->
+            <Border Style="{StaticResource WarningBanner}" Margin="0,16,0,0" Visibility="{Binding IsPackMissing, Converter={StaticResource B2V}}" AutomationProperties.LiveSetting="Polite">
+              <DockPanel>
+                <Path DockPanel.Dock="Left" Style="{StaticResource Icon}" Data="{StaticResource IconWarning}" Width="14" Height="14" TextElement.Foreground="{StaticResource WarningBrush}" Margin="0,2,8,0" VerticalAlignment="Top" />
+                <TextBlock Text="{Binding MissingPackText}" TextWrapping="Wrap" Foreground="{StaticResource WarningBrush}" />
+              </DockPanel>
+            </Border>
+
+            <StackPanel Visibility="{Binding IsFormAvailable, Converter={StaticResource B2V}}">
+              <!-- the fields of the chosen engine, drawn from its option schema -->
+              <ItemsControl ItemsSource="{Binding Fields}" Margin="0,16,0,0" Focusable="False" KeyboardNavigation.TabNavigation="Continue">
+                <ItemsControl.ItemsPanel><ItemsPanelTemplate><ctl:OptionFieldPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+              </ItemsControl>
+
+              <!-- sign-in -->
+              <StackPanel Visibility="{Binding ShowAuth, Converter={StaticResource B2V}}">
+                <StackPanel Visibility="{Binding ShowAuthChoice, Converter={StaticResource B2V}}" Margin="0,4,0,0">
+                  <TextBlock Text="{loc:T Conn.Auth}" Style="{StaticResource FieldLabel}" />
+                  <ComboBox ItemsSource="{Binding AuthChoices}" DisplayMemberPath="Name" SelectedValuePath="Value" SelectedValue="{Binding Authentication}"
+                            AutomationProperties.Name="{loc:T Conn.Auth}" />
                 </StackPanel>
-                <StackPanel Grid.Column="2">
-                  <TextBlock Text="{loc:T Conn.Port}" Style="{StaticResource FieldLabel}" />
-                  <Grid>
-                    <TextBox Text="{Binding PortText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource MonoTextBox}" AutomationProperties.Name="{loc:T Conn.Port}"
-                             ctl:FieldState.HasError="{Binding Text, RelativeSource={RelativeSource Self}, Converter={StaticResource FieldInvalid}, ConverterParameter=int:1:65535:opt}" />
-                    <TextBlock Text="{Binding PortHint}" FontFamily="{StaticResource MonoFont}" FontSize="12.5" Margin="13,0,0,0"
-                               VerticalAlignment="Center" IsHitTestVisible="False">
-                      <TextBlock.Style>
-                        <Style TargetType="TextBlock" BasedOn="{StaticResource MutedText}">
-                          <Setter Property="Visibility" Value="Collapsed" />
+                <Grid Margin="0,12,0,0" Visibility="{Binding ShowUserFields, Converter={StaticResource B2V}}">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="12" />
+                    <ColumnDefinition Width="*" />
+                  </Grid.ColumnDefinitions>
+                  <StackPanel>
+                    <TextBlock Text="{loc:T Conn.User}" Style="{StaticResource FieldLabel}" />
+                    <TextBox Text="{Binding UserName, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{loc:T Conn.User}" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="2">
+                    <TextBlock Text="{loc:T Conn.Password}" Style="{StaticResource FieldLabel}" />
+                    <PasswordBox x:Name="PasswordInput" PasswordChanged="OnPasswordChanged" AutomationProperties.Name="{loc:T Conn.Password}" />
+                  </StackPanel>
+                </Grid>
+                <TextBlock Text="{Binding PasswordHint}" Style="{StaticResource MutedText}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"
+                           Visibility="{Binding ShowUserFields, Converter={StaticResource B2V}}" />
+              </StackPanel>
+
+              <!-- security switches: the warning stays visible while the risky choice is on -->
+              <StackPanel Visibility="{Binding HasSwitchFields, Converter={StaticResource B2V}}" Margin="0,20,0,0">
+                <TextBlock Text="{loc:T Conn.Security}" Style="{StaticResource SectionHeading}" />
+                <ItemsControl ItemsSource="{Binding SwitchFields}" Focusable="False" KeyboardNavigation.TabNavigation="Continue" />
+              </StackPanel>
+
+              <Expander Header="{loc:T Conn.Advanced}" Margin="0,12,0,0" Visibility="{Binding HasAdvancedFields, Converter={StaticResource B2V}}" AutomationProperties.Name="{loc:T Conn.Advanced}">
+                <ItemsControl ItemsSource="{Binding AdvancedFields}" Margin="0,12,0,0" Focusable="False" KeyboardNavigation.TabNavigation="Continue" />
+              </Expander>
+
+              <!-- hints of the preset and read-only advice -->
+              <ItemsControl ItemsSource="{Binding Hints}" Margin="0,16,0,0" Focusable="False">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Border Margin="0,0,0,8" AutomationProperties.Name="{Binding Text}">
+                      <Border.Style>
+                        <Style TargetType="Border" BasedOn="{StaticResource InfoBanner}">
                           <Style.Triggers>
-                            <DataTrigger Binding="{Binding PortText}" Value=""><Setter Property="Visibility" Value="Visible" /></DataTrigger>
+                            <DataTrigger Binding="{Binding IsWarning}" Value="True">
+                              <Setter Property="Background" Value="{StaticResource WarningTintBrush}" />
+                              <Setter Property="BorderBrush" Value="{StaticResource WarningBrush}" />
+                            </DataTrigger>
                           </Style.Triggers>
                         </Style>
-                      </TextBlock.Style>
-                    </TextBlock>
-                  </Grid>
-                </StackPanel>
-              </Grid>
-              <TextBlock Text="{loc:T Conn.Database}" Style="{StaticResource FieldLabel}" Margin="0,12,0,8" />
-              <TextBox Text="{Binding Database, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{loc:T Conn.Database}" />
-            </StackPanel>
-
-            <!-- SQLite file -->
-            <StackPanel Visibility="{Binding IsSqlite, Converter={StaticResource B2V}}" Margin="0,16,0,0">
-              <TextBlock Text="{loc:T Conn.Sqlite.File}" Style="{StaticResource FieldLabel}" />
-              <DockPanel>
-                <Button DockPanel.Dock="Right" Content="{loc:T Conn.Browse}" Command="{Binding BrowseFileCommand}" Margin="8,0,0,0" MinHeight="40" AutomationProperties.Name="{loc:T Conn.Browse}" />
-                <TextBox Text="{Binding FilePath, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource MonoTextBox}" AutomationProperties.Name="{loc:T Conn.Sqlite.File}" />
-              </DockPanel>
-              <TextBlock Text="{loc:T Conn.Sqlite.Hint}" Style="{StaticResource MutedText}" FontSize="12" Margin="0,4,0,0" />
-            </StackPanel>
-
-            <!-- ODBC -->
-            <StackPanel Visibility="{Binding IsOdbc, Converter={StaticResource B2V}}" Margin="0,16,0,0">
-              <TextBlock Text="{loc:T Conn.Odbc.Dsn}" Style="{StaticResource FieldLabel}" />
-              <TextBox Text="{Binding Dsn, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{loc:T Conn.Odbc.Dsn}" />
-              <TextBlock Text="{loc:T Conn.Odbc.String}" Style="{StaticResource FieldLabel}" Margin="0,12,0,8" />
-              <TextBox Text="{Binding OdbcConnectionString, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource MonoTextBox}" AutomationProperties.Name="{loc:T Conn.Odbc.String}" />
-              <TextBlock Text="{loc:T Conn.Odbc.Hint}" Style="{StaticResource MutedText}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap" />
-            </StackPanel>
-
-            <!-- sign-in -->
-            <StackPanel Visibility="{Binding ShowAuth, Converter={StaticResource B2V}}" Margin="0,16,0,0">
-              <StackPanel Visibility="{Binding CanWindowsAuth, Converter={StaticResource B2V}}">
-                <TextBlock Text="{loc:T Conn.Auth}" Style="{StaticResource FieldLabel}" />
-                <ComboBox ItemsSource="{Binding AuthChoices}" DisplayMemberPath="Name" SelectedValuePath="Value" SelectedValue="{Binding Authentication}"
-                          AutomationProperties.Name="{loc:T Conn.Auth}" />
-              </StackPanel>
-              <Grid Margin="0,12,0,0" Visibility="{Binding ShowUserFields, Converter={StaticResource B2V}}">
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="*" />
-                  <ColumnDefinition Width="12" />
-                  <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-                <StackPanel>
-                  <TextBlock Text="{loc:T Conn.User}" Style="{StaticResource FieldLabel}" />
-                  <TextBox Text="{Binding UserName, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{loc:T Conn.User}" />
-                </StackPanel>
-                <StackPanel Grid.Column="2">
-                  <TextBlock Text="{loc:T Conn.Password}" Style="{StaticResource FieldLabel}" />
-                  <PasswordBox x:Name="PasswordInput" PasswordChanged="OnPasswordChanged" AutomationProperties.Name="{loc:T Conn.Password}" />
-                </StackPanel>
-              </Grid>
-              <TextBlock Text="{Binding PasswordHint}" Style="{StaticResource MutedText}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"
-                         Visibility="{Binding ShowUserFields, Converter={StaticResource B2V}}" />
-            </StackPanel>
-
-            <!-- security: the warning is shown before the box is switched, and turns amber while the risky choice is on -->
-            <StackPanel Visibility="{Binding IsServer, Converter={StaticResource B2V}}" Margin="0,20,0,0">
-              <TextBlock Text="{loc:T Conn.Security}" Style="{StaticResource SectionHeading}" />
-              <CheckBox Content="{loc:T Conn.Encrypt}" IsChecked="{Binding Encrypt}" AutomationProperties.Name="{loc:T Conn.Encrypt}" />
-              <TextBlock Text="{loc:T Conn.Encrypt.Warning}" Foreground="{StaticResource WarningBrush}" FontSize="12" TextWrapping="Wrap" Margin="26,2,0,0" />
-              <Border Style="{StaticResource WarningBanner}" Margin="26,6,0,0" Visibility="{Binding ShowEncryptWarning, Converter={StaticResource B2V}}" AutomationProperties.LiveSetting="Polite">
-                <DockPanel>
-                  <Path DockPanel.Dock="Left" Style="{StaticResource Icon}" Data="{StaticResource IconWarning}" Width="14" Height="14" TextElement.Foreground="{StaticResource WarningBrush}" Margin="0,2,8,0" VerticalAlignment="Top" />
-                  <TextBlock Text="{loc:T Conn.Encrypt.Off}" TextWrapping="Wrap" Foreground="{StaticResource WarningBrush}" />
-                </DockPanel>
-              </Border>
-              <CheckBox Content="{loc:T Conn.Trust}" IsChecked="{Binding TrustServerCertificate}" Margin="0,12,0,0" AutomationProperties.Name="{loc:T Conn.Trust}" />
-              <TextBlock Text="{loc:T Conn.Trust.Warning}" Foreground="{StaticResource WarningBrush}" FontSize="12" TextWrapping="Wrap" Margin="26,2,0,0" />
-              <Border Style="{StaticResource WarningBanner}" Margin="26,6,0,0" Visibility="{Binding ShowTrustWarning, Converter={StaticResource B2V}}" AutomationProperties.LiveSetting="Polite">
-                <DockPanel>
-                  <Path DockPanel.Dock="Left" Style="{StaticResource Icon}" Data="{StaticResource IconWarning}" Width="14" Height="14" TextElement.Foreground="{StaticResource WarningBrush}" Margin="0,2,8,0" VerticalAlignment="Top" />
-                  <TextBlock Text="{loc:T Conn.Trust.On}" TextWrapping="Wrap" Foreground="{StaticResource WarningBrush}" />
-                </DockPanel>
-              </Border>
+                      </Border.Style>
+                      <TextBlock Text="{Binding Text}" TextWrapping="Wrap" />
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
             </StackPanel>
 
             <TextBlock Text="{Binding FormError}" Style="{StaticResource ErrorText}" TextWrapping="Wrap" Margin="0,16,0,0" Visibility="{Binding HasFormError, Converter={StaticResource B2V}}"

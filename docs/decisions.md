@@ -87,6 +87,46 @@ Saved through a temp file so a failed save never destroys the previous version.
 ### Nudge
 Arrow = 1 dot, Shift+arrow = 8 dots (about 1 mm at 203 DPI).
 
+### Stock picker (New label dialog)
+The New label dialog is a stock picker: a search box with the focus, filters (brand, unit, roll/sheet/round, verified only, favourites
+only), a virtualised, grouped list and a detail pane. The five original sizes stay as the "Common sizes" group, with "Custom size..." as its
+last row, so the old way of working is one click away. The library (bundled plus `%AppData%\Rotula\stocks`) is read once on a worker
+thread through `IStockStore`; the search itself takes well under a millisecond, so the window only waits 120 ms after typing before it runs
+(the view-model has a synchronous `RunSearch` for tests). The first hit is selected, so type then Enter creates that stock; Down and Up move
+through the results without leaving the box; Ctrl+D stars the stock and Ctrl+F returns to the search box.
+- The detail pane shows every known fact and exactly the warnings that creating the label will raise: `StockApplier.Apply` is run on a blank
+  label when a stock is selected. The library names a stock by id in those messages; the UI shows its name and part number instead.
+  A continuous roll asks for the label height before it can be created, because the stock has none.
+- The resolution starts from the printer (the detected one when the printer has been read, else the last used) and says where it came from.
+- Favourites and recent stocks are two lists in `settings.json` (`stockFavorites`, `stockRecent`), written through the same settings object
+  the main window saves, so neither overwrites the other. They are read and written with `StockUserList`.
+- "Save as my stock" appends to one file, `my-stocks.json` (atomic write; ids start with `user-`, so a user entry can never replace a
+  bundled one by accident). A supplies list is previewed (certainty per row, notes for skipped rows) and saved as `import-<date>.json` only
+  after confirmation. Prices are never read.
+- The label stores the stock id; the Label panel shows the stock name and part number (or says the stock is no longer in the library).
+
+### Add-ons (provider packs) at start-up
+`PackLoader.LoadAll` runs on a background thread while the window opens (`PackStartup.Begin`); a failure of the loader itself is logged and
+ends as an empty report. The connection manager waits for it (`PackStartup.Ready`), so a connection of an add-on is never shown as "missing"
+only because loading was not over. Problems appear as a small non-modal notice under the toolbar ("Some data source add-ons could not be loaded: Details");
+the details dialog lists each problem in plain language (the key is translated, the English sentence of the loader is the fallback) with the
+technical detail folded away. An add-on in the user's own folder is never loaded without approval: the prompt says that an add-on is a
+program, shows publisher, version and fingerprint, and defaults to Skip. Skip changes nothing and the question comes back at the next start;
+Approve records the fingerprint and loads the add-on at once.
+
+### Connection manager drawn from the registry
+The engine list and the form come from `ProviderRegistry` and the option schema of each provider (`Data.Option.*` labels, text, number,
+host, file or folder path, choice, switch), so an add-on engine needs no UI change. Presets are listed under their provider; choosing one
+fills the port, the secure defaults and its options, shows its hints and warns when the ODBC driver of a file preset is missing. A typed
+host that matches a preset offers its settings. The password stays a separate protected box (the schema has no secret kind).
+- Settings built by the form carry `ProviderId`, `PresetId`, `CaCertificatePath` and all extras, so saving again never drops them. Built-in
+  providers keep an empty `providerId` in `connections.json`.
+- A saved connection whose add-on is not installed is shown read-only with a plain explanation; Save and Test are off and the entry is never rewritten.
+- Test goes through `OpenWithSettingsAsync`. The saved password is reused only for an existing connection edited under its own name with an
+  empty password box (the store then decides whether the edit still allows it); anything else passes an explicit password (or "none"), so the
+  placeholder name used for an unnamed form can never pick up the password of a real connection. When the store asks for the password again
+  the user is told and the password box takes the focus.
+
 ### Tests
 `tests/Rotula.Tests` targets `net10.0-windows` (it references the WPF app). All App tests share the xUnit collection "App"
 because the language is process-wide state.

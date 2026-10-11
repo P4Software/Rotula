@@ -15,8 +15,8 @@ public class StockCatalogTests
         // Exact figures on purpose: a loader that is too strict must fail loudly instead of silently dropping entries.
         Assert.Empty(c.Issues);
         Assert.Equal(837, c.Count);
-        Assert.Equal(809, c.Entries.Count(e => e.Verified));
-        Assert.Equal(28, c.Entries.Count(e => !e.Verified));
+        Assert.Equal(797, c.Entries.Count(e => e.Verified));
+        Assert.Equal(40, c.Entries.Count(e => !e.Verified));
         Assert.Equal(1, c.Metadata.SchemaVersion);
         Assert.Contains("not affiliated", c.Metadata.Notes!, StringComparison.OrdinalIgnoreCase);
         Assert.Same(c, StockCatalog.LoadBundled());
@@ -46,7 +46,7 @@ public class StockCatalogTests
             Assert.True(report.IsValid, string.Join(Environment.NewLine, report.Errors));
             Assert.Empty(report.Warnings);
             Assert.Equal(837, report.EntryCount);
-            Assert.Equal(809, report.VerifiedCount);
+            Assert.Equal(797, report.VerifiedCount);
         }
         finally { File.Delete(path); }
     }

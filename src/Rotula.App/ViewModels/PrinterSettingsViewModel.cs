@@ -32,6 +32,9 @@ public sealed partial class PrinterSettingsViewModel : ObservableObject
     private readonly Action<PrinterDpi>? _applyLabelDpi;
     private CancellationTokenSource? _detectCts;
     private PrinterDetection _detected = PrinterDetection.None;
+
+    /// <summary>The resolution the driver of the selected printer reported, or null when nothing was read (not asked yet, failed, or a network printer).</summary>
+    public PrinterDpi? DetectedDpi => _detected.Dpi;
     private IReadOnlyList<PrinterInfo> _printers = Array.Empty<PrinterInfo>();
 
     /// <summary>Creates the view-model.</summary>

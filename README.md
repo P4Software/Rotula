@@ -17,7 +17,7 @@ Design it, preview it, merge your data, print it. No account, no cloud, no telem
 [Download](#download) ·
 [Features](#feature-tour) ·
 [Quick start](#quick-start) ·
-[ZPL support](docs/zpl-support.md) ·
+[ZPL coverage](docs/zpl-coverage.md) ·
 [Printing](docs/printing.md) ·
 [Changelog](CHANGELOG.md)
 
@@ -35,7 +35,10 @@ Design it, preview it, merge your data, print it. No account, no cloud, no telem
 - [Quick start](#quick-start)
 - [Import existing ZPL](#import-existing-zpl)
 - [Data merge](#data-merge)
+- [Label stocks](#label-stocks)
+- [Database sources](#database-sources)
 - [Printing](#printing)
+- [MCP server](#mcp-server)
 - [Barcode support](#barcode-support)
 - [Languages](#languages)
 - [Privacy](#privacy)
@@ -151,11 +154,15 @@ deterministic and plain ASCII, so you can version it, diff it or send it with an
 | Area | What you get |
 |---|---|
 | **Designer** | Rulers, grid, snapping, guides, multi-select, align, distribute, z-order, 90 degree rotation, layers, unlimited undo/redo |
-| **Elements** | Text, wrapped text, data fields, 9 barcode symbologies, boxes, lines, circles, images |
+| **Elements** | Text, wrapped text, data fields, 28 ZPL barcode commands, boxes, lines, circles, images |
+| **Label stocks** | A library of label sizes with part-number lookup: type a part number or a size, get the exact label size and media settings ([details](#label-stocks)) |
 | **Files** | Versioned `.rotula` JSON files; saving goes through a temporary file, so a failed save keeps the previous version. Recent files are remembered |
 | **Export** | ZPL, PNG and PDF |
 | **ZPL import** | Opens existing `.zpl` files, with warnings and raw passthrough ([details](#import-existing-zpl)) |
-| **Data merge** | CSV and `.xlsx`, `{{variables}}`, counters, copies per record, batches |
+| **Data merge** | CSV, `.xlsx` and read-only database queries, `{{variables}}`, counters, copies per record, batches |
+| **Database sources** | SQL Server, PostgreSQL, MySQL/MariaDB, SQLite and ODBC, plus presets for common cloud services ([details](#database-sources)) |
+| **ZPL coverage** | 222 ZPL commands tracked one by one on a [generated coverage page](docs/zpl-coverage.md) |
+| **MCP server** | A separate program that lets MCP-capable clients design and check labels ([details](#mcp-server)) |
 | **Printing** | Windows spooler (RAW, including USB) and TCP port 9100, DPI and paper detection, printer profiles, test label |
 | **Resolution** | Convert a label between 203, 300 and 600 dpi while keeping its physical size |
 | **Languages** | English and Spanish, switchable live |
@@ -189,11 +196,13 @@ differs, not about who is better.
 | **Network use** | None, except printing to the address you enter | Varies by product |
 | **Source code** | Open, on GitHub | Proprietary |
 | **Printer output** | ZPL (ZPL II compatible printers) | Typically many printer languages and drivers |
-| **Data sources** | CSV and Excel (`.xlsx`) | Typically databases, ERP and other integrations as well |
+| **Data sources** | CSV, Excel (`.xlsx`) and read-only database queries | Typically databases, ERP and other integrations as well |
+| **Label stocks** | Built-in library with part-number lookup | Varies by product; some ship their own stock libraries |
+| **Automation** | MCP server for MCP-capable clients | Varies by product |
 | **Platform** | Windows 10 and 11 | Varies by product |
 | **Scope** | One desktop designer and printer | Often include server, workflow and enterprise management features |
 
-If you need databases, RFID, central management, other printer languages or a vendor support contract, one of those suites
+If you need RFID, writing back to databases, central management, other printer languages or a vendor support contract, one of those suites
 is the better fit today. If you need to design a ZPL label, merge a spreadsheet and print, without installing a
 platform, Rotula is made for that. All product names belong to their owners; Rotula is not affiliated with them. "ZPL
 compatible" describes the printer language Rotula writes.
@@ -247,7 +256,7 @@ Already have labels written in ZPL? Use **File > Import ZPL** to open them as an
 This is the part most label tools skip, and Rotula takes it seriously.
 
 - **A real parser, not a text search.** Rotula reads ZPL II into a design: label setup, fields and typesetting, field
-  blocks, fonts, boxes, circles, graphic fields (including compressed data) and the nine barcode symbologies. Text is decoded
+  blocks, fonts, boxes, circles, graphic fields (including compressed data) and all 28 ZPL barcode commands. Text is decoded
   with the `^CI` character set active at that point in the file.
 - **Bar patterns become Code 128.** When a file draws a barcode as a row of vertical bars, Rotula recognizes the pattern and
   can replace it with a real, editable Code 128 barcode.
@@ -255,7 +264,7 @@ This is the part most label tools skip, and Rotula takes it seriously.
   to the printer when you print or export. Anything approximated or unsupported produces a warning that names the line.
 - **Several labels in one file** become several documents.
 
-The command-by-command matrix is in [docs/zpl-support.md](docs/zpl-support.md). Read [Known limitations](#known-limitations)
+All 222 ZPL commands, with their status, are listed on the generated [coverage page](docs/zpl-coverage.md). Read [Known limitations](#known-limitations)
 for what a round trip does not preserve.
 
 ---
@@ -274,6 +283,43 @@ Open **Printer > Data merge** (`Ctrl+M`). The window walks through five tabs:
 
 Step through the records with the navigator and see each one on the canvas. The data stays on your PC: only the merge
 settings are saved in the label file, never the data.
+
+---
+
+## Label stocks
+
+There are hundreds of label sizes. **File > New** opens a stock picker: type a manufacturer part number (or part of one),
+a size in almost any spelling (`4x6`, `4 x 6 in`, `102x152`, `100x150mm`) or a product family, and the list narrows as you
+type. Pick a result and Rotula sets the label size, media type (direct thermal or thermal transfer) and tracking for you.
+
+- **What it knows.** Size in millimetres and inches, die-cut corner radius, labels across, core size, labels per roll and where
+  the data comes from. A stock whose size is not cross-checked is marked, and applying it shows a warning.
+- **Honest about gaps.** The gap between labels is usually unknown, so Rotula says to calibrate the printer instead of guessing.
+  Multi-up and sheet stocks apply the label size only, and Rotula says so.
+- **Your own stocks.** Save a custom size as a stock, or import a supplies list (`.csv` or `.xlsx`) and review the rows before
+  they are kept. Prices are never read. User stocks live in `%AppData%\Rotula\stocks`.
+- **Favourites and recent** stocks are remembered on your PC.
+
+Brand and product names belong to their owners; Rotula is not affiliated with them. File format, sources and how to correct
+an entry: [docs/stock-catalog.md](docs/stock-catalog.md).
+
+---
+
+## Database sources
+
+In the Data merge window, choose **Database** as the source to fill labels from a saved connection and a query.
+
+- **Engines.** SQL Server, PostgreSQL, MySQL and MariaDB, SQLite files and ODBC data sources. Presets fill in the usual port and
+  secure settings for common services (for example Amazon RDS and Redshift, Supabase, Neon, Azure SQL, Google Cloud SQL, and Microsoft
+  Access or Excel files through ODBC).
+- **Read-only by design.** Only one `SELECT` statement is accepted; anything that could change data, run code or read files is refused
+  before a connection is opened. The best protection is still a database account that can only read.
+- **Passwords** are stored protected by Windows for your user account and are never written into a label file. Connections are encrypted
+  by default.
+- **Add-ons.** Further engines can be installed as separate add-ons. An add-on is a program, so Rotula asks for your approval before it
+  loads one from your own folder.
+
+Developer guide: [docs/data-providers.md](docs/data-providers.md).
 
 ---
 
@@ -302,7 +348,8 @@ More in [docs/printing.md](docs/printing.md).
 
 ## Barcode support
 
-Each symbology validates its data as you type (check digits, allowed characters, lengths).
+Rotula writes and reads **28 ZPL barcode commands** (linear, 2D, stacked and postal; the full list is on the [coverage page](docs/zpl-coverage.md)).
+Each symbology validates its data as you type (check digits, allowed characters, lengths). The most common ones:
 
 | Symbology | ZPL command | Typical use |
 |---|---|---|
@@ -315,6 +362,15 @@ Each symbology validates its data as you type (check digits, allowed characters,
 | QR Code | `^BQ` | URLs, contact data, any text |
 | Data Matrix | `^BX` | Small parts, electronics |
 | PDF417 | `^B7` | Documents, tickets, ID cards |
+
+---
+
+## MCP server
+
+`Rotula.Mcp.exe` is a separate console program, not part of the designer window. It speaks the Model Context Protocol, so
+MCP-capable clients can create and edit labels, add barcodes, validate them, preview them, save them and generate ZPL. It has no
+network access of its own, works only in the folders you allow, and keeps printing and database access **off** until you switch them
+on in `rotula-mcp.settings.json`. Printing needs a two-step confirmation. Setup, tools and safety settings: [docs/mcp.md](docs/mcp.md).
 
 ---
 
@@ -396,10 +452,12 @@ flowchart LR
 | `src/Rotula.Core` | Label model, ZPL generator and parser, barcode validation, data merge. No UI |
 | `src/Rotula.Rendering` | SkiaSharp preview renderer, barcode drawing, PNG and PDF export |
 | `src/Rotula.Printing` | Windows spooler and TCP 9100 printing, printer detection |
+| `src/Rotula.Data` | Database providers, presets, the read-only query guard and the connection store |
+| `src/Rotula.Mcp` | The MCP server (a separate executable) |
 | `src/Rotula.App` | The WPF application |
 | `tests/` | xUnit tests and the golden ZPL fixtures |
 | `packaging/` | Installer script and winget manifest templates |
-| `docs/` | [ZPL support](docs/zpl-support.md), [printing](docs/printing.md), [releasing](docs/releasing.md), [design decisions](docs/decisions.md) |
+| `docs/` | [ZPL coverage](docs/zpl-coverage.md), [stock catalogue](docs/stock-catalog.md), [database providers](docs/data-providers.md), [MCP server](docs/mcp.md), [printing](docs/printing.md), [releasing](docs/releasing.md), [design decisions](docs/decisions.md) |
 
 ---
 
@@ -421,7 +479,7 @@ Not supported today, and open for discussion:
 
 - EPL, TSPL and CPCL output
 - RFID encoding
-- Database connections (CSV and Excel only for now)
+- Writing to databases (queries are read-only by design)
 - A label template marketplace
 - Cloud sync
 - macOS and Linux
@@ -443,7 +501,7 @@ Read these before relying on Rotula for production labels, and **always print a 
 - **Variables do not survive a ZPL round trip.** ZPL cannot express `{{name}}`, so imported ZPL is plain text until you edit it.
 - **Raw ZPL is not scaled on DPI conversion.** Unknown commands kept as raw ZPL stay in their original dots when a label is
   converted to another resolution, and Rotula warns you.
-- **Unsupported commands** (see [the support matrix](docs/zpl-support.md)) are kept as raw ZPL where possible but are not
+- **Unsupported commands** (see [the coverage page](docs/zpl-coverage.md)) are kept as raw ZPL where possible but are not
   interpreted or previewed.
 - Rotula is tested against decoders and golden files, not against every printer model.
 - ZPL output only, and Windows only.

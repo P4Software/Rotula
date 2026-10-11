@@ -626,7 +626,7 @@ public class AppDatabaseTests : IDisposable
         m.Host = "changed";
         await m.TestAsync();
         Assert.True(m.HasTestError);
-        Assert.Contains("Type the password again", m.TestText);
+        Assert.Contains("Type the password in the Password box", m.TestText);
         Assert.Single(_store.Opened);
         Assert.Empty(_fake.Database.Created);
     }
@@ -704,7 +704,7 @@ public class AppDatabaseTests : IDisposable
         Assert.True(m.IsSqlite);
         Assert.False(m.ShowAuth);
         _fake.DbFilePath = @"C:\data\labels.db";
-        m.BrowseFileCommand.Execute(null);
+        m.Fields.Single(f => f.Key == "filePath").Browse();     // the Browse button of the data-driven file field
         Assert.Equal(@"C:\data\labels.db", m.FilePath);
 
         m.Provider = DatabaseProvider.Odbc;
