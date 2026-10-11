@@ -5,6 +5,8 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-10-11
+
 ### Added
 - **JPEG export** (File > Export > JPEG image): the label as a JPEG at printer resolution on a white background. Use PNG when the picture will be scanned or printed, since JPEG softens sharp edges a little.
 
