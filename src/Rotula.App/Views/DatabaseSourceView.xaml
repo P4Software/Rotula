@@ -77,7 +77,10 @@
     <TabControl Grid.Row="1" Margin="0,12,0,0" SelectedIndex="{Binding ModeIndex}" AutomationProperties.Name="{loc:T Data.Db.Title}">
 
       <TabItem Header="{loc:T Data.Db.Tab.Table}" AutomationProperties.Name="{loc:T Data.Db.Tab.Table}">
-        <Grid Margin="0,12,0,0">
+        <!-- This view lives inside the Data window's ScrollViewer, which measures its content with unlimited height. Without a
+             height limit here the table list would grow to show every table at once (no scrollbar of its own, and slow with
+             thousands of tables), so the list and the preview are given a bounded height and scroll inside it. -->
+        <Grid Margin="0,12,0,0" MinHeight="320" MaxHeight="520">
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="300" />
             <ColumnDefinition Width="16" />
@@ -89,7 +92,9 @@
             <Border Style="{StaticResource Card}" Padding="0,6">
               <Grid>
                 <ListBox ItemsSource="{Binding Tables}" SelectedItem="{Binding SelectedTable}" ItemContainerStyle="{StaticResource TableRow}"
-                         VirtualizingPanel.IsVirtualizing="True" AutomationProperties.Name="{loc:T Data.Db.Tables}">
+                         VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                         ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                         AutomationProperties.Name="{loc:T Data.Db.Tables}">
                   <ListBox.ItemTemplate>
                     <DataTemplate>
                       <DockPanel LastChildFill="True">
@@ -196,7 +201,7 @@
 
           <DockPanel Grid.Row="3" Margin="0,8,0,0">
             <TextBlock DockPanel.Dock="Top" Text="{loc:T Data.Db.Results}" Style="{StaticResource FieldLabel}" />
-            <DataGrid x:Name="ResultGrid" ItemsSource="{Binding GridRows}" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" MinHeight="170"
+            <DataGrid x:Name="ResultGrid" ItemsSource="{Binding GridRows}" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" MinHeight="170" MaxHeight="420"
                       AutomationProperties.Name="{loc:T Data.Db.Results}" />
           </DockPanel>
         </Grid>

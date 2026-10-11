@@ -5,6 +5,12 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-10-10
+
+### Fixed
+- The app no longer crashes (stack overflow) when switching between Windows printer and Network printer in the print dialog and the data merge window.
+- The database table list no longer freezes or crashes the app when the server has thousands of tables; the list now scrolls inside its own area.
+
 ## [0.1.0] - 2026-10-10
 
 First public version.
@@ -45,5 +51,6 @@ First public version.
 - Releases are signed with Azure Artifact Signing, but Windows SmartScreen can still show a reputation warning for a new,
   little-downloaded file until downloads build trust (More info, then Run anyway).
 
-[Unreleased]: https://github.com/P4Software/Rotula/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/P4Software/Rotula/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/P4Software/Rotula/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/P4Software/Rotula/releases/tag/v0.1.0

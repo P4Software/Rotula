@@ -131,7 +131,10 @@ public sealed partial class PrinterSettingsViewModel : ObservableObject
     public bool UseWindowsPrinter
     {
         get => !UseNetwork;
-        set => UseNetwork = !value;
+        // Only the radio that becomes checked may change the choice. The group also writes "false" back into the radio that just got
+        // unchecked; honouring that mirrored write made the two bound properties flip each other endlessly (a stack overflow seen when
+        // the radio buttons were driven by UI Automation).
+        set { if (value) UseNetwork = false; }
     }
 
     /// <summary>Queue name of the selected Windows printer.</summary>
