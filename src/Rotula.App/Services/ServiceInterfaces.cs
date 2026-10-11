@@ -11,6 +11,8 @@ public enum ExportKind
 {
     /// <summary>PNG image at printer resolution.</summary>
     Png,
+    /// <summary>JPEG image at printer resolution.</summary>
+    Jpeg,
     /// <summary>Single-page PDF the size of the label.</summary>
     Pdf,
     /// <summary>Raw ZPL text file.</summary>

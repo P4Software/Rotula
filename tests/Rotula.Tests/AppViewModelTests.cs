@@ -188,6 +188,24 @@ public class AppViewModelTests : IDisposable
     }
 
     [Fact]
+    public void ExportJpeg_WritesARealJpegFile_AtTheLabelSizeOnAWhiteBackground()
+    {
+        var vm = Create();
+        vm.AddElementCommand.Execute(ToolboxKind.Text);
+        _fake.ExportPath = Path_("out.jpg");
+        vm.ExportJpegCommand.Execute(null);
+        byte[] bytes = File.ReadAllBytes(Path_("out.jpg"));
+        Assert.Equal(new byte[] { 0xFF, 0xD8, 0xFF }, bytes.Take(3));
+        using var bitmap = SkiaSharp.SKBitmap.Decode(bytes);
+        Assert.NotNull(bitmap);
+        Assert.Equal(vm.Session.Document.Width.ToDots(vm.Session.Document.Dpi), bitmap.Width);
+        // The corner is empty paper: white, never the black a transparent pixel would turn into.
+        var corner = bitmap.GetPixel(bitmap.Width - 1, bitmap.Height - 1);
+        Assert.True(corner.Red > 240 && corner.Green > 240 && corner.Blue > 240);
+        Assert.Empty(_fake.Errors);
+    }
+
+    [Fact]
     public void ExportZpl_WritesGeneratedCode_ButRefusesWhenTheLabelHasErrors()
     {
         var vm = Create();

@@ -25,6 +25,7 @@ public sealed class WpfFileDialogService : IFileDialogService
     public string? PickExportFile(ExportKind kind, string suggestedFileName) => kind switch
     {
         ExportKind.Png => Save(Loc.Get("Menu.ExportPng"), Filter("Filter.Png", "*.png"), suggestedFileName, ".png"),
+        ExportKind.Jpeg => Save(Loc.Get("Menu.ExportJpeg"), Filter("Filter.Jpeg", "*.jpg;*.jpeg"), suggestedFileName, ".jpg"),
         ExportKind.Pdf => Save(Loc.Get("Menu.ExportPdf"), Filter("Filter.Pdf", "*.pdf"), suggestedFileName, ".pdf"),
         _ => Save(Loc.Get("Menu.ExportZpl"), Filter("Filter.Zpl", "*.zpl;*.txt"), suggestedFileName, ".zpl"),
     };

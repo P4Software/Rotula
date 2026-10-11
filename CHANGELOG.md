@@ -5,6 +5,9 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+- **JPEG export** (File > Export > JPEG image): the label as a JPEG at printer resolution on a white background. Use PNG when the picture will be scanned or printed, since JPEG softens sharp edges a little.
+
 ### Fixed
 - A size such as "4in x 6in" typed or pasted right after the program started could be read as "no size" on a slow computer, because the first match was cut off after 250 ms; the limit is now 2 seconds.
 - Closed windows and finished screens no longer stay in memory listening for language changes.

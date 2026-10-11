@@ -860,6 +860,10 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void ExportPng() => Export(ExportKind.Png);
 
+    /// <summary>Exports a JPEG.</summary>
+    [RelayCommand]
+    private void ExportJpeg() => Export(ExportKind.Jpeg);
+
     /// <summary>Exports a PDF.</summary>
     [RelayCommand]
     private void ExportPdf() => Export(ExportKind.Pdf);
@@ -870,7 +874,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     private void Export(ExportKind kind)
     {
-        string ext = kind switch { ExportKind.Png => ".png", ExportKind.Pdf => ".pdf", _ => ".zpl" };
+        string ext = kind switch { ExportKind.Png => ".png", ExportKind.Jpeg => ".jpg", ExportKind.Pdf => ".pdf", _ => ".zpl" };
         if (kind == ExportKind.Zpl && !CheckNoErrors()) return;
         string? path = _svc.Files.PickExportFile(kind, DocumentName + ext);
         if (path is null) return;
@@ -881,6 +885,9 @@ public sealed partial class MainViewModel : ObservableObject
             {
                 case ExportKind.Png:
                     issues = LabelExporter.SavePng(LabelDocumentAdapter.ToRenderLabel(Session.Document), path);
+                    break;
+                case ExportKind.Jpeg:
+                    issues = LabelExporter.SaveJpeg(LabelDocumentAdapter.ToRenderLabel(Session.Document), path);
                     break;
                 case ExportKind.Pdf:
                     issues = LabelExporter.SavePdf(LabelDocumentAdapter.ToRenderLabel(Session.Document), path);

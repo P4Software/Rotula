@@ -325,6 +325,9 @@
   <data name="Filter.Pdf" xml:space="preserve">
     <value>Documento PDF</value>
   </data>
+  <data name="Filter.Jpeg" xml:space="preserve">
+    <value>Imagen JPEG</value>
+  </data>
   <data name="Filter.Png" xml:space="preserve">
     <value>Imagen PNG</value>
   </data>
@@ -714,6 +717,9 @@
   </data>
   <data name="Menu.ExportPdf" xml:space="preserve">
     <value>Documento PDF...</value>
+  </data>
+  <data name="Menu.ExportJpeg" xml:space="preserve">
+    <value>Imagen JPEG...</value>
   </data>
   <data name="Menu.ExportPng" xml:space="preserve">
     <value>Imagen PNG...</value>

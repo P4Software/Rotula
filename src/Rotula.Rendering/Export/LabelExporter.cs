@@ -4,7 +4,7 @@ using SkiaSharp;
 
 namespace Rotula.Rendering.Export;
 
-/// <summary>Exports a rendered label to PNG, PDF or a raw ZPL file.</summary>
+/// <summary>Exports a rendered label to PNG, JPEG, PDF or a raw ZPL file.</summary>
 public static class LabelExporter
 {
     /// <summary>PDF user space is 72 units per inch.</summary>
@@ -23,6 +23,34 @@ public static class LabelExporter
         EnsureFolder(path);
         using var file = File.Create(path);
         return SavePng(label, file);
+    }
+
+    /// <summary>The JPEG quality used when none is given: high enough that bar edges stay clean, and the file stays small.</summary>
+    public const int DefaultJpegQuality = 95;
+
+    /// <summary>
+    /// Writes the label as a JPEG at printer resolution (one pixel per dot) and returns any render issues. JPEG has no transparency and
+    /// blurs sharp edges a little, so use PNG when the image will be scanned or printed; JPEG is for sharing and previews.
+    /// </summary>
+    /// <param name="label">The label to draw (its background is opaque white).</param>
+    /// <param name="output">Where the bytes go.</param>
+    /// <param name="quality">1 (smallest file) to 100 (best picture).</param>
+    public static IReadOnlyList<RenderIssue> SaveJpeg(RenderLabel label, Stream output, int quality = DefaultJpegQuality)
+    {
+        using var result = LabelRenderer.RenderBitmap(label);
+        using var image = SKImage.FromBitmap(result.Bitmap);
+        using var data = image.Encode(SKEncodedImageFormat.Jpeg, Math.Clamp(quality, 1, 100))
+            ?? throw new InvalidOperationException("The label image could not be encoded as JPEG.");
+        data.SaveTo(output);
+        return result.Issues;
+    }
+
+    /// <summary>Writes the label as a JPEG file, creating the folder when needed.</summary>
+    public static IReadOnlyList<RenderIssue> SaveJpeg(RenderLabel label, string path, int quality = DefaultJpegQuality)
+    {
+        EnsureFolder(path);
+        using var file = File.Create(path);
+        return SaveJpeg(label, file, quality);
     }
 
     /// <summary>
