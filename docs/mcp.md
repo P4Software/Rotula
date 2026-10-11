@@ -16,13 +16,15 @@ Add the program to the MCP server settings of an MCP-capable client. Most client
 {
   "mcpServers": {
     "rotula": {
-      "command": "C:\\Program Files\\Rotula\\Rotula.Mcp.exe"
+      "command": "C:\\Users\\YourName\\AppData\\Local\\Programs\\Rotula\\Rotula.Mcp.exe"
     }
   }
 }
 ```
 
-Use the real path of `Rotula.Mcp.exe`. There are no command-line switches and no environment variables to set.
+Use the real path of `Rotula.Mcp.exe`. The installer puts it next to `Rotula.App.exe`: for the default per-user install that is
+`%LOCALAPPDATA%\Programs\Rotula\Rotula.Mcp.exe`. JSON does not expand variables, so write the full path with doubled
+backslashes, as in the example. In the portable zip it is the `Rotula.Mcp.exe` beside `Rotula.App.exe`. There are no command-line switches and no environment variables to set.
 Double-clicking the program only prints a short explanation, the path of the settings file and the current safety settings,
 and waits for Enter, so the window never closes before it can be read.
 
@@ -33,7 +35,7 @@ The program is one self-contained file for 64-bit Windows; it does not need .NET
 All configuration lives in `rotula-mcp.settings.json`, **next to `Rotula.Mcp.exe`**. If the file does not exist, a commented
 starter is created on first run. Comments (`//`) and trailing commas are allowed.
 
-If the program sits in a folder the current user cannot write to (for example `C:\Program Files`), the starter cannot be
+If the program sits in a folder the current user cannot write to (for example `C:\Program Files`; the default per-user install does not go there), the starter cannot be
 created. The server then runs with the safe defaults and says so in its log; create the file yourself, or keep the program in
 a folder you own.
 

@@ -70,13 +70,24 @@ jobs:
           -p:Version=${{ steps.ver.outputs.version }}
           -o publish/win-x64
 
+      # The MCP server, published the same way. DebugType=none keeps the huge SkiaSharp symbol file out of the output.
+      - name: Publish MCP server single-file win-x64
+        run: >
+          dotnet publish src/Rotula.Mcp/Rotula.Mcp.csproj -c Release -r win-x64 --self-contained true
+          -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:EnableCompressionInSingleFile=true -p:DebugType=none
+          -p:Version=${{ steps.ver.outputs.version }}
+          -o publish/win-x64-mcp
+
       # The zip is an UNSIGNED CI artifact for inspection only; the signed portable zip comes from the local build.
       - name: Stage files and create the portable zip
         shell: pwsh
         run: |
           $v = '${{ steps.ver.outputs.version }}'
           New-Item -ItemType Directory -Force artifacts, stage | Out-Null
-          Copy-Item publish/win-x64/Rotula.App.exe stage/
+          Copy-Item publish/win-x64/Rotula.App.exe, publish/win-x64-mcp/Rotula.Mcp.exe stage/
+          New-Item -ItemType Directory -Force stage/docs | Out-Null
+          Copy-Item docs/mcp.md stage/docs/
           Copy-Item LICENSE, THIRD-PARTY-NOTICES.md, README.md stage/
           Compress-Archive -Path stage/* -DestinationPath "artifacts/Rotula-$v-win-x64-portable-unsigned-ci.zip" -Force
 

@@ -14,7 +14,8 @@ ShortDescription: Offline label designer for Windows with ZPL-compatible output.
 Description: >-
   Rotula is a free, open source, offline-first label designer. Lay out text, barcodes, QR codes, boxes and
   images, merge data from CSV or Excel files, preview the label and print ZPL-compatible output to USB,
-  spooler or network (port 9100) printers. It makes no network calls and sends no telemetry.
+  spooler or network (port 9100) printers. It also includes an MCP server for AI assistants and read-only
+  database sources. It sends no telemetry and connects only to the printers and databases you set up.
 Moniker: rotula
 Tags:
   - label
@@ -23,5 +24,15 @@ Tags:
   - zpl
   - printing
 ReleaseNotesUrl: __RELEASE_NOTES_URL__
+# Rotula is MIT, but the SQL Server networking component it ships has its own Microsoft licence terms. The agreement below is
+# the combined licence text the installer shows (also a release file); winget asks the user to accept it before installing.
+Agreements:
+  - AgreementLabel: Rotula licence and third-party terms
+    AgreementUrl: __LICENSE_THIRD_PARTY_URL__
+Documentations:
+  - DocumentLabel: MCP server (connect an AI assistant)
+    DocumentUrl: https://github.com/P4Software/Rotula/blob/main/docs/mcp.md
+  - DocumentLabel: Third-party notices
+    DocumentUrl: https://github.com/P4Software/Rotula/blob/main/THIRD-PARTY-NOTICES.md
 ManifestType: defaultLocale
 ManifestVersion: 1.9.0

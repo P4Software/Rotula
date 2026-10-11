@@ -5,22 +5,6 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
-### Added
-- **Stock picker in the New label dialog**: search the stock library by part number, size (4x6, 4 x 6 in, 102x152, 100x150mm) or name as you
-  type, filter by brand, unit, type and verification, see every known fact and the warnings of applying a stock, choose the printer
-  resolution, star favourites, reuse recent stocks, save a custom size as your own stock and import a supplies list (CSV or Excel) after
-  previewing it. The label remembers its stock and the Label panel shows it.
-- **Data source add-ons at start-up**: add-ons load in the background; problems appear in a small notice with plain-language details, and an
-  add-on in your own folder runs only after an explicit approval.
-- **Connection manager drawn from the provider registry**: all engines and presets (Supabase, Neon, Amazon RDS and Redshift, Azure SQL, Google
-  Cloud SQL, Access, Excel and text files, and more) with their fields, hints and secure defaults, in English and Spanish.
-- GitHub Actions workflows: build and test with a Rotula.Core line-coverage gate (80%), a repository hygiene check, and a
-  tag workflow that re-runs the checks and keeps an unsigned portable single-file win-x64 zip as a workflow artifact. CI
-  does not sign or publish anything: signed releases (installer, portable zip, checksums and winget manifests) are built
-  locally with Azure Artifact Signing, as described in docs/releasing.md.
-- Project documentation: README (English and Spanish), ZPL support matrix, contributing guide, code of conduct, security
-  policy, third-party notices, issue and pull request templates.
-
 ## [0.1.0] - 2026-10-10
 
 First public version.
@@ -29,20 +13,30 @@ First public version.
 - **Designer (WPF)**: canvas with rulers, grid, snapping and guides; property panel; layers; align, distribute and z-order;
   multi-selection; resize and rotate that follow what the printer can express; unlimited undo and redo; light theme.
 - **Elements**: text and wrapped text blocks, data fields, barcodes, QR codes, boxes, lines, circles and images.
-- **Languages**: English and Spanish, following the Windows language with a live switch in the View menu.
+- **Languages**: English and Spanish, following the Windows language with a live switch in the View menu; the installer is
+  available in both.
 - **Files**: versioned `.rotula` JSON files, saved through a temporary file so a failed save keeps the previous version.
-- **ZPL generation**: deterministic, pure-ASCII ZPL II output (`^FH` escaping for non-ASCII text) with validation messages
-  for labels that cannot be generated correctly.
-- **Barcodes**: Code 128, Code 39, Code 93, EAN-13, UPC-A, Interleaved 2 of 5, QR Code, Data Matrix and PDF417, with data
-  validation per symbology.
-- **ZPL import**: parser for ZPL II with warnings for unsupported or approximated commands, raw passthrough of unknown
-  commands, Code 128 bar-pattern recognition for graphics, and placeholders in the preview for stored recalls.
+- **Barcodes**: 28 barcode types (linear, 2D, stacked and postal families) with data validation per symbology.
+- **ZPL generation and import**: deterministic, pure-ASCII ZPL II output with validation messages; a ZPL importer that warns
+  about unsupported or approximated commands and keeps unknown ones as raw ZPL. A catalogue of ZPL II commands drives a
+  generated coverage page (`docs/zpl-coverage.md`) that says what Rotula does with each command.
+- **Stock library**: a searchable library of label stocks (part number, size, brand, type), with favourites, recent stocks,
+  your own stocks and import of a supplies list from CSV or Excel. It is part of the New label dialog.
+- **DPI conversion**: rescale a label to another printer resolution (203, 300 or 600 dpi) keeping its physical size.
 - **Preview and export**: SkiaSharp renderer with bundled stand-in fonts, and PNG and PDF export. The preview is
   approximate and says so.
-- **Data merge**: CSV and Excel (`.xlsx`) sources, `{{name}}` variables, serial-number counters and batch ZPL output.
+- **Data merge**: CSV, Excel (`.xlsx`) and database sources, `{{name}}` variables, serial-number counters and batch ZPL output.
+- **Databases**: read-only sources for SQL Server, PostgreSQL, MySQL, SQLite and ODBC, with a connection manager with presets
+  for common hosted services, passwords protected by Windows, and a guard that allows a single `SELECT`. Further engines can
+  be added as add-ons; an add-on in your own folder runs only after you approve it.
+- **MCP server**: `Rotula.Mcp.exe`, a separate program that lets MCP-capable AI clients create and edit labels, validate them,
+  preview them and generate ZPL. Printing and database access are off until switched on in its settings file, and printing
+  needs a two-step confirmation (see `docs/mcp.md`).
 - **Printing**: raw Windows spooler printing (USB, shared and network queues), direct TCP port 9100 printing and printer
   profiles; failures are reported as plain-language results, never exceptions.
-- Offline by design: no network calls and no telemetry.
+- **Releases**: signed per-user installer (with a `.rotula` file association option), portable zip with the same files,
+  checksums and winget manifests, built as described in `docs/releasing.md`. GitHub Actions only builds, tests and checks.
+- Offline by design: no telemetry and no network calls other than the printers and databases you set up.
 
 ### Known limitations
 - Preview text uses a stand-in typeface; bitmap fonts and `FontWidth` are approximated.

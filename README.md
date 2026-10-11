@@ -370,7 +370,8 @@ Each symbology validates its data as you type (check digits, allowed characters,
 `Rotula.Mcp.exe` is a separate console program, not part of the designer window. It speaks the Model Context Protocol, so
 MCP-capable clients can create and edit labels, add barcodes, validate them, preview them, save them and generate ZPL. It has no
 network access of its own, works only in the folders you allow, and keeps printing and database access **off** until you switch them
-on in `rotula-mcp.settings.json`. Printing needs a two-step confirmation. Setup, tools and safety settings: [docs/mcp.md](docs/mcp.md).
+on in `rotula-mcp.settings.json`. Printing needs a two-step confirmation. The installer places it beside the app, by default at
+`%LOCALAPPDATA%\Programs\Rotula\Rotula.Mcp.exe`. Setup, tools and safety settings: [docs/mcp.md](docs/mcp.md).
 
 ---
 

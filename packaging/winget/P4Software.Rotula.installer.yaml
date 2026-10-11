@@ -8,6 +8,11 @@ InstallModes:
   - silent
   - silentWithProgress
 UpgradeBehavior: install
+# Inno Setup registers the product as <AppId>_is1; naming it lets winget match the installed app for upgrades.
+AppsAndFeaturesEntries:
+  - DisplayName: Rotula
+    Publisher: P4 Software
+    ProductCode: "{6B0E5C1A-3F7D-4C52-9A1E-2D8F4B7A9C31}_is1"
 Installers:
   - Architecture: x64
     InstallerUrl: __INSTALLER_URL__

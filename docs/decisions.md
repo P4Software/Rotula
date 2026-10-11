@@ -312,10 +312,11 @@ trusting the certificate, makes the caller supply the password again (`Data.Stor
 - Comply with export law. If features of the software collect data, comply with the law and the Microsoft Privacy Statement (Rotula has no telemetry).
 - Microsoft's liability is limited to US$5 and the software is provided as is.
 
-**Open action (owner / legal):** Rotula's own licence is MIT and does not bind end users to terms "at least as protective" as Microsoft's.
-Before the next release, add a short notice to the installer licence page and to the README that names the component, forbids reverse
-engineering it and disclaims Microsoft's liability, or take legal advice on whether the MIT text plus the notice in
-`THIRD-PARTY-NOTICES.md` is enough. Until then this decision is accepted but not fully discharged.
+**Open action (owner / legal), partly done:** Rotula's own licence is MIT and does not bind end users to terms "at least as protective" as Microsoft's.
+The installer's licence page (which must be accepted) is now a combined text generated at build time: the MIT licence, the full unchanged licence of the
+SNI component, and a sentence saying that installing means agreeing to those terms for that component (`LICENSE-THIRD-PARTY.txt`, also shipped in the portable
+zip, the installed folder, as a release file and as the winget agreement). Still open: a lawyer should review the wording and the indemnity question before
+wider distribution (flagged in `docs/releasing.md`). Until then this decision is accepted but not claimed to be fully discharged.
 
 ### Accepted, not yet shipped (placeholders; the pack work finishes the notices)
 Each of these ships only as an optional provider pack with its own licence notices file, never inside the core executable.

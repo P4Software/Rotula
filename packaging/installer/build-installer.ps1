@@ -1,16 +1,16 @@
 <#
   Builds the signed Rotula release. Double-click build-installer.cmd (it runs this script).
 
-  Steps: read the version, publish the app, sign it, build the installer, sign the installer,
-  verify both signatures, build the portable zip from the SIGNED program, write the winget
-  manifests and the checksums. Everything lands in the git-ignored "artifacts" folder.
+  Steps: read the version, publish the app and the MCP server, write the combined licence text,
+  sign both programs, build the installer, sign the installer, verify all three signatures, build
+  the portable zip from the SIGNED programs, write the winget manifests and the checksums. Everything lands in the git-ignored "artifacts" folder.
 
   Signing uses Azure Artifact Signing (account p4software) through your Azure login (az login).
   If signing is not possible the files are still built and clearly marked UNSIGNED, and they are
   never published.
 
   Nothing is uploaded unless build-settings.json (created next to this script on first run)
-  says "publishToGitHub": true, and then only after both signatures were verified.
+  says "publishToGitHub": true, and then only after all signatures were verified.
 
   Automation only: set ROTULA_NOPAUSE=1 to skip the final "press Enter" pause.
   Keep this file ASCII-only: Windows PowerShell 5.1 reads BOM-less files as ANSI.
@@ -119,6 +119,88 @@ function SignFile($file) {
   return $false
 }
 
+function New-ZipFromFolder($folder, $zipPath) {
+  # Windows PowerShell 5.1's Compress-Archive writes backslashes in entry names, which unzip tools on other systems
+  # (and some on Windows) show as odd file names. The zip format wants forward slashes, so build it by hand.
+  Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
+  if (Test-Path -LiteralPath $zipPath) { Remove-Item -LiteralPath $zipPath -Force }
+  $root = (Resolve-Path -LiteralPath $folder).Path.TrimEnd('\')
+  $zip = [System.IO.Compression.ZipFile]::Open($zipPath, 'Create')
+  try {
+    # Sorted so the same input always gives the same entry order.
+    foreach ($f in (Get-ChildItem -LiteralPath $root -Recurse -File | Sort-Object FullName)) {
+      $entry = $f.FullName.Substring($root.Length + 1).Replace('\', '/')
+      [void][System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $f.FullName, $entry, [System.IO.Compression.CompressionLevel]::Optimal)
+    }
+  } finally { $zip.Dispose() }
+}
+
+function Find-ThirdPartyLicense($packageId) {
+  # Finds LICENSE.txt of a NuGet package that is really part of the build: the version comes from the restore output
+  # (obj\project.assets.json) of the shipped projects, the folder from the package folders recorded there. Nothing is
+  # guessed from the global cache, so an old cached version can never be picked up by mistake.
+  $versions = @{}
+  foreach ($proj in 'Rotula.App', 'Rotula.Mcp') {
+    $assetsPath = Join-Path $repo "src\$proj\obj\project.assets.json"
+    if (-not (Test-Path -LiteralPath $assetsPath)) { throw "The restore output for $proj was not found ($assetsPath). Run the build again." }
+    $assets = Get-Content -LiteralPath $assetsPath -Raw | ConvertFrom-Json
+    foreach ($lib in $assets.libraries.PSObject.Properties.Name) {
+      if ($lib -match ('^' + [regex]::Escape($packageId) + '/(.+)$')) { $versions[$Matches[1]] = @($assets.packageFolders.PSObject.Properties.Name) }
+    }
+  }
+  if ($versions.Count -eq 0) { throw "The package $packageId is not part of this build any more. Remove it from the third-party list in build-installer.ps1 and from THIRD-PARTY-NOTICES.md." }
+  if ($versions.Count -gt 1) { throw "The programs use different versions of $packageId ($($versions.Keys -join ', ')). Make them the same version." }
+  $ver = @($versions.Keys)[0]
+  foreach ($folder in $versions[$ver]) {
+    $candidate = Join-Path $folder (Join-Path $packageId.ToLowerInvariant() (Join-Path $ver 'LICENSE.txt'))
+    if (Test-Path -LiteralPath $candidate) { return [pscustomobject]@{ Package = $packageId; Version = $ver; Path = $candidate } }
+  }
+  throw "The licence text of $packageId $ver was not found in the NuGet package cache. Run 'dotnet restore' (or 'dotnet nuget locals global-packages -l' to see the cache) and build again. Rotula must never ship without that licence text."
+}
+
+function New-CombinedLicense($outFile) {
+  # Writes the text the installer shows on its licence page (and ships as LICENSE-THIRD-PARTY.txt):
+  # Rotula's MIT licence, then the verbatim licence of every non-permissive component that ships, then a pointer to the
+  # notices for the permissive ones. The component licences are copied unchanged (only line endings are unified).
+  # To add another non-permissive component, add its NuGet id here.
+  $nonPermissive = @('Microsoft.Data.SqlClient.SNI.runtime')
+  $crlf = "`r`n"
+  $norm = { param($t) (($t -replace "`r`n", "`n") -replace "`r", "`n").TrimEnd() -replace "`n", $crlf }
+  $rule = ('=' * 78)
+  $out = New-Object System.Text.StringBuilder
+  [void]$out.Append("ROTULA LICENCE AND THIRD-PARTY TERMS$crlf$rule$crlf$crlf")
+  [void]$out.Append("PART 1 - ROTULA$crlf$crlf")
+  [void]$out.Append((& $norm (Get-Content -LiteralPath (Join-Path $repo 'LICENSE') -Raw)) + $crlf + $crlf)
+  [void]$out.Append("$rule$crlf$crlf")
+  [void]$out.Append("PART 2 - THIRD-PARTY COMPONENTS WITH THEIR OWN LICENCE TERMS$crlf$crlf")
+  [void]$out.Append("Rotula includes the components listed below. They are NOT covered by the MIT licence above: each one$crlf")
+  [void]$out.Append("comes with its own licence terms, reproduced in full below. By installing or using Rotula you agree to$crlf")
+  [void]$out.Append("be bound by those terms for those components. Where those terms differ from the MIT licence for one of$crlf")
+  [void]$out.Append("those components, those terms apply to that component.$crlf$crlf")
+  $licenses = @()
+  foreach ($id in $nonPermissive) {
+    $found = Find-ThirdPartyLicense $id
+    $licenses += [pscustomobject]@{ Info = $found; Text = (& $norm (Get-Content -LiteralPath $found.Path -Raw)) }
+  }
+  foreach ($l in $licenses) {
+    [void]$out.Append("$rule$crlf")
+    [void]$out.Append("Component: $($l.Info.Package) $($l.Info.Version)$crlf")
+    [void]$out.Append("Licence text (copied unchanged from the component's own LICENSE.txt):$crlf$rule$crlf$crlf")
+    [void]$out.Append($l.Text + $crlf + $crlf)
+  }
+  [void]$out.Append("$rule$crlf$crlf")
+  [void]$out.Append("PART 3 - OTHER THIRD-PARTY COMPONENTS$crlf$crlf")
+  [void]$out.Append("All other third-party components in Rotula use permissive open-source licences (MIT, Apache 2.0, BSD and$crlf")
+  [void]$out.Append("similar). They are listed with their licences in THIRD-PARTY-NOTICES.md, which is installed next to this$crlf")
+  [void]$out.Append("file and is also at https://github.com/P4Software/Rotula/blob/main/THIRD-PARTY-NOTICES.md$crlf")
+  $text = $out.ToString()
+  if ($text -match '[^\x00-\x7F]') { throw 'The combined licence text contains characters that are not plain ASCII. Check LICENSE and the component licences.' }
+  # Last line of defence: the verbatim text must really be inside the file we are about to ship.
+  foreach ($l in $licenses) { if (-not $text.Contains($l.Text)) { throw "The licence text of $($l.Info.Package) is missing from the combined licence file." } }
+  [System.IO.File]::WriteAllText($outFile, $text, (New-Object System.Text.ASCIIEncoding))
+  return @($licenses | ForEach-Object { "$($_.Info.Package) $($_.Info.Version)" })
+}
+
 function Get-ReleaseNotes($version, $outFile) {
   $changelog = Join-Path $repo 'CHANGELOG.md'
   $lines = Get-Content -LiteralPath $changelog
@@ -165,20 +247,35 @@ try {
   New-Item -ItemType Directory -Force -Path $artifacts, $stage | Out-Null
 
   # --- 1. Publish ---------------------------------------------------------------------------
-  Write-Host '1/6 Publishing the app (this takes a minute)...'
-  & dotnet publish (Join-Path $repo 'src\Rotula.App\Rotula.App.csproj') -c Release -r win-x64 --self-contained true `
-    -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -p:DebugType=none `
-    "-p:Version=$version" -o $publish
-  if ($LASTEXITCODE -ne 0) { throw 'The app could not be published. Read the messages above.' }
+  Write-Host '1/6 Publishing the app and the MCP server (this takes a few minutes)...'
+  # Same flags for both programs. DebugType=none keeps the huge SkiaSharp symbol file (.pdb) out of the output; only the
+  # single .exe of each program is copied to the stage folder, so no .pdb or documentation .xml can slip into a release.
+  $publishMcp = Join-Path $repo 'publish\win-x64-mcp'
+  if (Test-Path -LiteralPath $publishMcp) { Remove-Item -LiteralPath $publishMcp -Recurse -Force }
+  foreach ($p in @(@('Rotula.App', $publish), @('Rotula.Mcp', $publishMcp))) {
+    & dotnet publish (Join-Path $repo "src\$($p[0])\$($p[0]).csproj") -c Release -r win-x64 --self-contained true `
+      -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -p:DebugType=none `
+      "-p:Version=$version" -o $p[1]
+    if ($LASTEXITCODE -ne 0) { throw "$($p[0]) could not be published. Read the messages above." }
+  }
 
   Copy-Item -LiteralPath (Join-Path $publish 'Rotula.App.exe') -Destination $stage
+  Copy-Item -LiteralPath (Join-Path $publishMcp 'Rotula.Mcp.exe') -Destination $stage
   foreach ($f in 'LICENSE', 'THIRD-PARTY-NOTICES.md', 'README.md') { Copy-Item -LiteralPath (Join-Path $repo $f) -Destination $stage }
+  New-Item -ItemType Directory -Force -Path (Join-Path $stage 'docs'), (Join-Path $stage 'packs') | Out-Null
+  Copy-Item -LiteralPath (Join-Path $repo 'docs\mcp.md') -Destination (Join-Path $stage 'docs')
+  Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'packs-README.txt') -Destination (Join-Path $stage 'packs\README.txt')
+
+  # The licence page the user must accept. Built after the publish because the restore output it reads is fresh now.
+  $shipped = New-CombinedLicense (Join-Path $stage 'LICENSE-THIRD-PARTY.txt')
+  Write-Host "  Combined licence written; includes the full terms of: $($shipped -join ', ')"
   $exe = Join-Path $stage 'Rotula.App.exe'
+  $mcpExe = Join-Path $stage 'Rotula.Mcp.exe'
 
   # --- 2. Sign the program ------------------------------------------------------------------
   $signed = $false
-  Write-Host '2/6 Signing the program...'
-  if ($canSign) { $signed = SignFile $exe } else { Write-Host '  Skipped (see the note above).' }
+  Write-Host '2/6 Signing the programs...'
+  if ($canSign) { $signed = ((SignFile $exe) -and (SignFile $mcpExe)) } else { Write-Host '  Skipped (see the note above).' }
   if ($canSign -and -not $signed) { Write-Host '  Signing failed; the output will be UNSIGNED.' -ForegroundColor Yellow }
 
   # --- 3. Installer -------------------------------------------------------------------------
@@ -196,20 +293,24 @@ try {
   # --- 5. Verify ----------------------------------------------------------------------------
   Write-Host '5/6 Checking the signatures...'
   Show-Signature $exe
+  Show-Signature $mcpExe
   Show-Signature $setup
-  $allSigned = ((Test-Signed $exe) -and (Test-Signed $setup))
+  $allSigned = ((Test-Signed $exe) -and (Test-Signed $mcpExe) -and (Test-Signed $setup))
 
   # --- 6. Zip, manifests, checksums ---------------------------------------------------------
   Write-Host '6/6 Packaging the portable zip, winget manifests and checksums...'
   $suffix = if ($allSigned) { '' } else { '-UNSIGNED' }
   $zip = Join-Path $artifacts "Rotula-$version-win-x64-portable$suffix.zip"
-  # The zip is made from the stage folder, so it carries the SIGNED exe.
-  Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $zip -Force
+  # The zip is made from the stage folder, so it carries the SIGNED executables.
+  New-ZipFromFolder $stage $zip
+  # The licence text is also a separate release file, so the winget manifest can link to the terms the user agrees to.
+  $licenseAsset = Join-Path $artifacts 'LICENSE-THIRD-PARTY.txt'
+  Copy-Item -LiteralPath (Join-Path $stage 'LICENSE-THIRD-PARTY.txt') -Destination $licenseAsset
 
   if ($allSigned) {
     $wingetOut = Join-Path $artifacts 'winget'
     & (Join-Path $repo 'scripts\New-WingetManifest.ps1') -Version $version -InstallerPath $setup -OutputDir $wingetOut -Repository $cfg.githubRepository
-    Compress-Archive -Path (Join-Path $wingetOut '*') -DestinationPath (Join-Path $artifacts "Rotula-$version-winget-manifests.zip") -Force
+    New-ZipFromFolder $wingetOut (Join-Path $artifacts "Rotula-$version-winget-manifests.zip")
   } else {
     # Rename so an unsigned installer can never be mistaken for the release file; no winget files for it.
     $unsignedSetup = Join-Path $artifacts "Rotula-$version-win-x64-setup-UNSIGNED.exe"
@@ -235,7 +336,7 @@ try {
     if ($cfg.publishToGitHub) { Write-Host 'publishToGitHub is true, but nothing was published because the files are not signed.' -ForegroundColor Yellow }
   } else {
     Write-Host ''
-    Write-Host "Done. Both files are signed by '$expectedSigner'. Output: $artifacts" -ForegroundColor Green
+    Write-Host "Done. All programs and the installer are signed by '$expectedSigner'. Output: $artifacts" -ForegroundColor Green
 
     # --- Optional publish -------------------------------------------------------------------
     if (-not $cfg.publishToGitHub) {
@@ -248,7 +349,7 @@ try {
       $null = & gh api "repos/$repoName/git/ref/tags/$tag" 2>$null
       if ($LASTEXITCODE -ne 0) { throw "The tag $tag does not exist on GitHub yet. Tag the commit you built and push the tag, then build again." }
 
-      $assets = @($setup, $zip, (Join-Path $artifacts 'SHA256SUMS.txt'), (Join-Path $artifacts "Rotula-$version-winget-manifests.zip"))
+      $assets = @($setup, $zip, $licenseAsset, (Join-Path $artifacts 'SHA256SUMS.txt'), (Join-Path $artifacts "Rotula-$version-winget-manifests.zip"))
       $notes = Join-Path $artifacts 'release-notes.md'
       $haveNotes = Get-ReleaseNotes $version $notes
       $null = & gh release view $tag --repo $repoName 2>$null

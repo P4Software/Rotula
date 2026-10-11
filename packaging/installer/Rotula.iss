@@ -13,6 +13,16 @@
   #define OutputDir "..\..\artifacts"
 #endif
 
+; VersionInfoVersion must be numeric (major.minor.patch). A prerelease such as 0.2.0-rc1 keeps its full text in
+; AppVersion and the file name, but only 0.2.0 goes into the version resource.
+#ifndef AppVersionNumeric
+  #if Pos("-", AppVersion) > 0
+    #define AppVersionNumeric Copy(AppVersion, 1, Pos("-", AppVersion) - 1)
+  #else
+    #define AppVersionNumeric AppVersion
+  #endif
+#endif
+
 [Setup]
 ; AppId must never change: it is how Windows and winget recognise upgrades of the same product.
 AppId={{6B0E5C1A-3F7D-4C52-9A1E-2D8F4B7A9C31}
@@ -31,7 +41,9 @@ PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
-LicenseFile={#SourceDir}\LICENSE
+; The page the user must accept: Rotula's MIT licence plus the full terms of every non-permissive component that ships
+; (generated at build time by build-installer.ps1; see docs/releasing.md).
+LicenseFile={#SourceDir}\LICENSE-THIRD-PARTY.txt
 OutputDir={#OutputDir}
 OutputBaseFilename=Rotula-{#AppVersion}-win-x64-setup
 Compression=lzma2
@@ -41,7 +53,8 @@ WizardStyle=modern
 ChangesAssociations=yes
 UninstallDisplayIcon={app}\Rotula.App.exe
 UninstallDisplayName=Rotula
-VersionInfoVersion={#AppVersion}
+VersionInfoVersion={#AppVersionNumeric}
+VersionInfoProductVersion={#AppVersionNumeric}
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -54,14 +67,27 @@ Name: "associate"; Description: "Open .rotula label files with Rotula"; GroupDes
 
 [Files]
 Source: "{#SourceDir}\Rotula.App.exe"; DestDir: "{app}"; Flags: ignoreversion
+; The MCP server: a console program for AI clients, started by them, so it gets no Start menu entry. docs\mcp.md says how to connect it.
+Source: "{#SourceDir}\Rotula.Mcp.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceDir}\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#SourceDir}\LICENSE-THIRD-PARTY.txt"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#SourceDir}\docs\mcp.md"; DestDir: "{app}\docs"; Flags: ignoreversion
+Source: "{#SourceDir}\packs\README.txt"; DestDir: "{app}\packs"; Flags: ignoreversion
 Source: "{#SourceDir}\THIRD-PARTY-NOTICES.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceDir}\README.md"; DestDir: "{app}"; Flags: ignoreversion
+
+[Dirs]
+; Add-ons placed in "packs" beside the exe are trusted by Rotula (see docs/data-providers.md). The folder starts empty.
+Name: "{app}\packs"
+
+[UninstallDelete]
+; Created by Rotula.Mcp.exe on first run, next to the exe. Removing it lets the install folder disappear on uninstall.
+Type: files; Name: "{app}\rotula-mcp.settings.json"
 
 [Registry]
 ; HKA writes to HKCU for a per-user install and to HKLM for an all-users install, so no admin rights are
 ; needed by default. The file name is passed as the first argument, which the app already opens (App.OnStartup).
-Root: HKA; Subkey: "Software\Classes\.rotula"; ValueType: string; ValueName: ""; ValueData: "Rotula.Label"; Flags: uninsdeletevalue; Tasks: associate
+Root: HKA; Subkey: "Software\Classes\.rotula"; ValueType: string; ValueName: ""; ValueData: "Rotula.Label"; Flags: uninsdeletevalue uninsdeletekeyifempty; Tasks: associate
 Root: HKA; Subkey: "Software\Classes\Rotula.Label"; ValueType: string; ValueName: ""; ValueData: "Rotula label"; Flags: uninsdeletekey; Tasks: associate
 Root: HKA; Subkey: "Software\Classes\Rotula.Label\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\Rotula.App.exe,0"; Tasks: associate
 Root: HKA; Subkey: "Software\Classes\Rotula.Label\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\Rotula.App.exe"" ""%1"""; Tasks: associate

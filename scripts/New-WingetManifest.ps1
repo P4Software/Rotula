@@ -2,7 +2,7 @@
 .SYNOPSIS
   Fills the winget manifest templates in packaging/winget for one release.
 .DESCRIPTION
-  Replaces the __PLACEHOLDER__ tokens (version, installer URL, SHA-256, release date, notes URL)
+  Replaces the __PLACEHOLDER__ tokens (version, installer URL, SHA-256, release date, notes URL, third-party licence URL)
   and writes the ready-to-submit manifest set to -OutputDir/manifests/p/P4Software/Rotula/<version>/,
   the folder layout the winget-pkgs repository expects.
 .EXAMPLE
@@ -25,6 +25,7 @@ $tokens = @{
     '__INSTALLER_SHA256__'  = $sha
     '__RELEASE_DATE__'      = (Get-Date).ToUniversalTime().ToString('yyyy-MM-dd')
     '__RELEASE_NOTES_URL__' = "https://github.com/$Repository/releases/tag/$tag"
+    '__LICENSE_THIRD_PARTY_URL__' = "https://github.com/$Repository/releases/download/$tag/LICENSE-THIRD-PARTY.txt"
 }
 $dest = Join-Path $OutputDir "manifests/p/P4Software/Rotula/$Version"
 New-Item -ItemType Directory -Force -Path $dest | Out-Null

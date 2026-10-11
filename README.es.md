@@ -379,7 +379,8 @@ Cada simbología valida sus datos mientras escribes (dígitos verificadores, car
 Modelos (MCP), de modo que los clientes compatibles con MCP pueden crear y editar etiquetas, añadir códigos de barras, validarlos,
 previsualizarlos, guardarlos y generar ZPL. No tiene acceso a la red por sí mismo, solo trabaja en las carpetas que permitas y mantiene
 **desactivados** la impresión y el acceso a bases de datos hasta que los actives en `rotula-mcp.settings.json`. Imprimir exige una
-confirmación en dos pasos. Instalación, herramientas y ajustes de seguridad: [docs/mcp.md](docs/mcp.md) (en inglés).
+confirmación en dos pasos. El instalador lo coloca junto a la aplicación, por defecto en
+`%LOCALAPPDATA%\Programs\Rotula\Rotula.Mcp.exe`. Instalación, herramientas y ajustes de seguridad: [docs/mcp.md](docs/mcp.md) (en inglés).
 
 ---
 
