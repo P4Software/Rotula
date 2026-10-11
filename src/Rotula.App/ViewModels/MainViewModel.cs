@@ -262,7 +262,14 @@ public sealed partial class MainViewModel : ObservableObject
     /// A cancelled dialog or a file that fails to load leaves it in place.
     /// </summary>
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(ShowDataCommand), nameof(OpenDataFileCommand))]
     private bool _showStartScreen = true;
+
+    /// <summary>
+    /// The Data window only makes sense once a label exists (new, opened or imported); while the start screen is up there is
+    /// nothing to merge into, so the database button and Ctrl+M stay inactive until then.
+    /// </summary>
+    private bool HasLabel => !ShowStartScreen;
 
     /// <summary>Hides the start screen and carries on with the blank label.</summary>
     [RelayCommand]
@@ -943,11 +950,11 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     /// <summary>Opens the Data merge window.</summary>
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(HasLabel))]
     private void ShowData() => _svc.Dialogs.ShowDataWindow(Data);
 
     /// <summary>Picks a CSV or Excel file, opens the Data merge window and loads the file.</summary>
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(HasLabel))]
     private async Task OpenDataFileAsync()
     {
         string? path = _svc.Files.PickOpenData();

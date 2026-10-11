@@ -44,6 +44,19 @@ public class AppStartScreenTests : IDisposable
     }
 
     [Fact]
+    public void DataButton_IsInactiveUntilALabelExists()
+    {
+        var vm = Create();
+        Assert.False(vm.ShowDataCommand.CanExecute(null));
+        Assert.False(vm.OpenDataFileCommand.CanExecute(null));
+
+        _fake.NewLabel = new LabelDocument { Width = Measure.Millimeters(100), Height = Measure.Millimeters(50) };
+        vm.NewCommand.Execute(null);
+        Assert.True(vm.ShowDataCommand.CanExecute(null));
+        Assert.True(vm.OpenDataFileCommand.CanExecute(null));
+    }
+
+    [Fact]
     public void StartScreen_StaysWhenAFileFailsToLoad_AndGoesAwayWhenOneLoads()
     {
         string dir = AppTestSupport.TempDir();
