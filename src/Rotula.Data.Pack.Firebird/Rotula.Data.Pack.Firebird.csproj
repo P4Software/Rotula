@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The Firebird provider pack (packs/firebird). Shared pack settings and the reason for the odd-looking references to the host
+    assemblies are in ..\PackProject.props.
+    Target framework: FirebirdSql.Data.FirebirdClient 10.3.4 ships net8.0 and netstandard builds (no net10.0 one); the net8.0 build
+    runs on .NET 10, which is what the pack is compiled against.
+  -->
+  <Import Project="..\PackProject.props" />
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Rotula.Data.Pack.Firebird</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Initial Developer's Public License 1.0 (file-level copyleft; the library is used unmodified, see NOTICES.txt). -->
+    <PackageReference Include="FirebirdSql.Data.FirebirdClient" Version="10.3.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Rotula.Data.Packs.Tests" />
+  </ItemGroup>
+
+</Project>

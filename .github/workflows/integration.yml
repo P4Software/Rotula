@@ -1,0 +1,88 @@
+name: Database integration
+
+# Runs the database engine against REAL servers (PostgreSQL and MariaDB). Never part of the normal build: it starts when someone
+# presses "Run workflow" and once a week, so a new server release or a driver update is noticed even when nobody is working on it.
+# No secrets are used. The servers are the vendors' official portable Windows archives, started by the same scripts a developer
+# uses (tests/Rotula.Data.Integration/servers), listening on 127.0.0.1 only with throw-away data and generated passwords.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 5 * * 1" # Mondays, 05:17 UTC
+
+permissions:
+  contents: read
+
+concurrency:
+  group: integration-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_NOLOGO: "1"
+
+jobs:
+  integration:
+    name: PostgreSQL and MariaDB integration tests
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      # The downloads are large (about 480 MB). They are keyed on the settings file, which holds the versions and checksums,
+      # and are verified again by the script on every run, so a poisoned cache cannot be used.
+      - name: Cache the server downloads
+        uses: actions/cache@v4
+        with:
+          path: ~\AppData\Local\Rotula\test-servers\cache
+          key: test-servers-${{ hashFiles('tests/Rotula.Data.Integration/servers/servers.settings.json') }}
+
+      - name: Build the integration tests
+        run: dotnet build tests/Rotula.Data.Integration -c Release
+
+      - name: Start the test servers
+        shell: powershell
+        run: ./tests/Rotula.Data.Integration/servers/Start-TestServers.ps1
+
+      # Tests that document a known problem of the engine (trait Category=KnownBug) run in their own step below, so the main
+      # step is green exactly when nothing new broke.
+      - name: Run the integration tests
+        run: >
+          dotnet test tests/Rotula.Data.Integration -c Release --no-build
+          --filter "Category!=KnownBug"
+          --logger "trx;LogFileName=integration.trx" --results-directory TestResults
+
+      # A run in which the servers silently did not start would be all "skipped" and green. This turns that into a failure.
+      - name: Make sure the tests really ran
+        shell: pwsh
+        run: |
+          $trx = Get-ChildItem TestResults -Filter integration.trx -Recurse | Select-Object -First 1
+          if (-not $trx) { throw 'No test result file was produced.' }
+          [xml]$xml = Get-Content $trx.FullName
+          $c = $xml.TestRun.ResultSummary.Counters
+          Write-Host "executed=$($c.executed) passed=$($c.passed) failed=$($c.failed) notExecuted=$($c.notExecuted)"
+          if ([int]$c.executed -lt 60) { throw "Only $($c.executed) integration tests ran; the servers probably did not start." }
+          if ([int]$c.notExecuted -gt 0) { throw "$($c.notExecuted) integration tests were skipped; every server should be available here." }
+
+      - name: Run the known-problem tests (informational)
+        continue-on-error: true
+        run: >
+          dotnet test tests/Rotula.Data.Integration -c Release --no-build
+          --filter "Category=KnownBug"
+          --logger "trx;LogFileName=known-bugs.trx" --results-directory TestResults
+
+      - name: Stop the test servers
+        if: always()
+        shell: powershell
+        run: ./tests/Rotula.Data.Integration/servers/Stop-TestServers.ps1
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-results
+          path: TestResults/
+          if-no-files-found: warn

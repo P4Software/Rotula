@@ -1,0 +1,48 @@
+<Project>
+
+  <!--
+    Shared settings of the provider pack projects (Rotula.Data.Pack.*). A pack is an add-on folder that Rotula loads at start-up, so its
+    output must contain ONLY the pack's own code and dependencies:
+      * Rotula.Data, Rotula.Data.Abstractions and Rotula.Core are the contract shared with the host. They are referenced as plain
+        assemblies (compile only, never copied). A normal project reference would drag the host's whole package graph (SQL Server
+        networking, SQLite, ...) into the pack folder, with licences the pack's NOTICES file does not cover. The project reference
+        below exists only to build them first (ReferenceOutputAssembly=false, ExcludeAssets=all: no assets flow into this project).
+      * No trimming, no single file: some licences (Oracle) forbid modifying the libraries, and the loader resolves them by name.
+      * The result of dotnet publish for win-x64 without a bundled runtime is the pack folder (scripts/build-packs.ps1). The runtime
+        identifier only selects the one native library set that applies; the .NET runtime itself is Rotula's.
+  -->
+  <PropertyGroup>
+    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsPackable>false</IsPackable>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <!-- Do not write the host's documentation files and symbols into the pack folder. -->
+    <CopyDebugSymbolFilesFromPackages>false</CopyDebugSymbolFilesFromPackages>
+    <CopyDocumentationFilesFromPackages>false</CopyDocumentationFilesFromPackages>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <DebugType>none</DebugType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(MSBuildThisFileDirectory)Rotula.Data\Rotula.Data.csproj" ReferenceOutputAssembly="false" ExcludeAssets="all" />
+    <Reference Include="Rotula.Data">
+      <HintPath>$(MSBuildThisFileDirectory)Rotula.Data\bin\$(Configuration)\net10.0\Rotula.Data.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Rotula.Data.Abstractions">
+      <HintPath>$(MSBuildThisFileDirectory)Rotula.Data.Abstractions\bin\$(Configuration)\net10.0\Rotula.Data.Abstractions.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Rotula.Core">
+      <HintPath>$(MSBuildThisFileDirectory)Rotula.Core\bin\$(Configuration)\net10.0\Rotula.Core.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <None Include="pack.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="NOTICES.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="README.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

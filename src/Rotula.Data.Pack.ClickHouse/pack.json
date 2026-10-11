@@ -1,0 +1,11 @@
+{
+  "id": "clickhouse",
+  "name": "ClickHouse",
+  "version": "1.0.0",
+  "publisher": "P4 Software",
+  "providerIds": [ "clickhouse" ],
+  "minDataApiVersion": "1.1",
+  "entryAssembly": "Rotula.Data.Pack.ClickHouse.dll",
+  "entryType": "Rotula.Data.Pack.ClickHouse.ClickHousePack",
+  "licenseNoticesFile": "NOTICES.txt"
+}

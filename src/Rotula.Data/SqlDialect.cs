@@ -67,6 +67,13 @@ public sealed record SqlDialect
     /// <summary>Identifier quoting.</summary>
     public IdentifierQuoteStyle IdentifierQuote { get; init; } = IdentifierQuoteStyle.DoubleQuote;
 
+    /// <summary>
+    /// True when a backslash inside a quoted identifier escapes the next character (ClickHouse: "the same rules that apply for escaping in
+    /// quoted identifiers also apply for string literals"). <see cref="QuoteIdentifier"/> then doubles backslashes too, otherwise a name
+    /// ending in a backslash would swallow the closing quote. Added in provider API 1.1.
+    /// </summary>
+    public bool IdentifierBackslashEscapes { get; init; }
+
     /// <summary>Native parameter marker the driver wants.</summary>
     public ParameterStyle ParameterStyle { get; init; } = ParameterStyle.AtName;
 
@@ -124,6 +131,18 @@ public sealed record SqlDialect
     /// <summary>DuckDB: refuse a file name where a table is expected (<c>FROM 'x.csv'</c>, <c>FROM "x.parquet"</c>), which reads a file from inside a SELECT.</summary>
     public bool RejectFileTableReferences { get; init; }
 
+    /// <summary>
+    /// MySQL/MariaDB: <c>SET</c> directly after <c>CHARACTER</c> is the type clause <c>CHARACTER SET latin1</c> (as in <c>CAST(x AS CHAR CHARACTER SET latin1)</c>),
+    /// not the <c>SET</c> statement, and is not refused. False elsewhere: in T-SQL <c>SELECT character SET NOCOUNT ON</c> is two statements.
+    /// </summary>
+    public bool AllowsCharacterSetClause { get; init; }
+
+    /// <summary>
+    /// True when <c>Describe</c> must read the schema with <c>SchemaOnly | KeyInfo</c>: PostgreSQL (Npgsql) reports whether a column
+    /// allows NULL only then. Off elsewhere because KeyInfo changes what SQL Server, ODBC and the packs run.
+    /// </summary>
+    public bool DescribeWithKeyInfo { get; init; }
+
     /// <summary>Oracle: refuse <c>table@dblink</c>, which reaches another database.</summary>
     public bool RejectDatabaseLinks { get; init; }
 
@@ -137,6 +156,8 @@ public sealed record SqlDialect
     public string QuoteIdentifier(string part)
     {
         if (string.IsNullOrEmpty(part) || part.Any(char.IsControl)) throw new DatabaseException(DataKeys.InvalidSettings, null, new[] { "table" });
+        // Escape the escape character first, so the doubled quotes added next are not themselves read as escaped.
+        if (IdentifierBackslashEscapes) part = part.Replace("\\", "\\\\", StringComparison.Ordinal);
         switch (IdentifierQuote)
         {
             case IdentifierQuoteStyle.Bracket: return "[" + part.Replace("]", "]]", StringComparison.Ordinal) + "]";
@@ -200,6 +221,18 @@ public static class SqlDialects
     public static readonly SqlDialect PostgreSql = new()
     {
         AmbiguityChecks = LexFeature.SingleBackslash, Id = "postgresql", DisplayName = "PostgreSQL", LexRules = new[] { SqlLexRules.PostgreSql }, RowLimit = RowLimitStyle.Limit,
+        DescribeWithKeyInfo = true,
+        // Functions a READ ONLY transaction does NOT block: they take session locks that outlive the rolled-back transaction, reload the
+        // server configuration, switch or back up the write-ahead log, reset statistics or touch replication. pg_sleep stays allowed: the
+        // command timeout bounds it, and it is how cancellation and timeouts are tested. pg_terminate_backend, set_config, lo_* and the
+        // file readers are in the shared list.
+        ForbiddenFunctions = Set("pg_reload_conf", "pg_switch_wal", "pg_rotate_logfile", "pg_create_restore_point", "pg_start_backup", "pg_stop_backup",
+            "pg_backup_start", "pg_backup_stop", "pg_promote", "pg_notify", "pg_logical_emit_message", "pg_import_system_collations",
+            "pg_wal_replay_pause", "pg_wal_replay_resume", "pg_truncate_visibility_map", "pg_replication_slot_advance", "pg_drop_replication_slot",
+            "pg_file_write", "pg_file_rename", "pg_file_unlink", "pg_logdir_ls", "pg_ls_logdir", "pg_ls_waldir", "pg_ls_tmpdir", "pg_ls_archive_statusdir"),
+        // pg_advisory_lock, _lock_shared, _xact_lock*, _unlock*, pg_try_advisory_*; the pg_stat_reset* family; replication origins and slots.
+        ForbiddenFunctionPrefixes = Set("pg_advisory_", "pg_try_advisory_", "pg_stat_reset", "pg_replication_origin_", "pg_create_physical_replication_slot",
+            "pg_create_logical_replication_slot", "pg_copy_physical_replication_slot", "pg_copy_logical_replication_slot", "pg_stat_statements_reset"),
         CatalogueSql =
             "SELECT table_schema, table_name, table_type FROM information_schema.tables " +
             "WHERE table_type IN ('BASE TABLE','VIEW') AND table_schema NOT IN ('pg_catalog','information_schema') ORDER BY 1, 2",
@@ -212,9 +245,17 @@ public static class SqlDialects
     {
         AmbiguityChecks = LexFeature.AnyBackslash, Id = "mysql", DisplayName = "MySQL", LexRules = new[] { SqlLexRules.MySql }, IdentifierQuote = IdentifierQuoteStyle.Backtick,
         RowLimit = RowLimitStyle.Limit,
+        AllowsCharacterSetClause = true,
+        // Locks and waits a READ ONLY transaction does not block. GET_LOCK/RELEASE_LOCK hold named locks for the whole session; BENCHMARK burns
+        // the server's CPU; the *_POS_WAIT / *_GTID_WAIT family blocks on replication. SLEEP stays allowed: the command timeout bounds it
+        // and it is how cancellation and timeouts are tested.
+        // Refused only when called (followed by "("), so a column that happens to be named benchmark still works.
+        ForbiddenCalls = Set("GET_LOCK", "RELEASE_LOCK", "RELEASE_ALL_LOCKS", "BENCHMARK", "MASTER_POS_WAIT", "SOURCE_POS_WAIT",
+            "MASTER_GTID_WAIT", "WAIT_FOR_EXECUTED_GTID_SET", "WAIT_UNTIL_SQL_THREAD_AFTER_GTIDS"),
         CatalogueSql =
             "SELECT TABLE_SCHEMA, TABLE_NAME, TABLE_TYPE FROM information_schema.TABLES " +
-            "WHERE TABLE_TYPE IN ('BASE TABLE','VIEW') AND TABLE_SCHEMA NOT IN ('mysql','information_schema','performance_schema','sys') " +
+            // SYSTEM VERSIONED is how MariaDB reports a temporal (WITH SYSTEM VERSIONING) table; it is an ordinary table for the user.
+            "WHERE TABLE_TYPE IN ('BASE TABLE','VIEW','SYSTEM VERSIONED') AND TABLE_SCHEMA NOT IN ('mysql','information_schema','performance_schema','sys') " +
             "AND (DATABASE() IS NULL OR TABLE_SCHEMA = DATABASE()) ORDER BY 1, 2",
     };
 
@@ -265,14 +306,14 @@ public static class SqlDialects
 
     // Sources: DuckDB docs "SQL Introduction / Literal Types" ($$ strings, E'...') and "Securing DuckDB" (enable_external_access, lock_configuration).
     /// <summary>
-    /// DuckDB (PostgreSQL-derived parser). Comments are NOT treated as nested on purpose (see <see cref="SqlLexRules"/> remarks).
+    /// DuckDB (PostgreSQL-derived parser). Block comments NEST: verified against DuckDB 1.5 (`SELECT 1 /* a /* b */ c */` runs), like PostgreSQL, so the lexer nests them too.
     /// File reading from inside a SELECT (<c>read_csv(...)</c>, <c>FROM 'x.csv'</c>) cannot be fully blocked lexically; the real
     /// control is <c>SET enable_external_access = false</c> (a read-only step of the provider). These rules are defence in depth.
     /// </summary>
     public static readonly SqlDialect DuckDb = new()
     {
         AmbiguityChecks = LexFeature.SingleBackslash, Id = "duckdb", DisplayName = "DuckDB",
-        LexRules = new[] { new SqlLexRules { PostgresStrings = true, DollarParameters = true } },
+        LexRules = new[] { new SqlLexRules { PostgresStrings = true, DollarParameters = true, NestedComments = true } },
         ParameterStyle = ParameterStyle.DollarName, RowLimit = RowLimitStyle.Limit,
         ForbiddenCallPrefixes = Set("read_", "parquet_", "iceberg_", "delta_", "json_scan", "csv_scan"),
         ForbiddenCalls = Set("glob", "query", "query_table", "sniff_csv", "st_read", "st_drivers", "read_blob", "duckdb_secrets", "which_secret",
@@ -315,7 +356,9 @@ public static class SqlDialects
 
     // Source: ClickHouse "Syntax" (read 2026-10): comments --, #, #! and // (and more than two slashes), nestable C-style /* */; string
     // literals in single quotes only, '' or backslash escapes (backslash is literal before characters that are not listed escapes);
-    // double quotes and backticks quote identifiers; $heredoc$ strings. Identifier escape rules are not spelled out, so the guard lexes both readings.
+    // double quotes and backticks quote identifiers; $heredoc$ strings. Identifiers: "The same rules that apply for escaping in quoted
+    // identifiers also apply for string literals" (Syntax > Identifiers, read 2026-10), so backslash escapes apply inside "..." and `...`
+    // as well; the guard still lexes both readings of every backslash.
     /// <summary>
     /// ClickHouse: comments <c>--</c>, <c>#</c>, <c>#!</c>, <c>//</c> and NESTING <c>/* */</c>; strings in single quotes with backslash escapes;
     /// <c>$heredoc$</c> strings. Table functions that reach files, the network or other servers are refused, and so is <c>SETTINGS</c>
@@ -324,12 +367,15 @@ public static class SqlDialects
     public static readonly SqlDialect ClickHouse = new()
     {
         AmbiguityChecks = LexFeature.AnyBackslash, Id = "clickhouse", DisplayName = "ClickHouse",
-        LexRules = new[] { new SqlLexRules { SingleQuoteBackslash = true, HashComment = true, SlashSlashComment = true, NestedComments = true, Backticks = true, DollarQuotes = true } },
-        IdentifierQuote = IdentifierQuoteStyle.Backtick, RowLimit = RowLimitStyle.Limit,
+        LexRules = new[] { new SqlLexRules { SingleQuoteBackslash = true, DoubleQuoteBackslash = true, BacktickBackslash = true, HashComment = true, SlashSlashComment = true, NestedComments = true, Backticks = true, DollarQuotes = true } },
+        IdentifierQuote = IdentifierQuoteStyle.Backtick, IdentifierBackslashEscapes = true, RowLimit = RowLimitStyle.Limit,
+        // The HTTP driver opens lazily (no request is made on Open), so the connection test needs a real round trip.
+        ConnectivityProbeSql = "SELECT 1",
         ForbiddenKeywords = Set("SETTINGS"),
         ForbiddenCalls = Set("url", "urlCluster", "file", "fileCluster", "s3", "s3Cluster", "gcs", "oss", "cosn", "hdfs", "hdfsCluster", "azureBlobStorage",
             "azureBlobStorageCluster", "remote", "remoteSecure", "cluster", "clusterAllReplicas", "mysql", "postgresql", "mongodb", "redis", "sqlite", "jdbc", "odbc",
-            "executable", "input", "deltaLake", "iceberg", "hudi", "dictionary", "mergeTreeIndex"),
+            "executable", "input", "deltaLake", "deltaLakeCluster", "iceberg", "icebergS3", "icebergS3Cluster", "icebergCluster", "icebergHDFS", "icebergAzure",
+            "hudi", "hudiCluster", "dictionary", "mergeTreeIndex", "arrowFlight", "ytsaurus"),
         CatalogueSql =
             "SELECT database, name, engine FROM system.tables WHERE database NOT IN ('system','INFORMATION_SCHEMA','information_schema') ORDER BY 1, 2",
     };
@@ -365,7 +411,7 @@ public static class SqlDialects
         Id = "firebird", DisplayName = "Firebird",
         LexRules = new[] { new SqlLexRules { QQuotes = true } },
         RowLimit = RowLimitStyle.First,
-        ForbiddenFunctions = Set("GEN_ID"),
+        ForbiddenFunctions = Set("GEN_ID", "RDB$SET_CONTEXT"),
         CatalogueSql =
             "SELECT NULL, TRIM(RDB$RELATION_NAME), CASE WHEN RDB$VIEW_SOURCE IS NULL THEN 'TABLE' ELSE 'VIEW' END FROM RDB$RELATIONS WHERE COALESCE(RDB$SYSTEM_FLAG, 0) = 0 ORDER BY 2",
     };

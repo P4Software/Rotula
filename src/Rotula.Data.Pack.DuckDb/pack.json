@@ -1,0 +1,11 @@
+{
+  "id": "duckdb",
+  "name": "DuckDB",
+  "version": "1.0.0",
+  "publisher": "P4 Software",
+  "providerIds": [ "duckdb" ],
+  "minDataApiVersion": "1.1",
+  "entryAssembly": "Rotula.Data.Pack.DuckDb.dll",
+  "entryType": "Rotula.Data.Pack.DuckDb.DuckDbPack",
+  "licenseNoticesFile": "NOTICES.txt"
+}

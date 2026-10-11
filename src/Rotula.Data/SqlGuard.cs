@@ -237,6 +237,9 @@ public static class SqlGuard
 
             if (t.Kind == SqlTokenKind.Symbol)
             {
+                // Oracle: an '@' that is not a bind-parameter marker is a database link, also in the quoted form table@"LINK" and with
+                // spaces around it. The only '@' Rotula itself writes is the @name parameter, which the tokenizer reads as a Parameter.
+                if (dialect.RejectDatabaseLinks && t.Text == "@") return Reject(DataKeys.RejectForbiddenFunction, "@");
                 if (t.Text == "(") depth++;
                 else if (t.Text == ")") { depth--; if (fromDepth > depth) fromDepth = -1; }
                 else if (t.Text == "," && fromDepth >= 0 && depth == fromDepth) tablePosition = true;
@@ -284,7 +287,11 @@ public static class SqlGuard
             if (w.Equals("REPLACE", StringComparison.OrdinalIgnoreCase) && i + 1 < count
                 && tokens[i + 1].Kind == SqlTokenKind.Word && tokens[i + 1].Text.Equals("INTO", StringComparison.OrdinalIgnoreCase))
                 return Reject(DataKeys.RejectForbiddenKeyword, "REPLACE");
-            if (ForbiddenKeywords.Contains(w) || dialect.ForbiddenKeywords.Contains(w)) return Reject(DataKeys.RejectForbiddenKeyword, w.ToUpperInvariant());
+            // MySQL/MariaDB: "CAST(x AS CHAR CHARACTER SET latin1)" is a type clause, not the SET statement. Only inside parentheses (a cast or
+            // CONVERT), only directly after CHARACTER, and only where the dialect says so (in T-SQL "SELECT character SET NOCOUNT ON" is two statements).
+            bool characterSetClause = dialect.AllowsCharacterSetClause && depth > 0 && w.Equals("SET", StringComparison.OrdinalIgnoreCase)
+                && IsWord(tokens, i - 1, "CHARACTER");
+            if (!characterSetClause && (ForbiddenKeywords.Contains(w) || dialect.ForbiddenKeywords.Contains(w))) return Reject(DataKeys.RejectForbiddenKeyword, w.ToUpperInvariant());
             if (IsForbiddenFunction(w, dialect)) return Reject(DataKeys.RejectForbiddenFunction, w);
             if (IsSym(tokens, i + 1, "(") && IsForbiddenCall(w, dialect)) return Reject(DataKeys.RejectForbiddenFunction, w);
 

@@ -1,0 +1,50 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Tests of the optional database provider packs (Oracle, Firebird, DuckDB, ClickHouse).
+      * Unit tests use the pack projects directly (connection strings, option schema, guard rules, error mapping, parameter style).
+      * Loader tests publish each pack exactly as scripts/build-packs.ps1 does into testpacks/<id> next to the tests, then load that
+        folder through PackLoader.LoadAll, so what is tested is the real self-contained layout.
+      * DuckDB runs in-process and is tested against the real engine; Firebird tests need a server and skip when none is reachable.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Rotula.Core\Rotula.Core.csproj" />
+    <ProjectReference Include="..\..\src\Rotula.Data\Rotula.Data.csproj" />
+    <ProjectReference Include="..\..\src\Rotula.Data.Pack.DuckDb\Rotula.Data.Pack.DuckDb.csproj" />
+    <ProjectReference Include="..\..\src\Rotula.Data.Pack.Firebird\Rotula.Data.Pack.Firebird.csproj" />
+    <ProjectReference Include="..\..\src\Rotula.Data.Pack.Oracle\Rotula.Data.Pack.Oracle.csproj" />
+    <ProjectReference Include="..\..\src\Rotula.Data.Pack.ClickHouse\Rotula.Data.Pack.ClickHouse.csproj" />
+  </ItemGroup>
+
+  <!-- Publish every pack the way the packaging script does (win-x64, no bundled runtime) into testpacks/<id>. -->
+  <Target Name="PublishPacksForLoaderTests" AfterTargets="Build" Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+    <ItemGroup>
+      <PackProject Include="..\..\src\Rotula.Data.Pack.DuckDb\Rotula.Data.Pack.DuckDb.csproj" PackId="duckdb" />
+      <PackProject Include="..\..\src\Rotula.Data.Pack.Firebird\Rotula.Data.Pack.Firebird.csproj" PackId="firebird" />
+      <PackProject Include="..\..\src\Rotula.Data.Pack.Oracle\Rotula.Data.Pack.Oracle.csproj" PackId="oracle" />
+      <PackProject Include="..\..\src\Rotula.Data.Pack.ClickHouse\Rotula.Data.Pack.ClickHouse.csproj" PackId="clickhouse" />
+    </ItemGroup>
+    <MSBuild Projects="@(PackProject)" Targets="Restore;Publish" BuildInParallel="false"
+             Properties="Configuration=$(Configuration);RuntimeIdentifier=win-x64;SelfContained=false;PublishDir=$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(OutDir)', 'testpacks', '%(PackProject.PackId)'));BuildProjectReferences=false" />
+  </Target>
+
+</Project>

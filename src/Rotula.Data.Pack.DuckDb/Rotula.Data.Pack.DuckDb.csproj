@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The DuckDB provider pack (packs/duckdb). Shared pack settings and the reason for the odd-looking references to the host assemblies
+    are in ..\PackProject.props. The pack carries its own copy of DuckDB: the managed driver and the native duckdb.dll.
+  -->
+  <Import Project="..\PackProject.props" />
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Rotula.Data.Pack.DuckDb</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- MIT. The "Full" variant bundles the native DuckDB library; a win-x64 publish keeps only that platform's copy. -->
+    <PackageReference Include="DuckDB.NET.Data.Full" Version="1.5.6" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Rotula.Data.Packs.Tests" />
+  </ItemGroup>
+
+</Project>

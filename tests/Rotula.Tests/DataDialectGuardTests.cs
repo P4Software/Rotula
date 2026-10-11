@@ -354,7 +354,7 @@ public class DataDialectGuardTests
         Reject(SqlDialects.SqlServer, hidden, DataKeys.RejectMultipleStatements);
         Reject(SqlDialects.MySql, hidden, DataKeys.RejectMultipleStatements);
         Reject(SqlDialects.Oracle, hidden, DataKeys.RejectMultipleStatements);
-        Reject(SqlDialects.DuckDb, hidden, DataKeys.RejectMultipleStatements);   // not nested on purpose: the safe reading when unsure
+        Accept(SqlDialects.DuckDb, hidden);   // verified against DuckDB 1.5: SELECT 1 /* a /* b */ c */ runs, so the comment nests
         Reject(SqlDialects.OdbcUnknown, hidden);
     }
 
@@ -379,4 +379,130 @@ public class DataDialectGuardTests
         foreach (string sql in new[] { "SELECT 'abc", "SELECT 1 /* open", "SELECT \"abc" })
             Reject(d, sql, DataKeys.RejectUnterminated);
     }
+
+    // ---------------------------------------------------------------- side-effect functions a read-only session does not block
+
+    [Theory]
+    [InlineData("SELECT pg_advisory_lock(1)")]
+    [InlineData("SELECT pg_advisory_lock_shared(1)")]
+    [InlineData("SELECT pg_advisory_xact_lock(1)")]
+    [InlineData("SELECT pg_advisory_xact_lock_shared(1, 2)")]
+    [InlineData("SELECT pg_try_advisory_lock(1)")]
+    [InlineData("SELECT pg_try_advisory_xact_lock_shared(1)")]
+    [InlineData("SELECT pg_advisory_unlock(1)")]
+    [InlineData("SELECT pg_advisory_unlock_all()")]
+    [InlineData("SELECT pg_reload_conf()")]
+    [InlineData("SELECT pg_switch_wal()")]
+    [InlineData("SELECT pg_rotate_logfile()")]
+    [InlineData("SELECT pg_create_restore_point('x')")]
+    [InlineData("SELECT pg_backup_start('x')")]
+    [InlineData("SELECT pg_start_backup('x')")]
+    [InlineData("SELECT pg_notify('c', 'p')")]
+    [InlineData("SELECT pg_stat_reset()")]
+    [InlineData("SELECT pg_create_logical_replication_slot('s', 'test_decoding')")]
+    [InlineData("SELECT PG_ADVISORY_LOCK(1)")]
+    [InlineData("SELECT \"pg_advisory_lock\"(1)")]
+    public void PostgreSql_RefusesLocksAndAdministrationFunctions(string sql)
+        => Reject(SqlDialects.PostgreSql, sql, DataKeys.RejectForbiddenFunction);
+
+    [Theory]
+    [InlineData("SELECT pg_sleep(1)")]
+    [InlineData("SELECT pg_backend_pid(), current_setting('server_version'), pg_is_in_recovery()")]
+    [InlineData("SELECT pg_size_pretty(pg_database_size('x'))")]
+    [InlineData("SELECT * FROM pg_stats")]
+    [InlineData("SELECT pg_advisory FROM t")]
+    [InlineData("SELECT * FROM pg_locks WHERE locktype = 'advisory'")]
+    public void PostgreSql_StillAcceptsHarmlessFunctionsAndLookAlikes(string sql)
+        => Accept(SqlDialects.PostgreSql, sql);
+
+    [Theory]
+    [InlineData("SELECT GET_LOCK('x', 0)")]
+    [InlineData("SELECT get_lock ('x', 0)")]
+    [InlineData("SELECT RELEASE_LOCK('x')")]
+    [InlineData("SELECT RELEASE_ALL_LOCKS()")]
+    [InlineData("SELECT BENCHMARK(1000000, MD5('x'))")]
+    [InlineData("SELECT MASTER_POS_WAIT('a', 1)")]
+    [InlineData("SELECT SOURCE_POS_WAIT('a', 1)")]
+    [InlineData("SELECT MASTER_GTID_WAIT('0-1-1', 1)")]
+    [InlineData("SELECT WAIT_FOR_EXECUTED_GTID_SET('x')")]
+    [InlineData("SELECT `GET_LOCK`('x', 0)")]
+    public void MySqlAndMariaDb_RefuseLocksAndWaits(string sql)
+    {
+        Reject(SqlDialects.MySql, sql, DataKeys.RejectForbiddenFunction);
+        Reject(SqlDialects.MariaDb, sql, DataKeys.RejectForbiddenFunction);
+    }
+
+    [Theory]
+    [InlineData("SELECT SLEEP(1)")]                                   // bounded by the command timeout; the tests of cancellation and timeouts use it
+    [InlineData("SELECT IS_FREE_LOCK('x'), IS_USED_LOCK('x')")]       // read-only questions about locks
+    [InlineData("SELECT benchmark, get_lock FROM t")]                 // columns named like the functions are not calls
+    [InlineData("SELECT UUID(), NOW(6), LAST_INSERT_ID()")]
+    public void MySqlAndMariaDb_StillAcceptHarmlessFunctionsAndLookAlikes(string sql)
+    {
+        Accept(SqlDialects.MySql, sql);
+        Accept(SqlDialects.MariaDb, sql);
+    }
+
+    // ---------------------------------------------------------------- CHARACTER SET is a type clause, SET is a statement
+
+    [Theory]
+    [InlineData("SELECT CAST('a' AS CHAR CHARACTER SET latin1)")]
+    [InlineData("SELECT CAST(x AS CHAR(10) CHARACTER SET utf8mb4) FROM t")]
+    [InlineData("SELECT CONVERT('a', CHAR CHARACTER SET latin1)")]
+    [InlineData("select cast(x as char character\tset latin1) from t")]
+    public void MySqlAndMariaDb_AcceptCharacterSetInsideACast(string sql)
+    {
+        Accept(SqlDialects.MySql, sql);
+        Accept(SqlDialects.MariaDb, sql);
+    }
+
+    [Theory]
+    [InlineData("SET @x = 1")]
+    [InlineData("SELECT 1 SET @x = 1")]
+    [InlineData("SELECT character SET @x = 1")]                         // not inside a cast: still the SET statement
+    [InlineData("SELECT (1) character SET @x = 1")]
+    [InlineData("SELECT CAST(1 AS CHAR) SET @x = 1")]
+    [InlineData("SELECT CAST(1 AS CHAR CHARSET latin1), (SET @x = 1)")]
+    [InlineData("SELECT CAST(1 AS CHAR); SET @x = 1")]
+    public void MySqlAndMariaDb_StillRefuseTheSetStatement(string sql)
+    {
+        Assert.False(Check(SqlDialects.MySql, sql).IsAllowed, sql);
+        Assert.False(Check(SqlDialects.MariaDb, sql).IsAllowed, sql);
+    }
+
+    [Theory]
+    [MemberData(nameof(AllDialects))]
+    public void CharacterSetClause_IsNeverAcceptedOutsideMySql(string id)
+    {
+        if (id is "mysql" or "mariadb") return;
+        var d = SqlDialects.ById(id)!;
+        // In T-SQL this is two statements (an alias, then SET); other engines have no such clause either.
+        Assert.False(Check(d, "SELECT (1 character SET NOCOUNT ON)").IsAllowed, id);
+        Assert.False(Check(d, "SELECT CAST(1 AS CHAR CHARACTER SET latin1)").IsAllowed, id);
+    }
+
+    [Fact]
+    public void AnOdbcHintOfMySql_DoesNotAcceptTheCharacterSetClause()
+    {
+        // The hint is only a claim; it may add rules but never loosen them.
+        var settings = new DatabaseConnectionSettings
+        {
+            Name = "o", Provider = DatabaseProvider.Odbc, Dsn = "x", UserName = "u", Authentication = DatabaseAuthentication.UserPassword,
+            Extras = ProviderExtras.Of(("underlyingEngine", "mysql")),
+        };
+        var dialect = ProviderRegistry.Default.ResolveDialect(settings);
+        Assert.False(dialect.AllowsCharacterSetClause);
+        Assert.False(Check(dialect, "SELECT CAST(1 AS CHAR CHARACTER SET latin1)").IsAllowed);
+        Assert.Contains("GET_LOCK", dialect.ForbiddenCalls);
+    }
+
+    [Fact]
+    public void OnlyPostgreSql_ReadsTheSchemaWithKeyInfo()
+        => Assert.Equal(new[] { "postgresql" }, SqlDialects.All.Where(d => d.DescribeWithKeyInfo).Select(d => d.Id).ToArray());
+
+    [Theory]
+    [InlineData("mysql")]
+    [InlineData("mariadb")]
+    public void MySqlCatalogue_ListsSystemVersionedTables(string id)
+        => Assert.Contains("'SYSTEM VERSIONED'", SqlDialects.ById(id)!.CatalogueSql);
 }

@@ -28,6 +28,12 @@ public class DataValueFormatTests
         (new DateTime(2024, 3, 5, 14, 30, 0), "2024-03-05 14:30:00"),
         (new DateTime(2024, 3, 5, 14, 30, 0, 250), "2024-03-05 14:30:00.25"),
         (new DateTimeOffset(2024, 3, 5, 14, 30, 0, TimeSpan.FromHours(-5)), "2024-03-05 14:30:00-05:00"),
+        // A DateTime known to be UTC (PostgreSQL timestamptz) always shows its time and the Z marker, even at midnight.
+        (new DateTime(2024, 3, 5, 12, 30, 0, DateTimeKind.Utc), "2024-03-05 12:30:00Z"),
+        (new DateTime(2024, 3, 5, 0, 0, 0, DateTimeKind.Utc), "2024-03-05 00:00:00Z"),
+        (new DateTime(2024, 3, 5, 12, 30, 0, 250, DateTimeKind.Utc), "2024-03-05 12:30:00.25Z"),
+        (new DateTime(2024, 3, 5, 0, 0, 0, DateTimeKind.Local), "2024-03-05"),
+        (new DateTimeOffset(2024, 3, 5, 12, 30, 0, TimeSpan.Zero), "2024-03-05 12:30:00+00:00"),
         (new DateOnly(2024, 12, 31), "2024-12-31"),
         (new TimeOnly(9, 5, 0), "09:05:00"),
         (new TimeSpan(13, 45, 0), "13:45:00"),

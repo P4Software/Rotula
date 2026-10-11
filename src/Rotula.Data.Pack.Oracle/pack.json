@@ -1,0 +1,11 @@
+{
+  "id": "oracle",
+  "name": "Oracle",
+  "version": "1.0.0",
+  "publisher": "P4 Software",
+  "providerIds": [ "oracle" ],
+  "minDataApiVersion": "1.0",
+  "entryAssembly": "Rotula.Data.Pack.Oracle.dll",
+  "entryType": "Rotula.Data.Pack.Oracle.OraclePack",
+  "licenseNoticesFile": "NOTICES.txt"
+}

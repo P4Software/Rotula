@@ -50,7 +50,7 @@ internal abstract class BuiltInDescriptor : IProviderDescriptor, IProviderErrorM
     public abstract DbConnection CreateConnection(string connectionString, DatabaseConnectionSettings settings);
 
     // The native-error maps live in each descriptor; Extract is shared because exceptions of any built-in driver may be wrapped in another.
-    public (int? Number, string? SqlState) Extract(Exception ex)
+    public virtual (int? Number, string? SqlState) Extract(Exception ex)
     {
         for (Exception? e = ex; e is not null; e = e.InnerException)
         {
@@ -67,6 +67,15 @@ internal abstract class BuiltInDescriptor : IProviderDescriptor, IProviderErrorM
     }
 
     public virtual string? ClassifyNumber(int? number, bool connecting) => null;
+
+    /// <summary>Implements <see cref="IProviderErrorMapper.RejectedLoginShowsAsReset"/>; false unless the engine's server drops the connection after a refused login.</summary>
+    public virtual bool RejectedLoginShowsAsReset => false;
+
+    /// <summary>
+    /// Implements <see cref="IProviderDescriptor.FormatCell"/> for the built-in engines. It is declared here (not only on the derived
+    /// class) because the interface member is a default method: only a member of a class that lists the interface is picked up.
+    /// </summary>
+    public virtual string? FormatCell(DbDataReader reader, int ordinal) => null;
 
     public virtual void Preflight(DatabaseConnectionSettings settings) { }
 
@@ -190,6 +199,12 @@ internal sealed class PostgreSqlDescriptor : BuiltInDescriptor
     public override DbConnection CreateConnection(string cs, DatabaseConnectionSettings s) => new NpgsqlConnection(cs);
 
     public override void Preflight(DatabaseConnectionSettings s) => ProviderPreflight.RequireCaFile(s);
+
+    // PostgreSQL on Windows closes the connection right after refusing a login; Npgsql then sometimes reports the reset instead of the refusal.
+    public override bool RejectedLoginShowsAsReset => true;
+
+    // numeric NaN / beyond System.Decimal, intervals with months, BC dates, infinity, 24:00:00, timetz and bit strings.
+    public override string? FormatCell(DbDataReader reader, int ordinal) => PostgresValueDecoder.TryFormat(reader, ordinal);
 }
 
 internal sealed class MySqlDescriptor : BuiltInDescriptor, IProviderDescriptor
@@ -206,7 +221,8 @@ internal sealed class MySqlDescriptor : BuiltInDescriptor, IProviderDescriptor
     public override IReadOnlyList<ProviderOption> Options { get; } = new[]
     {
         StandardOptions.Host(), StandardOptions.Port(), StandardOptions.Database(), StandardOptions.UserName(),
-        StandardOptions.Encrypt(), StandardOptions.TrustServerCertificate(), StandardOptions.CaCertificate(),
+        // The shared help text says what trusting means; the MariaDB variant adds that a password account verifies the certificate by fingerprint.
+        StandardOptions.Encrypt(), StandardOptions.TrustServerCertificate() with { HelpKey = DataKeys.MariaDbCertificateFingerprintHelp }, StandardOptions.CaCertificate(),
         new ProviderOption(Flavor, "Data.Option.Flavor", ProviderOptionKind.Choice)
         {
             Label = "Server family", Advanced = true,
@@ -243,7 +259,10 @@ internal sealed class MySqlDescriptor : BuiltInDescriptor, IProviderDescriptor
             Pooling = false,
             AllowUserVariables = false,
             AllowLoadLocalInfile = false,
-            ConvertZeroDateTime = true,
+            // Zero dates (0000-00-00) are legal in MySQL/MariaDB. ConvertZeroDateTime would silently turn them into 0001-01-01; with
+            // AllowZeroDateTime the driver hands over a MySqlDateTime and FormatCell (MySqlValueFormatter) prints them as they are stored.
+            AllowZeroDateTime = true,
+            ConvertZeroDateTime = false,
             SslMode = !s.Encrypt ? MySqlSslMode.None : s.TrustServerCertificate ? MySqlSslMode.Required : MySqlSslMode.VerifyFull,
         };
         if (!string.IsNullOrWhiteSpace(s.CaCertificatePath)) b.SslCa = s.CaCertificatePath;
@@ -264,13 +283,43 @@ internal sealed class MySqlDescriptor : BuiltInDescriptor, IProviderDescriptor
 
     public override void Preflight(DatabaseConnectionSettings s) => ProviderPreflight.RequireCaFile(s);
 
+    // The MariaDB server resets the connection of some refused logins (an unknown user); MySqlConnector keeps retrying until the connect timeout.
+    public override bool RejectedLoginShowsAsReset => true;
+
+    // DECIMAL wider than System.Decimal, zero dates and TIME beyond 24 hours.
+    public override string? FormatCell(DbDataReader reader, int ordinal) => reader is MySqlDataReader my ? MySqlValueFormatter.TryFormat(my, ordinal) : null;
+
+    /// <summary>
+    /// MySqlConnector wraps errors: a connect timeout is 1042 "Connect Timeout expired" around a MySqlException -1 (CommandTimeoutExpired), a
+    /// slow rejected login is 1042 around 1045 (Access denied), and a command timeout is -1 around 1317 (query interrupted). So the whole
+    /// chain of MySqlExceptions is read, not just the outermost one: a login refusal wins, then a timeout, then the outermost number.
+    /// </summary>
+    public override (int? Number, string? SqlState) Extract(Exception ex)
+    {
+        for (Exception? e = ex; e is not null; e = e.InnerException)
+        {
+            if (e is SqlException or PostgresException or SqliteException or OdbcException) return base.Extract(e);
+            if (e is not MySqlException outer) continue;
+            MySqlException? timeout = null, login = null;
+            for (Exception? c = outer; c is MySqlException my; c = c.InnerException)
+            {
+                if (login is null && (int)my.ErrorCode is 1045 or 1698 or 1251) login = my;
+                if (timeout is null && (int)my.ErrorCode == -1) timeout = my;
+            }
+            var chosen = login ?? timeout ?? outer;
+            return ((int)chosen.ErrorCode, chosen.SqlState);
+        }
+        return (null, null);
+    }
+
     public override string? ClassifyNumber(int? number, bool connecting) => number switch
     {
         1045 or 1698 or 1251 => DataKeys.AuthenticationFailed,
         1044 or 1142 or 1143 or 1227 or 1370 => DataKeys.PermissionDenied,
         1049 => DataKeys.DatabaseNotFound,
         1042 or 2002 or 2003 or 2005 or 2013 => DataKeys.HostUnreachable,
-        1205 or 3024 => DataKeys.Timeout,
+        // -1 is MySqlErrorCode.CommandTimeoutExpired, which MySqlConnector also uses for an expired connect timeout.
+        -1 or 1205 or 3024 => DataKeys.Timeout,
         _ => null,
     };
 }
@@ -375,6 +424,8 @@ internal sealed class OdbcDescriptor : BuiltInDescriptor, IProviderDescriptor
         {
             LexRules = rules,
             AmbiguityChecks = engine.AmbiguityChecks | LexFeature.AnyBackslash,
+            // Never loosen: "CHARACTER SET" is only a type clause when the engine really is MySQL, which a hint cannot prove.
+            AllowsCharacterSetClause = false,
             ParameterStyle = ParameterStyle.Positional,
             CatalogueSql = null,
             ParameterNamesCaseSensitive = false,

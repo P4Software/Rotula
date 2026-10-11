@@ -1,0 +1,11 @@
+{
+  "id": "firebird",
+  "name": "Firebird",
+  "version": "1.0.0",
+  "publisher": "P4 Software",
+  "providerIds": [ "firebird" ],
+  "minDataApiVersion": "1.1",
+  "entryAssembly": "Rotula.Data.Pack.Firebird.dll",
+  "entryType": "Rotula.Data.Pack.Firebird.FirebirdPack",
+  "licenseNoticesFile": "NOTICES.txt"
+}

@@ -9,7 +9,7 @@ public static class DataApi
     /// Current provider API version. The major number changes when a pack compiled against an older major can no longer work; the
     /// minor number grows when members are added. A pack states the lowest version it needs (<see cref="PackManifest.MinDataApiVersion"/>).
     /// </summary>
-    public static readonly Version Current = new(1, 0);
+    public static readonly Version Current = new(1, 1);
 }
 
 /// <summary>Where a pack folder was found.</summary>

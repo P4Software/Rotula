@@ -1,0 +1,40 @@
+// Settings for Start-TestServers.ps1 and Stop-TestServers.ps1.
+// Lines that start with // are comments (the scripts remove them before reading the file).
+//
+// WHAT THIS IS
+//   Real database servers for the Rotula integration tests, started on this PC only: they listen on 127.0.0.1, on a random
+//   high port, with a throw-away data folder. Everything lives under %LOCALAPPDATA%\Rotula\test-servers (the integration tests look
+//   for the servers there, so the folder is not configurable). Nothing is installed, no Windows service, no firewall rule, no registry entry.
+//
+// CHECKSUMS
+//   "sha256" / "sha512" are the values the VENDOR publishes. When one is present the download is verified against it and the
+//   scripts refuse to continue on a mismatch.
+//   "recordedSha256" is used only when the vendor publishes nothing. It is the hash of the file as it was the first time we
+//   downloaded it (trust on first use): it detects a file that changes later, but it is NOT a vendor guarantee.
+{
+  "postgresql": {
+    "enabled": true,
+    "version": "18.6-5",
+    // Official EDB "PostgreSQL Binaries" (zip) from https://www.enterprisedb.com/download-postgresql-binaries
+    // (the page links https://sbp.enterprisedb.com/getfile.jsp?fileid=1260609, which redirects to this address).
+    "url": "https://get.enterprisedb.com/postgresql/postgresql-18.6-5-windows-x64-binaries.zip",
+    // EDB publishes no checksum for this file.
+    "sha256": "",
+    "sha512": "",
+    "recordedSha256": "e2246ba91d22345bc3d017586c09ede52d9df180b1eeb480f050445f1cad84e2",
+    // 0 = pick a random free port between 20000 and 60000
+    "port": 0
+  },
+
+  "mariadb": {
+    "enabled": true,
+    "version": "11.8.9",
+    // Official MariaDB Foundation download (11.8 is the current long-term-support series); the checksums come from
+    // https://downloads.mariadb.org/rest-api/mariadb/11.8.9/
+    "url": "https://downloads.mariadb.org/rest-api/mariadb/11.8.9/mariadb-11.8.9-winx64.zip",
+    "sha256": "830c46727d9278eae212ae3eca44eeb9e71b2a68704e95f344a64fba7b1963f5",
+    "sha512": "f40a3b2c31e5bd4769bf5c4a17cddd956f29dd539d3f5bdcbb977957ac99ef09a7f19c71455901b73b9b5e5982ea71680f23d82fd7f70633f3c26b93554cd00c",
+    "recordedSha256": "",
+    "port": 0
+  }
+}

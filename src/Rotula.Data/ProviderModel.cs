@@ -180,6 +180,14 @@ public interface IProviderErrorMapper
     /// SQLSTATE classes understood by every driver are handled before this is called.
     /// </summary>
     string? ClassifyNumber(int? number, bool connecting);
+
+    /// <summary>
+    /// True when this engine's server closes the connection right after refusing a login, so the driver sometimes reports the reset
+    /// instead of the refusal (PostgreSQL and MariaDB on Windows). Rotula then retries the connect once and, if it fails the same way,
+    /// reports a probable authentication failure (<see cref="DataKeys.AuthenticationProbable"/>) instead of "server unreachable".
+    /// Added in provider API 1.1; defaults to false.
+    /// </summary>
+    bool RejectedLoginShowsAsReset => false;
 }
 
 /// <summary>
@@ -249,6 +257,13 @@ public interface IProviderDescriptor
 
     /// <summary>The name a bound parameter gets on the command (Rotula writes <c>@name</c>; Oracle wants <c>name</c> or <c>:name</c>).</summary>
     string ParameterName(string name) => "@" + name;
+
+    /// <summary>
+    /// Called (API 1.1) for every non-null cell before Rotula reads it with <c>reader.GetValue</c>. Return the value as culture-neutral
+    /// text when the driver's .NET type cannot hold it exactly (DuckDB <c>DECIMAL(38)</c> becomes a System.Decimal of 28 digits and
+    /// silently loses the rest), or null to use the shared reading. Keep it cheap: it runs once per cell.
+    /// </summary>
+    string? FormatCell(DbDataReader reader, int ordinal) => null;
 
     /// <summary>Last chance to tune a command (Oracle <c>BindByName</c>, ClickHouse settings).</summary>
     void ConfigureCommand(DbCommand command) { }

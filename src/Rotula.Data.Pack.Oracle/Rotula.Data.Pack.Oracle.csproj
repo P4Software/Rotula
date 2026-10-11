@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The Oracle provider pack (packs/oracle), an OPTIONAL add-on. Shared pack settings and the reason for the odd-looking references to
+    the host assemblies are in ..\PackProject.props.
+    Oracle.ManagedDataAccess.Core 23.26.301 is distributed under the "Oracle Free Distribution, Hosting, and Use Terms and Conditions":
+    it must be shipped UNMODIFIED with a copy of that licence, and may not be reverse engineered. Hence no trimming, no single-file
+    bundling and no decompiling; the licence text is part of this pack's NOTICES.txt.
+    Target framework: the package ships net6.0, net8.0 and netstandard2.1 builds (no net10.0 one); the net8.0 build runs on .NET 10.
+    Oracle does not state support for .NET 10 (see README.md).
+  -->
+  <Import Project="..\PackProject.props" />
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Rotula.Data.Pack.Oracle</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Oracle.ManagedDataAccess.Core" Version="23.26.301" />
+    <!-- Oracle pulls System.Security.Cryptography.ProtectedData 8.0.0 (through its configuration dependency) while Rotula.Data is built against 10.x;
+         naming the newer MIT package here settles the version conflict (MSB3277) instead of hiding the warning. -->
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.12" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Rotula.Data.Packs.Tests" />
+  </ItemGroup>
+
+</Project>

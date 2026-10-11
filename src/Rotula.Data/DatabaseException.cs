@@ -34,6 +34,30 @@ public static class DataKeys
     public const string InvalidSettings = "Data.Error.InvalidSettings";
     /// <summary>The saved connection does not exist; args[0] is the name.</summary>
     public const string ConnectionNotFound = "Data.Error.ConnectionNotFound";
+    /// <summary>
+    /// The server reported that it cannot work out the type of a query parameter (PostgreSQL 42P18/42P08, for example <c>(@x IS NULL OR col = @x)</c>
+    /// with a null value). <see cref="DatabaseException.ReasonKey"/> is <see cref="ParameterTypeUnknownHint"/> (cast the parameter, for example <c>@x::text</c>).
+    /// </summary>
+    public const string ParameterTypeUnknown = "Data.Error.ParameterTypeUnknown";
+    /// <summary>Hint for <see cref="ParameterTypeUnknown"/>: give the parameter a type in the query with a cast such as <c>@x::text</c>.</summary>
+    public const string ParameterTypeUnknownHint = "Data.Error.ParameterTypeUnknown.Hint";
+    /// <summary>
+    /// The server could not compare a parameter with a column of another type (PostgreSQL 42883 on a query that has parameters, for example text against a
+    /// number or a date). <see cref="DatabaseException.ReasonKey"/> is <see cref="ParameterTypeMismatchHint"/>.
+    /// </summary>
+    public const string ParameterTypeMismatch = "Data.Error.ParameterTypeMismatch";
+    /// <summary>Hint for <see cref="ParameterTypeMismatch"/>: pass a value of the column's type, or cast the parameter (<c>@x::numeric</c>, <c>@x::date</c>).</summary>
+    public const string ParameterTypeMismatchHint = "Data.Error.ParameterTypeMismatch.Hint";
+    /// <summary>
+    /// Reason (<see cref="DatabaseException.ReasonKey"/>) of <see cref="AuthenticationFailed"/> when the server only closed the connection during login
+    /// instead of saying why: the user name or password is probably wrong (a server certificate that is not trusted can look the same).
+    /// </summary>
+    public const string AuthenticationProbable = "Data.Error.AuthenticationFailed.Probable";
+    /// <summary>
+    /// Help text of the "Trust this server's certificate" option for MySQL/MariaDB: a MariaDB 11.4+ account with a password verifies the
+    /// server's certificate by its fingerprint inside the password handshake, so a self-signed certificate connects even without that option.
+    /// </summary>
+    public const string MariaDbCertificateFingerprintHelp = "Data.Option.TrustServerCertificate.Help.MariaDb";
 
     /// <summary>Reason: the statement is not a single SELECT / WITH ... SELECT.</summary>
     public const string RejectNotSelect = "Data.Query.Rejected.NotSelect";
@@ -94,7 +118,10 @@ public sealed class DatabaseException : Exception
     /// <summary>One of the <c>Data.Error.*</c> / <c>Data.Store.*</c> keys in <see cref="DataKeys"/>.</summary>
     public string Key { get; }
 
-    /// <summary>For <see cref="DataKeys.QueryRejected"/>, the <c>Data.Query.Rejected.*</c> reason; otherwise null.</summary>
+    /// <summary>
+    /// For <see cref="DataKeys.QueryRejected"/>, the <c>Data.Query.Rejected.*</c> reason. A few other keys carry an optional hint here
+    /// (<see cref="DataKeys.AuthenticationProbable"/>, <see cref="DataKeys.ParameterTypeUnknownHint"/>, <see cref="DataKeys.ParameterTypeMismatchHint"/>); otherwise null.
+    /// </summary>
     public string? ReasonKey { get; }
 
     /// <summary>Culture-neutral format arguments for the localized message.</summary>

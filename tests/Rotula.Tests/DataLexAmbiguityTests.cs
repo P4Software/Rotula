@@ -98,11 +98,20 @@ public class DataLexAmbiguityTests
     public void BigQuery_ABacktickNameEndingInABackslash_IsRefused()
         => Refused(SqlDialects.BigQuery, "SELECT `a\\` FROM t");
 
+    [Fact]
+    public void ClickHouse_ABackslashInAString_IsAmbiguous() => Ambiguous(SqlDialects.ClickHouse, "SELECT 'a\\' ; DROP TABLE x -- '");
+
+    // ClickHouse "Syntax > Identifiers": the escaping rules of quoted identifiers are those of string literals, so a backslash before the
+    // closing quote escapes it and the name is unterminated (confirmed against the vendor page 2026-10; no longer a guess).
     [Theory]
     [InlineData("SELECT `a\\` FROM t")]
     [InlineData("SELECT \"a\\\" FROM t")]
-    [InlineData("SELECT 'a\\' ; DROP TABLE x -- '")]
-    public void ClickHouse_Backslashes_AreAmbiguous(string sql) => Ambiguous(SqlDialects.ClickHouse, sql);
+    public void ClickHouse_ANameEndingInABackslash_IsRefusedAsUnterminated(string sql)
+    {
+        var r = Check(SqlDialects.ClickHouse, sql);
+        Assert.False(r.IsAllowed);
+        Assert.Equal(DataKeys.RejectUnterminated, r.ReasonKey);
+    }
 
     [Fact]
     public void Snowflake_BigQuery_ClickHouse_LegitimateQueries_StillPass()

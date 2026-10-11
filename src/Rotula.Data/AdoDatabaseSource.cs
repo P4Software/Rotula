@@ -118,7 +118,10 @@ internal sealed class AdoDatabaseSource : IDatabaseSource
         return Offload(() => RunAsync<IReadOnlyList<DatabaseColumn>>(async (conn, tx, ct) =>
         {
             using var cmd = CreateCommand(conn, tx, sql, Array.Empty<string>(), null, ct);
-            await using var reader = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+            // Npgsql reports nullability (AllowDBNull) only when asked for key information; the statement is not run (SchemaOnly).
+            await using var reader = _dialect.DescribeWithKeyInfo
+                ? await cmd.ExecuteReaderAsync(CommandBehavior.SchemaOnly | CommandBehavior.KeyInfo, ct).ConfigureAwait(false)
+                : await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
             var schema = reader.GetSchemaTable();
             var cols = new List<DatabaseColumn>();
             for (int i = 0; i < reader.FieldCount; i++)
@@ -182,7 +185,7 @@ internal sealed class AdoDatabaseSource : IDatabaseSource
                 try { await reader.DisposeAsync().ConfigureAwait(false); }
                 catch (Exception) { /* see above */ }
             }
-        }, cancellationToken));
+        }, cancellationToken, plan.Parameters.Count > 0));
     }
 
     public Task<DatabaseRowStream> OpenStreamAsync(string sql, IReadOnlyDictionary<string, object?>? parameters = null,
@@ -219,10 +222,10 @@ internal sealed class AdoDatabaseSource : IDatabaseSource
 
     private DbConnection CreateConnection() => _provider.CreateConnection(_connectionString, Settings);
 
-    private DatabaseException Map(Exception ex, bool connecting, CancellationToken caller, CancellationTokenSource? ours)
+    private DatabaseException Map(Exception ex, bool connecting, CancellationToken caller, CancellationTokenSource? ours, bool queryHasParameters = false)
     {
         bool timedOut = ours is { IsCancellationRequested: true } && !caller.IsCancellationRequested;
-        var mapped = DatabaseErrorMapper.Map(_provider, ex, connecting, caller, timedOut, _password, _connectionString);
+        var mapped = DatabaseErrorMapper.Map(_provider, ex, connecting, caller, timedOut, _password, _connectionString, queryHasParameters);
         // A missing driver of a preset (Microsoft Access, Excel, text) gets the preset's "what to install" hint as the reason.
         if (mapped.Key == DataKeys.DriverNotInstalled && mapped.ReasonKey is null
             && ProviderPresets.Find(Settings.PresetId)?.DriverMissingHintKey is { } hint)
@@ -231,7 +234,7 @@ internal sealed class AdoDatabaseSource : IDatabaseSource
     }
 
     /// <summary>Opens, prepares the read-only session, runs <paramref name="body"/> in a transaction that is always rolled back.</summary>
-    private async Task<T> RunAsync<T>(Func<DbConnection, DbTransaction?, CancellationToken, Task<T>> body, CancellationToken caller)
+    private async Task<T> RunAsync<T>(Func<DbConnection, DbTransaction?, CancellationToken, Task<T>> body, CancellationToken caller, bool queryHasParameters = false)
     {
         if (caller.IsCancellationRequested) throw new DatabaseException(DataKeys.Cancelled);
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(caller);
@@ -241,8 +244,7 @@ internal sealed class AdoDatabaseSource : IDatabaseSource
         try
         {
             _provider.Preflight(Settings);
-            await using var conn = CreateConnection();
-            await conn.OpenAsync(cts.Token).ConfigureAwait(false);
+            await using var conn = await OpenConnectionAsync(cts.Token).ConfigureAwait(false);
             connecting = false;
             var tx = await BeginReadOnlyAsync(conn, cts.Token).ConfigureAwait(false);
             try
@@ -256,8 +258,47 @@ internal sealed class AdoDatabaseSource : IDatabaseSource
         }
         catch (Exception ex)
         {
-            throw Map(ex, connecting, caller, cts);
+            throw Map(ex, connecting, caller, cts, queryHasParameters);
         }
+    }
+
+    /// <summary>A login that fails this fast with a reset is the server's refusal showing through; the second attempt then usually gets the real answer.</summary>
+    private static readonly TimeSpan QuickReset = TimeSpan.FromSeconds(3);
+
+    /// <summary>
+    /// Creates and opens a connection. When the server drops the connection during the login (PostgreSQL and MariaDB on Windows do this right
+    /// after refusing a login, and the driver sometimes reports the reset instead of the refusal) and it happened quickly, the connect is
+    /// tried once more on a fresh connection, so the user gets the server's own answer ("password authentication failed") whenever it is
+    /// available. Slow failures are not retried (the driver has already retried until the connect timeout), and neither are cancellations.
+    /// </summary>
+    private async Task<DbConnection> OpenConnectionAsync(CancellationToken ct)
+    {
+        for (int attempt = 0; ; attempt++)
+        {
+            var conn = CreateConnection();
+            var clock = System.Diagnostics.Stopwatch.StartNew();
+            try
+            {
+                await conn.OpenAsync(ct).ConfigureAwait(false);
+                return conn;
+            }
+            catch (Exception ex) when (attempt == 0 && !ct.IsCancellationRequested && clock.Elapsed < QuickReset
+                                       && DatabaseErrorMapper.IsRejectedLoginReset(_provider.Errors, ex, connecting: true))
+            {
+                await DisposeQuietlyAsync(conn).ConfigureAwait(false);
+            }
+            catch (Exception)
+            {
+                await DisposeQuietlyAsync(conn).ConfigureAwait(false);
+                throw;
+            }
+        }
+    }
+
+    private static async ValueTask DisposeQuietlyAsync(DbConnection conn)
+    {
+        try { await conn.DisposeAsync().ConfigureAwait(false); }
+        catch (Exception) { /* a connection that never opened has nothing to lose */ }
     }
 
     private async Task<DatabaseRowStream> OpenStreamCoreAsync(QueryPlan plan, CancellationToken caller)
@@ -273,8 +314,7 @@ internal sealed class AdoDatabaseSource : IDatabaseSource
         try
         {
             _provider.Preflight(Settings);
-            conn = CreateConnection();
-            await conn.OpenAsync(connectCts.Token).ConfigureAwait(false);
+            conn = await OpenConnectionAsync(connectCts.Token).ConfigureAwait(false);
             connecting = false;
             tx = await BeginReadOnlyAsync(conn, connectCts.Token).ConfigureAwait(false);
             cmd = CreateCommand(conn, tx, plan.Sql, plan.Parameters, plan.Values, connectCts.Token);
@@ -282,7 +322,7 @@ internal sealed class AdoDatabaseSource : IDatabaseSource
         }
         catch (Exception ex)
         {
-            var mapped = Map(ex, connecting, caller, connectCts);
+            var mapped = Map(ex, connecting, caller, connectCts, plan.Parameters.Count > 0);
             await DisposeAllAsync(reader, cmd, tx, conn).ConfigureAwait(false);
             throw mapped;
         }
@@ -403,12 +443,39 @@ internal sealed class AdoDatabaseSource : IDatabaseSource
         return names;
     }
 
-    private static string[] ReadRow(DbDataReader reader, int width)
+    private string[] ReadRow(DbDataReader reader, int width)
     {
         var row = new string[width];
-        for (int i = 0; i < width; i++) row[i] = reader.IsDBNull(i) ? string.Empty : DatabaseValueFormatter.Format(reader.GetValue(i));
+        for (int i = 0; i < width; i++) row[i] = reader.IsDBNull(i) ? string.Empty : ReadCell(reader, i);
         return row;
     }
+
+    private string ReadCell(DbDataReader reader, int ordinal)
+    {
+        try
+        {
+            return _provider.FormatCell(reader, ordinal) ?? DatabaseValueFormatter.Format(reader.GetValue(ordinal));
+        }
+        catch (Exception ex) when (IsConversionFailure(ex))
+        {
+            // A number beyond what a .NET type can hold (DuckDB DECIMAL(38), Oracle NUMBER with 38 digits) makes GetValue throw.
+            // The driver's own text form is exact where the .NET type is not. Not every driver can give text for every type
+            // (Npgsql refuses GetString on numbers), so that is tried and, failing it, the cell shows a marker: one value the
+            // driver cannot convert must never take the whole preview or merge down with it.
+            try { return reader.GetString(ordinal); }
+            catch (Exception inner) when (IsConversionFailure(inner)) { return UnreadableCell; }
+        }
+    }
+
+    /// <summary>Shown in place of a value the driver could not convert to any .NET type or text.</summary>
+    internal const string UnreadableCell = "(unreadable value)";
+
+    /// <summary>
+    /// The exceptions drivers raise for "this value does not fit the type I was asked for". Server and network errors
+    /// (<see cref="DbException"/>, <see cref="IOException"/>) are deliberately not in the list: they must still end the query.
+    /// </summary>
+    private static bool IsConversionFailure(Exception ex)
+        => ex is not DbException && ex is OverflowException or InvalidCastException or FormatException or ArgumentException or NotSupportedException;
 }
 
 /// <summary>Identifier quoting and splitting (the only place user-supplied object names reach SQL text).</summary>
