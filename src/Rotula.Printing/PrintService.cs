@@ -21,6 +21,21 @@ public interface IPrintService
     Task<PrintResult> PrintAsync(PrinterTarget target, LabelDocument document, IReadOnlyDictionary<string, string>? data = null,
         PrinterProfile? profile = null, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Like the plain overload, but the label's variables (dates, counters that remember their value, prompt answers, computed values) are
+    /// resolved from <paramref name="variables"/> for every label, and the reserved serial numbers are confirmed only for labels that may have
+    /// been printed. The default implementation ignores <paramref name="variables"/> so existing fakes keep compiling; <see cref="PrintService"/> honours it.
+    /// </summary>
+    /// <param name="target">Destination printer.</param>
+    /// <param name="document">The label; its print quantity is the number of copies.</param>
+    /// <param name="data">Values of the data record, or null.</param>
+    /// <param name="profile">Optional profile whose set-up commands are sent first.</param>
+    /// <param name="variables">Clock, counter memory and prompt answers; null uses the defaults (computer clock, no counter memory).</param>
+    /// <param name="cancellationToken">Cancellation.</param>
+    Task<PrintResult> PrintAsync(PrinterTarget target, LabelDocument document, IReadOnlyDictionary<string, string>? data,
+        PrinterProfile? profile, PrintVariableOptions? variables, CancellationToken cancellationToken = default) =>
+        PrintAsync(target, document, data, profile, cancellationToken);
+
     /// <summary>Prints ready-made ZPL, encoding it with <paramref name="encoding"/>.</summary>
     Task<PrintResult> PrintZplAsync(PrinterTarget target, string zpl, ZplEncoding encoding, CancellationToken cancellationToken = default);
 
@@ -79,27 +94,74 @@ public sealed class PrintService : IPrintService
 
     /// <inheritdoc />
     public Task<PrintResult> PrintAsync(PrinterTarget target, LabelDocument document, IReadOnlyDictionary<string, string>? data = null,
-        PrinterProfile? profile = null, CancellationToken cancellationToken = default)
+        PrinterProfile? profile = null, CancellationToken cancellationToken = default) =>
+        PrintAsync(target, document, data, profile, null, cancellationToken);
+
+    /// <inheritdoc />
+    public async Task<PrintResult> PrintAsync(PrinterTarget target, LabelDocument document, IReadOnlyDictionary<string, string>? data,
+        PrinterProfile? profile, PrintVariableOptions? variables, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(document);
-        var generated = ZplGenerator.Generate(document, data);
-        if (generated.HasErrors)
-            return Task.FromResult(PrintResult.Fail(PrintError.Create(PrintErrorKind.InvalidLabel,
-                generated.Issues.Where(i => i.Severity == ValidationSeverity.Error).Select(i => i.MessageKey).ToArray())));
-
-        string zpl = generated.Zpl;
-        if (profile is not null)
+        var run = LabelPrintRun.Begin(document, data, variables);
+        if (!run.CanPrint)
         {
-            var bad = profile.Validate();
-            if (bad.Count > 0) return Task.FromResult(PrintResult.Fail(PrintError.Create(PrintErrorKind.InvalidProfile, bad.ToArray())));
-            zpl = PrinterSetup.BuildSetupZpl(profile) + zpl;
+            // Begin gave any reserved numbers back; the error keys tell the operator what to fix.
+            return PrintResult.Fail(PrintError.Create(PrintErrorKind.InvalidLabel,
+                run.Issues.Where(i => i.Severity == ValidationSeverity.Error).Select(i => i.MessageKey).ToArray())).WithNotices(run.Issues);
         }
-        ArgumentNullException.ThrowIfNull(target);
-        // Raw blocks imported from bytes hold bytes above 0x7F as the Latin-1 character with the same value, so they
-        // must go out as those exact bytes; the rest of the label follows the document encoding.
-        if (!TryEncode(zpl, document.Encoding, ByteExactBlocks.From(document), out var bytes))
-            return Task.FromResult(PrintResult.Fail(PrintErrorKind.EncodingFailed, document.Encoding.ToString()));
-        return SendAsync(target, bytes, cancellationToken);
+
+        long printed = 0;
+        int bytesSent = 0;
+        PrintResult? outcome = null;
+        IReadOnlyList<ValidationIssue> closing = Array.Empty<ValidationIssue>();
+        try
+        {
+            string setup = string.Empty;
+            if (profile is not null)
+            {
+                var bad = profile.Validate();
+                if (bad.Count > 0) return PrintResult.Fail(PrintError.Create(PrintErrorKind.InvalidProfile, bad.ToArray()));
+                setup = PrinterSetup.BuildSetupZpl(profile);
+            }
+            ArgumentNullException.ThrowIfNull(target);
+            // Raw blocks imported from bytes hold bytes above 0x7F as the Latin-1 character with the same value, so they
+            // must go out as those exact bytes; the rest of the label follows the document encoding.
+            var exact = ByteExactBlocks.From(document);
+            bool first = true;
+            foreach (var block in run.Blocks())
+            {
+                if (cancellationToken.IsCancellationRequested) { outcome = PrintResult.Fail(PrintErrorKind.Cancelled); break; }
+                string zpl = first ? setup + block.Zpl : block.Zpl;
+                if (!TryEncode(zpl, document.Encoding, exact, out var bytes))
+                {
+                    outcome = PrintResult.Fail(PrintErrorKind.EncodingFailed, document.Encoding.ToString());
+                    break;
+                }
+                var sent = await SendAsync(target, bytes, cancellationToken).ConfigureAwait(false);
+                if (!sent.Succeeded)
+                {
+                    // A send that moved bytes may have printed some of these labels: count them as used so a number is never printed twice.
+                    if (LabelPrintRun.MayHavePrinted(sent)) printed += block.Labels;
+                    outcome = sent;
+                    break;
+                }
+                printed += block.Labels;
+                bytesSent += sent.BytesSent;
+                first = false;
+            }
+        }
+        finally
+        {
+            // Always runs, also on cancellation or an unexpected exception, so a reservation is never left hanging.
+            closing = run.Complete(printed);
+        }
+        // Warnings of the run plus problems writing the counter file; the errors of the run are reported through the result itself.
+        var notes = run.Issues.Where(i => i.Severity != ValidationSeverity.Error).Concat(closing).ToList();
+        if (outcome is null && run.StoppedEarly)
+            return PrintResult.Fail(PrintError.Create(PrintErrorKind.InvalidLabel,
+                run.Issues.Where(i => i.Severity == ValidationSeverity.Error).Select(i => i.MessageKey).ToArray()), bytesSent)
+                .WithNotices(run.Issues.Concat(closing).ToList());
+        return (outcome ?? PrintResult.Ok(bytesSent)).WithNotices(notes);
     }
 
     /// <inheritdoc />

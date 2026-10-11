@@ -109,7 +109,7 @@ public static class ImageProcessor
     }
 
     /// <summary>Rotates clockwise by 0/90/180/270 degrees. ^GF ignores the field orientation, so rotation is baked into the dots.</summary>
-    private static (int W, int H, bool[] Data) Rotate(bool[] src, int w, int h, FieldRotation rotation)
+    internal static (int W, int H, bool[] Data) Rotate(bool[] src, int w, int h, FieldRotation rotation)
     {
         switch (rotation)
         {
@@ -138,7 +138,7 @@ public static class ImageProcessor
         }
     }
 
-    private static MonochromeBitmap Pack(bool[] black, int w, int h)
+    internal static MonochromeBitmap Pack(bool[] black, int w, int h)
     {
         int bpr = (w + 7) / 8;
         var packed = new byte[bpr * h];

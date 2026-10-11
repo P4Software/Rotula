@@ -108,7 +108,7 @@ public static class VariableEngine
 
     /// <summary>
     /// The variable values for a preview: counters show the next position of the store (without reserving it), prompts show their defaults and dates use
-    /// the context's clock. The dictionary can be passed straight to <see cref="ZplGenerator.Generate(LabelDocument, IReadOnlyDictionary{string, string}?)"/>
+    /// the context's clock. The dictionary can be passed straight to <see cref="ZplGenerator.Generate(LabelDocument, IReadOnlyDictionary{string, string}?, Rotula.Core.Text.ITextRasterizer?)"/>
     /// and to the preview renderer.
     /// </summary>
     public static IReadOnlyDictionary<string, string> BuildPreviewData(LabelDocument doc, VariableContext context) => Resolve(doc, context).Values;

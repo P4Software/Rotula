@@ -6,6 +6,15 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ## [Unreleased]
 
 ### Added
+- **Variables are used when printing**: the Print dialog and the data merge window now work out dates, computed values and serial numbers for every
+  label, ask the label's print-time questions in a dialog, and confirm remembered serial numbers only for labels that really reached the printer
+  (a failed send that moved no byte gives its numbers back; one that moved bytes keeps them, so no number is printed twice). Checking a batch uses
+  no numbers. Copies of a label with a counter each get their own number.
+- **Text formatting core** (see `docs/text-formatting.md`): a text can use a Windows font, which is drawn to a picture at the printer's resolution
+  when the label is printed (data values are in the text before it is drawn); printer fonts keep real text, `^A@` stored fonts are supported, and a
+  text that does not fit its box raises a warning. `.rotula` files that use a Windows font or a stored font are saved as format version 8.
+- **Word wrap** now sizes its block from the label (width to the right edge, as many lines as fit below) instead of a fixed 400 x 1 block.
+- The **Objects** list can be collapsed (closed by default; the choice is remembered) so the Properties panel gets its height.
 - **Variables that work out their own value** (engine, file format and MCP; see `docs/variables.md`): date and time variables with offsets
   (including business days), rounding, formats such as GS1 `YYMMDD` or the day of the year, and a choice of the computer clock or the printer's own
   clock; serial-number counters that can remember their last value between sessions (reserve, then confirm, so a crash or a second window never

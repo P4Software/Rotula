@@ -595,7 +595,7 @@ public class AppStockPickerTests : IDisposable
             Loc.Instance.SetLanguage(lang);
             foreach (var issue in issues)
             {
-                string text = StockText.Warning(issue, stock);
+                string text = Rotula.App.ViewModels.StockText.Warning(issue, stock);
                 Assert.False(Regex.IsMatch(text, @"\{\d\}"), lang + " " + issue.MessageKey);
                 Assert.DoesNotContain("!Issue", text);
                 Assert.DoesNotContain(stock.Id, text);

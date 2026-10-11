@@ -119,6 +119,8 @@ public static class ElementCloner
         target.InterCharacterGap = s.InterCharacterGap;
         target.Text = s.Text;
         target.FontId = s.FontId;
+        target.Font = s.Font?.Clone();
+        target.StoredFontPath = s.StoredFontPath;
         target.FontHeight = s.FontHeight;
         target.FontWidth = s.FontWidth;
         target.Block = s.Block is null ? null : new TextBlockOptions
@@ -160,7 +162,11 @@ public static class ElementCloner
         to.StoredGraphics.Clear();
         to.StoredGraphics.AddRange(from.StoredGraphics);
         to.Variables.Clear();
-        foreach (var v in from.Variables) to.Variables.Add(new LabelVariable(v.Name, v.SampleValue));
+        // Clone() keeps the definition (date, counter, prompt, computed). Rebuilding from name and sample would silently turn every
+        // variable into plain text, and printing a copy would then never count, ask or compute anything.
+        foreach (var v in from.Variables) to.Variables.Add(v.Clone());
+        // The id keys counters that remember their value; a copy without it could not reserve serial numbers.
+        to.Id = from.Id;
     }
 
     /// <summary>Deep copy of a whole document.</summary>

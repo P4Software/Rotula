@@ -1,3 +1,5 @@
+using Rotula.Core.Model;
+
 namespace Rotula.Core.Imaging;
 
 /// <summary>
@@ -58,6 +60,21 @@ public sealed class MonochromeBitmap
 
     /// <summary>True when the dot at (x, y) is black.</summary>
     public bool IsBlack(int x, int y) => (PackedRows[y * BytesPerRow + (x >> 3)] & (0x80 >> (x & 7))) != 0;
+
+    /// <summary>
+    /// A copy turned clockwise by the field rotation. A <c>^GF</c> graphic ignores <c>^FW</c> and the rotation of <c>^FO</c>, so a rotated
+    /// field must already be turned in its dots.
+    /// </summary>
+    public MonochromeBitmap Rotate(FieldRotation rotation)
+    {
+        if (rotation == FieldRotation.Normal) return this;
+        var black = new bool[Width * Height];
+        for (int y = 0; y < Height; y++)
+            for (int x = 0; x < Width; x++)
+                black[y * Width + x] = IsBlack(x, y);
+        var (rw, rh, turned) = ImageProcessor.Rotate(black, Width, Height, rotation);
+        return ImageProcessor.Pack(turned, rw, rh);
+    }
 
     /// <summary>Upper-case hexadecimal rendering of <see cref="PackedRows"/> (the ^GF ASCII data).</summary>
     public string ToHex() => Convert.ToHexString(PackedRows);

@@ -218,6 +218,16 @@ public sealed class WpfToolDialogService : IToolDialogService
     }
 
     /// <inheritdoc />
+    public bool ShowPromptDialog(Rotula.App.ViewModels.PromptDialogViewModel viewModel)
+    {
+        // Owner is the window the operator is printing from (the Print or Data window), not always the main window.
+        var owner = Application.Current?.Windows.OfType<Window>().FirstOrDefault(w => w.IsActive && w.IsLoaded) ?? Application.Current?.MainWindow;
+        var window = new PromptDialogWindow(viewModel) { Owner = owner };
+        window.ShowDialog();
+        return viewModel.Accepted;
+    }
+
+    /// <inheritdoc />
     public void ShowDataWindow(Rotula.App.ViewModels.DataMergeViewModel viewModel)
     {
         if (_dataWindow is { IsLoaded: true })

@@ -18,6 +18,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The tests check internal helpers of the ZPL generator (the placement of a typeset picture). -->
+    <InternalsVisibleTo Include="Rotula.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="MiniExcel" Version="1.46.0" />
   </ItemGroup>
 

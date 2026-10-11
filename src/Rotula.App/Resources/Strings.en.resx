@@ -5387,4 +5387,58 @@ Brand and product names belong to their owners; Rotula is not affiliated with th
   <data name="QrContent.Time.Tip" xml:space="preserve">
     <value>Time of day as hours and minutes, for example 09:30</value>
   </data>
+  <data name="Prompt.Title" xml:space="preserve">
+    <value>Before printing</value>
+  </data>
+  <data name="Prompt.Subtitle" xml:space="preserve">
+    <value>This label asks a few questions. Your answers are used on every label of this print.</value>
+  </data>
+  <data name="Prompt.Button.Continue" xml:space="preserve">
+    <value>Continue</value>
+  </data>
+  <data name="Prompt.Hint.Date" xml:space="preserve">
+    <value>Type the date as yyyy-MM-dd, for example 2026-03-07.</value>
+  </data>
+  <data name="Prompt.Hint.Number" xml:space="preserve">
+    <value>Type a number, for example 12 or 3.5.</value>
+  </data>
+  <data name="Panel.Objects.Toggle" xml:space="preserve">
+    <value>Show or hide the Objects list</value>
+  </data>
+  <data name="Issue.Text.Overflow" xml:space="preserve">
+    <value>The text does not fit its box: some of it is cut off. Make the box larger, allow more lines, use a smaller size or shorten the text.</value>
+  </data>
+  <data name="Issue.Text.Overflow.Estimated" xml:space="preserve">
+    <value>The text may not fit its box. The printer does not report how wide its letters are, so this is an estimate: print a test label to check, or make the box larger or allow more lines.</value>
+  </data>
+  <data name="Issue.Text.Raster.NoRasterizer" xml:space="preserve">
+    <value>The text uses the Windows font "{0}", which has to be drawn as a picture, but this program has no way to draw it here, so the text was not printed. Choose a printer font instead.</value>
+  </data>
+  <data name="Issue.Text.Raster.FieldOption" xml:space="preserve">
+    <value>A text in a Windows font is printed as a picture, so the printer cannot count it, take it from a stored field or embed characters in it. Remove those field options or choose a printer font.</value>
+  </data>
+  <data name="Issue.Text.Raster.PrinterClock" xml:space="preserve">
+    <value>The date "{0}" uses the printer's clock, which cannot be used inside a picture of text. The computer's clock was used instead.</value>
+  </data>
+  <data name="Issue.Text.Raster.Direction" xml:space="preserve">
+    <value>The direction and character gap of a text are ignored when it uses a Windows font.</value>
+  </data>
+  <data name="Issue.Text.Raster.TooLarge" xml:space="preserve">
+    <value>The text is too large to print as a picture. Use a smaller size or a narrower box.</value>
+  </data>
+  <data name="Issue.Text.Font.Missing" xml:space="preserve">
+    <value>This computer has no font called "{0}", so "{1}" is used instead. Install the font or choose another one, otherwise the printed text will look different.</value>
+  </data>
+  <data name="Issue.Text.Font.Invalid" xml:space="preserve">
+    <value>The font "{0}" cannot be used: it needs a name and a size from 1 to 1000 points.</value>
+  </data>
+  <data name="Issue.Text.Style.PrinterFont" xml:space="preserve">
+    <value>Bold, italic and underline do not exist in the printer's own fonts and are not printed. Choose a Windows font to use them.</value>
+  </data>
+  <data name="Issue.Text.StoredFont.Invalid" xml:space="preserve">
+    <value>"{0}" is not a font file name the printer accepts. Use a name such as E:ARIAL.TTF.</value>
+  </data>
+  <data name="Issue.Variable.Copies.TooMany" xml:space="preserve">
+    <value>This label has a counter, so every copy needs its own number, and that is limited to {0} copies in one print. Print fewer copies at a time, or use the data merge window.</value>
+  </data>
 </root>

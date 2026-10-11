@@ -112,6 +112,18 @@ public sealed class MergeDataSet
     }
 
     /// <summary>
+    /// The questions the operator must answer before this batch can print: the label's prompt variables whose name is not a data column
+    /// (a prompt with a column is answered by the data, unless it is set to override the record).
+    /// </summary>
+    /// <param name="memory">Remembered last answers, or null.</param>
+    public Rotula.Core.Variables.Prompts.PromptSet BuildPromptSet(Rotula.Core.Variables.Prompts.IPromptMemory? memory = null)
+    {
+        // Any non-empty value marks the column as present; PromptSet only looks at whether the record has a value for the name.
+        var columns = Table.Columns.Where(c => c.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase).ToDictionary(c => c, _ => "x", StringComparer.OrdinalIgnoreCase);
+        return Rotula.Core.Variables.Prompts.PromptSet.Build(_doc, columns, memory);
+    }
+
+    /// <summary>
     /// The variable context for the record at <paramref name="recordIndex"/>: its raw data (columns and merge counters), the options' prompt answers,
     /// counter store and clock. Pass it to <see cref="ZplGenerator.GenerateWithVariables"/> or <see cref="VariableEngine.Resolve"/> to get exactly what
     /// a batch would produce for that record (counters show their next position; nothing is reserved).

@@ -27,6 +27,7 @@ public partial class MainWindow : Window
         viewModel.Layers.CollectionChanged += (_, _) => SyncLayersFromSession();
         viewModel.ExitRequested += (_, _) => Close();
         StateChanged += (_, _) => UpdateMaximizeGlyph();
+        viewModel.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(MainViewModel.ObjectsPanelExpanded)) ApplyObjectsPanelState(); };
         // The window must fit the screen it opens on (a 1380 x 860 window is larger than a 1280 x 800 display or a 150 % scaled 1080p one).
         var area = SystemParameters.WorkArea;
         MinWidth = Math.Min(MinWidth, area.Width);
@@ -35,7 +36,7 @@ public partial class MainWindow : Window
         Height = Math.Min(Height, area.Height);
         Loaded += async (_, _) =>
         {
-            RestorePanelSplit();
+            ApplyObjectsPanelState();
             viewModel.ZoomFitCommand.Execute(null);
             // The first thing a keyboard user should land on is the main call to action of the start screen.
             if (viewModel.ShowStartScreen) StartNewButton.Focus();
@@ -190,6 +191,27 @@ public partial class MainWindow : Window
         PropertiesRow.Height = new GridLength(share, GridUnitType.Star);
         ObjectsRow.Height = new GridLength(1 - share, GridUnitType.Star);
         _restoringSplit = false;
+    }
+
+    /// <summary>
+    /// Opens or closes the Objects list. Closed, its row shrinks to the header and the Properties panel takes the rest of the column;
+    /// open, the remembered Properties / Objects proportion comes back.
+    /// </summary>
+    private void ApplyObjectsPanelState()
+    {
+        bool open = _vm.ObjectsPanelExpanded;
+        ObjectsBody.Visibility = open ? Visibility.Visible : Visibility.Collapsed;
+        ObjectsActions.Visibility = open ? Visibility.Visible : Visibility.Collapsed;
+        PanelSplitter.Visibility = open ? Visibility.Visible : Visibility.Collapsed;
+        ObjectsRow.MinHeight = open ? 170 : 0;
+        if (open) RestorePanelSplit();
+        else
+        {
+            _restoringSplit = true;
+            PropertiesRow.Height = new GridLength(1, GridUnitType.Star);
+            ObjectsRow.Height = GridLength.Auto;
+            _restoringSplit = false;
+        }
     }
 
     private void OnPanelSplitterDragCompleted(object sender, DragCompletedEventArgs e) => SavePanelSplit();

@@ -5387,4 +5387,58 @@ Las marcas y los nombres de producto pertenecen a sus dueños; Rotula no está a
   <data name="QrContent.Time.Tip" xml:space="preserve">
     <value>Hora del día en horas y minutos, por ejemplo 09:30</value>
   </data>
+  <data name="Prompt.Title" xml:space="preserve">
+    <value>Antes de imprimir</value>
+  </data>
+  <data name="Prompt.Subtitle" xml:space="preserve">
+    <value>Esta etiqueta hace algunas preguntas. Sus respuestas se usan en todas las etiquetas de esta impresión.</value>
+  </data>
+  <data name="Prompt.Button.Continue" xml:space="preserve">
+    <value>Continuar</value>
+  </data>
+  <data name="Prompt.Hint.Date" xml:space="preserve">
+    <value>Escriba la fecha como aaaa-MM-dd, por ejemplo 2026-03-07.</value>
+  </data>
+  <data name="Prompt.Hint.Number" xml:space="preserve">
+    <value>Escriba un número, por ejemplo 12 o 3.5.</value>
+  </data>
+  <data name="Panel.Objects.Toggle" xml:space="preserve">
+    <value>Mostrar u ocultar la lista de objetos</value>
+  </data>
+  <data name="Issue.Text.Overflow" xml:space="preserve">
+    <value>El texto no cabe en su recuadro: una parte queda cortada. Agrande el recuadro, permita más líneas, use un tamaño menor o acorte el texto.</value>
+  </data>
+  <data name="Issue.Text.Overflow.Estimated" xml:space="preserve">
+    <value>Es posible que el texto no quepa en su recuadro. La impresora no informa el ancho de sus letras, así que es una estimación: imprima una etiqueta de prueba para comprobarlo, o agrande el recuadro o permita más líneas.</value>
+  </data>
+  <data name="Issue.Text.Raster.NoRasterizer" xml:space="preserve">
+    <value>El texto usa la fuente de Windows "{0}", que debe dibujarse como imagen, pero este programa no puede dibujarla aquí, así que el texto no se imprimió. Elija una fuente de la impresora.</value>
+  </data>
+  <data name="Issue.Text.Raster.FieldOption" xml:space="preserve">
+    <value>Un texto con fuente de Windows se imprime como imagen, así que la impresora no puede contarlo, tomarlo de un campo guardado ni incrustar caracteres. Quite esas opciones del campo o elija una fuente de la impresora.</value>
+  </data>
+  <data name="Issue.Text.Raster.PrinterClock" xml:space="preserve">
+    <value>La fecha "{0}" usa el reloj de la impresora, que no puede usarse dentro de una imagen de texto. Se usó el reloj del equipo.</value>
+  </data>
+  <data name="Issue.Text.Raster.Direction" xml:space="preserve">
+    <value>La dirección y el espacio entre caracteres del texto se ignoran cuando usa una fuente de Windows.</value>
+  </data>
+  <data name="Issue.Text.Raster.TooLarge" xml:space="preserve">
+    <value>El texto es demasiado grande para imprimirse como imagen. Use un tamaño menor o un recuadro más estrecho.</value>
+  </data>
+  <data name="Issue.Text.Font.Missing" xml:space="preserve">
+    <value>Este equipo no tiene una fuente llamada "{0}", así que se usa "{1}". Instale la fuente o elija otra; de lo contrario el texto impreso se verá distinto.</value>
+  </data>
+  <data name="Issue.Text.Font.Invalid" xml:space="preserve">
+    <value>La fuente "{0}" no se puede usar: necesita un nombre y un tamaño de 1 a 1000 puntos.</value>
+  </data>
+  <data name="Issue.Text.Style.PrinterFont" xml:space="preserve">
+    <value>Negrita, cursiva y subrayado no existen en las fuentes propias de la impresora y no se imprimen. Elija una fuente de Windows para usarlos.</value>
+  </data>
+  <data name="Issue.Text.StoredFont.Invalid" xml:space="preserve">
+    <value>"{0}" no es un nombre de archivo de fuente que acepte la impresora. Use un nombre como E:ARIAL.TTF.</value>
+  </data>
+  <data name="Issue.Variable.Copies.TooMany" xml:space="preserve">
+    <value>Esta etiqueta tiene un contador, así que cada copia necesita su propio número, y eso está limitado a {0} copias por impresión. Imprima menos copias a la vez o use la ventana de combinar datos.</value>
+  </data>
 </root>

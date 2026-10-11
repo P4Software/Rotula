@@ -246,6 +246,14 @@ For each label Rotula works in this order, later steps seeing the earlier ones:
 A counter, date or computed variable with the same name as a data column **replaces** the column and shows a warning
 (`Variable.Record.Overridden`). A plain variable never replaces data.
 
+### In the program
+
+The Print dialog and the data merge window do all of this for you. Before printing they ask the label's questions (one dialog, checked against the
+label's rules); then every label gets its own date, serial number and computed values. A serial number is confirmed only for labels that really
+reached the printer: a send that failed without moving a byte gives its numbers back, a send that moved bytes keeps them (the label may have
+printed), and **Check all** never uses a number. **Save as ZPL** and **Export** count their numbers as used, because the file will be printed.
+A label with a counter and several copies is written as separate labels, so each copy has its own number.
+
 ### In a batch (data merge)
 
 * Every record gets its own counter value and its own computed values.

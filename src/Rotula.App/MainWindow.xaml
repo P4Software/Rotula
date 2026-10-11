@@ -492,9 +492,27 @@
         <GridSplitter x:Name="PanelSplitter" Grid.Row="1" Style="{StaticResource SplitterHorizontalStyle}" DragCompleted="OnPanelSplitterDragCompleted"
                       AutomationProperties.Name="{loc:T Splitter.Layers}" />
         <DockPanel Grid.Row="2">
-          <!-- Objects header: title, count and the icon buttons that act on the selected objects. -->
-          <DockPanel DockPanel.Dock="Top" Margin="16,8,12,6">
-            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+          <!-- Objects header: a toggle that opens and closes the list, the title with the count, and the icon buttons that act on the selected objects. -->
+          <DockPanel DockPanel.Dock="Top" Margin="8,8,12,6">
+            <ToggleButton x:Name="ObjectsToggle" Style="{StaticResource IconToggleButton}" DockPanel.Dock="Left" IsChecked="{Binding ObjectsPanelExpanded, Mode=TwoWay}" Margin="0,0,4,0"
+                          VerticalAlignment="Center"
+                          AutomationProperties.Name="{loc:T Panel.Objects.Toggle}" ToolTip="{loc:T Panel.Objects.Toggle}">
+              <Path Data="{StaticResource IconChevronDown}" Width="16" Height="16" Stroke="{StaticResource MutedBrush}" StrokeThickness="1.7" Fill="Transparent"
+                    StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round" RenderTransformOrigin="0.5,0.5">
+                <Path.Style>
+                  <Style TargetType="Path">
+                    <!-- Set in the style (not locally) so the trigger can override it: pointing right when closed, down when open. -->
+                    <Setter Property="RenderTransform"><Setter.Value><RotateTransform Angle="-90" /></Setter.Value></Setter>
+                    <Style.Triggers>
+                      <DataTrigger Binding="{Binding IsChecked, ElementName=ObjectsToggle}" Value="True">
+                        <Setter Property="RenderTransform"><Setter.Value><RotateTransform Angle="0" /></Setter.Value></Setter>
+                      </DataTrigger>
+                    </Style.Triggers>
+                  </Style>
+                </Path.Style>
+              </Path>
+            </ToggleButton>
+            <StackPanel x:Name="ObjectsActions" DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
               <Button Style="{StaticResource PanelIconButton}" Command="{Binding BringForwardCommand}" ToolTip="{loc:T Menu.BringForward}" AutomationProperties.Name="{loc:T Menu.BringForward}">
                 <Path Style="{StaticResource Icon}" Data="{StaticResource IconArrowUp}" Width="16" Height="16" />
               </Button>
@@ -512,7 +530,7 @@
               </Border>
             </StackPanel>
           </DockPanel>
-          <Grid>
+          <Grid x:Name="ObjectsBody">
             <ListBox x:Name="LayersList" ItemsSource="{Binding Layers}" SelectionMode="Extended" SelectionChanged="OnLayersSelectionChanged" KeyDown="OnLayersKeyDown"
                      Grid.IsSharedSizeScope="True" AutomationProperties.Name="{loc:T Panel.Objects}" ItemContainerStyle="{StaticResource LayerRowStyle}" Padding="0,0,0,8">
               <ListBox.ItemTemplate>

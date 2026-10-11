@@ -70,7 +70,8 @@ public sealed record MainServices(
     IPrintService Printing,
     ISettingsStore Settings,
     IToolDialogService Dialogs,
-    IDatabaseServices? Database = null);
+    IDatabaseServices? Database = null,
+    IVariableServices? Variables = null);
 
 /// <summary>
 /// View-model of the main window: the open label, its files, editing commands, view settings (zoom, unit, grid),
@@ -105,7 +106,9 @@ public sealed partial class MainViewModel : ObservableObject
         // Handles and selection frames are measured with the record shown on the canvas, not only the sample values.
         Session.Bounds.DataProvider = () => Preview.Data;
         Printer = new PrinterSettingsViewModel(services.Printing, _settings.Print, SaveSettings, () => Session.Document, applyLabelDpi: SetLabelDpi);
-        Data = new DataMergeViewModel(services.Printing, Printer, () => Session.Document, () => DocumentName, services.Files, services.Messages, services.Database, services.Dialogs);
+        // Without a counter store (tests, headless use) a counter that remembers its value refuses to print instead of repeating numbers.
+        Variables = services.Variables ?? new VariableServices(null, services.Dialogs);
+        Data = new DataMergeViewModel(services.Printing, Printer, () => Session.Document, () => DocumentName, services.Files, services.Messages, services.Database, services.Dialogs, Variables);
         Data.SettingsEdited += (_, _) => Session.MarkDirty();
         Data.PreviewDataChanged += (_, _) => OnPreviewDataChanged();
         Fields = new FieldsViewModel(Session, Commands, Data, services.Messages, text => StatusMessage = text, () => services.Dialogs.ShowDataWindow(Data));
@@ -128,6 +131,7 @@ public sealed partial class MainViewModel : ObservableObject
         _snapToGrid = _settings.SnapToGrid;
         _snapToGuides = _settings.SnapToGuides;
         _zplPanelVisible = _settings.ZplPanelVisible;
+        _objectsPanelExpanded = _settings.ObjectsPanelExpanded;
         // Paths read from settings.json are only kept when they are plain local drive paths (see SafeLocalPath).
         foreach (var p in _settings.RecentFiles.Select(SafeLocalPath.TryGetLocalPath).OfType<string>().Distinct(StringComparer.OrdinalIgnoreCase).Take(MaxRecent))
             RecentFiles.Add(new RecentFileItem(p));
@@ -172,6 +176,9 @@ public sealed partial class MainViewModel : ObservableObject
 
     /// <summary>The data merge: loaded table, mapping, record navigator, counters and batch actions.</summary>
     public DataMergeViewModel Data { get; }
+
+    /// <summary>Counter memory and the print-time questions, shared by the Print dialog and the Data merge window.</summary>
+    public IVariableServices Variables { get; }
 
     /// <summary>The element toolbox. Rebuilt when the language changes so the names are translated.</summary>
     public ObservableCollection<ToolboxItem> Toolbox { get; } = new();
@@ -302,6 +309,12 @@ public sealed partial class MainViewModel : ObservableObject
     private bool _zplPanelVisible;
 
     partial void OnZplPanelVisibleChanged(bool value) { _settings.ZplPanelVisible = value; SaveSettings(); }
+
+    /// <summary>The Objects list is open; when it is closed the Properties panel gets its height. The choice is remembered.</summary>
+    [ObservableProperty]
+    private bool _objectsPanelExpanded;
+
+    partial void OnObjectsPanelExpandedChanged(bool value) { _settings.ObjectsPanelExpanded = value; SaveSettings(); }
 
     /// <summary>Dragging snaps to other elements and to the label edges and centre.</summary>
     [ObservableProperty]
@@ -893,7 +906,7 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void Print()
     {
-        var vm = new PrintViewModel(_svc.Printing, Printer, () => Session.Document, () => Data.CurrentData, _svc.Files, DocumentName);
+        var vm = new PrintViewModel(_svc.Printing, Printer, () => Session.Document, () => Data.CurrentData, _svc.Files, DocumentName, Variables);
         _svc.Dialogs.ShowPrintDialog(vm);
     }
 

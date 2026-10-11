@@ -5,6 +5,7 @@ using Rotula.Core.Barcodes;
 using Rotula.Core.Elements;
 using Rotula.Core.Imaging;
 using Rotula.Core.Model;
+using Rotula.Core.Text;
 
 namespace Rotula.Core.Zpl.Import;
 
@@ -33,6 +34,7 @@ internal sealed partial class ZplImporter
         public char HexIndicator;
         public TextBlockOptions? Block;
         public char? FontId;
+        public string? StoredFontPath;
         public int? FontHeight, FontWidth;
         public char? RotationChar;
         public string? BarcodeCommand;
@@ -697,8 +699,17 @@ internal sealed partial class ZplImporter
         if (head.Length > 0)
         {
             char id = char.ToUpperInvariant(head[0]);
-            if (id == '@') Warn("Import.Font.Custom", c.Start, "^A", null);
-            _f.FontId = id;
+            // ^A@ names a font file stored on the printer in its fourth parameter; keep it so the text prints with that font again.
+            if (id == '@' && Opt(p, 3) is { } storedPath && StoredFonts.IsValidPath(storedPath.Trim()))
+            {
+                _f.StoredFontPath = storedPath.Trim();
+                _f.FontId = null;
+            }
+            else
+            {
+                if (id == '@') Warn("Import.Font.Custom", c.Start, "^A", null);
+                _f.FontId = id;
+            }
             if (head.Length > 1)
             {
                 _f.RotationChar = char.ToUpperInvariant(head[1]);
@@ -1074,7 +1085,8 @@ internal sealed partial class ZplImporter
         {
             Text = text,
             // A value given by ^A stays explicit; an inherited one is only left null when it equals the document default.
-            FontId = f.FontId ?? (def is not null && def.FontId == _cf.FontId ? null : _cf.FontId),
+            StoredFontPath = f.StoredFontPath,
+            FontId = f.StoredFontPath is not null ? null : f.FontId ?? (def is not null && def.FontId == _cf.FontId ? null : _cf.FontId),
             FontHeight = f.FontHeight ?? (def is not null && def.Height == _cf.Height ? null : _cf.Height),
             FontWidth = f.FontWidth ?? (def is not null && def.Width == _cf.Width ? null : _cf.Width),
             Rotation = ResolveRotation(d, f.RotationChar ?? '\0'),

@@ -275,6 +275,8 @@ public class DpiBarcodeScalingTests
     /// </summary>
     private static readonly Dictionary<string, string> NotDotBased = new()
     {
+        // text: a Windows font is sized in points (1/72 inch), a physical size, so it keeps the same size at every resolution
+        ["FontChoice.PointSize"] = "points, not dots",
         // barcode: counts, modes, levels, ratios and the DataBar separator (measured in modules)
         ["BarcodeElement.WideBarRatio"] = "ratio",
         ["BarcodeElement.QrModel"] = "model number",

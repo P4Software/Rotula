@@ -10,6 +10,8 @@ using Rotula.App.Services;
 using Rotula.Core.Merge;
 using Rotula.Core.Model;
 using Rotula.Core.Validation;
+using Rotula.Core.Variables;
+using Rotula.Core.Variables.Counters;
 using Rotula.Core.Zpl;
 using Rotula.Data;
 using Rotula.Printing;
@@ -51,6 +53,7 @@ public sealed partial class DataMergeViewModel : OperationViewModel
     private readonly Func<string> _documentName;
     private readonly IFileDialogService _files;
     private readonly IMessageService _messages;
+    private readonly IVariableServices _variables;
     private readonly Dictionary<string, string> _overrides = new(StringComparer.OrdinalIgnoreCase);
     private readonly List<ColumnChoice> _columnChoices = new();
     private bool _applying;
@@ -68,9 +71,12 @@ public sealed partial class DataMergeViewModel : OperationViewModel
     /// <param name="messages">Message boxes (confirmation before a large print).</param>
     /// <param name="database">Saved connections and database access; null uses the real ones (nothing is read until the user asks).</param>
     /// <param name="dialogs">Opens the connection manager; null disables it (tests).</param>
+    /// <param name="variables">Counter memory and the print-time questions; null means no counter memory and no questions (tests).</param>
     public DataMergeViewModel(IPrintService service, PrinterSettingsViewModel printer, Func<LabelDocument> document, Func<string> documentName,
-        IFileDialogService files, IMessageService messages, IDatabaseServices? database = null, IToolDialogService? dialogs = null)
+        IFileDialogService files, IMessageService messages, IDatabaseServices? database = null, IToolDialogService? dialogs = null,
+        IVariableServices? variables = null)
     {
+        _variables = variables ?? new VariableServices(null, null);
         _service = service;
         Printer = printer;
         _document = document;
@@ -938,6 +944,9 @@ public sealed partial class DataMergeViewModel : OperationViewModel
         if (Table is null) return Loc.Get("Data.Error.NoData");
         var options = BuildOptions();
         if (OptionsError.Length > 0) return OptionsError;
+        // Serial numbers that remember their value need the memory; without it they refuse to print instead of repeating numbers.
+        options.CounterStore = _variables.CounterStore;
+        options.TextRasterizer = _variables.TextRasterizer;
         var bad = Counters.FirstOrDefault(c => c.HasError);
         if (bad is not null) return bad.Error;
         dataSet = new MergeDataSet(doc, Table, options);
@@ -958,6 +967,27 @@ public sealed partial class DataMergeViewModel : OperationViewModel
         HasIssues = true;
     }
 
+    /// <summary>
+    /// Asks the label's print-time questions and stores the answers in the batch options (the same answers for every record). A question that
+    /// a data column answers is not asked. Returns false when the operator cancelled.
+    /// </summary>
+    private bool AskBatchPrompts(MergeDataSet ds)
+    {
+        var answers = _variables.Ask(ds.BuildPromptSet(_variables.PromptMemory));
+        if (answers is null) return false;
+        foreach (var kv in answers) ds.Options.PromptAnswers[kv.Key] = kv.Value;
+        return true;
+    }
+
+    /// <summary>
+    /// Fills the answers with each question's suggested value (remembered answer, default or sample) without asking, for a check that must not
+    /// interrupt the operator. The check then shows how the label behaves with the suggestions.
+    /// </summary>
+    private void UseSuggestedAnswers(MergeDataSet ds)
+    {
+        foreach (var item in ds.BuildPromptSet(_variables.PromptMemory).Items) ds.Options.PromptAnswers[item.Name] = item.InitialValue;
+    }
+
     /// <summary>Generates every record in the background and lists the problems, without printing or writing anything.</summary>
     [RelayCommand]
     private async Task CheckAllAsync()
@@ -967,14 +997,26 @@ public sealed partial class DataMergeViewModel : OperationViewModel
         if (error is not null) { SetResult(error, true); return; }
         var report = new MergeReport();
         var progress = new Progress<double>(p => Progress = p);
+        UseSuggestedAnswers(ds);
+        // A check prints nothing, so it must not use up serial numbers: the run owns a job and gives every number back afterwards.
+        VariableJob? checkJob = null;
+        if (VariableEngine.HasDefinitions(doc))
+        {
+            checkJob = VariableJob.Begin(doc, ds.CreateBatchContext(), ds.RecordCount);
+            ds.Options.Job = checkJob;
+        }
         bool ok = await RunAsync(Loc.Get("Data.Busy.Checking"), ct => Task.Run(() =>
         {
-            int n = 0;
-            foreach (var _ in MergeBatch.Labels(doc, ds, report))
+            try
             {
-                ct.ThrowIfCancellationRequested();
-                if (++n % 256 == 0) ((IProgress<double>)progress).Report(100.0 * report.Processed / ds.RecordCount);
+                int n = 0;
+                foreach (var _ in MergeBatch.Labels(doc, ds, report))
+                {
+                    ct.ThrowIfCancellationRequested();
+                    if (++n % 256 == 0) ((IProgress<double>)progress).Report(100.0 * report.Processed / ds.RecordCount);
+                }
             }
+            finally { checkJob?.Cancel(); }
         }, ct));
         if (!ok) return;
         ShowReport(report);
@@ -993,11 +1035,22 @@ public sealed partial class DataMergeViewModel : OperationViewModel
         error ??= Printer.TryBuildProfile(out profile, doc.Encoding);
         if (error is not null) { SetResult(error, true); return; }
         if (!_messages.Confirm(Loc.Get("Data.PrintAll.Title"), Loc.Get("Data.PrintAll.Confirm", ds.RecordCount, Printer.Summary))) return;
+        if (!AskBatchPrompts(ds)) return;
 
         var report = new MergeReport();
         int jobs = 0;
         PrintError? failure = null;
         bool cancelled = false;
+        // The run owns the serial-number reservation, so only labels that really reached the printer are confirmed. MergeBatch alone would
+        // count every label as used the moment it is generated, and a failed send would then burn the numbers of the labels after it.
+        VariableJob? serials = null;
+        if (VariableEngine.HasDefinitions(doc))
+        {
+            serials = VariableJob.Begin(doc, ds.CreateBatchContext(), ds.RecordCount);
+            ds.Options.Job = serials;
+        }
+        int confirmedThrough = 0; // record number of the last label that was sent, or may have been (a send in doubt counts as sent)
+        var closing = new List<ValidationIssue>();
         // The printer set-up (darkness, speed...) goes out once, in front of the first job.
         string setup = PrinterSetup.BuildSetupZpl(profile!);
         // Raw ZPL imported from bytes must reach the printer byte for byte; collected once, not per record.
@@ -1005,36 +1058,58 @@ public sealed partial class DataMergeViewModel : OperationViewModel
         var progress = new Progress<double>(p => Progress = p);
         bool ok = await RunAsync(Loc.Get("Data.Busy.Printing"), async ct =>
         {
+            int inFlight = 0; // last record of the job being sent right now
             try
             {
                 await Task.Run(async () =>
                 {
-                    foreach (var job in MergeBatch.Jobs(doc, ds, report))
+                    foreach (var job in MergeBatch.JobBlocks(doc, ds, report))
                     {
                         ct.ThrowIfCancellationRequested();
-                        var result = await _service.PrintZplAsync(target!, jobs == 0 ? setup + job : job, doc.Encoding, rawBlocks, ct);
-                        if (!result.Succeeded) { failure = result.Error; break; }
+                        inFlight = job.LastRecordNumber;
+                        var result = await _service.PrintZplAsync(target!, jobs == 0 ? setup + job.Zpl : job.Zpl, doc.Encoding, rawBlocks, ct);
+                        if (!result.Succeeded)
+                        {
+                            failure = result.Error;
+                            // A send that moved bytes may have printed labels: their numbers stay used. One that moved nothing gives them back.
+                            if (LabelPrintRun.MayHavePrinted(result)) confirmedThrough = inFlight;
+                            break;
+                        }
+                        confirmedThrough = inFlight;
+                        inFlight = 0;
                         jobs++;
                         ((IProgress<double>)progress).Report(100.0 * report.Processed / ds.RecordCount);
                     }
                 }, ct);
             }
-            catch (OperationCanceledException) { cancelled = true; }
+            catch (OperationCanceledException)
+            {
+                cancelled = true;
+                // Cancelled while a job was on its way: it may have printed, so its numbers are not given back.
+                if (inFlight > 0) confirmedThrough = inFlight;
+            }
+            finally
+            {
+                // Always confirms (also when the run failed or was cancelled), so a reservation is never left hanging.
+                if (serials is not null) closing.AddRange(serials.Complete(confirmedThrough));
+            }
         });
         if (!ok) return;
         ShowReport(report);
+        string notes = string.Join(" ", closing.Select(Loc.FormatIssue));
         if (failure is not null)
         {
-            SetResult(PrintMessages.Describe(failure) + " " + Loc.Get("Data.Batch.Partial", jobs), failure.Kind != PrintErrorKind.Cancelled);
+            SetResult(PrintMessages.Describe(failure) + " " + Loc.Get("Data.Batch.Partial", jobs) + (notes.Length > 0 ? " " + notes : string.Empty),
+                failure.Kind != PrintErrorKind.Cancelled);
             return;
         }
         if (cancelled)
         {
-            SetResult(Loc.Get("Data.Batch.CancelledPartial", jobs), false);
+            SetResult(Loc.Get("Data.Batch.CancelledPartial", jobs) + (notes.Length > 0 ? " " + notes : string.Empty), false);
             return;
         }
         Printer.Persist();
-        SetResult(BatchSummary("Data.PrintAll.Done", report, jobs), report.HasErrors || report.Emitted == 0);
+        SetResult(BatchSummary("Data.PrintAll.Done", report, jobs) + (notes.Length > 0 ? " " + notes : string.Empty), report.HasErrors || report.Emitted == 0);
     }
 
     private static string BatchSummary(string doneKey, MergeReport report, int units)
@@ -1070,6 +1145,18 @@ public sealed partial class DataMergeViewModel : OperationViewModel
                 return;
         }
 
+        // The file will be printed later, so its serial numbers count as used (the safe side). Only numbers that really reached a file are
+        // confirmed: if the export fails before the file is complete, the numbers go back.
+        if (!AskBatchPrompts(ds)) return;
+        VariableJob? serials = null;
+        if (VariableEngine.HasDefinitions(doc))
+        {
+            serials = VariableJob.Begin(doc, ds.CreateBatchContext(), ds.RecordCount);
+            ds.Options.Job = serials;
+        }
+        int writtenThrough = 0; // record number of the last label that is in a finished file
+        var closing = new List<ValidationIssue>();
+
         var report = new MergeReport();
         int files = 0;
         string? writeError = null;
@@ -1084,31 +1171,34 @@ public sealed partial class DataMergeViewModel : OperationViewModel
                 if (perJob)
                 {
                     int job = 0;
-                    foreach (var zpl in MergeBatch.Jobs(doc, ds, report))
+                    foreach (var merged in MergeBatch.JobBlocks(doc, ds, report))
                     {
                         ct.ThrowIfCancellationRequested();
-                        var bytes = ZplFiles.TryEncode(zpl, doc.Encoding, rawBlocks);
+                        var bytes = ZplFiles.TryEncode(merged.Zpl, doc.Encoding, rawBlocks);
                         if (bytes is null) { encodingFailed = true; return; }
                         File.WriteAllBytes(NameFor(++job), bytes);
                         files++;
+                        writtenThrough = merged.LastRecordNumber;
                         ((IProgress<double>)progress).Report(100.0 * report.Processed / ds.RecordCount);
                     }
                 }
                 else
                 {
                     // Written to a temp file first, so a cancelled or failed export never destroys an existing file.
+                    int lastInTemp = 0;
                     using (var fs = new FileStream(temp, FileMode.Create, FileAccess.Write))
                     {
-                        foreach (var zpl in MergeBatch.Jobs(doc, ds, report))
+                        foreach (var merged in MergeBatch.JobBlocks(doc, ds, report))
                         {
                             ct.ThrowIfCancellationRequested();
-                            var bytes = ZplFiles.TryEncode(zpl, doc.Encoding, rawBlocks);
+                            var bytes = ZplFiles.TryEncode(merged.Zpl, doc.Encoding, rawBlocks);
                             if (bytes is null) { encodingFailed = true; return; }
                             fs.Write(bytes);
+                            lastInTemp = merged.LastRecordNumber;
                             ((IProgress<double>)progress).Report(100.0 * report.Processed / ds.RecordCount);
                         }
                     }
-                    if (report.Emitted > 0) { File.Move(temp, path, overwrite: true); files = 1; }
+                    if (report.Emitted > 0) { File.Move(temp, path, overwrite: true); files = 1; writtenThrough = lastInTemp; }
                 }
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
@@ -1118,13 +1208,16 @@ public sealed partial class DataMergeViewModel : OperationViewModel
             finally
             {
                 try { if (File.Exists(temp)) File.Delete(temp); } catch (IOException) { } catch (UnauthorizedAccessException) { }
+                if (serials is not null) closing.AddRange(serials.Complete(writtenThrough));
             }
         }, ct));
         if (!ok) return;
         ShowReport(report);
+        string notes = string.Join(" ", closing.Select(Loc.FormatIssue));
         if (writeError is not null) { SetResult(writeError, true); return; }
         if (encodingFailed) { SetResult(Loc.Get("Print.Error.EncodingFailed", doc.Encoding.ToString(), string.Empty), true); return; }
-        SetResult(BatchSummary(perJob ? "Data.Export.DonePerJob" : "Data.Export.Done", report, files), report.HasErrors || report.Emitted == 0);
+        SetResult(BatchSummary(perJob ? "Data.Export.DonePerJob" : "Data.Export.Done", report, files) + (notes.Length > 0 ? " " + notes : string.Empty),
+            report.HasErrors || report.Emitted == 0);
     }
 
     /// <summary>Closes the window (stopping any running batch or database operation first).</summary>

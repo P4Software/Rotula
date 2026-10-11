@@ -67,8 +67,14 @@ public static class RotulaFileSerializer
     /// </summary>
     public const int VariablesFormatVersion = 7;
 
+    /// <summary>
+    /// Version 8: adds text formatting: the Windows font choice of a text ("font": family, bold, italic, underline, size in points), which is printed as a
+    /// picture, and the path of a font stored on the printer ("storedFontPath", printed with ^A@). Labels that use neither stay at the lower versions.
+    /// </summary>
+    public const int TextFormattingFormatVersion = 8;
+
     /// <summary>The newest format version this build can read. Files are written with the lowest version that can hold their content.</summary>
-    public const int CurrentFormatVersion = VariablesFormatVersion;
+    public const int CurrentFormatVersion = TextFormattingFormatVersion;
 
     // Limits for untrusted values of the version 6 fields.
     private const int MaxStoredGraphics = 256;
@@ -132,6 +138,9 @@ public static class RotulaFileSerializer
         // Variable definitions and the label id only exist from version 7; an older build would drop them silently, so it must refuse the file instead.
         if (dto.Label.Id is not null || dto.Label.Variables.Any(v => v.Kind is not null) || dto.Merge?.DateEvaluation is not null)
             dto.FormatVersion = Math.Max(dto.FormatVersion, VariablesFormatVersion);
+        // An older build would show a Windows-font text with a plain printer font and lose the stored font, so it must refuse the file instead.
+        if (dto.Elements.Any(e => e is TextElementDto { Font: not null } or TextElementDto { StoredFontPath: not null }))
+            dto.FormatVersion = Math.Max(dto.FormatVersion, TextFormattingFormatVersion);
         return JsonSerializer.Serialize(dto, Options);
     }
 
@@ -227,6 +236,9 @@ public static class RotulaFileSerializer
         dto.Y = 0;
         return JsonSerializer.Serialize(dto, FingerprintOptions);
     }
+
+    /// <summary>A compact string describing a variable and its definition, for caches that must notice when the definition is edited.</summary>
+    public static string Fingerprint(LabelVariable v) => JsonSerializer.Serialize(VariableToDto(v), FingerprintOptions);
 
     // ---------------------------------------------------------------------------------- clipboard
 
@@ -469,6 +481,12 @@ public static class RotulaFileSerializer
             td.FontId = t.FontId?.ToString();
             td.FontHeight = t.FontHeight;
             td.FontWidth = t.FontWidth;
+            td.Font = t.Font is null ? null : new FontChoiceDto
+            {
+                Source = t.Font.Source.ToString(), PrinterFontId = t.Font.IsWindows ? null : t.Font.PrinterFontId.ToString(), FamilyName = t.Font.IsWindows ? t.Font.FamilyName : null,
+                Bold = t.Font.Bold, Italic = t.Font.Italic, Underline = t.Font.Underline, PointSize = t.Font.PointSize,
+            };
+            td.StoredFontPath = t.StoredFontPath;
             td.Block = t.Block is null ? null : new TextBlockDto
             {
                 WidthDots = t.Block.WidthDots, MaxLines = t.Block.MaxLines, LineSpacing = t.Block.LineSpacing,
@@ -742,12 +760,28 @@ public static class RotulaFileSerializer
         t.FontId = d.FontId is { Length: > 0 } f ? f[0] : null;
         t.FontHeight = d.FontHeight;
         t.FontWidth = d.FontWidth;
+        t.Font = FontFromDto(d.Font);
+        // A path that is not a printer font file name is dropped rather than trusted: it would end up in the ZPL.
+        t.StoredFontPath = Rotula.Core.Text.StoredFonts.IsValidPath(d.StoredFontPath) ? d.StoredFontPath : null;
         t.Block = d.Block is null ? null : new TextBlockOptions
         {
             WidthDots = d.Block.WidthDots, MaxLines = d.Block.MaxLines, LineSpacing = d.Block.LineSpacing,
             Alignment = Parse<TextAlignment>(d.Block.Alignment), HangingIndent = d.Block.HangingIndent,
         };
         return t;
+    }
+
+    /// <summary>Reads the font choice of a file. It is untrusted, so the family is clipped and cleaned, the size is bounded and an unusable choice becomes "no Windows font".</summary>
+    private static Rotula.Core.Text.FontChoice? FontFromDto(FontChoiceDto? d)
+    {
+        if (d is null) return null;
+        var source = TryParse<Rotula.Core.Text.FontSource>(d.Source, out var s) ? s : Rotula.Core.Text.FontSource.Windows;
+        if (source != Rotula.Core.Text.FontSource.Windows) return null; // only Windows fonts are stored on an element; a printer font lives in FontId
+        string family = new string((d.FamilyName ?? string.Empty).Where(c => !char.IsControl(c)).ToArray()).Trim();
+        if (family.Length > Rotula.Core.Text.FontChoice.MaxFamilyLength) family = family[..Rotula.Core.Text.FontChoice.MaxFamilyLength];
+        double points = double.IsFinite(d.PointSize) ? Math.Clamp(d.PointSize, 1, Rotula.Core.Text.FontChoice.MaxPointSize) : Rotula.Core.Text.FontChoice.DefaultPointSize;
+        var font = Rotula.Core.Text.FontChoice.ForWindows(family, points, d.Bold, d.Italic, d.Underline);
+        return font.Validate() is null ? font : null;
     }
 
     private static char ParseChar(string s) => s.Length == 1 ? s[0] : throw new ArgumentException("Invalid font id.");

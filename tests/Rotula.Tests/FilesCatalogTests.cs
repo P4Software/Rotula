@@ -4,6 +4,7 @@ using Rotula.App.Editing;
 using Rotula.Core.Barcodes;
 using Rotula.Core.Elements;
 using Rotula.Core.Model;
+using Rotula.Core.Text;
 using Rotula.Files;
 
 namespace Rotula.Tests;
@@ -283,7 +284,7 @@ public class FilesCatalogTests
             (typeof(LineElement), typeof(LineElementDto)), (typeof(CircleElement), typeof(CircleElementDto)), (typeof(DiagonalLineElement), typeof(DiagonalLineElementDto)),
             (typeof(EllipseElement), typeof(EllipseElementDto)), (typeof(SymbolElement), typeof(SymbolElementDto)), (typeof(ImageElement), typeof(ImageElementDto)),
             (typeof(RawZplElement), typeof(RawZplElementDto)), (typeof(RecallPlaceholderElement), typeof(RecallPlaceholderElementDto)),
-            (typeof(TextBlockOptions), typeof(TextBlockDto)), (typeof(TextBoxOptions), typeof(TextBoxDto)),
+            (typeof(FontChoice), typeof(FontChoiceDto)), (typeof(TextBlockOptions), typeof(TextBlockDto)), (typeof(TextBoxOptions), typeof(TextBoxDto)),
             (typeof(PrinterSerialOptions), typeof(PrinterSerialDto)), (typeof(FieldClockOptions), typeof(FieldClockDto)),
             // Variable definitions (format version 7): every option of every kind must reach the file.
             (typeof(Rotula.Core.Variables.DateVariableOptions), typeof(DateVariableDto)), (typeof(Rotula.Core.Variables.DateOffset), typeof(DateOffsetDto)),

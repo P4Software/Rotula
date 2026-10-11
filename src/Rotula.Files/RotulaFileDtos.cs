@@ -381,9 +381,32 @@ public sealed class TextBoxDto
     public int HeightDots { get; set; } = 100;
 }
 
+/// <summary>Serialized Windows font choice of a text. Format version 8.</summary>
+public sealed class FontChoiceDto
+{
+    /// <summary>"Windows" or "Printer".</summary>
+    public string Source { get; set; } = "Windows";
+    /// <summary>Printer font id as a one-character string (printer fonts only).</summary>
+    public string? PrinterFontId { get; set; }
+    /// <summary>Family name of a Windows font.</summary>
+    public string? FamilyName { get; set; }
+    /// <summary>Bold.</summary>
+    public bool Bold { get; set; }
+    /// <summary>Italic.</summary>
+    public bool Italic { get; set; }
+    /// <summary>Underline.</summary>
+    public bool Underline { get; set; }
+    /// <summary>Size in points.</summary>
+    public double PointSize { get; set; } = 12;
+}
+
 /// <summary>Serialized text element.</summary>
 public class TextElementDto : FieldDataElementDto
 {
+    /// <summary>Windows font (the text is printed as a picture), format version 8.</summary>
+    public FontChoiceDto? Font { get; set; }
+    /// <summary>Font file stored on the printer, printed with ^A@, format version 8.</summary>
+    public string? StoredFontPath { get; set; }
     /// <summary>Text box (^TB), format version 6.</summary>
     public TextBoxDto? TextBox { get; set; }
     /// <summary>Direction name when not Horizontal, format version 6.</summary>

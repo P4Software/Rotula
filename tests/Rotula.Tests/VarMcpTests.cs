@@ -220,6 +220,19 @@ public class VarMcpTests : IDisposable
     }
 
     [Fact]
+    public async Task Print_ACountingLabelWithCopies_IsOneJobExactlyAsConfirmed()
+    {
+        _env.Label.SetVariable("serial", kind: "counter", definition: Def(new { remember = false, padding = 4 }));
+        _env.Elements.AddText("{{serial}}", 5, 5);
+        var dry = await _env.Printing.PrintLabel("Zebra ZD420", 5);
+        var sent = await _env.Printing.PrintLabel("Zebra ZD420", 5, dry.ConfirmationToken);
+        Assert.Equal("sent", sent.Status);
+        // One job with the copies in ^PQ, as the dry run showed; not separate labels.
+        Assert.Single(_env.Printer.Jobs);
+        Assert.Contains("^PQ5,", Sent(_env.Printer));
+    }
+
+    [Fact]
     public async Task Print_NeedsAnswersForPrompts_AndChecksThem()
     {
         _env.Label.SetVariable("shift", kind: "prompt", definition: Def(new { label = "Which shift?", type = "choice", choices = new[] { "Day", "Night" }, required = true }));

@@ -60,6 +60,16 @@ public sealed class PrintResult
     /// <summary>The failure, or null on success.</summary>
     public PrintError? Error { get; }
 
+    /// <summary>
+    /// Notes the operator should read although printing may have worked: serial numbers skipped because an earlier run never finished, a printer
+    /// clock that was replaced by the computer clock, a counter file that could not be updated. Empty for most results.
+    /// </summary>
+    public IReadOnlyList<Rotula.Core.Validation.ValidationIssue> Notices { get; private init; } = Array.Empty<Rotula.Core.Validation.ValidationIssue>();
+
+    /// <summary>A copy of this result that also carries <paramref name="notices"/>.</summary>
+    public PrintResult WithNotices(IReadOnlyList<Rotula.Core.Validation.ValidationIssue> notices) =>
+        notices.Count == 0 ? this : new PrintResult(BytesSent, Error) { Notices = notices };
+
     /// <summary>Creates a success result.</summary>
     public static PrintResult Ok(int bytesSent) => new(bytesSent, null);
 

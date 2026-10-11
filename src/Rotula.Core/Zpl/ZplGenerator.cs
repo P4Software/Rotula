@@ -4,6 +4,7 @@ using Rotula.Core.Barcodes;
 using Rotula.Core.Elements;
 using Rotula.Core.Imaging;
 using Rotula.Core.Model;
+using Rotula.Core.Text;
 using Rotula.Core.Validation;
 using Rotula.Core.Variables;
 using static System.FormattableString;
@@ -55,8 +56,12 @@ public static class ZplGenerator
     /// <summary>Generates ZPL for <paramref name="doc"/>, merging <paramref name="data"/> into <c>{{name}}</c> placeholders.</summary>
     /// <param name="doc">The label.</param>
     /// <param name="data">Variable values; missing names fall back to the declared sample values.</param>
-    public static ZplGenerationResult Generate(LabelDocument doc, IReadOnlyDictionary<string, string>? data = null) =>
-        GenerateCore(doc, data, null, null);
+    /// <param name="rasterizer">
+    /// Draws the text of Windows fonts to a picture (see <see cref="TextElement.Font"/>). Without one, such a text is an error and is not printed;
+    /// a label that uses only printer fonts never needs it.
+    /// </param>
+    public static ZplGenerationResult Generate(LabelDocument doc, IReadOnlyDictionary<string, string>? data = null, ITextRasterizer? rasterizer = null) =>
+        GenerateCore(doc, data, null, null, rasterizer);
 
     /// <summary>
     /// Generates ZPL after resolving every variable of the label (dates, counters, prompts, computed values) from <paramref name="context"/>. The
@@ -67,15 +72,16 @@ public static class ZplGenerator
     /// <param name="doc">The label.</param>
     /// <param name="context">Where variable values come from.</param>
     /// <param name="quantity">When set, replaces the label's own print quantity (<c>^PQ</c>); a run whose labels all differ passes 1.</param>
-    public static ZplGenerationResult GenerateWithVariables(LabelDocument doc, VariableContext context, int? quantity = null)
+    /// <param name="rasterizer">Draws the text of Windows fonts (see <see cref="Generate"/>); the text is drawn after the variables are replaced, once per label.</param>
+    public static ZplGenerationResult GenerateWithVariables(LabelDocument doc, VariableContext context, int? quantity = null, ITextRasterizer? rasterizer = null)
     {
         ArgumentNullException.ThrowIfNull(doc);
         ArgumentNullException.ThrowIfNull(context);
         var resolution = VariableEngine.Resolve(doc, context);
-        return GenerateCore(doc, resolution.Values, resolution, quantity);
+        return GenerateCore(doc, resolution.Values, resolution, quantity, rasterizer);
     }
 
-    private static ZplGenerationResult GenerateCore(LabelDocument doc, IReadOnlyDictionary<string, string>? data, VariableResolution? resolution, int? quantity)
+    private static ZplGenerationResult GenerateCore(LabelDocument doc, IReadOnlyDictionary<string, string>? data, VariableResolution? resolution, int? quantity, ITextRasterizer? rasterizer)
     {
         ArgumentNullException.ThrowIfNull(doc);
         var issues = new List<ValidationIssue>();
@@ -116,7 +122,7 @@ public static class ZplGenerator
         foreach (var element in doc.Elements)
         {
             int before = issues.Count;
-            string? field = EmitElement(doc, element, data, resolution, issues);
+            string? field = EmitElement(doc, element, data, resolution, issues, rasterizer);
             bool failed = issues.Skip(before).Any(i => i.Severity == ValidationSeverity.Error);
             if (field is not null && !failed) Line(field);
         }
@@ -181,11 +187,11 @@ public static class ZplGenerator
 
     // ---- element emission ------------------------------------------------------------------
 
-    private static string? EmitElement(LabelDocument doc, LabelElement e, IReadOnlyDictionary<string, string>? data, VariableResolution? resolution, List<ValidationIssue> issues)
+    private static string? EmitElement(LabelDocument doc, LabelElement e, IReadOnlyDictionary<string, string>? data, VariableResolution? resolution, List<ValidationIssue> issues, ITextRasterizer? rasterizer)
     {
         switch (e)
         {
-            case TextElement t: return EmitText(doc, t, data, resolution, issues);
+            case TextElement t: return EmitText(doc, t, data, resolution, issues, rasterizer);
             case BarcodeElement b: return EmitBarcode(doc, b, data, issues);
             case BoxElement box: return EmitBox(doc, box, issues);
             case LineElement line: return EmitLine(doc, line, issues);
@@ -204,10 +210,10 @@ public static class ZplGenerator
         }
     }
 
-    private static string Origin(LabelElement e) =>
+    internal static string Origin(LabelElement e) =>
         Invariant($"^F{(e.OriginKind == FieldOriginKind.Typeset ? 'T' : 'O')}{e.X},{e.Y}") + (e.ReverseField ? "^FR" : string.Empty);
 
-    private static string RotationChar(FieldRotation r) => r switch
+    internal static string RotationChar(FieldRotation r) => r switch
     {
         FieldRotation.Rotated90 => "R",
         FieldRotation.Inverted180 => "I",
@@ -227,8 +233,12 @@ public static class ZplGenerator
 
     private static string YN(bool v) => v ? "Y" : "N";
 
-    private static string EmitText(LabelDocument doc, TextElement t, IReadOnlyDictionary<string, string>? data, VariableResolution? resolution, List<ValidationIssue> issues)
+    private static string? EmitText(LabelDocument doc, TextElement t, IReadOnlyDictionary<string, string>? data, VariableResolution? resolution, List<ValidationIssue> issues, ITextRasterizer? rasterizer)
     {
+        // A Windows font cannot exist on the printer: the text is drawn to a picture and the label carries the picture.
+        if (t.Font is { IsWindows: true } windowsFont)
+            return RasterTextEmitter.Emit(doc, t, windowsFont, data, resolution, issues, rasterizer);
+
         CheckPosition(t, doc, 0, 0, issues);
         string resolved = ResolveTextWithClock(doc, t, data, resolution, issues, out FieldClockOptions? autoClock);
         var sb = new StringBuilder(Origin(t));
@@ -241,14 +251,24 @@ public static class ZplGenerator
             sb.Append("^FP").Append(Params(dir.ToString(), t.InterCharacterGap == 0 ? string.Empty : t.InterCharacterGap.ToString(CultureInfo.InvariantCulture)));
         }
 
-        if (t.FontId is not null || t.FontHeight is not null || t.FontWidth is not null || t.Rotation is not null)
+        // A font choice that names a printer font stands for its id; bold, italic and underline do not exist in the printer's own fonts.
+        char? fontId = t.Font is { IsWindows: false } printerChoice ? printerChoice.PrinterFontId : t.FontId;
+        if (t.Font is { IsWindows: false, Bold: true } or { IsWindows: false, Italic: true } or { IsWindows: false, Underline: true })
+            issues.Add(new ValidationIssue(ValidationSeverity.Warning, "Text.Style.PrinterFont", t.Id));
+        if (fontId is not null || t.StoredFontPath is not null || t.FontHeight is not null || t.FontWidth is not null || t.Rotation is not null)
         {
             // Unset parts come from ^CF; when the document has none, fall back to ZPL's scalable font so ^A is always complete.
             var def = doc.DefaultFont ?? new FontSpec('0', 30, 30);
             int h = t.FontHeight ?? def.Height, w = t.FontWidth ?? def.Width;
             if (h < 10 || h > 32000 || w < 0 || w > 32000)
                 issues.Add(new ValidationIssue(ValidationSeverity.Error, "Font.Size.Range", t.Id, "10", "32000"));
-            sb.Append(Invariant($"^A{t.FontId ?? def.FontId}{RotationOrEmpty(t.Rotation)},{h},{w}"));
+            if (t.StoredFontPath is { } stored)
+            {
+                // ^A@ prints with a font file that is already on the printer (the same names ^CW accepts).
+                if (!StoredFonts.IsValidPath(stored)) issues.Add(new ValidationIssue(ValidationSeverity.Error, "Text.StoredFont.Invalid", t.Id, stored));
+                sb.Append(Invariant($"^A@{RotationOrEmpty(t.Rotation)},{h},{w},{stored}"));
+            }
+            else sb.Append(Invariant($"^A{fontId ?? def.FontId}{RotationOrEmpty(t.Rotation)},{h},{w}"));
         }
 
         if (t.Block is { } b)
@@ -265,6 +285,13 @@ public static class ZplGenerator
             if (box.WidthDots < 1 || box.WidthDots > 32000 || box.HeightDots < 1 || box.HeightDots > 32000)
                 issues.Add(new ValidationIssue(ValidationSeverity.Error, "Text.Box.Range", t.Id, "1", "32000"));
             sb.Append("^TB").Append(Params(RotationOrEmpty(t.Rotation), box.WidthDots.ToString(CultureInfo.InvariantCulture), box.HeightDots.ToString(CultureInfo.InvariantCulture)));
+        }
+
+        // The printer does not tell how wide its letters are, so this is an estimate; the picture of a Windows font is measured exactly instead.
+        if (t.Block is not null || t.TextBox is not null)
+        {
+            var fit = TextFitEstimator.Estimate(t, resolved, doc.DefaultFont);
+            if (fit != TextOverflow.None) issues.Add(new ValidationIssue(ValidationSeverity.Warning, "Text.Overflow.Estimated", t.Id));
         }
 
         AppendDataField(sb, doc, t, resolved, allowLineBreaks: t.Block is not null, textBox: t.TextBox is not null, fdPrefix: string.Empty, issues, autoClock);

@@ -62,6 +62,12 @@ public sealed class MergeOptions
     /// <summary>The operator's answers to the label's prompts (variable name to answer), the same for every record. See <see cref="Rotula.Core.Variables.Prompts.PromptSet"/>.</summary>
     public Dictionary<string, string> PromptAnswers { get; } = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// Draws the text of Windows fonts for every record (after the record's values are in the text). Null makes such a text an error, so the
+    /// record is skipped or the batch stops according to <see cref="OnInvalidRecord"/>. It must be safe to call from a background thread.
+    /// </summary>
+    public Rotula.Core.Text.ITextRasterizer? TextRasterizer { get; set; }
+
     /// <summary>Where counters that remember their value keep their position; null makes them count from their start.</summary>
     public ICounterStore? CounterStore { get; set; }
 

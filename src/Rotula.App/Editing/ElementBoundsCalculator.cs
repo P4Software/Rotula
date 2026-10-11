@@ -187,7 +187,8 @@ public sealed class ElementBoundsCalculator
             DefaultFont = doc.DefaultFont,
             DefaultRotation = doc.DefaultRotation,
         };
-        foreach (var v in doc.Variables) temp.Variables.Add(new LabelVariable(v.Name, v.SampleValue));
+        // Clone() keeps the definition; the adapter resolves it, so a date or computed value is measured at its real width.
+        foreach (var v in doc.Variables) temp.Variables.Add(v.Clone());
         var clone = ElementCloner.Clone(e, newId: false);
         clone.X = ProbePad;
         clone.Y = ProbePad;

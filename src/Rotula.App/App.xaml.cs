@@ -31,9 +31,12 @@ public partial class App : Application
             var packLoading = PackStartup.Begin(packOptions, LogCrash);
             // The first New label dialog should find the stock library already read.
             StockLibrary.Preload();
+            var dialogs = new WpfToolDialogService();
             var services = new MainServices(
                 new WpfFileDialogService(), new WpfMessageService(), new WpfClipboardService(), new WpfImageLoader(),
-                new WpfNewLabelDialogService(), CreateZplImporter(), new Rotula.Printing.PrintService(), new JsonSettingsStore(), new WpfToolDialogService(), new DatabaseServices());
+                new WpfNewLabelDialogService(), CreateZplImporter(), new Rotula.Printing.PrintService(), new JsonSettingsStore(), dialogs, new DatabaseServices(),
+                // Serial numbers that remember their value live in %AppData%\Rotula\counters.json (see docs/variables.md).
+                new VariableServices(Rotula.Files.FileCounterStore.OpenDefault(), dialogs));
             var vm = new MainViewModel(services);
             var window = new MainWindow(vm);
             MainWindow = window;

@@ -156,4 +156,10 @@ public interface IToolDialogService
 
     /// <summary>Shows the GS1 builder modally; returns true when the user applied it. The default offers no dialog.</summary>
     bool ShowGs1Builder(Rotula.App.ViewModels.Gs1BuilderViewModel viewModel) => false;
+
+    /// <summary>
+    /// Shows the print-time questions of the label modally; returns true when the operator answered them all. The default offers no dialog and
+    /// returns false, which means "cancelled": a label that asks questions is never printed with guessed answers.
+    /// </summary>
+    bool ShowPromptDialog(Rotula.App.ViewModels.PromptDialogViewModel viewModel) => false;
 }

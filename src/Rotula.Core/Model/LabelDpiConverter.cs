@@ -263,6 +263,9 @@ public static class LabelDpiConverter
         CopyBase(from, to, c);
         to.Text = from.Text;
         to.FontId = from.FontId;
+        // A Windows font is sized in points, which are physical, so it needs no scaling; the picture is drawn at the new resolution when printed.
+        to.Font = from.Font?.Clone();
+        to.StoredFontPath = from.StoredFontPath;
         // null means "inherit the default font" and must stay null; width 0 means proportional and stays 0.
         to.FontHeight = from.FontHeight is { } h ? (h == 0 ? 0 : c.Dots(h, 1)) : null;
         to.FontWidth = from.FontWidth is { } w ? (w == 0 ? 0 : c.Dots(w, 1)) : null;

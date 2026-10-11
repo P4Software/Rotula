@@ -5,6 +5,8 @@ using Rotula.App.Editing;
 using Rotula.App.Localization;
 using Rotula.App.Services;
 using Rotula.Core.Model;
+using Rotula.Core.Validation;
+using Rotula.Core.Variables;
 using Rotula.Core.Zpl;
 using Rotula.Printing;
 
@@ -21,6 +23,7 @@ public sealed partial class PrintViewModel : OperationViewModel
     private readonly Func<IReadOnlyDictionary<string, string>?> _data;
     private readonly IFileDialogService _files;
     private readonly string _documentName;
+    private readonly IVariableServices _variables;
 
     /// <summary>Creates the dialog's view-model.</summary>
     /// <param name="service">Printing service (a fake in tests; tests never reach a real printer).</param>
@@ -29,9 +32,11 @@ public sealed partial class PrintViewModel : OperationViewModel
     /// <param name="data">Values for the record shown on the canvas, or null to print the sample values.</param>
     /// <param name="files">File dialogs (Save as ZPL).</param>
     /// <param name="documentName">File name stem suggested for the ZPL file.</param>
+    /// <param name="variables">Counter memory and the print-time questions; null means no counter memory and no questions (tests).</param>
     public PrintViewModel(IPrintService service, PrinterSettingsViewModel printer, Func<LabelDocument> document,
-        Func<IReadOnlyDictionary<string, string>?> data, IFileDialogService files, string documentName = "label")
+        Func<IReadOnlyDictionary<string, string>?> data, IFileDialogService files, string documentName = "label", IVariableServices? variables = null)
     {
+        _variables = variables ?? new VariableServices(null, null);
         _service = service;
         Printer = printer;
         _document = document;
@@ -66,9 +71,25 @@ public sealed partial class PrintViewModel : OperationViewModel
     /// <summary>Re-checks the label for errors that block printing. The test label does not depend on this.</summary>
     public void RefreshLabelProblems()
     {
-        var gen = ZplGenerator.Generate(_document(), _data());
+        var gen = Check(_document(), _data());
         LabelProblems = gen.HasErrors ? PrintMessages.DescribeIssues(gen.Issues) : string.Empty;
     }
+
+    /// <summary>
+    /// Generates the label for checking only. A label with variable definitions is resolved (dates, computed values, the next serial number)
+    /// without reserving anything or asking, so a broken formula or a counter that cannot remember shows up before the operator presses Print.
+    /// </summary>
+    private ZplGenerationResult Check(LabelDocument doc, IReadOnlyDictionary<string, string>? data) =>
+        VariableEngine.HasDefinitions(doc)
+            ? ZplGenerator.GenerateWithVariables(doc, new VariableContext { Record = data, CounterStore = _variables.CounterStore }, null, _variables.TextRasterizer)
+            : ZplGenerator.Generate(doc, data, _variables.TextRasterizer);
+
+    /// <summary>
+    /// Asks the label's print-time questions. Returns the answers (empty when there is nothing to ask), or null when the operator cancelled.
+    /// A question whose name the shown data record already answers is not asked.
+    /// </summary>
+    private IReadOnlyDictionary<string, string>? AskPrompts(LabelDocument doc, IReadOnlyDictionary<string, string>? data) =>
+        _variables.Ask(Rotula.Core.Variables.Prompts.PromptSet.Build(doc, data, _variables.PromptMemory));
 
     /// <summary>Loads the printer list; called when the dialog opens.</summary>
     [RelayCommand]
@@ -112,7 +133,11 @@ public sealed partial class PrintViewModel : OperationViewModel
         if (converted is null) { SetResult(convertError!, true); return; }
         doc = converted;
         var data = _data();
-        await SendAsync(Loc.Get("Print.Busy.Printing"), ct => _service.PrintAsync(target!, doc, data, profile, ct),
+        // Questions come before anything is reserved or sent; cancelling them cancels the print without a message (the operator chose it).
+        var answers = AskPrompts(doc, data);
+        if (answers is null) return;
+        var options = VariableServices.Options(_variables, answers);
+        await SendAsync(Loc.Get("Print.Busy.Printing"), ct => _service.PrintAsync(target!, doc, data, profile, options, ct),
             Loc.Get("Print.Done.Label", copies));
     }
 
@@ -130,12 +155,19 @@ public sealed partial class PrintViewModel : OperationViewModel
         PrintResult? result = null;
         bool finished = await RunAsync(busyText, async ct => result = await send(ct));
         if (!finished || result is null) return;
+        string notes = PrintMessages.DescribeNotices(result);
         if (result.Succeeded)
         {
-            SetResult(successText, false);
+            // Notes (for example skipped serial numbers) are shown with the success line so the operator reads them.
+            SetResult(notes.Length == 0 ? successText : successText + Environment.NewLine + notes, false);
             Printer.Persist();
         }
-        else SetResult(PrintMessages.Describe(result.Error!), result.Error!.Kind != PrintErrorKind.Cancelled);
+        else
+        {
+            string text = PrintMessages.Describe(result.Error!);
+            if (notes.Length > 0) text += Environment.NewLine + notes;
+            SetResult(text, result.Error!.Kind != PrintErrorKind.Cancelled);
+        }
     }
 
     /// <summary>Saves the ZPL (printer set-up commands plus the label) to a file instead of printing.</summary>
@@ -153,7 +185,8 @@ public sealed partial class PrintViewModel : OperationViewModel
             if (converted is null) { SetResult(convertError!, true); return; }
             doc = converted;
         }
-        var gen = ZplGenerator.Generate(doc, _data());
+        var data = _data();
+        var gen = Check(doc, data);
         if (gen.HasErrors)
         {
             SetResult(Loc.Get("Print.Error.InvalidLabel") + Environment.NewLine + PrintMessages.DescribeIssues(gen.Issues), true);
@@ -161,10 +194,20 @@ public sealed partial class PrintViewModel : OperationViewModel
         }
         string? path = _files.PickExportFile(ExportKind.Zpl, _documentName + ".zpl");
         if (path is null) return;
-        string zpl = (profile is null ? string.Empty : PrinterSetup.BuildSetupZpl(profile)) + gen.Zpl;
+        var answers = AskPrompts(doc, data);
+        if (answers is null) return;
+        // A saved file will be printed later, so its serial numbers count as used: the safe side, a number is never printed twice.
+        var run = LabelPrintRun.Begin(doc, data, VariableServices.Options(_variables, answers));
+        if (!run.CanPrint)
+        {
+            SetResult(Loc.Get("Print.Error.InvalidLabel") + Environment.NewLine + PrintMessages.DescribeIssues(run.Issues), true);
+            return;
+        }
+        string zpl = (profile is null ? string.Empty : PrinterSetup.BuildSetupZpl(profile)) + string.Concat(run.Blocks().Select(b => b.Zpl));
         byte[]? bytes = ZplFiles.TryEncode(zpl, doc.Encoding, ByteExactBlocks.From(doc));
         if (bytes is null)
         {
+            run.Cancel();
             SetResult(Loc.Get("Print.Error.EncodingFailed", doc.Encoding.ToString(), string.Empty), true);
             return;
         }
@@ -178,10 +221,18 @@ public sealed partial class PrintViewModel : OperationViewModel
                 writeError = Loc.Get("File.Error.Write", path);
             }
         });
-        if (!ok) return;
-        if (writeError is not null) { SetResult(writeError, true); return; }
+        if (!ok || writeError is not null)
+        {
+            // Nothing was saved, so the reserved numbers go back.
+            run.Cancel();
+            if (writeError is not null) SetResult(writeError, true);
+            return;
+        }
+        var closing = run.Complete(run.LabelCount);
         Printer.Persist();
-        SetResult(Loc.Get("Print.Done.Saved", Path.GetFileName(path)), false);
+        string notes = string.Join(Environment.NewLine, run.Issues.Where(i => i.Severity != ValidationSeverity.Error).Concat(closing).Select(Loc.FormatIssue));
+        string saved = Loc.Get("Print.Done.Saved", Path.GetFileName(path));
+        SetResult(notes.Length == 0 ? saved : saved + Environment.NewLine + notes, false);
     }
 
     /// <summary>Closes the dialog (stopping any running job first).</summary>

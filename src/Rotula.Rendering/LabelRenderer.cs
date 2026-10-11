@@ -187,10 +187,7 @@ public static class LabelRenderer
     private sealed class TextLayout : Layout
     {
         private readonly RenderText _t;
-        private readonly SKFont? _font;
-        private readonly List<string> _lines = [];
-        private readonly float _lineHeight;
-        private readonly float _ascent;
+        private readonly TextBlockLayout? _block;
 
         public TextLayout(RenderText t)
         {
@@ -198,86 +195,43 @@ public static class LabelRenderer
             if (string.IsNullOrEmpty(t.Text) || t.FontHeightDots <= 0)
                 return;
 
-            _font = new SKFont(RenderFonts.Get(t.Font, t.Bold), (float)t.FontHeightDots)
-            {
-                Edging = SKFontEdging.Antialias,
-                Subpixel = true,
-            };
-            _lineHeight = _font.Spacing + (float)t.LineSpacingDots;
-            int maxLines = t.MaxLines;
-            if (t.HeightDots > 0 && _lineHeight > 0)
-            {
-                // A fixed-height box shows only the lines that fit completely (at least one, so a tiny box is not invisible).
-                int fit = Math.Max(1, (int)Math.Floor(t.HeightDots / _lineHeight));
-                maxLines = maxLines > 0 ? Math.Min(maxLines, fit) : fit;
-            }
-            _lines = WrapText(t.Text, _font, t.WidthDots, maxLines);
-            // Skia reports ascent as a negative number; the first baseline sits one ascent below the top edge.
-            _ascent = -_font.Metrics.Ascent;
-            Width = t.WidthDots > 0 ? t.WidthDots : _lines.Max(l => _font.MeasureText(l));
-            Height = _lineHeight * _lines.Count;
+            // A Windows font asks the operating system for its face; a printer font is drawn with the bundled stand-in.
+            ResolvedTypeface face = t.FamilyName is { Length: > 0 } family
+                ? TypefaceSource.Resolve(family, t.Bold, t.Italic)
+                : new ResolvedTypeface(RenderFonts.Get(t.Font, t.Bold), string.Empty, false, 0f);
+            _block = new TextBlockLayout(t.Text, face.Typeface, (float)t.FontHeightDots, face.SkewX, t.Underline, t.WidthDots, t.HeightDots, t.MaxLines,
+                t.LineSpacingDots, t.Alignment, t.HangingIndentDots);
+            Width = _block.Width;
+            Height = _block.Height;
+            TypesetOffset = _block.Ascent;
         }
 
-        public override double TypesetOffset => _ascent;
+        public override double TypesetOffset { get; }
 
         public override void Paint(SKCanvas canvas)
         {
-            if (_font is null) return;
+            if (_block is null) return;
             using var paint = MakePaint(_t, white: false, antiAlias: true);
-            for (int i = 0; i < _lines.Count; i++)
-            {
-                float lineWidth = _font.MeasureText(_lines[i]);
-                bool isLast = i == _lines.Count - 1;
-                float x = 0f;
-                if (_t.WidthDots > 0)
-                {
-                    x = _t.Alignment switch
-                    {
-                        RenderTextAlignment.Center => ((float)Width - lineWidth) / 2f,
-                        RenderTextAlignment.Right => (float)Width - lineWidth,
-                        _ => 0f,
-                    };
-                }
-
-                var line = _lines[i];
-                if (_t.Alignment == RenderTextAlignment.Justified && _t.WidthDots > 0 && !isLast && line.Contains(' '))
-                {
-                    DrawJustified(canvas, line, _ascent + i * _lineHeight, paint);
-                    continue;
-                }
-                canvas.DrawText(line, x, _ascent + i * _lineHeight, SKTextAlign.Left, _font, paint);
-            }
+            _block.Paint(canvas, paint);
         }
 
-        /// <summary>Spreads the words of a line evenly across the block width.</summary>
-        private void DrawJustified(SKCanvas canvas, string line, float baseline, SKPaint paint)
-        {
-            var words = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            if (words.Length < 2)
-            {
-                canvas.DrawText(line, 0, baseline, SKTextAlign.Left, _font!, paint);
-                return;
-            }
-            float total = words.Sum(w => _font!.MeasureText(w));
-            float gap = Math.Max(0, ((float)Width - total) / (words.Length - 1));
-            float x = 0;
-            foreach (var w in words)
-            {
-                canvas.DrawText(w, x, baseline, SKTextAlign.Left, _font!, paint);
-                x += _font!.MeasureText(w) + gap;
-            }
-        }
-
-        public override void Dispose() => _font?.Dispose();
+        public override void Dispose() => _block?.Dispose();
     }
 
     /// <summary>Splits text into lines that fit <paramref name="maxWidth"/> (0 = only explicit line breaks).</summary>
-    internal static List<string> WrapText(string text, SKFont font, double maxWidth, int maxLines)
+    internal static List<string> WrapText(string text, SKFont font, double maxWidth, int maxLines) => WrapText(text, font, maxWidth, maxLines, 0f);
+
+    /// <summary>
+    /// Like the plain overload, with a hanging indent: every line after the first has that much less room. <paramref name="maxLines"/> of 0
+    /// keeps every line (the caller decides what to cut and can then tell how much was cut).
+    /// </summary>
+    internal static List<string> WrapText(string text, SKFont font, double maxWidth, int maxLines, float hangingIndent)
     {
         var lines = new List<string>();
+        double Room() => lines.Count == 0 ? maxWidth : Math.Max(1, maxWidth - hangingIndent);
         foreach (var paragraph in text.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n'))
         {
-            if (maxWidth <= 0 || font.MeasureText(paragraph) <= maxWidth)
+            if (maxWidth <= 0 || font.MeasureText(paragraph) <= Room())
             {
                 lines.Add(paragraph);
                 continue;
@@ -287,7 +241,7 @@ public static class LabelRenderer
             foreach (var word in paragraph.Split(' '))
             {
                 var candidate = current.Length == 0 ? word : current + " " + word;
-                if (current.Length > 0 && font.MeasureText(candidate) > maxWidth)
+                if (current.Length > 0 && font.MeasureText(candidate) > Room())
                 {
                     lines.Add(current);
                     current = word;

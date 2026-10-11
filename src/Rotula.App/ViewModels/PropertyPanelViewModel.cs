@@ -8,6 +8,7 @@ using Rotula.Core.Barcodes;
 using Rotula.Core.Barcodes.QrContent;
 using Rotula.Core.Elements;
 using Rotula.Core.Model;
+using Rotula.Core.Text;
 using Rotula.Core.Validation;
 using Rotula.Core.Zpl;
 using Rotula.Rendering.View;
@@ -299,6 +300,30 @@ public sealed partial class PropertyPanelViewModel : ObservableObject
 
     private readonly HashSet<string> _specCleared = new(StringComparer.Ordinal);
 
+    /// <summary>
+    /// The block a text gets when word wrap is switched on: as wide as the room left on the label to the right of the text, and as many lines
+    /// as fit in the room left below it (at least two). A fixed 400 x 1 block would cut the text to one line, and 400 dots is a thumb-width at 600 dpi.
+    /// The user can still change both numbers.
+    /// </summary>
+    /// <param name="doc">The label (size, resolution, margins).</param>
+    /// <param name="text">The text element that gets the block.</param>
+    public static TextBlockOptions DefaultBlockFor(LabelDocument doc, TextElement text)
+    {
+        // Positions count from the label home (^LH, the left and top margins), so the room is what is left of the printable area.
+        int roomRight = doc.WidthDots - doc.Margins.Left.ToDots(doc.Dpi) - text.X - doc.Margins.Right.ToDots(doc.Dpi);
+        int roomBelow = doc.HeightDots - doc.Margins.Top.ToDots(doc.Dpi) - text.Y - doc.Margins.Bottom.ToDots(doc.Dpi);
+        // A text turned a quarter runs down the label: its width comes from the room below and its lines stack across.
+        var rotation = text.Rotation ?? doc.DefaultRotation;
+        bool vertical = rotation is FieldRotation.Rotated90 or FieldRotation.Rotated270;
+        int alongText = vertical ? roomBelow : roomRight;
+        int acrossText = vertical ? roomRight : roomBelow;
+        double lineHeight = text.Font is { IsWindows: true } windows
+            ? FontChoice.PointsToDots(windows.PointSize, (int)doc.Dpi) * 1.2
+            : text.FontHeight ?? doc.DefaultFont?.Height ?? 30;
+        int lines = (int)(acrossText / Math.Max(1, lineHeight));
+        return new TextBlockOptions { WidthDots = Math.Clamp(alongText, 1, 9999), MaxLines = Math.Clamp(lines, 2, 9999) };
+    }
+
     private void BuildTextRows(TextElement element)
     {
         string id = element.Id;
@@ -312,7 +337,11 @@ public sealed partial class PropertyPanelViewModel : ObservableObject
         AddNullableInt<TextElement>(id, "Prop.FontWidth", e => e.FontWidth, (e, v) => e.FontWidth = v, 0, 32000, "Prop.Inherit.Hint");
 
         Rows.Add(new BoolRow("Prop.Block", () => El<TextElement>(id).Block is not null,
-            v => Edit<TextElement>(id, "block", e => e.Block = v ? new TextBlockOptions() : null)) { RebuildOnChange = true });
+            v => _session.Edit("Undo.Property", d =>
+            {
+                var e = (TextElement)d.Elements.First(x => x.Id == id);
+                e.Block = v ? DefaultBlockFor(d, e) : null;
+            }, mergeKey: $"prop:{id}:block")) { RebuildOnChange = true });
         if (element.Block is not null)
         {
             AddInt<TextElement>(id, "Prop.Block.Width", e => e.Block!.WidthDots, (e, v) => e.Block!.WidthDots = v, 1, 9999);
@@ -582,14 +611,19 @@ public sealed partial class PropertyPanelViewModel : ObservableObject
     private (string? Payload, int Records) LongestPayload(BarcodeElement b)
     {
         var doc = _session.Document;
-        string key = string.Join('\u0001', b.Data, b.QrContentSpec, b.QrErrorCorrection, b.QrModel, _fieldsVersion, string.Join(';', doc.Variables.Select(v => v.Name + "=" + v.SampleValue)));
+        string key = string.Join('\u0001', b.Data, b.QrContentSpec, b.QrErrorCorrection, b.QrModel, _fieldsVersion, string.Join(';', doc.Variables.Select(v => v.Name + "=" + v.SampleValue + (v.Kind == Rotula.Core.Variables.VariableKind.Text ? string.Empty : "|" + Rotula.Files.RotulaFileSerializer.Fingerprint(v)))));
         if (key == _measureKey) return _measured;
         var records = _fields?.SampleRecords(MaxMeasuredRecords).ToList() ?? new List<IReadOnlyDictionary<string, string>>();
         var sets = records.Count > 0 ? records.Cast<IReadOnlyDictionary<string, string>?>() : new IReadOnlyDictionary<string, string>?[] { null };
         var texts = new List<string>();
-        foreach (var record in sets)
+        bool defined = Rotula.Core.Variables.VariableEngine.HasDefinitions(doc);
+        foreach (var rawRecord in sets)
         {
             var scratch = new List<ValidationIssue>();
+            // Resolve dates, counters and computed values first, so the code is sized for what is really printed.
+            var record = defined
+                ? Rotula.Core.Variables.VariableEngine.BuildPreviewData(doc, new Rotula.Core.Variables.VariableContext { Record = rawRecord })
+                : rawRecord;
             string text = QrContentBuilder.ResolveForElement(b, record, doc.Variables, scratch) ?? VariableResolver.Resolve(b.Data, record, doc.Variables, b.Id, scratch);
             if (text.Length > 0) texts.Add(text);
         }
@@ -790,8 +824,20 @@ public sealed partial class PropertyPanelViewModel : ObservableObject
     private static void ApplyVariables(LabelDocument d, string text)
     {
         if (!ParseVariables(text, out var list)) return;
+        // The text box only shows "name=sample". A variable that already exists keeps its definition (date, counter, prompt, computed)
+        // and only takes the new sample value; rebuilding it from the line would silently turn it into plain text.
+        var merged = new List<LabelVariable>(list.Count);
+        foreach (var edited in list)
+        {
+            var existing = d.Variables.FirstOrDefault(v => string.Equals(v.Name, edited.Name, StringComparison.OrdinalIgnoreCase));
+            if (existing is null) { merged.Add(edited); continue; }
+            var kept = existing.Clone();
+            kept.Name = edited.Name;
+            kept.SampleValue = edited.SampleValue;
+            merged.Add(kept);
+        }
         d.Variables.Clear();
-        d.Variables.AddRange(list);
+        d.Variables.AddRange(merged);
     }
 
     /// <summary>Called by rows that request a rebuild (symbology, block toggle, unit).</summary>

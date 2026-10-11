@@ -26,6 +26,9 @@ public sealed class AppSettings
     /// <summary>Share of the right-hand column's height given to the Properties panel (the Objects list gets the rest). 0.2 to 0.8.</summary>
     public double PropertiesPanelShare { get; set; } = 0.55;
 
+    /// <summary>The Objects list under the Properties panel is open. Closed by default: the fields show their values, so the list is rarely needed.</summary>
+    public bool ObjectsPanelExpanded { get; set; }
+
     /// <summary>Grid spacing in millimetres.</summary>
     public double GridSpacingMm { get; set; } = 2.0;
 

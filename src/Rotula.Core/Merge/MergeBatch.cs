@@ -44,6 +44,13 @@ public sealed class MergeReport
 /// <param name="Zpl">The ZPL text, one or more <c>^XA..^XZ</c> blocks each ending with a line feed.</param>
 public sealed record MergedLabel(int RecordNumber, string Zpl);
 
+/// <summary>One print job of a batch: the ZPL of consecutive labels and the records it covers.</summary>
+/// <param name="Zpl">The ZPL text of the labels of this job.</param>
+/// <param name="LastRecordNumber">1-based number of the last record in the job. After this job was sent, this is the value to confirm a
+/// <see cref="VariableJob"/> with, because serial numbers follow the record position.</param>
+/// <param name="Labels">How many records produced a label in this job.</param>
+public sealed record MergedJob(string Zpl, int LastRecordNumber, int Labels);
+
 /// <summary>
 /// Turns a <see cref="MergeDataSet"/> into ZPL. Everything is lazy (<see cref="IEnumerable{T}"/>) so 100k rows
 /// never need one giant string unless <see cref="GenerateSingleStream"/> is called. A record that fails
@@ -110,7 +117,7 @@ public static class MergeBatch
                 {
                     var values = data.BuildData(i, problems);
                     int? copies = ResolveCopies(data, i, problems);
-                    var result = job is null ? ZplGenerator.Generate(doc, values) : ZplGenerator.GenerateWithVariables(doc, job.ContextFor(i, values));
+                    var result = job is null ? ZplGenerator.Generate(doc, values, options.TextRasterizer) : ZplGenerator.GenerateWithVariables(doc, job.ContextFor(i, values), null, options.TextRasterizer);
                     // Variable warnings are the same for every record; say each of them once.
                     problems.AddRange(result.Issues.Where(p => job is null || p.Severity == ValidationSeverity.Error || warned.Add(p.MessageKey + "|" + string.Join("|", p.Args))));
                     if (!problems.Any(p => p.Severity == ValidationSeverity.Error))
@@ -152,23 +159,31 @@ public static class MergeBatch
     /// the setting is 0). With <see cref="InvalidRecordPolicy.Stop"/> the job in progress is still yielded, then the
     /// sequence ends; check <see cref="MergeReport.Stopped"/>.
     /// </summary>
-    public static IEnumerable<string> Jobs(LabelDocument doc, MergeDataSet data, MergeReport? report = null)
+    public static IEnumerable<string> Jobs(LabelDocument doc, MergeDataSet data, MergeReport? report = null) =>
+        JobBlocks(doc, data, report).Select(j => j.Zpl);
+
+    /// <summary>
+    /// Like <see cref="Jobs"/>, but each job also says which record it ends at. A caller that owns the serial-number reservation
+    /// (<see cref="MergeOptions.Job"/>) confirms with that number after the job was really sent, so a failed send never burns the labels after it.
+    /// </summary>
+    public static IEnumerable<MergedJob> JobBlocks(LabelDocument doc, MergeDataSet data, MergeReport? report = null)
     {
         int max = Math.Max(0, data.Options.MaxRecordsPerJob);
         var sb = new StringBuilder();
-        int inJob = 0;
+        int inJob = 0, last = 0;
         foreach (var label in Labels(doc, data, report))
         {
             sb.Append(label.Zpl);
             inJob++;
+            last = label.RecordNumber;
             if (max > 0 && inJob >= max)
             {
-                yield return sb.ToString();
+                yield return new MergedJob(sb.ToString(), last, inJob);
                 sb.Clear();
                 inJob = 0;
             }
         }
-        if (inJob > 0) yield return sb.ToString();
+        if (inJob > 0) yield return new MergedJob(sb.ToString(), last, inJob);
     }
 
     /// <summary>Streams every label to <paramref name="writer"/> without building the whole text in memory.</summary>

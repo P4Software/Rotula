@@ -102,6 +102,21 @@ public sealed record RenderText : RenderElement
     /// <summary>Use the bold face.</summary>
     public bool Bold { get; init; }
 
+    /// <summary>
+    /// Family name of a Windows font; null draws with the bundled stand-in chosen by <see cref="Font"/>. When set, <see cref="FontHeightDots"/> is
+    /// the em size of that font in dots (its point size at the printer's resolution).
+    /// </summary>
+    public string? FamilyName { get; init; }
+
+    /// <summary>Use the italic face (Windows fonts).</summary>
+    public bool Italic { get; init; }
+
+    /// <summary>Underline every line.</summary>
+    public bool Underline { get; init; }
+
+    /// <summary>Indent of every line after the first, in dots.</summary>
+    public double HangingIndentDots { get; init; }
+
     /// <summary>Block width in dots used for wrapping and alignment; 0 means no wrapping.</summary>
     public double WidthDots { get; init; }
 

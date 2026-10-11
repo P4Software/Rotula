@@ -174,7 +174,9 @@ public sealed class PrinterTools
 
             default:
                 // Exactly one job. The result is a value, never an exception; a failure is reported and nothing is retried.
-                var result = await _ctx.Print.PrintAsync(PrinterTarget.Spooler(name), doc, printData, null, cancellationToken).ConfigureAwait(false);
+                // Exactly the ZPL that was shown and fingerprinted is sent, so what the person confirmed is what prints (the print service's own
+                // variable handling would write separate labels for a counting label, which is not what was confirmed).
+                var result = await _ctx.Print.PrintZplAsync(PrinterTarget.Spooler(name), generated.Zpl, doc.Encoding, ByteExactBlocks.From(doc), cancellationToken).ConfigureAwait(false);
                 if (!result.Succeeded)
                     throw new McpException("The printer did not accept the job: " + Messages.Describe(result.Error!));
                 return new PrintResultInfo("sent", $"Sent one print job of {copies} label(s) to \"{name}\" ({result.BytesSent:N0} bytes).",

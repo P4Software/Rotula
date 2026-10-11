@@ -25,6 +25,10 @@ public static class LabelDocumentAdapter
     public static RenderLabel ToRenderLabel(LabelDocument doc, IReadOnlyDictionary<string, string>? data = null)
     {
         ArgumentNullException.ThrowIfNull(doc);
+        // Dates, counters, prompts and computed values only exist once resolved; without this the preview would show the bare sample
+        // text of a variable that has a definition. Nothing is reserved or remembered: a counter shows the number the next label gets.
+        if (Rotula.Core.Variables.VariableEngine.HasDefinitions(doc))
+            data = Rotula.Core.Variables.VariableEngine.BuildPreviewData(doc, new Rotula.Core.Variables.VariableContext { Record = data });
         int dpi = (int)doc.Dpi;
         int homeX = doc.Margins.Left.ToDots(doc.Dpi);
         int homeY = doc.Margins.Top.ToDots(doc.Dpi);
@@ -62,7 +66,13 @@ public static class LabelDocumentAdapter
                     Text = text,
                     // A ^TB box wraps at its width and shows only the lines that fit its height.
                     HeightDots = t.TextBox?.HeightDots ?? 0,
-                    FontHeightDots = t.FontHeight ?? def.Height,
+                    // A Windows font is drawn as the printed picture is: its own family at its point size, converted at the printer's resolution.
+                    FontHeightDots = t.Font is { IsWindows: true } wf ? Core.Text.FontChoice.PointsToDots(wf.PointSize, (int)doc.Dpi) : t.FontHeight ?? def.Height,
+                    FamilyName = t.Font is { IsWindows: true } wf2 ? wf2.FamilyName : null,
+                    Bold = t.Font is { IsWindows: true, Bold: true },
+                    Italic = t.Font is { IsWindows: true, Italic: true },
+                    Underline = t.Font is { IsWindows: true, Underline: true },
+                    HangingIndentDots = t.Block?.HangingIndent ?? 0,
                     Font = (t.FontId ?? def.FontId) == '0' ? RenderFontFamily.Sans : RenderFontFamily.Mono,
                     WidthDots = t.Block?.WidthDots ?? t.TextBox?.WidthDots ?? 0,
                     MaxLines = t.Block?.MaxLines ?? 0,

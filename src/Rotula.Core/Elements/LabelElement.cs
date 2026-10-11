@@ -133,6 +133,18 @@ public class TextElement : FieldDataElement
     public int? FontHeight { get; set; }
     /// <summary>Character width in dots (0 = proportional), or null to inherit.</summary>
     public int? FontWidth { get; set; }
+    /// <summary>
+    /// A Windows (TrueType) font, or null for a printer font. A printer cannot have a Windows font, so such a text is drawn to a bitmap at the
+    /// printer's resolution when the label is printed (it needs an <see cref="Rotula.Core.Text.ITextRasterizer"/>); the font id and the dot sizes of a
+    /// printer font are then unused. Printer fonts keep using <see cref="FontId"/>, <see cref="FontHeight"/> and <see cref="FontWidth"/>.
+    /// See <see cref="Rotula.Core.Text.FontChoice"/>, which presents both kinds as one value.
+    /// </summary>
+    public Rotula.Core.Text.FontChoice? Font { get; set; }
+    /// <summary>
+    /// Path of a font stored on the printer (for example <c>E:ARIAL.TTF</c>), printed with <c>^A@</c>, or null. It replaces <see cref="FontId"/>.
+    /// The file must already be on the printer; Rotula does not load it.
+    /// </summary>
+    public string? StoredFontPath { get; set; }
     /// <summary>Block layout, or null for a single line.</summary>
     public TextBlockOptions? Block { get; set; }
     /// <summary>Text box (^TB), or null. A text element has either a <see cref="Block"/> or a text box, never both.</summary>

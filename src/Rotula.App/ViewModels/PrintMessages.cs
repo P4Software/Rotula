@@ -30,6 +30,13 @@ public static class PrintMessages
     /// <summary>Describes a print result: null on success.</summary>
     public static string? Describe(PrintResult result) => result.Error is null ? null : Describe(result.Error);
 
+    /// <summary>
+    /// Lists every note a print result carries (skipped serial numbers, a counter file problem, the errors that stopped a label), one per line;
+    /// empty when there are none.
+    /// </summary>
+    public static string DescribeNotices(PrintResult result) =>
+        string.Join(Environment.NewLine, result.Notices.Select(Loc.FormatIssue));
+
     /// <summary>Lists the error-level problems of a label as short sentences (at most <paramref name="max"/>).</summary>
     public static string DescribeIssues(IEnumerable<ValidationIssue> issues, int max = 6) =>
         string.Join(Environment.NewLine, issues.Where(i => i.Severity == ValidationSeverity.Error).Take(max).Select(Loc.FormatIssue));

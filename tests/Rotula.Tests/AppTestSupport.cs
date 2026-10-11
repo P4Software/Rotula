@@ -100,9 +100,11 @@ internal sealed class FakeServices
     public readonly FakeToolDialogs ToolDialogs = new();
     public GrayscaleBitmap? Image = AppTestSupport.SmallBitmap();
     public readonly InMemorySettings Settings = new();
+    /// <summary>Counter memory and prompt answers; null keeps the production default (no counter memory, questions cancelled).</summary>
+    public IVariableServices? Variables;
 
     public MainServices Build() => new(
-        new Dialogs(this), new Messages(this), new Clip(this), new Images(this), new NewDialog(this), Importer, Printer, Settings, ToolDialogs, Database);
+        new Dialogs(this), new Messages(this), new Clip(this), new Images(this), new NewDialog(this), Importer, Printer, Settings, ToolDialogs, Database, Variables);
 
     private sealed class Dialogs(FakeServices f) : IFileDialogService
     {
@@ -224,6 +226,17 @@ internal sealed class FakePrintService : IPrintService
         PrinterProfile? profile = null, CancellationToken cancellationToken = default)
     {
         Printed.Add((target, document, data, profile));
+        return Respond(cancellationToken);
+    }
+
+    /// <summary>The variable options passed with each label print (same order as <see cref="Printed"/>; null for the overload without options).</summary>
+    public readonly List<PrintVariableOptions?> OptionArgs = new();
+
+    public Task<PrintResult> PrintAsync(PrinterTarget target, LabelDocument document, IReadOnlyDictionary<string, string>? data,
+        PrinterProfile? profile, PrintVariableOptions? variables, CancellationToken cancellationToken = default)
+    {
+        Printed.Add((target, document, data, profile));
+        OptionArgs.Add(variables);
         return Respond(cancellationToken);
     }
 
