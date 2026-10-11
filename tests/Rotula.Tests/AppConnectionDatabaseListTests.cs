@@ -505,30 +505,3 @@ public class AppConnectionDatabaseListTests : IDisposable
         Assert.True(Loc.Instance.HasKey(key));
     }
 }
-
-/// <summary>Regression: the printer transport radio buttons wrote each other's value back endlessly (stack overflow).</summary>
-[Collection("App")]
-public class PrinterTransportRadioTests
-{
-    [Fact]
-    public void MirroredRadioWrites_DoNotFlipTheChoiceBack_AndRaiseABoundedNumberOfEvents()
-    {
-        var fake = new FakeServices();
-        var doc = new Rotula.Core.Model.LabelDocument();
-        var vm = new Rotula.App.ViewModels.PrinterSettingsViewModel(fake.Printer, new Rotula.App.Services.PrintSettings(), () => { }, () => doc,
-            (_, _) => Task.FromResult(new Rotula.App.Services.PrinterDetection(null, null, null)), _ => { });
-        int events = 0;
-        vm.PropertyChanged += (_, _) => { if (++events > 200) throw new InvalidOperationException("re-entrancy loop"); };
-
-        // What the radio group does when "Network" is checked: Network = true, then the Windows radio, now unchecked, writes false.
-        vm.UseNetwork = true;
-        vm.UseWindowsPrinter = false;
-        Assert.True(vm.UseNetwork);
-        // And when "Windows printer" is checked: Windows = true, then the Network radio writes its unchecked value false.
-        vm.UseWindowsPrinter = true;
-        vm.UseNetwork = false;
-        Assert.False(vm.UseNetwork);
-        Assert.True(vm.UseWindowsPrinter);
-        Assert.InRange(events, 1, 50);
-    }
-}

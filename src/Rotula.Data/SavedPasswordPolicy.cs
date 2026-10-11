@@ -35,6 +35,12 @@ internal static class SavedPasswordPolicy
     /// <summary>True when the saved password may be used with <paramref name="edited"/>.</summary>
     public static bool CanReuse(DatabaseConnectionSettings saved, DatabaseConnectionSettings edited)
     {
+        // Oracle's "alias" mode keeps a TNS alias in Database, and the alias decides which server is contacted. There, changing the
+        // database name is changing the destination, so it must not reuse the saved password like a plain database switch would.
+        if (IsAliasMode(saved) || IsAliasMode(edited))
+        {
+            if (!Same(saved.Database, edited.Database)) return false;
+        }
         foreach (var p in Compared)
         {
             object? a = p.GetValue(saved);
@@ -49,6 +55,8 @@ internal static class SavedPasswordPolicy
         }
         return true;
     }
+
+    private static bool IsAliasMode(DatabaseConnectionSettings s) => string.Equals(s.Extras.Get("connectBy"), "alias", StringComparison.Ordinal);
 
     private static string? Strip(string? odbc) => string.IsNullOrWhiteSpace(odbc) ? null : SecretRedactor.ExtractPassword(odbc).Sanitized.Trim().TrimEnd(';');
 

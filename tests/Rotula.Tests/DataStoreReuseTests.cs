@@ -250,6 +250,18 @@ public class DataStoreReuseTests : IDisposable
         Assert.True(SavedPasswordPolicy.CanReuse(a, a with { Host = "db.example.com" }));
     }
 
+    /// <summary>In Oracle's alias mode the Database field is a TNS alias that picks the server, so editing it must ask for the password again.</summary>
+    [Fact]
+    public void ATnsAlias_IsADestination_SoChangingItDoesNotReuseThePassword()
+    {
+        var a = Pg() with { Database = "SALES", Extras = ProviderExtras.Of(("connectBy", "alias")) };
+        Assert.False(SavedPasswordPolicy.CanReuse(a, a with { Database = "EVIL" }));
+        Assert.True(SavedPasswordPolicy.CanReuse(a, a with { Name = "renamed" }));
+        // A plain service name on the same host is still a free switch.
+        var service = Pg() with { Database = "one" };
+        Assert.True(SavedPasswordPolicy.CanReuse(service, service with { Database = "two" }));
+    }
+
     [Fact]
     public void NullAndEmptyText_AreTheSameNotSet()
     {
