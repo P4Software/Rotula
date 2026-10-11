@@ -161,6 +161,31 @@ internal sealed class FakeDatabaseServices : IDatabaseServices
 
     public FakeDatabaseServices() => Store.CreateForExplicitPassword = Create;
 
+    // ---- the database list of the connection manager
+    /// <summary>Every list request: the settings as typed and the password argument handed to the store (null = reuse the saved one).</summary>
+    public readonly List<(DatabaseConnectionSettings Settings, string? PasswordArgument)> ListCalls = new();
+    /// <summary>What the "server" answers.</summary>
+    public DatabaseListResult ListAnswer = FakeLists.Of("Sales", "Stock", "master");
+    /// <summary>When set, the request fails with it.</summary>
+    public DatabaseException? ListFailure;
+    /// <summary>When set, the request waits for it (so a test can change the form or press Stop while it is in flight).</summary>
+    public TaskCompletionSource? ListGate;
+
+    /// <inheritdoc />
+    public async Task<DatabaseListResult> ListDatabasesAsync(DatabaseConnectionSettings settings, string? passwordArgument, CancellationToken cancellationToken)
+    {
+        ListCalls.Add((settings, passwordArgument));
+        // The real default opens the source through the store; doing the same keeps the saved-password policy in the test.
+        await Store.OpenWithSettingsAsync(settings with { Database = "master" }, passwordArgument, cancellationToken);
+        if (ListGate is not null)
+        {
+            try { await ListGate.Task.WaitAsync(cancellationToken); }
+            catch (OperationCanceledException) { throw new DatabaseException(DataKeys.Cancelled); }
+        }
+        if (ListFailure is not null) throw ListFailure;
+        return ListAnswer;
+    }
+
     public IConnectionStore Connections => Store;
 
     public IDatabaseSource Create(DatabaseConnectionSettings settings, string? password)
@@ -168,4 +193,16 @@ internal sealed class FakeDatabaseServices : IDatabaseServices
         Created.Add((settings, password));
         return CreatedSource;
     }
+}
+
+/// <summary>Builds <see cref="DatabaseListResult"/> values for tests (the constructor is internal to the engine).</summary>
+internal static class FakeLists
+{
+    private static readonly string[] System = { "master", "model", "msdb", "tempdb" };
+
+    public static DatabaseListResult Of(params string[] names)
+        => new(names.Select(n => new DatabaseListEntry(n, System.Contains(n, StringComparer.OrdinalIgnoreCase))).ToList(), false, true);
+
+    public static DatabaseListResult Truncated(params string[] names)
+        => new(names.Select(n => new DatabaseListEntry(n, false)).ToList(), true, true);
 }

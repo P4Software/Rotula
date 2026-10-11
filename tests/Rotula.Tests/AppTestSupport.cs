@@ -167,6 +167,24 @@ internal sealed class FakeToolDialogs : IToolDialogService
     }
     public int Previews;
     public void ShowPreviewDialog(Rotula.App.Editing.PreviewCache preview, string title) => Previews++;
+    /// <summary>What the "user" does inside the QR content builder; the fake dialog returns whether the builder was applied.</summary>
+    public Action<Rotula.App.ViewModels.QrContentBuilderViewModel>? OnQrBuilder;
+    public readonly List<Rotula.App.ViewModels.QrContentBuilderViewModel> QrBuilders = new();
+    public bool ShowQrContentBuilder(Rotula.App.ViewModels.QrContentBuilderViewModel viewModel)
+    {
+        QrBuilders.Add(viewModel);
+        OnQrBuilder?.Invoke(viewModel);
+        return viewModel.Applied;
+    }
+    /// <summary>What the "user" does inside the GS1 builder.</summary>
+    public Action<Rotula.App.ViewModels.Gs1BuilderViewModel>? OnGs1Builder;
+    public readonly List<Rotula.App.ViewModels.Gs1BuilderViewModel> Gs1Builders = new();
+    public bool ShowGs1Builder(Rotula.App.ViewModels.Gs1BuilderViewModel viewModel)
+    {
+        Gs1Builders.Add(viewModel);
+        OnGs1Builder?.Invoke(viewModel);
+        return viewModel.Applied;
+    }
 }
 
 /// <summary>

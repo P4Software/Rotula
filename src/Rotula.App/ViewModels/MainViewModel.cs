@@ -24,8 +24,16 @@ namespace Rotula.App.ViewModels;
 /// <param name="TypeTag">Short kind label shown in small monospace type (Text, QR, Line, Code 128...).</param>
 /// <param name="Detail">The text or barcode data of the element, shown under the name (empty for shapes).</param>
 /// <param name="FullText">The complete text or barcode data (the row shows <paramref name="Detail"/>, which is cut short); used for the tooltip.</param>
-public sealed record LayerItem(string Id, string Name, string TypeTag = "", string Detail = "", string FullText = "")
+/// <param name="IsBound">True when the element's content uses at least one data field (the list shows a small {} badge).</param>
+/// <param name="MissingText">Warning shown when a field has no matching column in the loaded data; empty when all is well.</param>
+public sealed record LayerItem(string Id, string Name, string TypeTag = "", string Detail = "", string FullText = "", bool IsBound = false, string MissingText = "")
 {
+    /// <summary>True when there is a missing-column warning to show.</summary>
+    public bool HasMissing => MissingText.Length > 0;
+
+    /// <summary>Tooltip of the {} badge.</summary>
+    public string BoundTip => HasMissing ? MissingText : Loc.Get("Fields.Bound", FullText);
+
     /// <summary>Tooltip of the row: the full text when the element has one, otherwise its name.</summary>
     public string ToolTipText => FullText.Length > 0 ? FullText : Name;
 
@@ -100,6 +108,12 @@ public sealed partial class MainViewModel : ObservableObject
         Data = new DataMergeViewModel(services.Printing, Printer, () => Session.Document, () => DocumentName, services.Files, services.Messages, services.Database, services.Dialogs);
         Data.SettingsEdited += (_, _) => Session.MarkDirty();
         Data.PreviewDataChanged += (_, _) => OnPreviewDataChanged();
+        Fields = new FieldsViewModel(Session, Commands, Data, services.Messages, text => StatusMessage = text, () => services.Dialogs.ShowDataWindow(Data));
+        Data.Fields = Fields;
+        Properties.AttachFields(Fields);
+        Properties.AttachBuilders(vm => services.Dialogs.ShowQrContentBuilder(vm), vm => services.Dialogs.ShowGs1Builder(vm));
+        // Data loaded, replaced or cleared, or a mapping changed: the "no such column" markers of the Objects list follow.
+        Fields.FieldsChanged += (_, _) => RefreshLayers();
         Data.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName is nameof(DataMergeViewModel.RecordCount) or nameof(DataMergeViewModel.CurrentIndex) or nameof(DataMergeViewModel.HasData))
@@ -153,6 +167,9 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Printer and printer profile fields (shared by the Print dialog and the Data window).</summary>
     public PrinterSettingsViewModel Printer { get; }
 
+    /// <summary>The fields that can be put into the label (data columns, counters, label variables); shared by the property panel and the Data window.</summary>
+    public FieldsViewModel Fields { get; }
+
     /// <summary>The data merge: loaded table, mapping, record navigator, counters and batch actions.</summary>
     public DataMergeViewModel Data { get; }
 
@@ -163,7 +180,6 @@ public sealed partial class MainViewModel : ObservableObject
     {
         Toolbox.Clear();
         Toolbox.Add(new ToolboxItem(ToolboxKind.Text, "Tool.Text", "T"));
-        Toolbox.Add(new ToolboxItem(ToolboxKind.DataField, "Tool.DataField", "{}"));
         Toolbox.Add(new ToolboxItem(ToolboxKind.Barcode, "Tool.Barcode", "|||"));
         Toolbox.Add(new ToolboxItem(ToolboxKind.QrCode, "Tool.QrCode", "QR"));
         Toolbox.Add(new ToolboxItem(ToolboxKind.Box, "Tool.Box", "▭"));
@@ -321,21 +337,38 @@ public sealed partial class MainViewModel : ObservableObject
     {
         // The data binding must see the new document first, so the preview data below already matches it.
         Data.OnDocumentChanged();
+        Fields.Refresh();
         Preview.Data = Data.CurrentData;
         RefreshZplView();
 
+        RefreshLayers(force: true);
+        UpdateTitle();
+        NotifyPresentation();
+        RefreshCommandStates();
+    }
+
+    private List<LayerItem> BuildLayers() =>
+        Session.Document.Elements.AsEnumerable().Reverse()
+            .Select(e => new LayerItem(e.Id, PropertyPanelViewModel.ElementDisplayName(e), TypeTagOf(e), DetailOf(e), FullTextOf(e), FieldsViewModel.IsBound(e), Fields.MissingText(e)))
+            .ToList();
+
+    /// <summary>
+    /// Rebuilds the Objects list. Unless forced, the list is only touched when something it shows changed, so moving through the records
+    /// does not rebuild it (which would reset the list box on every click of the navigator).
+    /// </summary>
+    private void RefreshLayers(bool force = false)
+    {
+        var items = BuildLayers();
+        if (!force && items.SequenceEqual(Layers)) return;
         // Rebuilding the list makes the list box report "selection cleared"; that must not reach the real selection.
+        bool wasSyncing = _syncingSelection;
         _syncingSelection = true;
         try
         {
             Layers.Clear();
-            foreach (var e in Session.Document.Elements.AsEnumerable().Reverse())
-                Layers.Add(new LayerItem(e.Id, PropertyPanelViewModel.ElementDisplayName(e), TypeTagOf(e), DetailOf(e), FullTextOf(e)));
+            foreach (var item in items) Layers.Add(item);
         }
-        finally { _syncingSelection = false; }
-        UpdateTitle();
-        NotifyPresentation();
-        RefreshCommandStates();
+        finally { _syncingSelection = wasSyncing; }
     }
 
     /// <summary>The record shown on the canvas changed (navigator, mapping, counters): redraw and regenerate the ZPL view.</summary>
@@ -352,7 +385,6 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Short kind of an element in the layers list and the properties heading.</summary>
     public static string TypeTagOf(LabelElement e) => e switch
     {
-        DataFieldElement => Loc.Get("Tool.DataField"),
         TextElement => Loc.Get("Tool.Text"),
         BarcodeElement { Symbology: BarcodeSymbology.QrCode } => Loc.Get("Tool.QrCode"),
         BarcodeElement b => Loc.EnumName(b.Symbology),
@@ -1034,7 +1066,10 @@ public sealed partial class MainViewModel : ObservableObject
             int target = Math.Min(bitmap.Width, Math.Max(32, doc.WidthDots / 2));
             image.WidthDots = target;
         }
-        Commands.Add(element, ElementFactory.EnsureVariable(kind, Loc.Get("Element.DefaultSample")));
+        // A new QR code starts in the content builder; Cancel keeps the plain example code. Applying changes the element before it is
+        // added, so the whole thing is one undo step.
+        if (element is BarcodeElement { Symbology: BarcodeSymbology.QrCode } qr) Properties.PrepareNewQr(qr);
+        Commands.Add(element);
         StatusMessage = Loc.Get("Status.Added", PropertyPanelViewModel.ElementDisplayName(element));
     }
 

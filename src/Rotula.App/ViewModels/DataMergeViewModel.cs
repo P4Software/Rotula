@@ -562,6 +562,22 @@ public sealed partial class DataMergeViewModel : OperationViewModel
         RaisePreviewChanged();
     }
 
+    /// <summary>The fields of the loaded data, counters and label variables, for the "Add to label" buttons of the Variables tab. Set by the main view-model.</summary>
+    public FieldsViewModel? Fields { get; set; }
+
+    /// <summary>
+    /// Makes <paramref name="placeholder"/> read from <paramref name="column"/>. Used when a column's own name cannot be a placeholder
+    /// (spaces, accents) and the field picker wrote a cleaned-up name for it. The match is saved with the label, like any other mapping.
+    /// </summary>
+    public void EnsureColumnMapping(string placeholder, string column)
+    {
+        if (_overrides.TryGetValue(placeholder, out var existing) && string.Equals(existing, column, StringComparison.OrdinalIgnoreCase)) return;
+        _overrides[placeholder] = column;
+        RaiseSettingsEdited();
+        Rebind();
+        RaisePreviewChanged();
+    }
+
     /// <summary>Called when the open label changed; rebuilds the mapping only when the placeholders changed.</summary>
     public void OnDocumentChanged() => Rebind();
 

@@ -25,7 +25,11 @@ public sealed partial class ConnectionManagerViewModel : ObservableObject
     private readonly IFileDialogService _files;
     private readonly ProviderRegistry _registry;
     private readonly Func<IReadOnlyCollection<string>> _installedDrivers;
+    private readonly Func<IReadOnlyList<OdbcDataSourceInfo>> _dataSources;
     private CancellationTokenSource? _cts;
+    private CancellationTokenSource? _listCts;
+    // Bumped whenever what a loaded list depends on (server, sign-in, engine) changes; a result that finishes under an older number is dropped.
+    private int _listGeneration;
     private bool _loading;
     private bool _syncingEngine;
     private SavedConnection? _editing;
@@ -39,14 +43,16 @@ public sealed partial class ConnectionManagerViewModel : ObservableObject
     /// <param name="files">File and folder pickers.</param>
     /// <param name="registry">The engines on offer; defaults to <see cref="ProviderRegistry.Default"/>.</param>
     /// <param name="installedDrivers">Lists the ODBC drivers installed on this computer (for the "driver missing" hint); defaults to the registry lookup.</param>
+    /// <param name="dataSources">Lists the ODBC data sources (DSN) installed on this computer for the data source drop-down; defaults to the registry lookup.</param>
     public ConnectionManagerViewModel(IDatabaseServices db, IMessageService messages, IFileDialogService files, ProviderRegistry? registry = null,
-        Func<IReadOnlyCollection<string>>? installedDrivers = null)
+        Func<IReadOnlyCollection<string>>? installedDrivers = null, Func<IReadOnlyList<OdbcDataSourceInfo>>? dataSources = null)
     {
         _db = db;
         _messages = messages;
         _files = files;
         _registry = registry ?? ProviderRegistry.Default;
         _installedDrivers = installedDrivers ?? (() => OdbcDriverCatalogue.GetInstalledDriverNames());
+        _dataSources = dataSources ?? (() => OdbcDataSourceCatalogue.GetDataSources());
         AuthChoices = new[]
         {
             new Choice<DatabaseAuthentication>(DatabaseAuthentication.WindowsIntegrated, "Conn.Auth.Windows"),
@@ -122,6 +128,8 @@ public sealed partial class ConnectionManagerViewModel : ObservableObject
     private void ApplyEngine(EngineEntry? engine, bool reset)
     {
         if (engine is null) return;
+        // A list loaded for the previous engine (or still loading) does not apply to this one.
+        InvalidateLists();
         _preset = engine.IsPreset ? _registry.FindPreset(engine.Id) : null;
         _descriptor = _registry.TryGet(engine.ProviderId);
         _syncingEngine = true;
@@ -228,7 +236,10 @@ public sealed partial class ConnectionManagerViewModel : ObservableObject
                     {
                         // The preset says what the addresses of its service look like (its host patterns).
                         HostPatterns = option.Key == ProviderOptionKeys.Host && _preset is { HostPatterns.Count: > 0 } hp ? hp.HostPatterns.Take(2).ToArray() : Array.Empty<string>(),
+                        // The engine's descriptor decides which fields can offer a list (databases of the server, installed data sources).
+                        Lookup = OptionLookups.For(_descriptor, option),
                     };
+                    if (field.HasLookup) field.ConfigureLookup(LoadListAsync, StopList, () => CanLoadList(field), LookupHint);
                     (advanced ? AdvancedFields : field.IsBool ? SwitchFields : Fields).Add(field);
                 }
             }
@@ -317,6 +328,145 @@ public sealed partial class ConnectionManagerViewModel : ObservableObject
             foreach (var f in SwitchFields) f.Refresh();
             foreach (var f in AdvancedFields) f.Refresh();
         }
+        // Whatever decides WHICH server answers, or who asks, changes what a loaded list means: drop it (and stop a load in flight). The
+        // database box itself is not on this list, or typing a name would wipe the names that were just loaded.
+        if (e.PropertyName is nameof(Host) or nameof(PortText) or nameof(UserName) or nameof(Authentication) or nameof(Password)
+            or nameof(Encrypt) or nameof(TrustServerCertificate) or nameof(CaCertificatePath))
+            InvalidateLists();
+        // The hint and the Load list button depend on what is filled in.
+        if (e.PropertyName is nameof(Host) or nameof(UserName) or nameof(Authentication) or nameof(Password) or nameof(HasSavedPassword)
+            or nameof(IsNew) or nameof(ShowUserFields) or nameof(IsFormAvailable))
+            RefreshLookups();
+    }
+
+    // ----------------------------------------------------------------------------------- lists for the drop-down fields
+
+    private IEnumerable<OptionFieldViewModel> LookupFields => Fields.Concat(AdvancedFields).Where(f => f.HasLookup);
+
+    private void RefreshLookups()
+    {
+        foreach (var f in LookupFields) f.RefreshLookup();
+    }
+
+    /// <summary>Stops a running load and forgets every loaded list.</summary>
+    private void InvalidateLists()
+    {
+        _listGeneration++;
+        try { _listCts?.Cancel(); }
+        catch (ObjectDisposedException) { /* the load already finished */ }
+        foreach (var f in LookupFields) f.ClearLookup();
+    }
+
+    /// <summary>Stops the list that is loading (the Stop button next to the box). The field shows "stopped"; the typed name is untouched.</summary>
+    private void StopList()
+    {
+        try { _listCts?.Cancel(); }
+        catch (ObjectDisposedException) { /* already finished */ }
+    }
+
+    /// <summary>True when the Load list button may be pressed: the server and, for a user name sign-in, the user name are filled in.</summary>
+    private bool CanLoadList(OptionFieldViewModel field)
+    {
+        if (!IsFormAvailable || _descriptor is null) return false;
+        if (field.Lookup == OptionLookupKind.OdbcDataSource) return true;
+        if (string.IsNullOrWhiteSpace(Host)) return false;
+        return !ShowUserFields || !string.IsNullOrWhiteSpace(UserName);
+    }
+
+    /// <summary>
+    /// True when opening the drop-down may load the list by itself: the button's conditions plus a password to sign in with (typed, or saved
+    /// for this connection). Without one the first attempt would only fail, so the user is asked to type it instead.
+    /// </summary>
+    private bool CanAutoLoadList(OptionFieldViewModel field)
+        => CanLoadList(field) && (field.Lookup == OptionLookupKind.OdbcDataSource || !ShowUserFields || Password.Length > 0 || (!IsNew && HasSavedPassword && _editing is not null));
+
+    /// <summary>Called when a list drop-down opens: loads the list once, if everything it needs is already filled in.</summary>
+    /// <param name="field">The field whose drop-down opened.</param>
+    public void OnLookupOpened(OptionFieldViewModel field) => field.RequestAutoLoad(() => CanAutoLoadList(field));
+
+    private string LookupHint(OptionFieldViewModel field)
+    {
+        if (field.Lookup == OptionLookupKind.OdbcDataSource) return Loc.Get("Conn.Dsn.Hint");
+        if (!CanLoadList(field)) return Loc.Get("Conn.Db.Hint.NeedServer");
+        if (!CanAutoLoadList(field)) return Loc.Get("Conn.Db.Hint.NeedPassword");
+        return Loc.Get("Conn.Db.Hint");
+    }
+
+    private async Task LoadListAsync(OptionFieldViewModel field)
+    {
+        if (field.IsLoadingList) return;
+        if (field.Lookup == OptionLookupKind.OdbcDataSource)
+        {
+            await LoadDataSourcesAsync(field);
+            return;
+        }
+        if (!TryBuildSettings(out var settings, forTest: true)) return;
+        // Same password rules as the Test button: a typed one wins, a saved one only for an edit the store allows.
+        string? passwordArg = ResolvePasswordArgument(settings);
+        int generation = _listGeneration;
+        using var cts = new CancellationTokenSource();
+        _listCts = cts;
+        field.BeginLoad();
+        try
+        {
+            var result = await _db.ListDatabasesAsync(settings, passwordArg, cts.Token);
+            if (generation != _listGeneration) return; // the server or sign-in changed meanwhile: the answer belongs to the old form
+            if (!result.Supported)
+            {
+                field.EndLoad(Array.Empty<LookupItem>(), () => Loc.Get("Conn.Db.NotSupported"), false);
+                return;
+            }
+            // The user's own databases first, then the engine's (master, mysql...), each group already sorted by name.
+            var items = result.Databases.Where(d => !d.IsSystem).Concat(result.Databases.Where(d => d.IsSystem)).Select(d => new LookupItem(d.Name, d.IsSystem)).ToList();
+            int count = items.Count;
+            Func<string> message = count == 0 ? () => Loc.Get("Conn.Db.None")
+                : result.Truncated ? () => Loc.Get("Conn.Db.Truncated", count.ToString("N0", CultureInfo.CurrentCulture))
+                : () => Loc.Get("Conn.Db.Loaded", count.ToString("N0", CultureInfo.CurrentCulture));
+            field.EndLoad(items, message, false);
+        }
+        catch (OperationCanceledException)
+        {
+            if (generation == _listGeneration) field.EndLoad(null, () => Loc.Get("Conn.Db.Stopped"), false);
+        }
+        catch (DatabaseException ex)
+        {
+            if (generation != _listGeneration) return;
+            if (ex.IsCancellation) field.EndLoad(null, () => Loc.Get("Conn.Db.Stopped"), false);
+            else if (ex.Key == ProviderKeys.PasswordReenterRequired)
+            {
+                // The saved password may not follow an edit of the server or account: ask for it again instead of guessing.
+                field.EndLoad(null, () => Loc.Get("Conn.Db.RetypePassword"), true);
+                PasswordFocusRequested?.Invoke(this, EventArgs.Empty);
+            }
+            else field.EndLoad(null, () => DescribeListFailure(ex), true);
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            // Anything unexpected is shown without its message text, which could echo a connection detail.
+            if (generation == _listGeneration) field.EndLoad(null, () => Loc.Get("Conn.Db.ListFailed", Loc.Get("Data.Error.Unknown", ex.GetType().Name)), true);
+        }
+        finally
+        {
+            if (ReferenceEquals(_listCts, cts)) _listCts = null;
+        }
+    }
+
+    /// <summary>One plain sentence for a failed list: what happened and that typing the name still works.</summary>
+    private static string DescribeListFailure(DatabaseException ex)
+        => ex.Key is DataKeys.PermissionDenied or DataKeys.QueryFailed
+            ? Loc.Get("Conn.Db.ListFailed.Permission")
+            : Loc.Get("Conn.Db.ListFailed", DataMessages.Describe(ex));
+
+    private async Task LoadDataSourcesAsync(OptionFieldViewModel field)
+    {
+        int generation = _listGeneration;
+        field.BeginLoad();
+        IReadOnlyList<OdbcDataSourceInfo> found;
+        try { found = await Task.Run(() => _dataSources()); }
+        catch (Exception ex) when (ex is not OutOfMemoryException) { found = Array.Empty<OdbcDataSourceInfo>(); }
+        if (generation != _listGeneration) return;
+        var items = found.Select(d => new LookupItem(d.Name, false, d.Driver)).ToList();
+        field.EndLoad(items, items.Count == 0 ? () => Loc.Get("Conn.Dsn.None") : null, false);
     }
 
     // ----------------------------------------------------------------------------------- list
@@ -567,6 +717,7 @@ public sealed partial class ConnectionManagerViewModel : ObservableObject
         }
         finally { _loading = was; }
         OnPropertyChanged(nameof(ShowUserFields));
+        InvalidateLists();
         ClearTestResult();
         SetFormError(string.Empty);
         PasswordCleared?.Invoke(this, EventArgs.Empty);
@@ -631,6 +782,8 @@ public sealed partial class ConnectionManagerViewModel : ObservableObject
         NotifyEngineProperties();
         OnPropertyChanged(nameof(ShowUserFields));
         foreach (var f in Fields.Concat(SwitchFields).Concat(AdvancedFields)) f.Refresh();
+        // Another saved connection: a list loaded for the previous one must not carry over.
+        InvalidateLists();
         ClearTestResult();
         SetFormError(string.Empty);
         PasswordCleared?.Invoke(this, EventArgs.Empty);
@@ -820,26 +973,32 @@ public sealed partial class ConnectionManagerViewModel : ObservableObject
         ShowTrustOffer = false;
     }
 
+    /// <summary>
+    /// The password argument for <c>OpenWithSettingsAsync</c>, shared by the Test button and the database list so both follow one policy:
+    ///  - one typed in the box wins;
+    ///  - a sign-in without a password, or an ODBC string that carries its own PWD=, needs none ("" = explicitly no password);
+    ///  - otherwise the saved one (null), but only when editing a saved connection under its own name: the store then decides whether the
+    ///    edit still allows it (it refuses when the address or account changed). A new or unnamed form never borrows a saved
+    ///    password, so the placeholder name "test" cannot pick up the password of a real connection called "test".
+    /// </summary>
+    private string? ResolvePasswordArgument(DatabaseConnectionSettings settings)
+    {
+        bool odbcString = IsOdbc && settings.OdbcConnectionString is not null;
+        bool ownPassword = odbcString && SecretRedactor.ExtractPassword(settings.OdbcConnectionString!).Password is not null;
+        bool wantsPassword = settings.Authentication == DatabaseAuthentication.UserPassword || odbcString;
+        if (Password.Length > 0 && wantsPassword) return Password;
+        if (!wantsPassword || ownPassword) return string.Empty;
+        if (!IsNew && HasSavedPassword && _editing is not null) return null;
+        return string.Empty;
+    }
+
     /// <summary>Opens a connection with the values in the form and closes it again. Nothing is saved.</summary>
     [RelayCommand(CanExecute = nameof(CanAct))]
     public async Task TestAsync()
     {
         if (!TryBuildSettings(out var settings, forTest: true)) return;
         ShowTrustOffer = false;
-        // Which password goes with the test:
-        //  - one typed in the box wins;
-        //  - a sign-in without a password, or an ODBC string that carries its own PWD=, needs none ("" = explicitly no password);
-        //  - otherwise the saved one, but only when editing a saved connection under its own name: the store then decides whether the
-        //    edit still allows it (it refuses when the address or account changed). A new or unnamed form never borrows a saved
-        //    password, so the placeholder name "test" cannot pick up the password of a real connection called "test".
-        bool odbcString = IsOdbc && settings.OdbcConnectionString is not null;
-        bool ownPassword = odbcString && SecretRedactor.ExtractPassword(settings.OdbcConnectionString!).Password is not null;
-        bool wantsPassword = settings.Authentication == DatabaseAuthentication.UserPassword || odbcString;
-        string? passwordArg;
-        if (Password.Length > 0 && wantsPassword) passwordArg = Password;
-        else if (!wantsPassword || ownPassword) passwordArg = string.Empty;
-        else if (!IsNew && HasSavedPassword && _editing is not null) passwordArg = null;
-        else passwordArg = string.Empty;
+        string? passwordArg = ResolvePasswordArgument(settings);
         await RunAsync(Loc.Get("Conn.Busy.Testing"), async ct =>
         {
             IDatabaseSource source = await _db.Connections.OpenWithSettingsAsync(settings, passwordArg, ct);
@@ -885,6 +1044,7 @@ public sealed partial class ConnectionManagerViewModel : ObservableObject
     {
         try { _cts?.Cancel(); }
         catch (ObjectDisposedException) { /* already finished */ }
+        StopList();
     }
 
     private async Task RunAsync(string busyText, Func<CancellationToken, Task> work)

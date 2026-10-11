@@ -70,3 +70,20 @@ never ship without it. When a new non-permissive component is added, add its pac
 > text with the component licence were written by the developers, not by a legal professional. This page does not claim that
 > it satisfies the licence terms of the component (for example the requirement to bind end users to terms at least as protective
 > as Microsoft's, or the indemnity). Have the exact text reviewed before the project is promoted beyond early adopters.
+
+## Logo and icons
+
+The logo, the application and document icons, the installer images and the GitHub social preview are drawn from code by
+`tools/brand` and the results are committed, so a normal build never needs the generator. To change the artwork, edit the
+drawing in `tools/brand`, double-click `tools\brand\Regenerate-Brand.cmd` and commit the files it rewrites (running it twice
+gives identical files). The generated files are:
+
+- `src/Rotula.App/Assets/rotula.ico` (application), `rotula-document.ico` (`.rotula` files) and
+  `src/Rotula.Mcp/Assets/rotula-mcp.ico` (the MCP server uses the same mark as the app);
+- `src/Rotula.App/Resources/Brand.xaml` (the same mark as WPF vector images for the title bars, About and start screen);
+- `docs/images/logo.svg`, `logo-wordmark.svg`, `logo-wordmark-dark.svg`, `logo-512.png`, `social-preview.png`
+  (upload the last one under the repository's Settings, Social preview);
+- `packaging/installer/assets/*.bmp` (installer images for 100 to 250 percent scaling).
+
+Windows keeps its own icon cache. After installing a build with new icons, an old icon may still show in Explorer, the taskbar
+or the Start menu until the cache is rebuilt: restart Explorer, or sign out and in again.

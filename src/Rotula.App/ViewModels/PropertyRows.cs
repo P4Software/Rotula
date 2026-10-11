@@ -5,6 +5,11 @@ using Rotula.App.Localization;
 
 namespace Rotula.App.ViewModels;
 
+/// <summary>The second line of a row: a text and whether it is a warning.</summary>
+/// <param name="Text">The text.</param>
+/// <param name="IsWarning">True to show it in the warning colour.</param>
+public sealed record RowDetail(string Text, bool IsWarning = false);
+
 /// <summary>
 /// One editable line of the property panel. Rows read and write through delegates that look the element up by id at the
 /// moment they run, because undo/redo replaces the element objects in the document.
@@ -40,6 +45,39 @@ public abstract partial class PropertyRow : ObservableObject
     /// <summary>Set when changing this row changes which other rows exist (for example the symbology), so the panel rebuilds.</summary>
     public bool RebuildOnChange { get; init; }
 
+    private Func<RowDetail?>? _detailSource;
+
+    /// <summary>
+    /// Optional second line under the row's editor (for example the printed size of a QR module, or how full a QR code is). It is re-read
+    /// on every refresh, so it follows the document without rebuilding the panel. Keeping it inside the row (instead of a separate note
+    /// row) keeps the number of rows per barcode option equal to the catalogue.
+    /// </summary>
+    public Func<RowDetail?>? DetailSource
+    {
+        get => _detailSource;
+        init { _detailSource = value; RefreshDetail(); }
+    }
+
+    /// <summary>The second line shown under the editor; empty when there is none.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasDetail))]
+    private string _detail = string.Empty;
+
+    /// <summary>True when <see cref="Detail"/> is a warning (shown in the warning colour).</summary>
+    [ObservableProperty]
+    private bool _detailIsWarning;
+
+    /// <summary>True when there is a second line to show.</summary>
+    public bool HasDetail => Detail.Length > 0;
+
+    /// <summary>Re-reads <see cref="DetailSource"/>.</summary>
+    protected void RefreshDetail()
+    {
+        var d = _detailSource?.Invoke();
+        Detail = d?.Text ?? string.Empty;
+        DetailIsWarning = d?.IsWarning ?? false;
+    }
+
     /// <summary>Re-reads the value from the document (after undo, redo or an edit elsewhere).</summary>
     public abstract void Refresh();
 }
@@ -64,6 +102,9 @@ public sealed partial class IntRow : PropertyRow
         _get = get; _set = set; _min = min; _max = max; _nullable = nullable; _rangeIssueKey = rangeIssueKey;
         _text = Format(get());
     }
+
+    /// <summary>True to give the row a whole line instead of sharing it with the next number (used when it carries a longer second line).</summary>
+    public bool FullWidth { get; init; }
 
     /// <summary>The text in the box.</summary>
     [ObservableProperty]
@@ -108,6 +149,7 @@ public sealed partial class IntRow : PropertyRow
     /// <inheritdoc />
     public override void Refresh()
     {
+        RefreshDetail();
         // Do not overwrite what the user is typing while it is invalid or equal in value.
         if (HasError) return;
         string current = Format(_get());
@@ -169,34 +211,106 @@ public sealed partial class DoubleRow : PropertyRow
     }
 }
 
-/// <summary>Free text (one or several lines).</summary>
+/// <summary>
+/// Free text (one or several lines). A row can also be the content of a text element or a barcode: with <see cref="Fields"/> set it
+/// offers the field binding controls (a fixed value, one field shown as a chip, or text that mixes both).
+/// </summary>
 public sealed partial class TextRow : PropertyRow
 {
     private readonly Func<string> _get;
     private readonly Action<string> _set;
+    private readonly Action<string, string>? _setDiscrete;
+    private readonly Func<string>? _warning;
     private readonly int _maxLength;
     private readonly Func<string, string?>? _validate;
     private bool _applying;
+    private bool _discrete;
+    private string _discreteKey = "Undo.InsertField";
 
     /// <summary>Creates a row. <paramref name="validate"/> returns a plain-language problem, or null when the text is fine.</summary>
+    /// <param name="labelKey">Resource key of the label.</param>
+    /// <param name="get">Reads the value.</param>
+    /// <param name="set">Writes the value while the user types (steps merge into one undo step).</param>
+    /// <param name="multiline">True for a tall, multi-line box.</param>
+    /// <param name="maxLength">Longest text allowed, or 0.</param>
+    /// <param name="hintKey">Resource key of the tool tip.</param>
+    /// <param name="validate">Returns a problem text, or null.</param>
+    /// <param name="fields">The available fields; when set the row is a field target (binding switch, Insert field, autocomplete).</param>
+    /// <param name="setDiscrete">Writes a value as its own undo step, given the value and the resource key of the step (insert, bind and unbind use it).</param>
+    /// <param name="warning">Returns the "no such column" warning for the row's element, or an empty string.</param>
     public TextRow(string labelKey, Func<string> get, Action<string> set, bool multiline = false, int maxLength = 0, string? hintKey = null,
-        Func<string, string?>? validate = null)
+        Func<string, string?>? validate = null, FieldsViewModel? fields = null, Action<string, string>? setDiscrete = null, Func<string>? warning = null)
         : base(labelKey, hintKey)
     {
         _get = get; _set = set; _maxLength = maxLength; _validate = validate;
+        _setDiscrete = setDiscrete; _warning = warning;
+        Fields = fields;
         IsMultiline = multiline;
         _text = get();
+        _warningText = warning?.Invoke() ?? string.Empty;
     }
 
     /// <summary>True for a tall, multi-line box.</summary>
     public bool IsMultiline { get; }
 
+    private Action? _action;
+
+    /// <summary>Caption of an extra button under the box (for example "Content builder..."), or null when the row has none.</summary>
+    public string? ActionCaption { get; private set; }
+
+    /// <summary>True when the row has the extra button.</summary>
+    public bool HasAction => ActionCaption is not null;
+
+    /// <summary>Adds the extra button under the box and returns the row.</summary>
+    public TextRow WithAction(string caption, Action action)
+    {
+        ActionCaption = caption;
+        _action = action;
+        return this;
+    }
+
+    /// <summary>Runs the extra button's action.</summary>
+    [RelayCommand]
+    private void RunAction() => _action?.Invoke();
+
+    /// <summary>The available fields, or null when the row is plain text with no field controls.</summary>
+    public FieldsViewModel? Fields { get; }
+
+    /// <summary>True when the row offers the field controls.</summary>
+    public bool IsFieldTarget => Fields is not null;
+
     /// <summary>The text.</summary>
     [ObservableProperty]
     private string _text;
 
+    /// <summary>The "no column called X in the loaded data" warning, or empty.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasWarning))]
+    private string _warningText;
+
+    /// <summary>True when there is a warning to show.</summary>
+    public bool HasWarning => WarningText.Length > 0;
+
+    /// <summary>The field the whole content is bound to (<c>Sku</c>), or null for fixed text or text that mixes fields.</summary>
+    public string? BoundToken => FieldNaming.FindBinding(Text);
+
+    /// <summary>The value of the bound field in the record shown on the canvas, for the chip; empty when unknown.</summary>
+    public string BoundSample => BoundToken is { } t && Fields?.Find(t) is { HasRecord: true } f ? f.SampleText : string.Empty;
+
+    /// <summary>Tool tip of the chip.</summary>
+    public string BoundTip => BoundToken is not { } t ? string.Empty : BoundSample.Length > 0 ? Loc.Get("Fields.Sample.Label", BoundSample) : Loc.Get("Fields.Chip.Tip", t);
+
+    /// <summary>True when the content is exactly one field.</summary>
+    public bool IsBound => IsFieldTarget && BoundToken is not null;
+
+    /// <summary>True when the content is not a single field (the text box is shown).</summary>
+    public bool IsFixed => !IsBound;
+
     partial void OnTextChanged(string value)
     {
+        NotifyBinding();
+        OnPropertyChanged(nameof(IsBound));
+        OnPropertyChanged(nameof(IsFixed));
         if (_applying) return;
         if (_maxLength > 0 && value.Length > _maxLength)
         {
@@ -210,12 +324,68 @@ public sealed partial class TextRow : PropertyRow
             return;
         }
         Error = string.Empty;
-        if (_get() != value) _set(value);
+        if (_get() == value) return;
+        if (_discrete && _setDiscrete is not null) _setDiscrete(value, _discreteKey);
+        else _set(value);
+    }
+
+    private void NotifyBinding()
+    {
+        OnPropertyChanged(nameof(BoundToken));
+        OnPropertyChanged(nameof(BoundSample));
+        OnPropertyChanged(nameof(BoundTip));
+    }
+
+    private void CommitDiscrete(string value, string undoKey)
+    {
+        // Why a flag instead of calling the setter directly: the text box, the validation and the properties all react to Text.
+        _discrete = true;
+        _discreteKey = undoKey;
+        try { Text = value; }
+        finally { _discrete = false; }
+    }
+
+    /// <summary>
+    /// Replaces <paramref name="length"/> characters from <paramref name="start"/> with <paramref name="insert"/> as one undo step of its own
+    /// (it never merges with typing). Returns the caret position after the inserted text.
+    /// </summary>
+    public int ReplaceRange(int start, int length, string insert)
+    {
+        string t = Text;
+        start = Math.Clamp(start, 0, t.Length);
+        length = Math.Clamp(length, 0, t.Length - start);
+        CommitDiscrete(t[..start] + insert + t[(start + length)..], "Undo.InsertField");
+        return start + insert.Length;
+    }
+
+    /// <summary>Inserts a field's <c>{{placeholder}}</c> at the caret, replacing the selection. Returns the caret position after it.</summary>
+    public int InsertField(FieldItem field, int selectionStart, int selectionLength)
+    {
+        Fields?.EnsureMapping(field);
+        return ReplaceRange(selectionStart, selectionLength, field.Placeholder);
+    }
+
+    /// <summary>Makes the whole content the field (a pure binding).</summary>
+    public void BindTo(FieldItem field)
+    {
+        Fields?.EnsureMapping(field);
+        CommitDiscrete(field.Placeholder, "Undo.InsertField");
+    }
+
+    /// <summary>Back to a fixed value: the field's current sample value, or its name when there is none.</summary>
+    [RelayCommand]
+    private void Unbind()
+    {
+        if (BoundToken is not { } token) return;
+        string sample = Fields?.Find(token)?.Sample ?? string.Empty;
+        CommitDiscrete(sample.Length > 0 ? sample : token.TrimStart('#'), "Undo.UnbindField");
     }
 
     /// <inheritdoc />
     public override void Refresh()
     {
+        if (_warning is not null) WarningText = _warning();
+        NotifyBinding(); // the sample under the chip follows the record shown on the canvas
         if (HasError) return;
         string current = _get();
         if (current == Text) return;
@@ -309,6 +479,7 @@ public partial class ChoiceRow : PropertyRow
     /// <inheritdoc />
     public override void Refresh()
     {
+        RefreshDetail();
         var item = Find(_get());
         if (ReferenceEquals(item, Selected)) return;
         _applying = true;

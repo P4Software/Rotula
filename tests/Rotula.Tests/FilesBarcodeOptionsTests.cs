@@ -119,7 +119,7 @@ public class FilesBarcodeOptionsTests
     [Fact]
     public void AFileNewerThanThisBuild_IsStillRefused()
     {
-        var ex = Assert.Throws<RotulaFileException>(() => RotulaFileSerializer.Deserialize("{\"formatVersion\":7}"));
+        var ex = Assert.Throws<RotulaFileException>(() => RotulaFileSerializer.Deserialize("{\"formatVersion\":" + (RotulaFileSerializer.CurrentFormatVersion + 1) + "}"));
         Assert.Equal("File.Error.NewerVersion", ex.MessageKey);
     }
 }

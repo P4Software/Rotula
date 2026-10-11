@@ -11,3 +11,9 @@ artifacts/
 
 # Per-developer release build settings (created by packaging/installer/build-installer.ps1)
 packaging/installer/build-settings.json
+
+# Integration-test server downloads and scratch data live under %LOCALAPPDATA%\Rotula\test-servers, outside the repository;
+# these patterns only protect against a copy made by hand inside the tree.
+test-servers/
+tests/Rotula.Data.Integration/servers/*.zip
+tests/Rotula.Data.Integration/servers/run/

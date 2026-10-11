@@ -20,6 +20,8 @@ public class DialogWindow : Window
     public DialogWindow()
     {
         SetResourceReference(StyleProperty, "DialogWindow");
+        // Alt-Tab and the taskbar show this icon even though the title bar is drawn by the template.
+        Icon = BrandIcon.Source;
         // WindowStyle=None removes the system caption buttons, so the template draws its own; a Window handles SystemCommands only when asked to.
         CommandBindings.Add(new CommandBinding(SystemCommands.CloseWindowCommand, (_, _) => SystemCommands.CloseWindow(this)));
         CommandBindings.Add(new CommandBinding(SystemCommands.MinimizeWindowCommand, (_, _) => SystemCommands.MinimizeWindow(this)));

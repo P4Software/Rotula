@@ -1,0 +1,11 @@
+{
+  "_help": "Template for settings.json. Copy it to settings.json (the first run of the tool does this for you), fill in the path, save, and run Rebuild-Gs1Dictionary.cmd.",
+  "dictionaryPath": "",
+  "_dictionaryPath_help": "Full path of gs1-syntax-dictionary.txt from a release of https://github.com/gs1/gs1-syntax-dictionary (Apache-2.0). Download the release zip, unpack it anywhere, and point to the .txt file inside. The tool only reads this file.",
+  "descriptionsPath": "descriptions.json",
+  "_descriptionsPath_help": "Rotula's own long English names for the common identifiers. A relative path is relative to this script.",
+  "outputPath": "../../src/Rotula.Core/Gs1/Data/gs1-dictionary.json",
+  "_outputPath_help": "Where the result is written. A relative path is relative to this script.",
+  "pauseAtEnd": true,
+  "_pauseAtEnd_help": "True keeps the window open until you press Enter, so the result can be read."
+}

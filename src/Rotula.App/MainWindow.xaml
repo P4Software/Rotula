@@ -67,7 +67,6 @@
       <Setter Property="Height" Value="22" />
       <Style.Triggers>
         <DataTrigger Binding="{Binding Kind}" Value="Text"><Setter Property="Data" Value="{StaticResource IconText}" /></DataTrigger>
-        <DataTrigger Binding="{Binding Kind}" Value="DataField"><Setter Property="Data" Value="{StaticResource IconDataField}" /></DataTrigger>
         <DataTrigger Binding="{Binding Kind}" Value="Barcode"><Setter Property="Data" Value="{StaticResource IconBarcode}" /></DataTrigger>
         <DataTrigger Binding="{Binding Kind}" Value="QrCode"><Setter Property="Data" Value="{StaticResource IconQr}" /></DataTrigger>
         <DataTrigger Binding="{Binding Kind}" Value="Box"><Setter Property="Data" Value="{StaticResource IconRectangle}" /></DataTrigger>
@@ -120,9 +119,8 @@
     <!-- ================================ title bar ================================ -->
     <Grid Grid.Row="0" Background="{StaticResource WindowBrush}">
       <StackPanel Orientation="Horizontal" Margin="14,0,0,0" VerticalAlignment="Center">
-        <Border Width="24" Height="24" CornerRadius="6" Background="#1F2023" AutomationProperties.Name="Rotula">
-          <Path Style="{StaticResource Icon}" Data="{StaticResource IconBarcode}" Width="14" Height="14" StrokeThickness="1.8" TextElement.Foreground="White" />
-        </Border>
+        <!-- The brand mark, pixel-tuned for 24 DIP (see Brand.xaml). -->
+        <Image Source="{StaticResource BrandMark24}" Width="24" Height="24" UseLayoutRounding="True" SnapsToDevicePixels="True" AutomationProperties.Name="Rotula" />
         <TextBlock Text="{Binding TitleBarText}" Margin="12,0,0,0" VerticalAlignment="Center" FontSize="13" FontWeight="SemiBold" />
       </StackPanel>
       <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" shell:WindowChrome.IsHitTestVisibleInChrome="True">
@@ -397,6 +395,8 @@
               AutomationProperties.Name="{loc:T Start.Name}">
         <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
           <StackPanel MaxWidth="700" Margin="32,40,32,32" VerticalAlignment="Center" HorizontalAlignment="Center">
+            <!-- Decorative brand mark (the app name is the heading below), 64 DIP so the 8-unit grid stays on whole pixels. -->
+            <Image Source="{StaticResource BrandMark}" Width="64" Height="64" HorizontalAlignment="Left" Margin="0,0,0,16" UseLayoutRounding="True" />
             <TextBlock Text="{loc:T Start.Title}" FontSize="28" FontWeight="SemiBold" AutomationProperties.HeadingLevel="Level1" />
             <TextBlock Text="{loc:T Start.Subtitle}" Style="{StaticResource MutedText}" FontSize="14" Margin="0,4,0,24" />
             <WrapPanel>
@@ -522,10 +522,32 @@
                     <Grid.ColumnDefinitions>
                       <ColumnDefinition Width="Auto" MinWidth="64" SharedSizeGroup="LayerTag" />
                       <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="{Binding TypeTag}" MaxWidth="104" Margin="0,0,12,0" FontFamily="{StaticResource MonoFont}" FontSize="11.5" Foreground="{StaticResource MutedBrush}"
                                VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                     <TextBlock Grid.Column="1" Text="{Binding Primary}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" FontWeight="Medium" />
+                    <!-- Bound to data: a small {} badge. A field with no column in the loaded data gets a quiet amber warning icon instead (never printed). -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,0,0" ToolTip="{Binding BoundTip}">
+                      <StackPanel.Style>
+                        <Style TargetType="StackPanel">
+                          <Setter Property="Visibility" Value="Collapsed" />
+                          <Style.Triggers><DataTrigger Binding="{Binding IsBound}" Value="True"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers>
+                        </Style>
+                      </StackPanel.Style>
+                      <Path Data="{StaticResource IconWarning}" Width="13" Height="13" TextElement.Foreground="{StaticResource WarningBrush}" Margin="0,0,5,0"
+                            AutomationProperties.Name="{Binding MissingText}">
+                        <Path.Style>
+                          <Style TargetType="Path" BasedOn="{StaticResource Icon}">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers><DataTrigger Binding="{Binding HasMissing}" Value="True"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers>
+                          </Style>
+                        </Path.Style>
+                      </Path>
+                      <Border Background="{StaticResource AccentTintBrush}" CornerRadius="4" Padding="4,0" AutomationProperties.Name="{loc:T Fields.Badge}">
+                        <TextBlock Text="{}{}" FontFamily="{StaticResource MonoFont}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}" />
+                      </Border>
+                    </StackPanel>
                   </Grid>
                 </DataTemplate>
               </ListBox.ItemTemplate>

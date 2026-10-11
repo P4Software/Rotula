@@ -1,5 +1,7 @@
+using System.Collections.ObjectModel;
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Rotula.App.Localization;
 using Rotula.Data;
 
@@ -148,7 +150,7 @@ public sealed class OptionFieldViewModel : ObservableObject
     public bool IsShort => Option.Kind == ProviderOptionKind.Number;
 
     /// <summary>Text, host and number boxes.</summary>
-    public bool IsTextLike => Option.Kind is ProviderOptionKind.Text or ProviderOptionKind.Host or ProviderOptionKind.Number;
+    public bool IsTextLike => !HasLookup && Option.Kind is ProviderOptionKind.Text or ProviderOptionKind.Host or ProviderOptionKind.Number;
 
     /// <summary>True for a path with a Browse button.</summary>
     public bool IsPath => Option.Kind == ProviderOptionKind.FilePath;
@@ -233,6 +235,8 @@ public sealed class OptionFieldViewModel : ObservableObject
     /// <summary>Re-reads the value after the manager changed it, or the texts after a language switch.</summary>
     public void Refresh()
     {
+        RefreshLookup();
+        foreach (var item in LookupItems) item.Refresh();
         OnPropertyChanged(nameof(Text));
         OnPropertyChanged(nameof(Flag));
         OnPropertyChanged(nameof(SelectedChoice));
@@ -247,6 +251,138 @@ public sealed class OptionFieldViewModel : ObservableObject
         foreach (var c in Choices) c.Refresh();
     }
 
+    // ----------------------------------------------------------------------------------- list lookup (editable drop-down)
+
+    private Func<OptionFieldViewModel, Task>? _load;
+    private Action? _stop;
+    private Func<bool>? _canLoad;
+    private Func<OptionFieldViewModel, string>? _hint;
+    private Func<string>? _message;
+    private bool _isLoadingList;
+    private bool _messageIsError;
+
+    /// <summary>The kind of list this field can load next to its text box; <see cref="OptionLookupKind.None"/> for a plain box.</summary>
+    public OptionLookupKind Lookup { get; init; }
+
+    /// <summary>True when the field is an editable drop-down with a "Load list" button instead of a plain box.</summary>
+    public bool HasLookup => Lookup != OptionLookupKind.None;
+
+    /// <summary>The names offered by the drop-down: the user's databases first, then the engine's own ones.</summary>
+    public ObservableCollection<LookupItem> LookupItems { get; } = new();
+
+    /// <summary>True once a load finished (with or without an error) for the current server and sign-in; the drop-down then stops loading by itself.</summary>
+    public bool LookupAttempted { get; private set; }
+
+    /// <summary>True while the list is being read; shows the busy bar and the Stop button.</summary>
+    public bool IsLoadingList
+    {
+        get => _isLoadingList;
+        private set
+        {
+            if (SetProperty(ref _isLoadingList, value))
+            {
+                OnPropertyChanged(nameof(IsNotLoadingList));
+                LoadListCommand.NotifyCanExecuteChanged();
+                StopListCommand.NotifyCanExecuteChanged();
+            }
+        }
+    }
+
+    /// <summary>The opposite of <see cref="IsLoadingList"/>.</summary>
+    public bool IsNotLoadingList => !_isLoadingList;
+
+    /// <summary>The "Load list" button.</summary>
+    public AsyncRelayCommand LoadListCommand { get; private set; } = new(() => Task.CompletedTask);
+
+    /// <summary>The "Stop" button, only active while loading.</summary>
+    public RelayCommand StopListCommand { get; private set; } = new(() => { });
+
+    /// <summary>The line under the box: the outcome of the last load (count or plain-language error), or the hint for the current state.</summary>
+    public string LookupText => _message?.Invoke() ?? _hint?.Invoke(this) ?? string.Empty;
+
+    /// <summary>True when <see cref="LookupText"/> reports a failure (drawn in the error colour).</summary>
+    public bool LookupIsError => _message is not null && _messageIsError;
+
+    /// <summary>True when the line under the box has text.</summary>
+    public bool HasLookupText => LookupText.Length > 0;
+
+    /// <summary>True when the Load list button can be pressed (required fields filled, nothing running).</summary>
+    public bool CanLoadList => HasLookup && !_isLoadingList && (_canLoad?.Invoke() ?? false);
+
+    /// <summary>
+    /// Connects the field to the connection manager: how to load, stop, whether loading is possible now, and the hint for the current state.
+    /// The manager owns the work (cancellation, stale results, saved-password rules); the field only shows it.
+    /// </summary>
+    internal void ConfigureLookup(Func<OptionFieldViewModel, Task> load, Action stop, Func<bool> canLoad, Func<OptionFieldViewModel, string> hint)
+    {
+        _load = load;
+        _stop = stop;
+        _canLoad = canLoad;
+        _hint = hint;
+        LoadListCommand = new AsyncRelayCommand(() => _load!(this), () => CanLoadList);
+        StopListCommand = new RelayCommand(() => _stop!(), () => _isLoadingList);
+        OnPropertyChanged(nameof(LoadListCommand));
+        OnPropertyChanged(nameof(StopListCommand));
+    }
+
+    /// <summary>Called by the drop-down when it opens: loads the list once if that is allowed without asking the user for anything more.</summary>
+    /// <param name="canAutoLoad">Extra condition of the manager (a typed or saved password is available); the Load list button needs less.</param>
+    public void RequestAutoLoad(Func<bool>? canAutoLoad = null)
+    {
+        if (!HasLookup || LookupAttempted || _isLoadingList || LookupItems.Count > 0 || _load is null) return;
+        if (!(_canLoad?.Invoke() ?? false) || !(canAutoLoad?.Invoke() ?? true)) return;
+        // Fire and forget on purpose: the manager catches everything and reports it in the line under the box.
+        _ = LoadListCommand.ExecuteAsync(null);
+    }
+
+    /// <summary>Marks the start of a load.</summary>
+    internal void BeginLoad()
+    {
+        LookupAttempted = true;
+        // While reading, the line under the box says so (instead of repeating the hint to pick a name).
+        _message = () => Loc.Get("Conn.Db.Loading");
+        _messageIsError = false;
+        IsLoadingList = true;
+        RefreshLookup();
+    }
+
+    /// <summary>Shows a finished load: the items and the message line (a factory, so it follows a language switch).</summary>
+    internal void EndLoad(IEnumerable<LookupItem>? items, Func<string>? message, bool isError)
+    {
+        if (items is not null)
+        {
+            LookupItems.Clear();
+            foreach (var item in items) LookupItems.Add(item);
+        }
+        _message = message;
+        _messageIsError = isError;
+        IsLoadingList = false;
+        RefreshLookup();
+    }
+
+    /// <summary>Forgets the loaded names and any message (the server or sign-in changed, so they no longer apply).</summary>
+    internal void ClearLookup()
+    {
+        if (!HasLookup) return;
+        LookupAttempted = false;
+        _message = null;
+        if (LookupItems.Count > 0) LookupItems.Clear();
+        IsLoadingList = false;
+        RefreshLookup();
+    }
+
+    /// <summary>Re-reads the hint, message and button state.</summary>
+    public void RefreshLookup()
+    {
+        if (!HasLookup) return;
+        OnPropertyChanged(nameof(LookupText));
+        OnPropertyChanged(nameof(LookupIsError));
+        OnPropertyChanged(nameof(HasLookupText));
+        OnPropertyChanged(nameof(CanLoadList));
+        LoadListCommand.NotifyCanExecuteChanged();
+        StopListCommand.NotifyCanExecuteChanged();
+    }
+
     /// <summary>Checks a number against the option's limits; null when the text is empty or fine.</summary>
     public string? ValidateNumber()
     {
@@ -257,4 +393,36 @@ public sealed class OptionFieldViewModel : ObservableObject
         if (int.TryParse(t, NumberStyles.None, CultureInfo.InvariantCulture, out int n) && n >= min && n <= max) return null;
         return Key == ProviderOptionKeys.Port ? Loc.Get("Conn.Port.Invalid") : Loc.Get("Conn.Option.NumberInvalid", Label, min, max);
     }
+}
+
+/// <summary>One name in a field's drop-down list (a database or an ODBC data source).</summary>
+public sealed class LookupItem : ObservableObject
+{
+    /// <summary>Creates an item.</summary>
+    /// <param name="name">The name written into the box when the item is picked.</param>
+    /// <param name="isSystem">True for the engine's own databases.</param>
+    /// <param name="detail">Optional text shown next to the name instead of the system tag (the driver of a data source).</param>
+    public LookupItem(string name, bool isSystem, string? detail = null)
+    {
+        Name = name;
+        IsSystem = isSystem;
+        _detail = detail;
+    }
+
+    private readonly string? _detail;
+
+    /// <summary>The name that is written into the box when the item is picked.</summary>
+    public string Name { get; }
+
+    /// <summary>True for the engine's own databases; shown with a small tag.</summary>
+    public bool IsSystem { get; }
+
+    /// <summary>The tag shown next to a system database, or empty.</summary>
+    public string Tag => !string.IsNullOrEmpty(_detail) ? _detail : IsSystem ? Loc.Get("Conn.Lookup.SystemTag") : string.Empty;
+
+    /// <summary>Re-reads the tag after a language switch.</summary>
+    public void Refresh() => OnPropertyChanged(nameof(Tag));
+
+    /// <inheritdoc />
+    public override string ToString() => Name;
 }

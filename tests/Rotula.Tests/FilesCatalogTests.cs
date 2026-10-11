@@ -285,6 +285,10 @@ public class FilesCatalogTests
             (typeof(RawZplElement), typeof(RawZplElementDto)), (typeof(RecallPlaceholderElement), typeof(RecallPlaceholderElementDto)),
             (typeof(TextBlockOptions), typeof(TextBlockDto)), (typeof(TextBoxOptions), typeof(TextBoxDto)),
             (typeof(PrinterSerialOptions), typeof(PrinterSerialDto)), (typeof(FieldClockOptions), typeof(FieldClockDto)),
+            // Variable definitions (format version 7): every option of every kind must reach the file.
+            (typeof(Rotula.Core.Variables.DateVariableOptions), typeof(DateVariableDto)), (typeof(Rotula.Core.Variables.DateOffset), typeof(DateOffsetDto)),
+            (typeof(Rotula.Core.Variables.CounterVariableOptions), typeof(CounterVariableDto)), (typeof(Rotula.Core.Variables.PromptVariableOptions), typeof(PromptVariableDto)),
+            (typeof(Rotula.Core.Variables.ComputedVariableOptions), typeof(ComputedVariableDto)),
         };
         return pairs.Select(p => new object[] { p.Model, p.Dto });
     }

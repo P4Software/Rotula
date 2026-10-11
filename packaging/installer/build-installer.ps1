@@ -264,6 +264,9 @@ try {
   foreach ($f in 'LICENSE', 'THIRD-PARTY-NOTICES.md', 'README.md') { Copy-Item -LiteralPath (Join-Path $repo $f) -Destination $stage }
   New-Item -ItemType Directory -Force -Path (Join-Path $stage 'docs'), (Join-Path $stage 'packs') | Out-Null
   Copy-Item -LiteralPath (Join-Path $repo 'docs\mcp.md') -Destination (Join-Path $stage 'docs')
+  # The icon of .rotula documents: the installer registers it by path, and the portable zip carries it too.
+  New-Item -ItemType Directory -Force -Path (Join-Path $stage 'Assets') | Out-Null
+  Copy-Item -LiteralPath (Join-Path $repo 'src\Rotula.App\Assets\rotula-document.ico') -Destination (Join-Path $stage 'Assets')
   Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'packs-README.txt') -Destination (Join-Path $stage 'packs\README.txt')
 
   # The licence page the user must accept. Built after the publish because the restore output it reads is fresh now.

@@ -79,6 +79,25 @@ public static class ElementCloner
         return c;
     }
 
+    /// <summary>
+    /// Turns a legacy data-field element into an ordinary text element with the given content, keeping its id, position and every
+    /// text setting. Data fields are only read from old files; any edit that cannot be expressed as "one field" converts them.
+    /// </summary>
+    public static TextElement ToPlainText(DataFieldElement field, string text)
+    {
+        var plain = CopyText(new TextElement(), field);
+        CopyFieldData(field, plain);
+        plain.Text = text;
+        plain.Id = field.Id;
+        plain.Name = field.Name;
+        plain.X = field.X;
+        plain.Y = field.Y;
+        plain.OriginKind = field.OriginKind;
+        plain.Rotation = field.Rotation;
+        plain.ReverseField = field.ReverseField;
+        return plain;
+    }
+
     /// <summary>Copies the options every data field has (field number, embedding, clock, printer serialization).</summary>
     private static void CopyFieldData(FieldDataElement from, FieldDataElement to)
     {

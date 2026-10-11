@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="docs/images/logo.svg" alt="Rotula logo" width="96" height="96">
+
 # Rotula
 
 **Free barcode & label designer for Windows (ZPL)**

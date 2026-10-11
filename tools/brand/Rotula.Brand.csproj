@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Developer tool: draws the Rotula brand mark from code and rewrites every logo/icon asset in the repository
+    (ICO files, SVGs, PNGs, installer wizard images, the WPF drawing resource). Not shipped with the application.
+    The generated files are committed, so ordinary builds never need to run it.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>Rotula.Brand</RootNamespace>
+    <AssemblyName>Rotula.Brand</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- SkiaSharp: MIT. Same version as Rotula.Rendering. -->
+    <PackageReference Include="SkiaSharp" Version="4.153.1" />
+  </ItemGroup>
+
+</Project>

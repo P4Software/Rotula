@@ -66,7 +66,7 @@ public class AppLocalizationTests : IDisposable
                 used.Add(m.Groups[1].Value);
 
         // Literals in code that look like resource keys. Comment lines are skipped (they quote member names).
-        var keyShape = new Regex("\"((?:Prop|Panel|Menu|Tool|Status|Dialog|File|Undo|Element|Validation|Preview|Preset|Import|Print|Image|Issue|Document|Encoding|Layers|About|Ruler|Zpl|Toolbar|Canvas|Common|Crash|Filter|Splitter|Data|Conn|Stock|Pack)(?:\\.[A-Za-z0-9]+)+)\"");
+        var keyShape = new Regex("\"((?:Prop|Panel|Menu|Tool|Status|Dialog|File|Undo|Element|Validation|Preview|Preset|Import|Print|Image|Issue|Document|Encoding|Layers|About|Ruler|Zpl|Toolbar|Canvas|Common|Crash|Filter|Splitter|Data|Conn|Stock|Pack|Fields)(?:\\.[A-Za-z0-9]+)+)\"");
         // The .rotula serializer lives in Rotula.Files (moved out of the app); its File.Error.* keys must stay covered.
         var filesLib = Path.Combine(RepoRoot(), "src", "Rotula.Files");
         foreach (var cs in Directory.EnumerateFiles(src, "*.cs", SearchOption.AllDirectories).Concat(Directory.EnumerateFiles(filesLib, "*.cs", SearchOption.AllDirectories)).Where(f => !f.Contains(@"\obj\") && !f.Contains(@"\bin\")))

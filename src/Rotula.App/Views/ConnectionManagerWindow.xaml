@@ -33,6 +33,35 @@
                   Visibility="{Binding CanBrowse, Converter={StaticResource B2V}}" />
           <TextBox Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource MonoTextBox}" AutomationProperties.Name="{Binding Label}" />
         </DockPanel>
+        <!-- an editable drop-down: type a name, or pick one loaded from the server (databases) or this computer (ODBC data sources) -->
+        <StackPanel Visibility="{Binding HasLookup, Converter={StaticResource B2V}}">
+          <DockPanel>
+            <Button DockPanel.Dock="Right" Content="{loc:T Common.StopOperation}" Command="{Binding StopListCommand}" Margin="8,0,0,0" MinHeight="40" MinWidth="96"
+                    Visibility="{Binding IsLoadingList, Converter={StaticResource B2V}}" AutomationProperties.Name="{loc:T Common.StopOperation}" />
+            <Button DockPanel.Dock="Right" Content="{loc:T Conn.Db.LoadList}" Command="{Binding LoadListCommand}" Margin="8,0,0,0" MinHeight="40" MinWidth="96"
+                    Visibility="{Binding IsNotLoadingList, Converter={StaticResource B2V}}" AutomationProperties.Name="{loc:T Conn.Db.LoadList}" />
+            <ComboBox IsEditable="True" Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}" ItemsSource="{Binding LookupItems}" TextSearch.TextPath="Name"
+                      MaxDropDownHeight="300" DropDownOpened="OnLookupDropDownOpened" AutomationProperties.Name="{Binding Label}">
+              <ComboBox.ItemTemplate>
+                <DataTemplate>
+                  <DockPanel>
+                    <TextBlock DockPanel.Dock="Right" Text="{Binding Tag}" Style="{StaticResource MutedText}" FontSize="11.5" Margin="24,0,0,0" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                  </DockPanel>
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+          </DockPanel>
+          <ProgressBar IsIndeterminate="True" Height="3" Margin="0,6,0,0" Visibility="{Binding IsLoadingList, Converter={StaticResource B2V}}" AutomationProperties.Name="{loc:T Conn.Db.Loading}" />
+          <TextBlock Text="{Binding LookupText}" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,0" AutomationProperties.LiveSetting="Polite"
+                     Visibility="{Binding HasLookupText, Converter={StaticResource B2V}}">
+            <TextBlock.Style>
+              <Style TargetType="TextBlock" BasedOn="{StaticResource MutedText}">
+                <Style.Triggers><DataTrigger Binding="{Binding LookupIsError}" Value="True"><Setter Property="Foreground" Value="{StaticResource ErrorBrush}" /></DataTrigger></Style.Triggers>
+              </Style>
+            </TextBlock.Style>
+          </TextBlock>
+        </StackPanel>
         <ComboBox Visibility="{Binding IsChoice, Converter={StaticResource B2V}}" ItemsSource="{Binding Choices}" DisplayMemberPath="Name" SelectedValuePath="Value"
                   SelectedValue="{Binding SelectedChoice}" AutomationProperties.Name="{Binding Label}" />
         <CheckBox Visibility="{Binding IsBool, Converter={StaticResource B2V}}" Content="{Binding Label}" IsChecked="{Binding Flag}" AutomationProperties.Name="{Binding Label}" />

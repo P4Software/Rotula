@@ -147,4 +147,13 @@ public interface IToolDialogService
 
     /// <summary>Shows the connection manager modally; returns when it is closed.</summary>
     void ShowConnectionManager(Rotula.App.ViewModels.ConnectionManagerViewModel viewModel);
+
+    /// <summary>
+    /// Shows the QR content builder modally; returns true when the user applied it. The default offers no dialog, so a service that cannot show
+    /// windows (a test double) simply leaves the QR code as it is.
+    /// </summary>
+    bool ShowQrContentBuilder(Rotula.App.ViewModels.QrContentBuilderViewModel viewModel) => false;
+
+    /// <summary>Shows the GS1 builder modally; returns true when the user applied it. The default offers no dialog.</summary>
+    bool ShowGs1Builder(Rotula.App.ViewModels.Gs1BuilderViewModel viewModel) => false;
 }

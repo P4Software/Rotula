@@ -278,6 +278,7 @@ public class DpiBarcodeScalingTests
         // barcode: counts, modes, levels, ratios and the DataBar separator (measured in modules)
         ["BarcodeElement.WideBarRatio"] = "ratio",
         ["BarcodeElement.QrModel"] = "model number",
+        ["BarcodeElement.QrMask"] = "mask pattern 0-7 or -1",
         ["BarcodeElement.Columns"] = "count",
         ["BarcodeElement.Rows"] = "count",
         ["BarcodeElement.Pdf417SecurityLevel"] = "level",

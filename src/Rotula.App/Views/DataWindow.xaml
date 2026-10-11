@@ -229,6 +229,59 @@
       <TabItem Header="{loc:T Data.Tab.Mapping}" AutomationProperties.Name="{loc:T Data.Tab.Mapping}">
         <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
           <StackPanel Margin="0,16,0,8" Grid.IsSharedSizeScope="True">
+            <!-- Fields of the loaded data: put them on the label, one by one or all at once, or into the element selected on the label. -->
+            <Border x:Name="FieldsCard" Style="{StaticResource Card}" Margin="0,0,0,24" DataContext="{Binding Fields}">
+              <StackPanel>
+                <DockPanel>
+                  <Button DockPanel.Dock="Right" Content="{loc:T Fields.AddAll}" Command="{Binding AddAllFieldsCommand}" Style="{StaticResource PrimaryButton}" VerticalAlignment="Top"
+                          Margin="16,0,0,0" ToolTip="{loc:T Fields.AddAll.Tip}" AutomationProperties.Name="{loc:T Fields.AddAll}" />
+                  <StackPanel>
+                    <TextBlock Text="{loc:T Fields.Section.Title}" Style="{StaticResource SectionHeading}" AutomationProperties.HeadingLevel="Level2" />
+                    <TextBlock Text="{loc:T Fields.Section.Intro}" Style="{StaticResource MutedText}" FontSize="12" />
+                  </StackPanel>
+                </DockPanel>
+                <TextBlock Text="{Binding SelectionText}" Style="{StaticResource MutedText}" FontSize="12" Margin="0,10,0,6" AutomationProperties.LiveSetting="Polite" />
+                <TextBlock Text="{loc:T Fields.Section.Empty}" Margin="0,8,0,0">
+                  <TextBlock.Style>
+                    <Style TargetType="TextBlock" BasedOn="{StaticResource MutedText}">
+                      <Setter Property="Visibility" Value="Collapsed" />
+                      <Style.Triggers><DataTrigger Binding="{Binding HasFields}" Value="False"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers>
+                    </Style>
+                  </TextBlock.Style>
+                </TextBlock>
+                <ItemsControl ItemsSource="{Binding Fields}" AutomationProperties.Name="{loc:T Fields.Section.Title}" Grid.IsSharedSizeScope="True">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <Border BorderBrush="{StaticResource BorderBrushLight}" BorderThickness="0,1,0,0" Padding="0,8">
+                        <Grid>
+                          <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="220" SharedSizeGroup="FieldName" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                          </Grid.ColumnDefinitions>
+                          <StackPanel VerticalAlignment="Center" ToolTip="{Binding Placeholder}">
+                            <TextBlock Text="{Binding Token}" FontFamily="{StaticResource MonoFont}" FontSize="12.5" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Text="{Binding Detail}" Style="{StaticResource MutedText}" FontSize="11.5" TextTrimming="CharacterEllipsis" />
+                          </StackPanel>
+                          <TextBlock Grid.Column="1" Text="{Binding SampleText}" Style="{StaticResource MutedText}" FontSize="12" VerticalAlignment="Center" Margin="0,0,16,0"
+                                     TextTrimming="CharacterEllipsis" ToolTip="{Binding SampleText}" />
+                          <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Button Content="{loc:T Fields.Add}" Style="{StaticResource ToolButton}" Margin="0" Command="{Binding DataContext.AddTextCommand, ElementName=FieldsCard}" CommandParameter="{Binding}"
+                                    ToolTip="{loc:T Fields.Add.Tip}" AutomationProperties.Name="{loc:T Fields.Add}" />
+                            <Button Style="{StaticResource ToolButton}" Margin="2,0,8,0" Padding="0" Width="26" Click="OnAddMoreClick" ToolTip="{loc:T Fields.Add.Menu}" AutomationProperties.Name="{loc:T Fields.Add.Menu}">
+                              <Path Data="M0,0 L3.5,3.5 L7,0" Stroke="{StaticResource MutedBrush}" StrokeThickness="1.5" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" />
+                            </Button>
+                            <Button Content="{loc:T Fields.UseHere}" Style="{StaticResource ToolButton}" Margin="0" Command="{Binding DataContext.UseHereCommand, ElementName=FieldsCard}" CommandParameter="{Binding}"
+                                    ToolTip="{loc:T Fields.UseHere.Tip}" AutomationProperties.Name="{loc:T Fields.UseHere}" />
+                          </StackPanel>
+                        </Grid>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </Border>
+            <TextBlock Text="{loc:T Fields.Variables.Title}" Style="{StaticResource SectionHeading}" Margin="0,0,0,4" AutomationProperties.HeadingLevel="Level2" />
             <TextBlock Text="{loc:T Data.Mapping.Intro}" Style="{StaticResource MutedText}" Margin="0,0,0,12" />
             <TextBlock Text="{loc:T Data.Mapping.NoPlaceholders}" Style="{StaticResource MutedText}" Visibility="{Binding LabelHasNoPlaceholders, Converter={StaticResource B2V}}" />
             <ItemsControl ItemsSource="{Binding MappingRows}" AutomationProperties.Name="{loc:T Data.Tab.Mapping}">

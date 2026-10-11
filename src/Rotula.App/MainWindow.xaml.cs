@@ -22,6 +22,7 @@ public partial class MainWindow : Window
         _vm = viewModel;
         DataContext = viewModel;
         InitializeComponent();
+        Icon = Views.BrandIcon.Source;
         viewModel.Session.SelectionChanged += (_, _) => SyncLayersFromSession();
         viewModel.Layers.CollectionChanged += (_, _) => SyncLayersFromSession();
         viewModel.ExitRequested += (_, _) => Close();

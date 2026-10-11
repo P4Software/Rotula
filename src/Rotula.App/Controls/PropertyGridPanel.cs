@@ -14,7 +14,7 @@ public sealed class PropertyGridPanel : Panel
     private const double Gap = 12;
 
     private static bool IsHalf(UIElement child) =>
-        child is FrameworkElement { DataContext: IntRow or DoubleRow };
+        child is FrameworkElement { DataContext: IntRow { FullWidth: false } or DoubleRow };
 
     /// <inheritdoc />
     protected override Size MeasureOverride(Size availableSize)

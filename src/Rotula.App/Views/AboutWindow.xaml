@@ -16,9 +16,7 @@
     </Border>
     <StackPanel Margin="32,28,32,24">
       <StackPanel Orientation="Horizontal">
-        <Border Width="64" Height="64" CornerRadius="16" Background="#1F2023" AutomationProperties.Name="Rotula">
-          <Path Style="{StaticResource Icon}" Data="{StaticResource IconBarcode}" Width="36" Height="36" StrokeThickness="1.8" TextElement.Foreground="White" />
-        </Border>
+        <Image Source="{StaticResource BrandMark}" Width="96" Height="96" UseLayoutRounding="True" AutomationProperties.Name="Rotula" />
         <StackPanel Margin="18,0,0,0" VerticalAlignment="Center">
           <TextBlock Text="Rotula" FontSize="26" FontWeight="SemiBold" AutomationProperties.HeadingLevel="Level1" />
           <TextBlock x:Name="VersionText" Style="{StaticResource MutedText}" Margin="0,2,0,0" />

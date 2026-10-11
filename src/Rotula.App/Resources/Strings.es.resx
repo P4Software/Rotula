@@ -2413,6 +2413,54 @@
   <data name="Conn.Browse" xml:space="preserve">
     <value>Examinar...</value>
   </data>
+  <data name="Conn.Db.LoadList" xml:space="preserve">
+    <value>Cargar lista</value>
+  </data>
+  <data name="Conn.Db.Loading" xml:space="preserve">
+    <value>Leyendo la lista del servidor...</value>
+  </data>
+  <data name="Conn.Db.Hint" xml:space="preserve">
+    <value>Elija una base de datos del servidor o escriba su nombre.</value>
+  </data>
+  <data name="Conn.Db.Hint.NeedServer" xml:space="preserve">
+    <value>Complete primero la dirección del servidor y el inicio de sesión, y cargue la lista. También puede escribir el nombre directamente.</value>
+  </data>
+  <data name="Conn.Db.Hint.NeedPassword" xml:space="preserve">
+    <value>Escriba la contraseña para cargar la lista, o escriba directamente el nombre de la base de datos.</value>
+  </data>
+  <data name="Conn.Db.Loaded" xml:space="preserve">
+    <value>Bases de datos encontradas: {0}. Elija una o escriba su nombre.</value>
+  </data>
+  <data name="Conn.Db.Truncated" xml:space="preserve">
+    <value>El servidor tiene más bases de datos de las que se pueden mostrar; estas son las primeras {0}. Elija una o escriba su nombre.</value>
+  </data>
+  <data name="Conn.Db.None" xml:space="preserve">
+    <value>Este usuario no puede abrir ninguna base de datos del servidor. Escriba el nombre en su lugar.</value>
+  </data>
+  <data name="Conn.Db.NotSupported" xml:space="preserve">
+    <value>Este tipo de servidor no puede listar sus bases de datos. Escriba el nombre en su lugar.</value>
+  </data>
+  <data name="Conn.Db.Stopped" xml:space="preserve">
+    <value>Detenido. Pulse Cargar lista para intentarlo de nuevo, o escriba el nombre.</value>
+  </data>
+  <data name="Conn.Db.RetypePassword" xml:space="preserve">
+    <value>Escriba de nuevo la contraseña para cargar la lista: la guardada solo se usa mientras el servidor y el usuario no cambien.</value>
+  </data>
+  <data name="Conn.Db.ListFailed.Permission" xml:space="preserve">
+    <value>No se pudo leer la lista: puede que este usuario no tenga permiso para ver otras bases de datos. Escriba el nombre en su lugar.</value>
+  </data>
+  <data name="Conn.Db.ListFailed" xml:space="preserve">
+    <value>No se pudo leer la lista. {0} Aun así puede escribir el nombre.</value>
+  </data>
+  <data name="Conn.Dsn.Hint" xml:space="preserve">
+    <value>Elija un origen de datos instalado en este equipo, o escriba su nombre.</value>
+  </data>
+  <data name="Conn.Dsn.None" xml:space="preserve">
+    <value>No hay orígenes de datos ODBC instalados en este equipo. Escriba el nombre en su lugar.</value>
+  </data>
+  <data name="Conn.Lookup.SystemTag" xml:space="preserve">
+    <value>sistema</value>
+  </data>
   <data name="Conn.Odbc.Dsn" xml:space="preserve">
     <value>Nombre del origen de datos ODBC (DSN)</value>
   </data>
@@ -4061,5 +4109,1282 @@ Las marcas y los nombres de producto pertenecen a sus dueños; Rotula no está a
   </data>
   <data name="Conn.Preset.HostHint" xml:space="preserve">
     <value>Las direcciones de este servicio tienen el aspecto {0}.</value>
+  </data>
+  <data name="Fields.Insert" xml:space="preserve">
+    <value>Insertar campo</value>
+  </data>
+  <data name="Fields.Insert.Tip" xml:space="preserve">
+    <value>Inserta un campo de datos donde está el cursor. También puede escribir {{ para ver la lista.</value>
+  </data>
+  <data name="Fields.Insert.NoFields" xml:space="preserve">
+    <value>Cargue datos primero: Impresora &gt; Combinar datos</value>
+  </data>
+  <data name="Fields.OpenData" xml:space="preserve">
+    <value>Abrir Combinar datos</value>
+  </data>
+  <data name="Fields.Search" xml:space="preserve">
+    <value>Buscar campos</value>
+  </data>
+  <data name="Fields.List" xml:space="preserve">
+    <value>Campos disponibles</value>
+  </data>
+  <data name="Fields.Count.One" xml:space="preserve">
+    <value>1 campo disponible</value>
+  </data>
+  <data name="Fields.Count.Many" xml:space="preserve">
+    <value>{0} campos disponibles</value>
+  </data>
+  <data name="Fields.Count.None" xml:space="preserve">
+    <value>Ningún campo coincide</value>
+  </data>
+  <data name="Fields.Keys" xml:space="preserve">
+    <value>Arriba/Abajo para elegir, Intro para insertar, Esc para cerrar</value>
+  </data>
+  <data name="Fields.Kind.Column" xml:space="preserve">
+    <value>Columna</value>
+  </data>
+  <data name="Fields.Kind.Counter" xml:space="preserve">
+    <value>Contador</value>
+  </data>
+  <data name="Fields.Kind.Variable" xml:space="preserve">
+    <value>Variable</value>
+  </data>
+  <data name="Fields.Sample.Empty" xml:space="preserve">
+    <value>(vacío)</value>
+  </data>
+  <data name="Fields.Sample.Label" xml:space="preserve">
+    <value>Valor en el registro mostrado: {0}</value>
+  </data>
+  <data name="Fields.Missing" xml:space="preserve">
+    <value>No hay ninguna columna llamada {0} en los datos cargados</value>
+  </data>
+  <data name="Fields.Bound" xml:space="preserve">
+    <value>Muestra datos de: {0}</value>
+  </data>
+  <data name="Fields.Section.Title" xml:space="preserve">
+    <value>Campos de sus datos</value>
+  </data>
+  <data name="Fields.Section.Intro" xml:space="preserve">
+    <value>Añada una columna a la etiqueta como texto, código de barras o código QR, o póngala en el elemento que tenga seleccionado en la etiqueta.</value>
+  </data>
+  <data name="Fields.Section.Empty" xml:space="preserve">
+    <value>Todavía no hay campos. Abra primero un archivo de datos o elija una tabla de la base de datos.</value>
+  </data>
+  <data name="Fields.AddAll" xml:space="preserve">
+    <value>Añadir todos los campos a la etiqueta</value>
+  </data>
+  <data name="Fields.AddAll.Tip" xml:space="preserve">
+    <value>Añade un texto por columna, apilados de arriba abajo</value>
+  </data>
+  <data name="Fields.Add" xml:space="preserve">
+    <value>Añadir a la etiqueta</value>
+  </data>
+  <data name="Fields.Add.Tip" xml:space="preserve">
+    <value>Añade este campo a la etiqueta como texto</value>
+  </data>
+  <data name="Fields.UseHere" xml:space="preserve">
+    <value>Usar aquí</value>
+  </data>
+  <data name="Fields.UseHere.Tip" xml:space="preserve">
+    <value>Pone este campo en el elemento seleccionado</value>
+  </data>
+  <data name="Fields.Selected.None" xml:space="preserve">
+    <value>Seleccione un texto o un código de barras en la etiqueta para poner un campo en él.</value>
+  </data>
+  <data name="Fields.Selected.One" xml:space="preserve">
+    <value>Elemento seleccionado: {0}</value>
+  </data>
+  <data name="Fields.Added.One" xml:space="preserve">
+    <value>Se añadió {0} a la etiqueta</value>
+  </data>
+  <data name="Fields.Added.Many" xml:space="preserve">
+    <value>Se añadieron {0} campos a la etiqueta</value>
+  </data>
+  <data name="Fields.Outside.Title" xml:space="preserve">
+    <value>No caben todos los campos</value>
+  </data>
+  <data name="Fields.Outside.One" xml:space="preserve">
+    <value>El campo nuevo no cabe dentro de la etiqueta. Haga la etiqueta más alta o mueva el campo.</value>
+  </data>
+  <data name="Fields.Outside.Many" xml:space="preserve">
+    <value>{0} de los {1} campos nuevos no caben dentro de la etiqueta. Haga la etiqueta más alta, use menos campos o muévalos.</value>
+  </data>
+  <data name="Fields.Used" xml:space="preserve">
+    <value>Se puso {0} en {1}</value>
+  </data>
+  <data name="Fields.Variables.Title" xml:space="preserve">
+    <value>Variables de la etiqueta</value>
+  </data>
+  <data name="Undo.InsertField" xml:space="preserve">
+    <value>insertar campo</value>
+  </data>
+  <data name="Undo.AddFields" xml:space="preserve">
+    <value>añadir campos</value>
+  </data>
+  <data name="Fields.Mode.Fixed" xml:space="preserve">
+    <value>Valor fijo</value>
+  </data>
+  <data name="Fields.Mode.Field" xml:space="preserve">
+    <value>Campo</value>
+  </data>
+  <data name="Fields.Mode.Tip" xml:space="preserve">
+    <value>Elija si el contenido es un valor fijo o viene de un campo de datos</value>
+  </data>
+  <data name="Fields.Chip.Tip" xml:space="preserve">
+    <value>Muestra el campo {0} de los datos. Use Campo para elegir otro.</value>
+  </data>
+  <data name="Fields.Unbind" xml:space="preserve">
+    <value>Usar un valor fijo</value>
+  </data>
+  <data name="Fields.AddAsText" xml:space="preserve">
+    <value>Añadir como texto</value>
+  </data>
+  <data name="Fields.AddAsBarcode" xml:space="preserve">
+    <value>Añadir como código de barras</value>
+  </data>
+  <data name="Fields.AddAsQr" xml:space="preserve">
+    <value>Añadir como código QR</value>
+  </data>
+  <data name="Undo.UnbindField" xml:space="preserve">
+    <value>usar un valor fijo</value>
+  </data>
+  <data name="Fields.Badge" xml:space="preserve">
+    <value>Usa campos de datos</value>
+  </data>
+  <data name="Fields.Add.Menu" xml:space="preserve">
+    <value>Más formas de añadir este campo</value>
+  </data>
+  <!-- Variables: definitions -->
+  <data name="Issue.Variable.Name.Invalid" xml:space="preserve">
+    <value>El nombre de variable "{0}" no es válido. Use solo letras, números y guiones bajos, y manténgalo corto.</value>
+  </data>
+  <data name="Issue.Variable.Name.Duplicate" xml:space="preserve">
+    <value>Hay dos variables llamadas "{0}". Los nombres no distinguen mayúsculas de minúsculas, así que dé a cada variable un nombre distinto.</value>
+  </data>
+  <data name="Issue.Variable.Record.Overridden" xml:space="preserve">
+    <value>La variable "{0}" tiene el mismo nombre que una columna de datos, por lo que se usa su propio valor en lugar de la columna. Cambie el nombre de una de las dos si desea los datos de la columna.</value>
+  </data>
+  <!-- Variables: dates -->
+  <data name="Issue.Variable.Date.Format.Invalid" xml:space="preserve">
+    <value>El formato de fecha "{1}" de la variable "{0}" no se puede usar. Elija un formato de la lista o revise el patrón.</value>
+  </data>
+  <data name="Issue.Variable.Date.Culture.Unknown" xml:space="preserve">
+    <value>El idioma "{1}" elegido para la variable "{0}" no se conoce en este equipo, así que se usa el idioma estándar para los nombres de meses y días. Elija otro idioma.</value>
+  </data>
+  <data name="Issue.Variable.Date.Offset.Range" xml:space="preserve">
+    <value>El desplazamiento de fecha de la variable "{0}" es demasiado grande, o hay demasiados desplazamientos. Use cantidades no mayores de {1} y menos desplazamientos.</value>
+  </data>
+  <data name="Issue.Variable.Date.OutOfRange" xml:space="preserve">
+    <value>La fecha calculada para la variable "{0}" está fuera del rango de fechas que Rotula puede manejar. Reduzca los desplazamientos de fecha.</value>
+  </data>
+  <data name="Issue.Variable.Date.Fixed.Missing" xml:space="preserve">
+    <value>La variable "{0}" está definida con una fecha fija, pero no se escribió ninguna fecha. Escriba la fecha.</value>
+  </data>
+  <data name="Issue.Variable.Date.Printer.BusinessDays" xml:space="preserve">
+    <value>La variable "{0}" cuenta días hábiles, algo que una impresora no puede hacer, así que se usa el reloj del equipo.</value>
+  </data>
+  <data name="Issue.Variable.Date.Printer.Rounding" xml:space="preserve">
+    <value>La variable "{0}" redondea al inicio o al final de un período, lo que requiere el reloj del equipo, así que se usa el reloj del equipo en lugar del de la impresora.</value>
+  </data>
+  <data name="Issue.Variable.Date.Printer.Utc" xml:space="preserve">
+    <value>La variable "{0}" usa la hora UTC, que el reloj de la impresora no puede dar, así que se usa el reloj del equipo.</value>
+  </data>
+  <data name="Issue.Variable.Date.Printer.Format" xml:space="preserve">
+    <value>El formato de fecha de la variable "{0}" usa "{1}", que la impresora no puede imprimir, así que se usa el reloj del equipo. Use un formato más sencillo para usar el reloj de la impresora.</value>
+  </data>
+  <data name="Issue.Variable.Date.Printer.Culture" xml:space="preserve">
+    <value>La variable "{0}" imprime nombres de meses o días en el idioma "{1}", pero la impresora los escribe en inglés, así que se usa el reloj del equipo. Elija inglés o un formato numérico para usar el reloj de la impresora.</value>
+  </data>
+  <data name="Issue.Variable.Date.Printer.SlotsFull" xml:space="preserve">
+    <value>Una etiqueta puede desplazar el reloj de la impresora de solo dos maneras distintas y ambas ya están ocupadas, así que la variable "{0}" usa el reloj del equipo.</value>
+  </data>
+  <data name="Issue.Variable.Date.Printer.Fixed" xml:space="preserve">
+    <value>La variable "{0}" usa una fecha fija, que no es un reloj, así que no hay reloj de impresora que leer y se usa el del equipo.</value>
+  </data>
+  <data name="Issue.Variable.Date.Printer.Barcode" xml:space="preserve">
+    <value>El reloj de la impresora no se puede usar dentro de un código de barras, así que la variable "{0}" usa el reloj del equipo.</value>
+  </data>
+  <data name="Issue.Variable.Date.Printer.NoIndicator" xml:space="preserve">
+    <value>Este campo ya usa sus propios marcadores de reloj y ninguno está libre para la variable "{0}", así que se usa el reloj del equipo.</value>
+  </data>
+  <data name="Issue.Variable.Date.Printer.NoFreeIndicator" xml:space="preserve">
+    <value>No hay un carácter marcador de reloj libre en este campo para la variable "{0}", así que se usa el reloj del equipo.</value>
+  </data>
+  <!-- Variables: counters -->
+  <data name="Issue.Variable.Counter.Invalid" xml:space="preserve">
+    <value>El contador "{0}" tiene un ajuste que no es válido: {1}. Corríjalo en los ajustes de la variable.</value>
+  </data>
+  <data name="Issue.Variable.Counter.Overflow" xml:space="preserve">
+    <value>El contador "{0}" superó su número más alto y se detiene en lugar de empezar de nuevo. Permita más dígitos o reinicie el contador.</value>
+  </data>
+  <data name="Issue.Variable.Counter.SettingsChanged" xml:space="preserve">
+    <value>El inicio, el paso, el tipo o el relleno del contador "{0}" se cambió después de usar números (último número: {1}). La impresión queda bloqueada hasta que acepte el cambio o reinicie el contador.</value>
+  </data>
+  <data name="Issue.Variable.Counter.Unconfirmed" xml:space="preserve">
+    <value>Una impresión anterior reservó los números {1} a {2} del contador "{0}" y no terminó, así que esos números se omitieron. Si no se imprimió nada con ellos, puede devolverlos en los ajustes del contador.</value>
+  </data>
+  <data name="Issue.Variable.Counter.Store.Corrupt" xml:space="preserve">
+    <value>El archivo de contadores "{0}" está dañado. No se cambió nada. Recupere los contadores (el archivo dañado se conserva aparte) o restaure una copia de seguridad, y vuelva a intentarlo.</value>
+  </data>
+  <data name="Issue.Variable.Counter.Store.NewerVersion" xml:space="preserve">
+    <value>El archivo de contadores "{0}" fue escrito por una versión más reciente de Rotula (versión de archivo {1}). Actualice Rotula para usarlo. No se cambió nada.</value>
+  </data>
+  <data name="Issue.Variable.Counter.Store.Busy" xml:space="preserve">
+    <value>El archivo de contadores "{0}" está en uso por otro programa o no se puede escribir. Cierre el otro programa, compruebe que puede escribir en esa carpeta y vuelva a intentarlo.</value>
+  </data>
+  <data name="Issue.Variable.Counter.NeedsLabelId" xml:space="preserve">
+    <value>El contador "{0}" recuerda su número entre impresiones, por lo que primero hay que guardar la etiqueta. Guarde la etiqueta y vuelva a intentarlo.</value>
+  </data>
+  <data name="Issue.Variable.Counter.NoStore" xml:space="preserve">
+    <value>El contador "{0}" debería recordar su número, pero ahora no se pueden guardar los contadores, así que solo puede contar desde su primer número. Para no repetir números, la impresión necesita que el archivo de contadores esté disponible.</value>
+  </data>
+  <!-- Variables: prompts -->
+  <data name="Issue.Variable.Prompt.Required" xml:space="preserve">
+    <value>Escriba un valor para "{0}".</value>
+  </data>
+  <data name="Issue.Variable.Prompt.TooShort" xml:space="preserve">
+    <value>La respuesta para "{0}" es demasiado corta. Escriba al menos {1} caracteres.</value>
+  </data>
+  <data name="Issue.Variable.Prompt.TooLong" xml:space="preserve">
+    <value>La respuesta para "{0}" es demasiado larga. Escriba como máximo {1} caracteres.</value>
+  </data>
+  <data name="Issue.Variable.Prompt.Pattern" xml:space="preserve">
+    <value>La respuesta para "{0}" no tiene el formato esperado. Revísela y vuelva a intentarlo.</value>
+  </data>
+  <data name="Issue.Variable.Prompt.Pattern.Invalid" xml:space="preserve">
+    <value>La regla de formato definida para la pregunta "{0}" no es válida. Corrija la regla en los ajustes de la variable.</value>
+  </data>
+  <data name="Issue.Variable.Prompt.NotNumber" xml:space="preserve">
+    <value>La respuesta para "{0}" debe ser un número.</value>
+  </data>
+  <data name="Issue.Variable.Prompt.NotDate" xml:space="preserve">
+    <value>La respuesta para "{0}" debe ser una fecha.</value>
+  </data>
+  <data name="Issue.Variable.Prompt.NotChoice" xml:space="preserve">
+    <value>Elija una de las opciones ofrecidas para "{0}".</value>
+  </data>
+  <data name="Issue.Variable.Prompt.NoChoices" xml:space="preserve">
+    <value>La pregunta "{0}" no tiene opciones para elegir. Agregue al menos una opción en los ajustes de la variable.</value>
+  </data>
+  <data name="Issue.Variable.Prompt.Missing" xml:space="preserve">
+    <value>No se dio respuesta para "{0}". Responda todas las preguntas antes de imprimir.</value>
+  </data>
+  <!-- Variables: formulas -->
+  <data name="Issue.Variable.Expr.Empty" xml:space="preserve">
+    <value>La fórmula de la variable "{0}" está vacía. Escriba una fórmula o quite la variable.</value>
+  </data>
+  <data name="Issue.Variable.Expr.TooLong" xml:space="preserve">
+    <value>La fórmula de la variable "{0}" es demasiado larga (máximo {2} caracteres). Acórtela.</value>
+  </data>
+  <data name="Issue.Variable.Expr.TooDeep" xml:space="preserve">
+    <value>La fórmula de la variable "{0}" tiene demasiados niveles anidados cerca de la posición {1} (máximo {2}). Simplifíquela.</value>
+  </data>
+  <data name="Issue.Variable.Expr.TooComplex" xml:space="preserve">
+    <value>La fórmula de la variable "{0}" tiene demasiadas partes (máximo {2}). Divídala en dos variables.</value>
+  </data>
+  <data name="Issue.Variable.Expr.UnexpectedChar" xml:space="preserve">
+    <value>La fórmula de la variable "{0}" tiene un carácter no permitido en la posición {1}: {2}. Quítelo.</value>
+  </data>
+  <data name="Issue.Variable.Expr.UnexpectedToken" xml:space="preserve">
+    <value>Se esperaba otra cosa en la posición {1} de la fórmula de "{0}", pero se encontró {2}. Revise la fórmula.</value>
+  </data>
+  <data name="Issue.Variable.Expr.UnexpectedEnd" xml:space="preserve">
+    <value>La fórmula de la variable "{0}" termina antes de tiempo (posición {1}). Revise si falta un valor o un paréntesis de cierre.</value>
+  </data>
+  <data name="Issue.Variable.Expr.UnterminatedString" xml:space="preserve">
+    <value>Un texto entre comillas en la posición {1} de la fórmula de "{0}" no está cerrado. Agregue la comilla de cierre.</value>
+  </data>
+  <data name="Issue.Variable.Expr.BadNumber" xml:space="preserve">
+    <value>El número "{2}" en la posición {1} de la fórmula de "{0}" no es válido. Revise cómo está escrito.</value>
+  </data>
+  <data name="Issue.Variable.Expr.UnknownFunction" xml:space="preserve">
+    <value>La función "{2}" en la posición {1} de la fórmula de "{0}" no existe. Revise la ortografía.</value>
+  </data>
+  <data name="Issue.Variable.Expr.ArgumentCount" xml:space="preserve">
+    <value>La función {2} en la posición {1} de la fórmula de "{0}" admite de {3} a {4} valores. Agregue o quite valores.</value>
+  </data>
+  <data name="Issue.Variable.Expr.BadArgument" xml:space="preserve">
+    <value>El valor número {3} de la función {2} en la fórmula de "{0}" no está permitido (por ejemplo, una longitud negativa). Cámbielo.</value>
+  </data>
+  <data name="Issue.Variable.Expr.UnknownVariable" xml:space="preserve">
+    <value>La fórmula de la variable "{0}" usa "{2}", que no es una variable declarada y no tiene datos. Cree la variable o corrija el nombre.</value>
+  </data>
+  <data name="Issue.Variable.Expr.Cycle" xml:space="preserve">
+    <value>Las variables calculadas dependen unas de otras en círculo ({2}). Cambie una de las fórmulas para romper el círculo.</value>
+  </data>
+  <data name="Issue.Variable.Expr.ResultTooLong" xml:space="preserve">
+    <value>Un resultado de la fórmula de "{0}" sería más largo de {2} caracteres y se recortó. Acorte la fórmula.</value>
+  </data>
+  <data name="Issue.Variable.Expr.NotNumber" xml:space="preserve">
+    <value>La función {2} en la fórmula de "{0}" no pudo leer "{3}" como número. Revise el valor.</value>
+  </data>
+  <data name="Issue.Variable.Expr.NotDate" xml:space="preserve">
+    <value>La función {2} en la fórmula de "{0}" no pudo leer "{3}" como fecha. Escriba las fechas como aaaa-MM-dd o aaaaMMdd.</value>
+  </data>
+  <data name="Issue.Variable.Expr.BadFormat" xml:space="preserve">
+    <value>El formato "{3}" usado por la función {2} en la fórmula de "{0}" no se puede usar. Revise el formato.</value>
+  </data>
+  <!-- QR code options -->
+  <data name="Issue.Barcode.Qr.Capacity" xml:space="preserve">
+    <value>Los datos no caben en un código QR con el nivel de corrección de errores "{2}": tienen {0} caracteres y lo máximo que cabe es {1}. Acorte los datos o elija un nivel de corrección más bajo.</value>
+  </data>
+  <data name="Issue.Barcode.Qr.InputMode" xml:space="preserve">
+    <value>El modo de entrada de datos QR no es uno que Rotula conozca. Elija Automático o uno de los modos manuales.</value>
+  </data>
+  <data name="Issue.Barcode.Qr.ManualAlphanumeric" xml:space="preserve">
+    <value>El modo alfanumérico manual solo admite dígitos, letras mayúsculas de la A a la Z, espacios y los símbolos $ % * + - . / : . Cambie los datos o elija otro modo de entrada.</value>
+  </data>
+  <data name="Issue.Barcode.Qr.ManualByteLength" xml:space="preserve">
+    <value>Los datos son demasiado largos para el modo de bytes manual (máximo {0} bytes). Acorte los datos.</value>
+  </data>
+  <data name="Issue.Barcode.Qr.ManualNumeric" xml:space="preserve">
+    <value>El modo numérico manual solo admite los dígitos del 0 al 9. Cambie los datos o elija otro modo de entrada.</value>
+  </data>
+  <data name="Issue.Barcode.Qr.Mask" xml:space="preserve">
+    <value>El patrón de máscara QR debe ser un número del {0} al {1}, o dejarse en automático.</value>
+  </data>
+  <data name="Issue.Arg.Low" xml:space="preserve">
+    <value>baja (7%)</value>
+  </data>
+  <data name="Issue.Arg.Medium" xml:space="preserve">
+    <value>media (15%)</value>
+  </data>
+  <data name="Issue.Arg.Quartile" xml:space="preserve">
+    <value>cuartil (25%)</value>
+  </data>
+  <data name="Issue.Arg.High" xml:space="preserve">
+    <value>alta (30%)</value>
+  </data>
+  <data name="Issue.Import.Barcode.Gs1.Data" xml:space="preserve">
+    <value>Este Code 128 ({0}) contiene datos GS1 que Rotula no puede volver a escribir exactamente igual. Se conservó como texto ZPL y se seguirá imprimiendo, pero no se puede editar.</value>
+  </data>
+  <!-- GS1 messages: parsing and structure -->
+  <data name="Issue.Gs1.Parse.Empty" xml:space="preserve">
+    <value>No hay datos GS1. Escriba al menos un identificador con su valor, por ejemplo (01)09506000134352.</value>
+  </data>
+  <data name="Issue.Gs1.Parse.Malformed" xml:space="preserve">
+    <value>Los datos GS1 no están escritos correctamente cerca del carácter {0}. Cada elemento debe verse así: (01)09506000134352.</value>
+  </data>
+  <data name="Issue.Gs1.Parse.SeparatorAfterFixed" xml:space="preserve">
+    <value>El identificador ({0}) tiene longitud fija, así que no debe ir seguido de un carácter separador. Quite el separador.</value>
+  </data>
+  <data name="Issue.Gs1.Parse.TooShort" xml:space="preserve">
+    <value>Los datos terminan antes de que el valor de ({0}) esté completo. Compruebe que el valor tenga todos sus caracteres.</value>
+  </data>
+  <data name="Issue.Gs1.Parse.TrailingSeparator" xml:space="preserve">
+    <value>Los datos terminan con un separador sin nada después. Quítelo.</value>
+  </data>
+  <data name="Issue.Gs1.Parse.UnknownAi" xml:space="preserve">
+    <value>El identificador que empieza con "{0}" no es un identificador GS1 conocido. Revise el número.</value>
+  </data>
+  <data name="Issue.Gs1.Ai.Unknown" xml:space="preserve">
+    <value>El identificador ({0}) no existe en el sistema GS1. Revise el número entre paréntesis.</value>
+  </data>
+  <data name="Issue.Gs1.Value.TooLong" xml:space="preserve">
+    <value>El valor de ({0}) es demasiado largo (máximo {1} caracteres). Acórtelo.</value>
+  </data>
+  <data name="Issue.Gs1.Value.TooShort" xml:space="preserve">
+    <value>El valor de ({0}) es demasiado corto (mínimo {1} caracteres). Complételo.</value>
+  </data>
+  <data name="Issue.Gs1.Message.Duplicate" xml:space="preserve">
+    <value>El identificador ({0}) aparece más de una vez con valores distintos. Deje solo uno.</value>
+  </data>
+  <data name="Issue.Gs1.Message.DuplicateSame" xml:space="preserve">
+    <value>El identificador ({0}) aparece más de una vez con el mismo valor. Quite la repetición.</value>
+  </data>
+  <data name="Issue.Gs1.Message.Excludes" xml:space="preserve">
+    <value>Los identificadores ({0}) y ({1}) no se pueden usar juntos. Quite uno de ellos.</value>
+  </data>
+  <data name="Issue.Gs1.Message.Requires" xml:space="preserve">
+    <value>El identificador ({0}) normalmente se usa junto con otros identificadores: {1} (la coma separa alternativas y el signo más significa todos). Agréguelos o revise sus datos.</value>
+  </data>
+  <data name="Issue.Gs1.Option.Conflict" xml:space="preserve">
+    <value>Un Data Matrix GS1 no puede ser también un enlace digital GS1 (Digital Link). Desactive una de las dos opciones.</value>
+  </data>
+  <data name="Issue.Gs1.Gs128.CheckDigitOption" xml:space="preserve">
+    <value>La opción de dígito de control no es necesaria: GS1-128 agrega su propio dígito de control. Desactive la opción.</value>
+  </data>
+  <data name="Issue.Gs1.Gs128.Parentheses" xml:space="preserve">
+    <value>Un valor contiene un paréntesis, que la impresora omite en el modo GS1-128. Quite el paréntesis del valor.</value>
+  </data>
+  <data name="Issue.Gs1.Gs128.TooLong" xml:space="preserve">
+    <value>Los datos GS1-128 tienen {0} caracteres; el máximo es {1} (cuentan los identificadores y los separadores). Acorte los datos.</value>
+  </data>
+  <data name="Issue.Gs1.Itf14.Length" xml:space="preserve">
+    <value>Un código ITF-14 necesita exactamente 14 dígitos.</value>
+  </data>
+  <data name="Issue.Gs1.Itf14.CheckDigit" xml:space="preserve">
+    <value>El dígito de control del código ITF-14 es incorrecto. Debería ser {0}.</value>
+  </data>
+  <data name="Issue.Gs1.Composite.Linear" xml:space="preserve">
+    <value>La parte lineal "{0}" del código compuesto no es un GTIN válido (8, 12, 13 o 14 dígitos con un dígito de control correcto). Corríjala.</value>
+  </data>
+  <data name="Issue.Gs1.Composite.RepeatedAi" xml:space="preserve">
+    <value>El identificador ({0}) aparece tanto en la parte lineal como en la parte 2D del código compuesto. Déjelo solo en una de ellas.</value>
+  </data>
+  <!-- GS1 Digital Link -->
+  <data name="Issue.Gs1.DigitalLink.Uri" xml:space="preserve">
+    <value>El texto no es una dirección web válida. Un enlace digital GS1 (Digital Link) debe empezar con https:// (o http://).</value>
+  </data>
+  <data name="Issue.Gs1.DigitalLink.NoKey" xml:space="preserve">
+    <value>El enlace no tiene clave GS1. Un enlace digital GS1 debe tener una clave, como el GTIN (01), seguida de su valor.</value>
+  </data>
+  <data name="Issue.Gs1.DigitalLink.ManyKeys" xml:space="preserve">
+    <value>El enlace tiene más de una clave GS1. Un enlace digital GS1 necesita exactamente una clave, como el GTIN. Quite las demás.</value>
+  </data>
+  <data name="Issue.Gs1.DigitalLink.NotAllowed" xml:space="preserve">
+    <value>El identificador ({0}) no se puede usar en un enlace digital GS1. Quítelo.</value>
+  </data>
+  <data name="Issue.Gs1.DigitalLink.OddSegments" xml:space="preserve">
+    <value>La ruta del enlace está incompleta: debe estar formada por pares, un identificador seguido de su valor. Revise el enlace.</value>
+  </data>
+  <data name="Issue.Gs1.DigitalLink.QualifierCombination" xml:space="preserve">
+    <value>Los calificadores ({1}) no son una combinación permitida para la clave ({0}). Quite uno o revise las reglas de GS1.</value>
+  </data>
+  <data name="Issue.Gs1.DigitalLink.QualifierOrder" xml:space="preserve">
+    <value>Los calificadores ({1}) de la clave ({0}) no están en un orden permitido. Póngalos en el orden que GS1 define para esa clave.</value>
+  </data>
+  <!-- GS1 value checks -->
+  <data name="Issue.Gs1.Lint.Hyphen" xml:space="preserve">
+    <value>El valor de ({0}) debe contener solo guiones (-).</value>
+  </data>
+  <data name="Issue.Gs1.Lint.NeedsNonDigit" xml:space="preserve">
+    <value>El valor de ({0}) debe contener al menos un carácter que no sea un dígito.</value>
+  </data>
+  <data name="Issue.Gs1.Lint.NotZero" xml:space="preserve">
+    <value>El valor de ({0}) debe estar formado solo por ceros.</value>
+  </data>
+  <data name="Issue.Gs1.Lint.Winding" xml:space="preserve">
+    <value>El valor de ({0}) debe ser 0, 1 o 9.</value>
+  </data>
+  <data name="Issue.Gs1.Lint.YesNo" xml:space="preserve">
+    <value>El valor de ({0}) debe ser 0 o 1.</value>
+  </data>
+  <data name="Issue.Gs1.Lint.BiologicalSex" xml:space="preserve">
+    <value>El valor de ({0}) debe ser 0, 1, 2 o 9.</value>
+  </data>
+  <data name="Issue.Gs1.Lint.Country" xml:space="preserve">
+    <value>El valor "{1}" de ({0}) no es un código de país de 3 dígitos válido (ISO 3166). Revíselo.</value>
+  </data>
+  <data name="Issue.Gs1.Lint.Country999" xml:space="preserve">
+    <value>El valor "{1}" de ({0}) no es un código de país. Use un código ISO 3166 de 3 dígitos o 999.</value>
+  </data>
+  <data name="Issue.Gs1.Lint.CountryAlpha2" xml:space="preserve">
+    <value>El valor "{1}" de ({0}) no es un código de país de 2 letras válido (ISO 3166). Revíselo.</value>
+  </data>
+  <data name="Issue.Gs1.Lint.Currency" xml:space="preserve">
+    <value>El valor "{1}" de ({0}) no es un código numérico de moneda válido (ISO 4217). Revíselo.</value>
+  </data>
+  <data name="Issue.Gs1.Lint.PackageType" xml:space="preserve">
+    <value>El valor "{1}" de ({0}) no es un código de tipo de embalaje válido. Revíselo.</value>
+  </data>
+  <data name="Issue.Gs1.Lint.ImporterIndex" xml:space="preserve">
+    <value>El valor de ({0}) debe ser una sola letra, dígito, guion o guion bajo.</value>
+  </data>
+  <data name="Issue.Gs1.Lint.Latitude" xml:space="preserve">
+    <value>El valor de ({0}) debe tener 10 dígitos y representar una latitud entre -90 y 90 grados.</value>
+  </data>
+  <data name="Issue.Gs1.Lint.Longitude" xml:space="preserve">
+    <value>El valor de ({0}) debe tener 10 dígitos y representar una longitud entre -180 y 180 grados.</value>
+  </data>
+  <data name="Issue.Gs1.Lint.NonDigit" xml:space="preserve">
+    <value>El carácter "{1}" en el valor de ({0}) no es un dígito. Este identificador admite solo dígitos.</value>
+  </data>
+  <data name="Issue.Gs1.Lint.Cset82" xml:space="preserve">
+    <value>El carácter "{1}" en el valor de ({0}) no se puede usar en datos GS1. Use solo las letras, dígitos y símbolos que GS1 permite.</value>
+  </data>
+  <data name="Issue.Gs1.Lint.Cset39" xml:space="preserve">
+    <value>El carácter "{1}" en el valor de ({0}) no está permitido. Use solo letras mayúsculas, dígitos, # - y /.</value>
+  </data>
+  <data name="Issue.Gs1.Lint.Base64" xml:space="preserve">
+    <value>El carácter "{1}" en el valor de ({0}) no está permitido en texto Base64. Use letras, dígitos, - y _.</value>
+  </data>
+  <data name="Issue.Gs1.Lint.Base64Padding" xml:space="preserve">
+    <value>El relleno "=" al final del valor de ({0}) no es correcto.</value>
+  </data>
+  <data name="Issue.Gs1.Lint.CheckDigit" xml:space="preserve">
+    <value>El dígito de control de ({0}) es incorrecto o falta (esperado: {1}). Corríjalo.</value>
+  </data>
+  <data name="Issue.Gs1.Lint.CheckPair" xml:space="preserve">
+    <value>Los dos caracteres de control al final del valor de ({0}) son incorrectos. Corríjalos.</value>
+  </data>
+  <data name="Issue.Gs1.Lint.GcpPrefix" xml:space="preserve">
+    <value>El valor de ({0}) debe contener un prefijo de empresa GS1 de al menos 4 dígitos en el lugar esperado.</value>
+  </data>
+  <data name="Issue.Gs1.Lint.DateFormat" xml:space="preserve">
+    <value>La fecha de ({0}) debe escribirse como {1}.</value>
+  </data>
+  <data name="Issue.Gs1.Lint.DateMonth" xml:space="preserve">
+    <value>El mes "{1}" en la fecha de ({0}) debe ser de 01 a 12.</value>
+  </data>
+  <data name="Issue.Gs1.Lint.DateDay" xml:space="preserve">
+    <value>El día "{1}" en la fecha de ({0}) no es válido para ese mes.</value>
+  </data>
+  <data name="Issue.Gs1.Lint.TimeFormat" xml:space="preserve">
+    <value>La hora de ({0}) debe escribirse como {1}.</value>
+  </data>
+  <data name="Issue.Gs1.Lint.Hour" xml:space="preserve">
+    <value>La hora "{1}" en ({0}) debe ser de 00 a 23.</value>
+  </data>
+  <data name="Issue.Gs1.Lint.Minute" xml:space="preserve">
+    <value>Los minutos "{1}" en ({0}) deben ser de 00 a 59.</value>
+  </data>
+  <data name="Issue.Gs1.Lint.Second" xml:space="preserve">
+    <value>Los segundos "{1}" en ({0}) deben ser de 00 a 59.</value>
+  </data>
+  <data name="Issue.Gs1.Lint.ZeroValue" xml:space="preserve">
+    <value>El valor de ({0}) no puede ser cero.</value>
+  </data>
+  <data name="Issue.Gs1.Lint.ZeroPrefix" xml:space="preserve">
+    <value>El valor de ({0}) no puede empezar con cero.</value>
+  </data>
+  <data name="Issue.Gs1.Lint.PieceFormat" xml:space="preserve">
+    <value>El valor de ({0}) debe ser dos números de la misma longitud: la pieza y el total (por ejemplo 0204).</value>
+  </data>
+  <data name="Issue.Gs1.Lint.PieceZero" xml:space="preserve">
+    <value>Ni el número de pieza ni el total de ({0}) pueden ser cero.</value>
+  </data>
+  <data name="Issue.Gs1.Lint.PieceExceeds" xml:space="preserve">
+    <value>El número de pieza de ({0}) es mayor que el total. Revise ambos números.</value>
+  </data>
+  <data name="Issue.Gs1.Lint.SequenceFormat" xml:space="preserve">
+    <value>El valor de ({0}) debe ser dos números separados por una barra (por ejemplo 2/5).</value>
+  </data>
+  <data name="Issue.Gs1.Lint.SequenceExceeds" xml:space="preserve">
+    <value>El primer número de ({0}) es mayor que el segundo. Revise ambos números.</value>
+  </data>
+  <data name="Issue.Gs1.Lint.PercentEncoding" xml:space="preserve">
+    <value>El valor de ({0}) tiene un código % incompleto o no válido.</value>
+  </data>
+  <data name="Issue.Gs1.Lint.MediaType" xml:space="preserve">
+    <value>El tipo de medio "{1}" de ({0}) no es válido. Use de 01 a 10 o de 80 a 99.</value>
+  </data>
+  <data name="Issue.Gs1.Lint.Iban" xml:space="preserve">
+    <value>El valor de ({0}) no es un IBAN válido. Revíselo.</value>
+  </data>
+  <!-- GS1 key helpers -->
+  <data name="Issue.Gs1.Key.Digits" xml:space="preserve">
+    <value>Solo se permiten dígitos.</value>
+  </data>
+  <data name="Issue.Gs1.Key.CheckDigit" xml:space="preserve">
+    <value>El dígito de control es incorrecto. Debería ser {0}.</value>
+  </data>
+  <data name="Issue.Gs1.Key.GtinLength" xml:space="preserve">
+    <value>Un GTIN tiene 8, 12, 13 o 14 dígitos.</value>
+  </data>
+  <data name="Issue.Gs1.Key.Indicator" xml:space="preserve">
+    <value>El dígito indicador debe ser de 0 a 9.</value>
+  </data>
+  <data name="Issue.Gs1.Key.CompanyPrefix" xml:space="preserve">
+    <value>Un prefijo de empresa GS1 tiene de 4 a 12 dígitos.</value>
+  </data>
+  <data name="Issue.Gs1.Key.Reference" xml:space="preserve">
+    <value>La referencia no puede estar vacía y debe estar formada por dígitos.</value>
+  </data>
+  <data name="Issue.Gs1.Key.CompanyPrefixTooLong" xml:space="preserve">
+    <value>El prefijo de empresa es demasiado largo: no deja espacio para la referencia.</value>
+  </data>
+  <data name="Issue.Gs1.Key.ReferenceTooLong" xml:space="preserve">
+    <value>La referencia es demasiado larga. Se permiten como máximo {0} caracteres.</value>
+  </data>
+  <data name="Issue.Gs1.Key.Extension" xml:space="preserve">
+    <value>El dígito de extensión debe ser de 0 a 9.</value>
+  </data>
+  <data name="Issue.Gs1.Key.Characters" xml:space="preserve">
+    <value>El carácter "{0}" no está permitido en datos GS1.</value>
+  </data>
+  <data name="Issue.Gs1.Key.NotMeasure" xml:space="preserve">
+    <value>El identificador ({0}) no es una medida con posición de punto decimal.</value>
+  </data>
+  <data name="Issue.Gs1.Key.MeasureRange" xml:space="preserve">
+    <value>La medida no puede ser negativa y puede tener como máximo {0} dígitos.</value>
+  </data>
+  <!-- QR content builder: messages -->
+  <data name="Issue.QrContent.Capacity.Dense" xml:space="preserve">
+    <value>El código QR está lleno al {0}% (versión {1}). Puede ser difícil de escanear. Acorte el contenido o elija un nivel de corrección de errores más bajo.</value>
+  </data>
+  <data name="Issue.QrContent.Capacity.Exceeded" xml:space="preserve">
+    <value>El contenido no cabe en un código QR con el nivel de corrección de errores "{2}": necesita {0} y el límite es {1}.</value>
+  </data>
+  <data name="Issue.QrContent.Capacity.Shorten" xml:space="preserve">
+    <value>Acorte el contenido para que quepa.</value>
+  </data>
+  <data name="Issue.QrContent.Capacity.TryLowerLevel" xml:space="preserve">
+    <value>Elegir el nivel de corrección de errores "{0}" haría que quepa.</value>
+  </data>
+  <data name="Issue.QrContent.Email.Address" xml:space="preserve">
+    <value>La dirección de correo no es válida. Revísela (por ejemplo nombre@ejemplo.com).</value>
+  </data>
+  <data name="Issue.QrContent.Email.Empty" xml:space="preserve">
+    <value>Escriba al menos una dirección de correo.</value>
+  </data>
+  <data name="Issue.QrContent.Event.EndBeforeStart" xml:space="preserve">
+    <value>El evento termina antes de empezar. Revise las fechas de inicio y fin.</value>
+  </data>
+  <data name="Issue.QrContent.Event.NoOffset" xml:space="preserve">
+    <value>La fecha no tiene zona horaria, así que se lee como hora UTC y puede verse desplazada en un calendario. Agregue la zona, por ejemplo -05:00.</value>
+  </data>
+  <data name="Issue.QrContent.Event.SummaryMissing" xml:space="preserve">
+    <value>Escriba un título para el evento.</value>
+  </data>
+  <data name="Issue.QrContent.Geo.Altitude" xml:space="preserve">
+    <value>La altitud no es un número válido.</value>
+  </data>
+  <data name="Issue.QrContent.Geo.Latitude" xml:space="preserve">
+    <value>La latitud debe ser un número entre -90 y 90.</value>
+  </data>
+  <data name="Issue.QrContent.Geo.Longitude" xml:space="preserve">
+    <value>La longitud debe ser un número entre -180 y 180.</value>
+  </data>
+  <data name="Issue.QrContent.MeCard.NameMissing" xml:space="preserve">
+    <value>Escriba un nombre o un apellido para el contacto.</value>
+  </data>
+  <data name="Issue.QrContent.VCard.NameMissing" xml:space="preserve">
+    <value>Escriba un nombre, un apellido o una organización para el contacto.</value>
+  </data>
+  <data name="Issue.QrContent.Phone.Invalid" xml:space="preserve">
+    <value>El número de teléfono no es válido. Use dígitos, opcionalmente con + y el código de país (por ejemplo +50761234567).</value>
+  </data>
+  <data name="Issue.QrContent.Sms.Long" xml:space="preserve">
+    <value>El mensaje tiene más de {0} caracteres, así que puede enviarse como varios mensajes.</value>
+  </data>
+  <data name="Issue.QrContent.Url.Empty" xml:space="preserve">
+    <value>Escriba la dirección web.</value>
+  </data>
+  <data name="Issue.QrContent.Url.Invalid" xml:space="preserve">
+    <value>La dirección web no es válida. Escríbala completa y sin espacios (por ejemplo https://ejemplo.com).</value>
+  </data>
+  <data name="Issue.QrContent.Url.Scheme" xml:space="preserve">
+    <value>La dirección empieza con "{0}", que muchas cámaras de teléfono no abrirán. Use https:// si puede.</value>
+  </data>
+  <data name="Issue.QrContent.Wifi.Password.Ignored" xml:space="preserve">
+    <value>Esta red no tiene seguridad, así que se ignora la contraseña. Borre la contraseña o elija un tipo de seguridad.</value>
+  </data>
+  <data name="Issue.QrContent.Wifi.Password.Length" xml:space="preserve">
+    <value>La longitud de la contraseña no es válida para este tipo de seguridad. Debe tener {0} caracteres.</value>
+  </data>
+  <data name="Issue.QrContent.Wifi.Password.Missing" xml:space="preserve">
+    <value>Escriba la contraseña de la red.</value>
+  </data>
+  <data name="Issue.QrContent.Wifi.Ssid.Empty" xml:space="preserve">
+    <value>Escriba el nombre de la red Wi-Fi.</value>
+  </data>
+  <data name="Issue.QrContent.Wifi.Ssid.TooLong" xml:space="preserve">
+    <value>El nombre de la red es demasiado largo (máximo {0} bytes; los caracteres con tilde usan más de uno).</value>
+  </data>
+  <data name="Issue.QrContent.Field.Required" xml:space="preserve">
+    <value>Este campo es obligatorio.</value>
+  </data>
+  <data name="Issue.QrContent.Field.TooLong" xml:space="preserve">
+    <value>Este texto es demasiado largo (máximo {1} caracteres). Acórtelo.</value>
+  </data>
+  <data name="Issue.QrContent.Field.Choice" xml:space="preserve">
+    <value>Elija uno de los valores disponibles.</value>
+  </data>
+  <data name="Issue.QrContent.Field.Number" xml:space="preserve">
+    <value>Escriba un número válido (use punto para los decimales).</value>
+  </data>
+  <data name="Issue.QrContent.Field.DateTime" xml:space="preserve">
+    <value>Escriba una fecha válida, o una fecha y hora con su zona (por ejemplo 2026-03-14T09:00:00-05:00).</value>
+  </data>
+  <!-- Barcode option labels (GS1 and QR) -->
+  <data name="Prop.DataMatrixGs1" xml:space="preserve">
+    <value>Los datos son GS1 (GS1 DataMatrix)</value>
+  </data>
+  <data name="Prop.DigitalLink" xml:space="preserve">
+    <value>Los datos son un enlace digital GS1</value>
+  </data>
+  <data name="Prop.QrMask" xml:space="preserve">
+    <value>Patrón de máscara</value>
+  </data>
+  <data name="Prop.QrInputMode" xml:space="preserve">
+    <value>Modo de entrada de datos</value>
+  </data>
+  <data name="Prop.QrContentSpec" xml:space="preserve">
+    <value>Contenido estructurado</value>
+  </data>
+  <data name="Qr.Level.L" xml:space="preserve">
+    <value>Baja (7%)</value>
+  </data>
+  <data name="Qr.Level.M" xml:space="preserve">
+    <value>Media (15%)</value>
+  </data>
+  <data name="Qr.Level.Q" xml:space="preserve">
+    <value>Cuartil (25%)</value>
+  </data>
+  <data name="Qr.Level.H" xml:space="preserve">
+    <value>Alta (30%)</value>
+  </data>
+  <data name="Qr.Model.1" xml:space="preserve">
+    <value>Modelo 1 (original)</value>
+  </data>
+  <data name="Qr.Model.2" xml:space="preserve">
+    <value>Modelo 2 (recomendado)</value>
+  </data>
+  <data name="Qr.Mask.Default" xml:space="preserve">
+    <value>Automático (la impresora elige)</value>
+  </data>
+  <data name="Qr.Mask.0" xml:space="preserve">
+    <value>Patrón 0</value>
+  </data>
+  <data name="Qr.Mask.1" xml:space="preserve">
+    <value>Patrón 1</value>
+  </data>
+  <data name="Qr.Mask.2" xml:space="preserve">
+    <value>Patrón 2</value>
+  </data>
+  <data name="Qr.Mask.3" xml:space="preserve">
+    <value>Patrón 3</value>
+  </data>
+  <data name="Qr.Mask.4" xml:space="preserve">
+    <value>Patrón 4</value>
+  </data>
+  <data name="Qr.Mask.5" xml:space="preserve">
+    <value>Patrón 5</value>
+  </data>
+  <data name="Qr.Mask.6" xml:space="preserve">
+    <value>Patrón 6</value>
+  </data>
+  <data name="Qr.Mask.7" xml:space="preserve">
+    <value>Patrón 7</value>
+  </data>
+  <data name="Qr.Input.Automatic" xml:space="preserve">
+    <value>Automático</value>
+  </data>
+  <data name="Qr.Input.ManualNumeric" xml:space="preserve">
+    <value>Manual: solo dígitos</value>
+  </data>
+  <data name="Qr.Input.ManualAlphanumeric" xml:space="preserve">
+    <value>Manual: mayúsculas y dígitos</value>
+  </data>
+  <data name="Qr.Input.ManualByte" xml:space="preserve">
+    <value>Manual: cualquier texto (bytes)</value>
+  </data>
+  <data name="Qr.Input.ManualKanji" xml:space="preserve">
+    <value>Manual: kanji</value>
+  </data>
+  <!-- QR content kinds -->
+  <data name="QrContent.Kind.Url" xml:space="preserve">
+    <value>Dirección web</value>
+  </data>
+  <data name="QrContent.Kind.Text" xml:space="preserve">
+    <value>Texto</value>
+  </data>
+  <data name="QrContent.Kind.Wifi" xml:space="preserve">
+    <value>Wi-Fi</value>
+  </data>
+  <data name="QrContent.Kind.VCard" xml:space="preserve">
+    <value>Contacto (vCard)</value>
+  </data>
+  <data name="QrContent.Kind.MeCard" xml:space="preserve">
+    <value>Contacto (MeCard)</value>
+  </data>
+  <data name="QrContent.Kind.GS1DigitalLink" xml:space="preserve">
+    <value>Enlace digital GS1</value>
+  </data>
+  <data name="QrContent.Kind.Email" xml:space="preserve">
+    <value>Correo electrónico</value>
+  </data>
+  <data name="QrContent.Kind.Phone" xml:space="preserve">
+    <value>Llamada telefónica</value>
+  </data>
+  <data name="QrContent.Kind.Sms" xml:space="preserve">
+    <value>Mensaje SMS</value>
+  </data>
+  <data name="QrContent.Kind.Location" xml:space="preserve">
+    <value>Ubicación</value>
+  </data>
+  <data name="QrContent.Kind.CalendarEvent" xml:space="preserve">
+    <value>Evento de calendario</value>
+  </data>
+  <!-- QR content fields -->
+  <data name="QrContent.Field.Url" xml:space="preserve">
+    <value>Dirección web</value>
+  </data>
+  <data name="QrContent.Field.StripTracking" xml:space="preserve">
+    <value>Quitar parámetros de seguimiento</value>
+  </data>
+  <data name="QrContent.Field.Text" xml:space="preserve">
+    <value>Texto</value>
+  </data>
+  <data name="QrContent.Field.Ssid" xml:space="preserve">
+    <value>Nombre de la red</value>
+  </data>
+  <data name="QrContent.Field.Password" xml:space="preserve">
+    <value>Contraseña</value>
+  </data>
+  <data name="QrContent.Field.Security" xml:space="preserve">
+    <value>Seguridad</value>
+  </data>
+  <data name="QrContent.Field.Hidden" xml:space="preserve">
+    <value>Red oculta</value>
+  </data>
+  <data name="QrContent.Field.FirstName" xml:space="preserve">
+    <value>Nombre</value>
+  </data>
+  <data name="QrContent.Field.LastName" xml:space="preserve">
+    <value>Apellido</value>
+  </data>
+  <data name="QrContent.Field.Organization" xml:space="preserve">
+    <value>Organización</value>
+  </data>
+  <data name="QrContent.Field.Title" xml:space="preserve">
+    <value>Título</value>
+  </data>
+  <data name="QrContent.Field.Phone" xml:space="preserve">
+    <value>Teléfono</value>
+  </data>
+  <data name="QrContent.Field.Mobile" xml:space="preserve">
+    <value>Teléfono móvil</value>
+  </data>
+  <data name="QrContent.Field.Email" xml:space="preserve">
+    <value>Correo electrónico</value>
+  </data>
+  <data name="QrContent.Field.Street" xml:space="preserve">
+    <value>Calle</value>
+  </data>
+  <data name="QrContent.Field.City" xml:space="preserve">
+    <value>Ciudad</value>
+  </data>
+  <data name="QrContent.Field.Region" xml:space="preserve">
+    <value>Provincia o región</value>
+  </data>
+  <data name="QrContent.Field.PostalCode" xml:space="preserve">
+    <value>Código postal</value>
+  </data>
+  <data name="QrContent.Field.Country" xml:space="preserve">
+    <value>País</value>
+  </data>
+  <data name="QrContent.Field.Note" xml:space="preserve">
+    <value>Nota</value>
+  </data>
+  <data name="QrContent.Field.Prefix" xml:space="preserve">
+    <value>Prefijo de la dirección web</value>
+  </data>
+  <data name="QrContent.Field.Gtin" xml:space="preserve">
+    <value>GTIN</value>
+  </data>
+  <data name="QrContent.Field.Lot" xml:space="preserve">
+    <value>Lote</value>
+  </data>
+  <data name="QrContent.Field.Serial" xml:space="preserve">
+    <value>Número de serie</value>
+  </data>
+  <data name="QrContent.Field.Expiry" xml:space="preserve">
+    <value>Fecha de vencimiento (AAMMDD)</value>
+  </data>
+  <data name="QrContent.Field.BestBefore" xml:space="preserve">
+    <value>Consumir preferentemente antes de (AAMMDD)</value>
+  </data>
+  <data name="QrContent.Field.ProductionDate" xml:space="preserve">
+    <value>Fecha de producción (AAMMDD)</value>
+  </data>
+  <data name="QrContent.Field.To" xml:space="preserve">
+    <value>Para</value>
+  </data>
+  <data name="QrContent.Field.Subject" xml:space="preserve">
+    <value>Asunto</value>
+  </data>
+  <data name="QrContent.Field.Body" xml:space="preserve">
+    <value>Cuerpo del mensaje</value>
+  </data>
+  <data name="QrContent.Field.Number" xml:space="preserve">
+    <value>Número de teléfono</value>
+  </data>
+  <data name="QrContent.Field.Message" xml:space="preserve">
+    <value>Mensaje</value>
+  </data>
+  <data name="QrContent.Field.Latitude" xml:space="preserve">
+    <value>Latitud</value>
+  </data>
+  <data name="QrContent.Field.Longitude" xml:space="preserve">
+    <value>Longitud</value>
+  </data>
+  <data name="QrContent.Field.Label" xml:space="preserve">
+    <value>Nombre del lugar</value>
+  </data>
+  <data name="QrContent.Field.Start" xml:space="preserve">
+    <value>Inicio</value>
+  </data>
+  <data name="QrContent.Field.End" xml:space="preserve">
+    <value>Fin</value>
+  </data>
+  <data name="QrContent.Field.Location" xml:space="preserve">
+    <value>Lugar</value>
+  </data>
+  <data name="QrContent.Field.Description" xml:space="preserve">
+    <value>Descripción</value>
+  </data>
+  <data name="QrContent.Field.AllDay" xml:space="preserve">
+    <value>Todo el día</value>
+  </data>
+  <!-- QR content choices -->
+  <data name="QrContent.Choice.Wpa" xml:space="preserve">
+    <value>WPA / WPA2</value>
+  </data>
+  <data name="QrContent.Choice.Wpa3Sae" xml:space="preserve">
+    <value>WPA3</value>
+  </data>
+  <data name="QrContent.Choice.Wep" xml:space="preserve">
+    <value>WEP (antiguo)</value>
+  </data>
+  <data name="QrContent.Choice.None" xml:space="preserve">
+    <value>Ninguna (red abierta)</value>
+  </data>
+  <!-- Data: errors added later -->
+  <data name="Data.Error.AuthenticationFailed.Probable" xml:space="preserve">
+    <value>El servidor cerró la conexión al iniciar sesión. Lo más probable es que el usuario o la contraseña sean incorrectos. Si usa una conexión cifrada, también puede ser el certificado del servidor.</value>
+  </data>
+  <data name="Data.Error.ParameterTypeUnknown" xml:space="preserve">
+    <value>La base de datos no puede saber de qué tipo es este parámetro.</value>
+  </data>
+  <data name="Data.Error.ParameterTypeUnknown.Hint" xml:space="preserve">
+    <value>Indique el tipo del parámetro en la consulta, por ejemplo @x::text.</value>
+  </data>
+  <data name="Data.Error.ParameterTypeMismatch" xml:space="preserve">
+    <value>El parámetro es de un tipo distinto al de la columna con la que se compara.</value>
+  </data>
+  <data name="Data.Error.ParameterTypeMismatch.Hint" xml:space="preserve">
+    <value>Pase un valor del tipo de la columna o convierta el parámetro, por ejemplo @x::numeric o @x::date.</value>
+  </data>
+  <data name="Data.Option.TrustServerCertificate.Help.MariaDb" xml:space="preserve">
+    <value>Acepta un certificado que no se puede verificar. En MariaDB con una cuenta con contraseña el certificado se verifica por su huella digital, así que un servidor con certificado autofirmado normalmente conecta sin esta opción.</value>
+  </data>
+  <data name="Conn.Field.table" xml:space="preserve">
+    <value>Nombre de la tabla</value>
+  </data>
+  <!-- Data packs: DuckDB, Firebird, Oracle, ClickHouse -->
+  <data name="Conn.Provider.DuckDb" xml:space="preserve">
+    <value>Archivo DuckDB</value>
+  </data>
+  <data name="Conn.Provider.Firebird" xml:space="preserve">
+    <value>Firebird</value>
+  </data>
+  <data name="Conn.Provider.Oracle" xml:space="preserve">
+    <value>Oracle Database</value>
+  </data>
+  <data name="Conn.Provider.ClickHouse" xml:space="preserve">
+    <value>ClickHouse</value>
+  </data>
+  <data name="Data.Option.DuckDb.FilePath" xml:space="preserve">
+    <value>Archivo de base de datos DuckDB</value>
+  </data>
+  <data name="Data.Option.DuckDb.FilePath.Help" xml:space="preserve">
+    <value>El archivo .duckdb de este equipo.</value>
+  </data>
+  <data name="Data.Option.MemoryLimitMb" xml:space="preserve">
+    <value>Límite de memoria (MB)</value>
+  </data>
+  <data name="Data.Option.MemoryLimitMb.Help" xml:space="preserve">
+    <value>Límite opcional de memoria que puede usar una consulta.</value>
+  </data>
+  <data name="Data.Option.Firebird.Database" xml:space="preserve">
+    <value>Ruta o alias de la base de datos en el servidor</value>
+  </data>
+  <data name="Data.Option.Firebird.Database.Help" xml:space="preserve">
+    <value>La ruta tal como la ve el servidor (C:\datos\ventas.fdb) o un alias de databases.conf.</value>
+  </data>
+  <data name="Data.Option.Firebird.Encrypt.Help" xml:space="preserve">
+    <value>Cifra toda la conexión. Con usuario y contraseña es obligatorio: si el servidor no puede cifrar, la conexión falla.</value>
+  </data>
+  <data name="Data.Option.Firebird.Role" xml:space="preserve">
+    <value>Rol SQL (opcional)</value>
+  </data>
+  <data name="Data.Option.Firebird.Role.Help" xml:space="preserve">
+    <value>Use un rol que solo pueda leer (SELECT).</value>
+  </data>
+  <data name="Data.Option.Oracle.Database" xml:space="preserve">
+    <value>Nombre de servicio</value>
+  </data>
+  <data name="Data.Option.Oracle.Database.Help" xml:space="preserve">
+    <value>El servicio que ofrece el listener (por ejemplo ORCLPDB1).</value>
+  </data>
+  <data name="Data.Option.Oracle.Encrypt.Help" xml:space="preserve">
+    <value>Usa TLS. Desactívelo solo para un listener sin TLS.</value>
+  </data>
+  <data name="Data.Option.Oracle.TrustServerCertificate" xml:space="preserve">
+    <value>No comprobar el nombre del servidor en el certificado</value>
+  </data>
+  <data name="Data.Option.Oracle.TrustServerCertificate.Help" xml:space="preserve">
+    <value>Mantiene TLS pero omite la comprobación del nombre. Reduce la seguridad.</value>
+  </data>
+  <data name="Data.Option.Oracle.ConnectBy" xml:space="preserve">
+    <value>El nombre de arriba es</value>
+  </data>
+  <data name="Data.Option.Oracle.ConnectBy.Service" xml:space="preserve">
+    <value>Nombre de servicio</value>
+  </data>
+  <data name="Data.Option.Oracle.ConnectBy.Sid" xml:space="preserve">
+    <value>SID (estilo antiguo)</value>
+  </data>
+  <data name="Data.Option.Oracle.ConnectBy.Alias" xml:space="preserve">
+    <value>Nombre de tnsnames.ora</value>
+  </data>
+  <data name="Data.Option.Oracle.TnsAdmin" xml:space="preserve">
+    <value>Carpeta con tnsnames.ora</value>
+  </data>
+  <data name="Data.Option.Oracle.TnsAdmin.Help" xml:space="preserve">
+    <value>Solo para nombres de tnsnames.ora.</value>
+  </data>
+  <data name="Data.Option.Oracle.WalletDirectory" xml:space="preserve">
+    <value>Carpeta de wallet (certificados TLS)</value>
+  </data>
+  <data name="Data.Option.Oracle.WalletDirectory.Help" xml:space="preserve">
+    <value>Un wallet de Oracle con los certificados de confianza, si el almacén de Windows no basta.</value>
+  </data>
+  <data name="Data.Option.ClickHouse.ServerTimeLimit" xml:space="preserve">
+    <value>Dejar que el servidor detenga las consultas largas (requiere una cuenta que pueda cambiar ajustes)</value>
+  </data>
+  <data name="Data.Option.ClickHouse.ServerTimeLimit.Help" xml:space="preserve">
+    <value>Desactivado por defecto: las cuentas de perfil de solo lectura son rechazadas si un ajuste cambia.</value>
+  </data>
+  <data name="QrContent.Open" xml:space="preserve">
+    <value>Asistente de contenido...</value>
+  </data>
+  <data name="Gs1Builder.Open" xml:space="preserve">
+    <value>Asistente GS1...</value>
+  </data>
+  <data name="QrContent.Status.Built" xml:space="preserve">
+    <value>Creado con el asistente de contenido: {0}. Si edita el texto a mano, se elimina esta definición.</value>
+  </data>
+  <data name="QrContent.Status.Unreadable" xml:space="preserve">
+    <value>No se puede leer la definición de contenido guardada. Abra el asistente de contenido para crearla de nuevo.</value>
+  </data>
+  <data name="QrContent.Status.Cleared" xml:space="preserve">
+    <value>Editó el texto a mano, así que se eliminó la definición del asistente de contenido. Abra el asistente para empezar de nuevo desde un formulario.</value>
+  </data>
+  <data name="Undo.QrContentBuilder" xml:space="preserve">
+    <value>asistente de contenido QR</value>
+  </data>
+  <data name="Undo.Gs1Builder" xml:space="preserve">
+    <value>asistente GS1</value>
+  </data>
+  <data name="Qr.Capacity.Empty" xml:space="preserve">
+    <value>Todavía no hay nada que medir. El medidor aparece cuando el código tiene contenido.</value>
+  </data>
+  <data name="Qr.Capacity.Fits" xml:space="preserve">
+    <value>Cabe: {0}% de la capacidad con nivel {1}, versión {2}</value>
+  </data>
+  <data name="Qr.Capacity.FitsModel1" xml:space="preserve">
+    <value>Cabe: {0}% de la capacidad con nivel {1} (modelo 1)</value>
+  </data>
+  <data name="Qr.Capacity.Dense" xml:space="preserve">
+    <value>Casi lleno: {0}% de la capacidad con nivel {1}, versión {2}. Baje el nivel o acorte el texto para que se lea con más facilidad.</value>
+  </data>
+  <data name="Qr.Capacity.DenseModel1" xml:space="preserve">
+    <value>Casi lleno: {0}% de la capacidad con nivel {1} (modelo 1). Baje el nivel o acorte el texto para que se lea con más facilidad.</value>
+  </data>
+  <data name="Qr.Capacity.Exceeded" xml:space="preserve">
+    <value>No cabe con el nivel {0}: necesita {1} y el límite es {2}. Baje el nivel o acorte el texto.</value>
+  </data>
+  <data name="Qr.Capacity.TryLevel" xml:space="preserve">
+    <value>Con el nivel {0} cabría.</value>
+  </data>
+  <data name="Qr.Capacity.Shorten" xml:space="preserve">
+    <value>Ni siquiera el nivel más bajo alcanza: acorte el texto.</value>
+  </data>
+  <data name="Qr.Capacity.Suggest" xml:space="preserve">
+    <value>Nivel sugerido para este contenido: {0}.</value>
+  </data>
+  <data name="Qr.Capacity.Basis" xml:space="preserve">
+    <value>Medido con el más largo de los {0} registros cargados.</value>
+  </data>
+  <data name="Qr.Size.Printed" xml:space="preserve">
+    <value>Tamaño impreso: {0} mm ({1} in) por lado a {2} dpi (versión {3}).</value>
+  </data>
+  <data name="Qr.Size.Module" xml:space="preserve">
+    <value>Cada módulo mide {0} mm de ancho a {1} dpi.</value>
+  </data>
+  <data name="Qr.Size.TooSmall" xml:space="preserve">
+    <value>Demasiado pequeño para leerse: cada módulo mide {0} mm. Use al menos {1} puntos (unos {2} mm) por módulo a {3} dpi.</value>
+  </data>
+  <data name="QrContent.Title" xml:space="preserve">
+    <value>Asistente de contenido QR</value>
+  </data>
+  <data name="QrContent.Apply" xml:space="preserve">
+    <value>Aplicar al código</value>
+  </data>
+  <data name="QrContent.KindHeading" xml:space="preserve">
+    <value>¿Qué debe hacer el código al escanearlo?</value>
+  </data>
+  <data name="QrContent.Preview" xml:space="preserve">
+    <value>Vista previa</value>
+  </data>
+  <data name="QrContent.GeneratedText" xml:space="preserve">
+    <value>Texto del código</value>
+  </data>
+  <data name="QrContent.Capacity" xml:space="preserve">
+    <value>Capacidad</value>
+  </data>
+  <data name="QrContent.Problems" xml:space="preserve">
+    <value>Por corregir</value>
+  </data>
+  <data name="QrContent.UseFixed" xml:space="preserve">
+    <value>Usar un valor fijo</value>
+  </data>
+  <data name="QrContent.Characters" xml:space="preserve">
+    <value>{0} caracteres</value>
+  </data>
+  <data name="QrContent.Password.Warning" xml:space="preserve">
+    <value>La contraseña se imprime en el código como texto normal: quien lo escanee puede leerla. Se muestra aquí a propósito, para que pueda comprobarla.</value>
+  </data>
+  <data name="QrContent.Hint.Text" xml:space="preserve">
+    <value>Ejemplo: {0}</value>
+  </data>
+  <data name="QrContent.Hint.Multiline" xml:space="preserve">
+    <value>Puede escribir varias líneas. Ejemplo: {0}</value>
+  </data>
+  <data name="QrContent.Hint.Phone" xml:space="preserve">
+    <value>Un número de teléfono con el código del país. Ejemplo: {0}</value>
+  </data>
+  <data name="QrContent.Hint.Email" xml:space="preserve">
+    <value>Una dirección de correo. Ejemplo: {0}</value>
+  </data>
+  <data name="QrContent.Hint.Url" xml:space="preserve">
+    <value>Una dirección web completa que empiece por https://. Ejemplo: {0}</value>
+  </data>
+  <data name="QrContent.Hint.Number" xml:space="preserve">
+    <value>Un número; use punto para los decimales. Ejemplo: {0}</value>
+  </data>
+  <data name="QrContent.Hint.Digits" xml:space="preserve">
+    <value>Solo dígitos. Ejemplo: {0}</value>
+  </data>
+  <data name="QrContent.Hint.DateTime" xml:space="preserve">
+    <value>Elija la fecha, escriba la hora en horas y minutos (09:30), o enlace un campo. Ejemplo: {0}</value>
+  </data>
+  <data name="QrContent.Preview.Waiting" xml:space="preserve">
+    <value>Rellene el formulario y el código aparecerá aquí.</value>
+  </data>
+  <data name="QrContent.Preview.Fix" xml:space="preserve">
+    <value>El código aparece cuando se corrijan los problemas indicados.</value>
+  </data>
+  <data name="QrContent.Preview.Bound" xml:space="preserve">
+    <value>Los campos enlazados muestran el valor del registro del lienzo, o su ejemplo.</value>
+  </data>
+  <data name="QrContent.Waiting" xml:space="preserve">
+    <value>Rellene los campos marcados con * para continuar.</value>
+  </data>
+  <data name="Gs1Builder.Title.Gs128" xml:space="preserve">
+    <value>Asistente GS1-128</value>
+  </data>
+  <data name="Gs1Builder.Title.DataMatrix" xml:space="preserve">
+    <value>Asistente GS1 DataMatrix</value>
+  </data>
+  <data name="Gs1Builder.Apply" xml:space="preserve">
+    <value>Aplicar al código de barras</value>
+  </data>
+  <data name="Gs1Builder.Value" xml:space="preserve">
+    <value>Valor</value>
+  </data>
+  <data name="Gs1Builder.ValueLabel" xml:space="preserve">
+    <value>Valor</value>
+  </data>
+  <data name="Gs1Builder.UnknownAi" xml:space="preserve">
+    <value>Identificador desconocido</value>
+  </data>
+  <data name="Gs1Builder.Format" xml:space="preserve">
+    <value>Formato {0}, hasta {1} caracteres.</value>
+  </data>
+  <data name="Gs1Builder.Preset.Shipping" xml:space="preserve">
+    <value>Envío (SSCC)</value>
+  </data>
+  <data name="Gs1Builder.Preset.Shipping.Detail" xml:space="preserve">
+    <value>Un palé o bulto: su código de contenedor de envío (SSCC).</value>
+  </data>
+  <data name="Gs1Builder.Preset.Product" xml:space="preserve">
+    <value>Producto (GTIN, lote, caducidad)</value>
+  </data>
+  <data name="Gs1Builder.Preset.Product.Detail" xml:space="preserve">
+    <value>El código del producto con su lote y su fecha de caducidad.</value>
+  </data>
+  <data name="Gs1Builder.Preset.Serial" xml:space="preserve">
+    <value>Serialización (GTIN, serie)</value>
+  </data>
+  <data name="Gs1Builder.Preset.Serial.Detail" xml:space="preserve">
+    <value>El código del producto con un número de serie para cada unidad.</value>
+  </data>
+  <data name="Gs1Builder.Results.Popular" xml:space="preserve">
+    <value>Identificadores habituales. Escriba para buscar entre todos.</value>
+  </data>
+  <data name="Gs1Builder.Results.Count" xml:space="preserve">
+    <value>{0} identificadores encontrados</value>
+  </data>
+  <data name="Gs1Builder.Counter" xml:space="preserve">
+    <value>{0} de {1} caracteres</value>
+  </data>
+  <data name="Gs1Builder.Counter.Estimated" xml:space="preserve">
+    <value>Unos {0} de {1} caracteres (los campos enlazados son una estimación)</value>
+  </data>
+  <data name="Gs1Builder.Counter.Open" xml:space="preserve">
+    <value>{0} caracteres</value>
+  </data>
+  <data name="Gs1Builder.TooLong" xml:space="preserve">
+    <value>El mensaje necesita {0} caracteres y GS1-128 admite como máximo {1}. Quite un identificador o use valores más cortos.</value>
+  </data>
+  <data name="Gs1Builder.Bound.Unchecked" xml:space="preserve">
+    <value>Este valor viene de un campo. Se comprueba con los datos al imprimir.</value>
+  </data>
+  <data name="Gs1Builder.Hint.Empty" xml:space="preserve">
+    <value>Elija un tipo de uso o añada identificadores de la lista para empezar.</value>
+  </data>
+  <data name="Gs1Builder.Hint.Incomplete" xml:space="preserve">
+    <value>Rellene el valor de cada identificador para continuar.</value>
+  </data>
+  <data name="Gs1Builder.MoveUp" xml:space="preserve">
+    <value>Subir</value>
+  </data>
+  <data name="Gs1Builder.MoveDown" xml:space="preserve">
+    <value>Bajar</value>
+  </data>
+  <data name="Gs1Builder.Remove" xml:space="preserve">
+    <value>Quitar este identificador</value>
+  </data>
+  <data name="Gs1Builder.PresetHeading" xml:space="preserve">
+    <value>Empezar desde un uso</value>
+  </data>
+  <data name="Gs1Builder.PickerHeading" xml:space="preserve">
+    <value>Añadir un identificador</value>
+  </data>
+  <data name="Gs1Builder.Search" xml:space="preserve">
+    <value>Buscar identificadores</value>
+  </data>
+  <data name="Gs1Builder.Search.Tip" xml:space="preserve">
+    <value>Escriba el número de un identificador (10) o palabras de su nombre (expiry).</value>
+  </data>
+  <data name="Gs1Builder.PickerKeys" xml:space="preserve">
+    <value>Intro o doble clic añade el identificador. Flecha abajo pasa a la lista.</value>
+  </data>
+  <data name="Gs1Builder.Results" xml:space="preserve">
+    <value>Identificadores encontrados</value>
+  </data>
+  <data name="Gs1Builder.SegmentsHeading" xml:space="preserve">
+    <value>El mensaje</value>
+  </data>
+  <data name="Gs1Builder.Empty" xml:space="preserve">
+    <value>Todavía no hay identificadores. Elija un uso a la izquierda, o busque un identificador y añádalo.</value>
+  </data>
+  <data name="Gs1Builder.Preview" xml:space="preserve">
+    <value>Vista previa</value>
+  </data>
+  <data name="Gs1Builder.Preview.Waiting" xml:space="preserve">
+    <value>El símbolo aparece cuando todos los valores son válidos.</value>
+  </data>
+  <data name="Gs1Builder.Readable" xml:space="preserve">
+    <value>Forma legible</value>
+  </data>
+  <data name="Gs1Builder.Fnc1Heading" xml:space="preserve">
+    <value>Caracteres codificados con FNC1</value>
+  </data>
+  <data name="Gs1Builder.Fnc1Help" xml:space="preserve">
+    <value>[FNC1] marca el carácter especial que inicia el símbolo y separa los valores de longitud variable.</value>
+  </data>
+  <data name="Gs1Builder.CounterHeading" xml:space="preserve">
+    <value>Longitud</value>
+  </data>
+  <data name="QrContent.Flag.On" xml:space="preserve">
+    <value>Sí</value>
+  </data>
+  <data name="QrContent.Time.Tip" xml:space="preserve">
+    <value>Hora del día en horas y minutos, por ejemplo 09:30</value>
   </data>
 </root>

@@ -73,7 +73,7 @@ and what to do.
 | `open_label` / `save_label` | Read and write `.rotula` files in an allowed folder. Saves are atomic; an existing file is replaced only with `overwrite` or when saving back to the file it was opened from. |
 | `get_label` | Summary plus every element with its id. |
 | `set_label_settings` | Size, margins, orientation, media type and tracking, default rotation and font, copies (`^PQ`), name. |
-| `set_variable` | Declares a `{{variable}}` and its sample value. |
+| `set_variable` | Declares a `{{variable}}`: a plain text variable with a sample value, or one that works out its own value (`kind` `date`, `counter`, `prompt` or `computed`, with a `definition` object). See "Variables" below. |
 | `undo_last` | Reverts the last change; 20 steps are kept. Covers every tool that changes the label, including create, open, import and convert. |
 
 **Elements.**
@@ -85,7 +85,7 @@ and what to do.
 | `add_qr` | Shortcut for a QR code. |
 | `add_box`, `add_line`, `add_circle` | Graphics. |
 | `add_image` | A PNG from an allowed folder, converted to black and white (`Threshold`, `FloydSteinberg`, `Ordered`). PNG only; at most 4096 x 4096 pixels. |
-| `add_data_field` | A text field bound to a variable, for data merge. |
+| `add_data_field` | A text element whose content is `{{variable}}`, for data merge (kept for compatibility; it is the same as `add_text` with that content). |
 | `update_element` | Changes properties by name, for example `{"text":"New","fontHeight":8}`. A barcode also accepts `options` (the same object as in `add_barcode`). Unknown names are refused with the list of valid ones; nothing changes if any value is rejected. |
 | `move_element`, `delete_element`, `duplicate_element`, `reorder_element` | Position, removal, copy and drawing order. |
 
@@ -99,7 +99,7 @@ and what to do.
 | `import_zpl` | Turns ZPL text or a `.zpl` file into a label. Unsupported commands are kept as raw ZPL and listed as warnings. |
 | `convert_dpi` | Rescales the label to another printer resolution, keeping the physical size. |
 | `render_preview` | PNG of the label as an image, plus its size. **The preview is approximate**: text is drawn with stand-in fonts, so widths differ from the printer's fonts. Every preview says so. |
-| `merge_preview` | Fills the variables from record N (counting from 1) of a `.csv`/`.xlsx` file, or of a database query, and returns the values, unmatched variables, merged ZPL and a preview. |
+| `merge_preview` | Fills the variables from record N (counting from 1) of a `.csv`/`.xlsx` file, or of a database query, and returns the values, unmatched variables, merged ZPL and a preview. Variables the label works out itself (dates, counters, computed values) are resolved for that record and are not reported as unmatched. |
 
 **Printers and databases.**
 
@@ -113,6 +113,39 @@ and what to do.
 
 **Resources and prompts.** The open label is available as the resources `rotula://label/zpl` and `rotula://label/json`.
 Three prompts are offered: `design_shipping_label`, `convert_old_zpl_label` and `fix_validation_warnings`.
+
+## Variables
+
+`set_variable(name, sampleValue, kind, definition)` declares a variable. Without `kind` an existing variable keeps its kind and settings and a
+new one is plain text, exactly as before. The `definition` object holds the settings of the kind; settings you leave out keep their current value,
+and a setting name that does not exist is refused with the list of valid ones. The whole definition is checked before anything changes: a refused
+call leaves the label as it was and does not count as an undo step. Changing the kind drops the old definition.
+
+| Kind | Settings in `definition` |
+|---|---|
+| `date` | `source` (`computer`, `printer`, `fixed`), `fixedDate`, `offsets` (a list such as `["+30 days", "-1 month", "2 business days"]`; units seconds, minutes, hours, days, businessDays, weeks, months, years), `format` (a preset such as `iso`, `gs1`, `julian`, `isoWeek`, `expiry`, or a .NET pattern such as `dd/MM/yyyy`), `culture`, `utc`, `rounding` (`None`, `StartOfDay`, `EndOfDay`, `StartOfMonth`, `EndOfMonth`, `StartOfYear`, `EndOfYear`), `holidays` (`["2026-12-25"]`) |
+| `counter` | `kind` (`numeric`, `alphanumeric`), `start`, `step`, `padding`, `prefix`, `suffix`, `overflow` (`wrap`, `error`), `remember` |
+| `prompt` | `label`, `type` (`text`, `number`, `date`, `choice`), `default`, `required`, `pattern`, `minLength`, `maxLength`, `choices`, `uppercase`, `rememberLast`, `helpText`, `overrideRecord`, `dateFormat` |
+| `computed` | `expression`, for example `upper(left(sku, 3)) & '-' & padleft(qty, 4, '0')` |
+
+Example: `set_variable("expiry", kind="date", definition={"offsets":["+30 days"],"format":"gs1"})`, then `add_text("EXP {{expiry}}", ...)`.
+
+What the other tools do with them:
+
+- `render_preview`, `generate_zpl`, `merge_preview` and the `rotula://label/zpl` resource work out dates, computed values and counters (a counter that
+  remembers its value shows the next number from `%AppData%\Rotula\counters.json`; the server only reads that file and never reserves or changes a number. If the file does not exist it creates nothing; if it does, a small `counters.json.lock` file may appear beside it while it is read), and
+  prompts show their defaults. A date that uses the printer clock produces clock codes in `generate_zpl`.
+- `validate_label` reports expression errors, bad formats, bad patterns and, as warnings, printer-clock fallbacks and unknown names.
+- `get_label` lists each variable with its `kind` and a one-sentence `definition`.
+- Limits: 500 variables per label, expression 1000 characters, 16 offsets, 400 holidays, 200 choices, texts 500 characters. Larger values are refused.
+- The expression language has no loops, no file, network or program access, and fixed limits on length, depth and result size. Regular expressions of
+  prompts run on a non-backtracking engine with a time limit.
+
+**Printing labels with variables.** `print_label` works out dates and computed values when the job is sent (a date from the printer's own clock is
+sent as the computer's date), and the confirmation code covers the shape of the job rather than the second it was made. It **refuses** a label with a
+counter that remembers its last value, because this server cannot record the numbers it prints (print such labels from the Rotula app). A label with
+prompt variables is refused until the call includes `answers` (an object of variable name to answer); the refusal lists the questions so the assistant
+can ask the user. Answers are checked with the same rules as the app, and a different answer is a different job with a different code.
 
 ## Printing
 

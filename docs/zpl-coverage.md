@@ -94,7 +94,7 @@ Nothing is silently dropped.
 | Command | Name | Status | Generate | Read | Preview | What it does |
 |---|---|---|:---:|:---:|:---:|---|
 | `^FB` | Field block | Supported | Yes | Yes | Close | Wraps text inside a block of a given width, with line limit, spacing, alignment and hanging indent. The preview uses a stand-in typeface, so line breaks can differ a little from the printer. |
-| `^FC` | Field clock indicators | Supported | Yes | Yes | No | Chooses the characters that mark real-time-clock codes (date and time) inside a field. The preview shows the codes as typed, not the date. Works only on printers with a clock. |
+| `^FC` | Field clock indicators | Supported | Yes | Yes | No | Chooses the characters that mark real-time-clock codes (date and time) inside a field. The preview shows the codes as typed, not the date. Works only on printers with a clock. A date variable set to use the printer clock writes this command by itself (see docs/variables.md). |
 | `^FD` | Field data | Supported | Yes | Yes | Close | Holds the text or data of a field. |
 | `^FE` | Field number embedding character | Supported | Yes | Yes | No | Chooses the character that marks references to numbered fields inside the data of a field. The text is written unchanged; the printer expands the references. |
 | `^FH` | Hexadecimal escapes in field data | Supported | Yes | Yes | Close | Lets field data carry any byte as an underscore and two hex digits, so accents and control characters survive. Written automatically whenever the text needs it. |
@@ -261,7 +261,7 @@ Nothing is silently dropped.
 | `^SC` | Serial communications | Out of scope | No | No | No | Sets the serial port speed and format. *Out of scope: Printer administration: it changes how the device is set up, not what a label looks like.* |
 | `^SE` | Encoding table | Out of scope | No | No | No | Chooses the encoding table the printer uses. *Out of scope: Printer administration: it changes how the device is set up, not what a label looks like.* |
 | `^SL` | Clock mode and language | Passthrough | No | No | No | Sets the format and language the printer uses for date and time codes in fields. Kept verbatim. |
-| `^SO` | Clock offset | Passthrough | No | No | No | Sets an offset added to the real-time clock for date and time codes. Kept verbatim. |
+| `^SO` | Clock offset | Passthrough | No | No | No | Sets an offset added to the real-time clock for date and time codes. Kept verbatim when imported. Rotula also writes it by itself for date variables that use the printer clock with an offset (see docs/variables.md); that copy is not read back into the model. |
 | `^SR` | Printhead resistance | Out of scope | No | No | No | Sets the printhead resistance value. *Out of scope: Printer administration: it changes how the device is set up, not what a label looks like.* |
 | `^ST` | Set date and time | Out of scope | No | No | No | Sets the printer's real-time clock. *Out of scope: Printer administration: it changes how the device is set up, not what a label looks like.* |
 | `^SZ` | ZPL mode | Out of scope | No | No | No | Chooses between ZPL and ZPL II. *Out of scope: Printer administration: it changes how the device is set up, not what a label looks like.* |

@@ -202,6 +202,22 @@ public sealed class WpfToolDialogService : IToolDialogService
     }
 
     /// <inheritdoc />
+    public bool ShowQrContentBuilder(Rotula.App.ViewModels.QrContentBuilderViewModel viewModel)
+    {
+        var window = new ContentBuilderWindow(viewModel) { Owner = Application.Current?.MainWindow };
+        window.ShowDialog();
+        return viewModel.Applied;
+    }
+
+    /// <inheritdoc />
+    public bool ShowGs1Builder(Rotula.App.ViewModels.Gs1BuilderViewModel viewModel)
+    {
+        var window = new Gs1BuilderWindow(viewModel) { Owner = Application.Current?.MainWindow };
+        window.ShowDialog();
+        return viewModel.Applied;
+    }
+
+    /// <inheritdoc />
     public void ShowDataWindow(Rotula.App.ViewModels.DataMergeViewModel viewModel)
     {
         if (_dataWindow is { IsLoaded: true })

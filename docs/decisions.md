@@ -70,6 +70,25 @@ The Data window has a source switch: File (CSV / Excel) or Database. Database mo
 - **Row cap** 100,000 by default (1 to 1,000,000); a truncated result shows an amber note and the same note stays in the load warnings.
 - **Accessibility**: the shared TabControl template now names its content host `PART_SelectedContentHost`; without it WPF did not expose the content of any tab to UI Automation.
 
+### Fields and data binding (field picker)
+Any element with content can be bound to data; there is no separate "Data field" tool (a `DataFieldElement` is only read from old files and shows up as a
+Text element with the field as its content: the Objects list says Text with a {} badge, the Properties panel shows a Text row; the first edit that cannot be
+written as "one field" turns it into an ordinary text element with the same id and place; old files print exactly as before).
+- **One list, `FieldsViewModel`** (on `MainViewModel.Fields`): the columns of the loaded data (CSV, Excel, database), the counters' `#Name` virtual columns and the
+  label's own variables, de-duplicated case-insensitively (the column wins). It follows load, replace and clear, the record navigator (sample values) and
+  the counter list, and raises `FieldsChanged`. The control is disabled, with "Load data first: Printer > Data merge", while the list is empty.
+- **Placeholders must match Core's name rule** (`#?[A-Za-z_][A-Za-z0-9_]*`). A column such as "Unit price", or one with an accent, is offered as `{{Unit_price}}`
+  and the match to the real column is stored as a column override of the Data merge settings (the same mapping the Variables tab shows), so what the picker
+  writes always resolves.
+- **Content row** (`TextRow` with fields): `[Fixed value | Field v]`. Choosing a field makes the content a pure binding `{{Name}}` shown as a chip with an (x) that goes back
+  to fixed text (the shown record's value); "Insert field" and typing `{{` (autocomplete, `FieldBox`) insert at the caret to mix text and fields. Insert, bind and unbind are
+  undo steps of their own and never merge with typing. Images bound to a field are a later Core feature; the row type is the extension point.
+- **Missing columns**: a name used by an element that the loaded data cannot feed (the same "unmapped" list as the Variables tab) gets an amber warning icon in the
+  Objects list and under the content row. Nothing is drawn on the label. Names the label defines itself (dates, counters, prompts) are never flagged.
+- **Add to label** (Variables tab of the Data window): a text element with `{{Column}}` as content, or Code 128 / QR code through the arrow next to it; "Add all fields"
+  stacks one text per column below the existing elements with an even gap, shrinks the text to fit and warns when it still does not. A text variable with the current
+  sample is declared in the same undo step so the label stays readable without data. "Use here" puts the field into the element selected on the label.
+
 ### Undo/redo
 Memento command: each edit stores the whole document before/after (documents are small; image pixels are shared). Unlimited.
 Arrow nudges and typing in one property merge into one step within one second. Drags are gestures: one undo step per drag.
@@ -318,15 +337,46 @@ SNI component, and a sentence saying that installing means agreeing to those ter
 zip, the installed folder, as a release file and as the winget agreement). Still open: a lawyer should review the wording and the indemnity question before
 wider distribution (flagged in `docs/releasing.md`). Until then this decision is accepted but not claimed to be fully discharged.
 
+### Provider packs built in phase 2, group 1: Oracle, Firebird, DuckDB, ClickHouse
+All four are separate folders built by `scripts\build-packs.ps1` into `artifacts\packs\<id>\` (git-ignored); `src\PackProject.props` holds what they share.
+Each folder is complete (its own driver, native libraries, `pack.json`, `NOTICES.txt` generated from the files the build really produced, `README.md`).
+- **A pack references the host assemblies as plain files, not as a project reference.** A project reference to `Rotula.Data` drags its whole
+  package graph (SQL Server networking with its non-MIT licence, SQLite, Npgsql, MySqlConnector) into the pack folder, with licences the pack's
+  notices would not cover. `Rotula.Data`, `Rotula.Data.Abstractions` and `Rotula.Core` are compile-only references; a test fails if any of them, or
+  any driver of another pack, appears in a published pack folder or if a DLL is missing from `NOTICES.txt`.
+- **Publish is `win-x64`, not self-contained, never trimmed or bundled.** The runtime identifier only selects the one native library set (DuckDB
+  ships five); the .NET runtime is Rotula's. Trimming would modify Oracle's DLL, which its licence forbids.
+- **Provider API 1.1** (additive; a 1.0 pack still loads): `IProviderDescriptor.FormatCell` (a pack can write a value the driver's .NET type
+  cannot hold: DuckDB `DECIMAL(38)` would silently lose digits as a `System.Decimal`; Firebird loses the trailing zeros of a price and returns
+  `DECFLOAT` as `125E-2`), and `SqlDialect.IdentifierBackslashEscapes`. The packs that use them (Firebird, DuckDB, ClickHouse) declare `minDataApiVersion` 1.1; Oracle stays at 1.0.
+- **Oracle** (`Oracle.ManagedDataAccess.Core` 23.26.301): accepted as an optional pack, shipped unmodified with its licence in `NOTICES.txt`; the
+  pack's README repeats the conditions in plain words (no fee for the add-on itself, keep the folder intact, no reverse engineering: the API was
+  taken from Oracle's documentation, not from the DLL). The package has `net8.0`/`netstandard2.1` builds only and runs on .NET 10 (a real
+  connection attempt went through the whole network stack); Oracle states no .NET 10 support. The "information collection" clause names installers
+  and auto-update, which a library has not; no network trace was made. TLS (TCPS) is on by default; the connect descriptor is built only from parts
+  restricted to letters, digits and `. - _ $ #`, so a value cannot add descriptor keywords. **Unverified against a real server** (none is available):
+  see the pack README.
+- **Firebird** (`FirebirdSql.Data.FirebirdClient` 10.3.4, IDPL 1.0): shipped unmodified, the licence and the upstream source URL are in `NOTICES.txt`.
+  Only the library's own files carry the copyleft; Rotula's pack code is a separate MIT file. Read-only is a READ ONLY snapshot transaction, verified
+  on a real Firebird 5.0.4 server (official zip, SHA-256 checked, bound to 127.0.0.1 in a scratch folder, stopped and deleted afterwards): it
+  refuses writes even for SYSDBA, also from selectable procedures and `IN AUTONOMOUS TRANSACTION`. Firebird has no TLS: "Encrypt" means
+  wire encryption, required whenever a session key exists (user and password).
+- **DuckDB** (`DuckDB.NET.Data.Full` 1.5.6, MIT): the file is opened `access_mode=READ_ONLY` with `enable_external_access=false`, no extension
+  auto-install or auto-load, and `lock_configuration=true`, all as open-time configuration (a `SET` afterwards would be refused by the lock).
+  Verified against the real engine, including that file reads, `COPY`, `ATTACH`, `INSTALL` fail and that nothing can be switched back on. `:memory:`,
+  `md:` (cloud), UNC and URL paths are refused. DuckDB block comments nest (verified), so the lexer nests them.
+- **ClickHouse** (`ClickHouse.Driver` 1.5.0, MIT, the maintained successor of `ClickHouse.Client`, with a `net10.0` build): `readonly=1` is
+  sent with every request, once, as the last URL parameter, by a handler in front of the driver. ClickHouse has no native Windows build, so
+  the server side is **unverified**; the requests the real driver produces are verified with a fake network, and the server's rules were read
+  in its source (`SettingsConstraints.cpp`, `HTTPHandler.cpp`): a profile with `readonly=1` refuses any setting whose value changes (except
+  `database`, `default_format` and a few more), so the pack sends no time limit by default (opt-in `serverTimeLimit`), drops the driver's
+  `enable_http_compression=false`, and an account with a `readonly=2` profile cannot be used (it may not change `readonly`). Quoted identifiers use the string
+  escape rules ("the same rules ... also apply for string literals", vendor Syntax page), so `QuoteIdentifier` doubles backslashes for it.
+- **Guard changes found by the real engines**: Oracle `table@"LINK"` (quoted link) was not refused and is now; any `@` that is not a parameter
+  is refused for Oracle. ClickHouse backslash handling in quoted names and DuckDB nested comments are now verified instead of guessed.
+
 ### Accepted, not yet shipped (placeholders; the pack work finishes the notices)
-Each of these ships only as an optional provider pack with its own licence notices file, never inside the core executable.
-- **Oracle (ODP.NET, `Oracle.ManagedDataAccess.Core`)**, "Oracle Free Distribution, Hosting, and Use Terms and Conditions". Conditions: distribute
-  unmodified; include a copy of the licence with every distribution; do not charge end users an additional fee for the distribution or use of the
-  component (distributing it inside a free product is allowed); keep Oracle notices; comply with export and sanctions law; no reverse engineering or
-  decompiling. The "information collection" clause concerns installers and auto-update, which a NuGet library does not have; verify with a network
-  trace when the pack is built. Oracle names .NET 8 and netstandard2.1 builds only; test on .NET 10 before release.
-- **Firebird (`FirebirdSql.Data.FirebirdClient`)**, Initial Developer's Public License 1.0 (file-level copyleft). Conditions: keep the licence and
-  notices, do not modify its files, and make its source available (link to the upstream repository in the notices).
+Oracle and Firebird are done (see the section above). Each of these ships only as an optional provider pack with its own licence notices file, never inside the core executable.
 - **Azure Cosmos DB (`Microsoft.Azure.Cosmos`)**: MIT, but the package ships Microsoft Visual C++ runtime files (`vcruntime140.dll`,
   `vcruntime140_1.dll`, `msvcp140.dll`, `Cosmos.CRTCompat.dll`) under Microsoft's redistribution terms, plus the native `Microsoft.Azure.Cosmos.ServiceInterop.dll`.
   Read and record the VC++ redistribution conditions when the pack is built. Use read-only keys.
@@ -337,3 +387,97 @@ Each of these ships only as an optional provider pack with its own licence notic
 
 Not bundled, ever: SAP HANA, Teradata, IBM Db2 and Informix drivers. The user installs their own ODBC driver; Rotula offers the preset and the
 dialect hint.
+
+## Variables: dates, counters, prompts and computed values
+
+### One declared variable, one optional definition
+`LabelVariable` keeps its `(name, sampleValue)` shape and gains `Kind` (Text by default) plus one nullable options object per kind
+(`Date`, `Counter`, `Prompt`, `Computed`). Old labels and the old constructor keep working; a plain variable is written to the file exactly as before.
+Option objects (not a class hierarchy) were chosen so the file DTOs, the reflection guard in `FilesCatalogTests` and a property panel can treat every
+kind alike. Code that copies variables must call `LabelVariable.Clone()`.
+
+### The generator never reads the clock, a file or the environment
+Time, the data record, prompt answers and the counter store enter only through `VariableContext` (a `TimeProvider`, so tests use a fake clock with a
+fixed daylight-saving zone). `ZplGenerator.Generate(doc, data)` is unchanged and treats `data` as final values (new kinds not in `data` show their
+sample value); `GenerateWithVariables(doc, context)` resolves everything. Same document + same context = byte-identical ZPL.
+
+### Resolution order
+record, then plain sample values, then prompts, counters, dates, and computed variables last (they may read everything and each other; cycles are an
+error with a key, not a stack overflow). A counter, date or computed variable replaces a same-named data column with a warning; a prompt yields to a
+non-empty data column unless it is set to override; a plain variable never replaces data.
+
+### Date arithmetic
+Seconds, minutes and hours are elapsed time; days, weeks, months and years work on the wall-clock date. Months and years clamp to the last day of the
+target month. A non-existent wall time (spring forward) moves one hour later; a repeated one uses the first occurrence. The Gregorian calendar is forced
+whatever the culture. Offsets apply in list order. Culture names are looked up with `predefinedOnly` so a typo is reported instead of silently
+formatting with invariant data.
+
+### Printer clock maps onto ^FC and ^SO, with an explicit fallback
+A date variable with source "printer clock" is written as clock codes in text fields (`^FC` indicators chosen so they do not occur in the rest of the
+field; the user's own `^FC` wins) and its offset as `^SO` (secondary and third clock: months, days, years, hours, minutes, seconds). At most two
+different offsets fit a label. Anything the printer cannot express (business days, rounding, UTC, formats without a printer code such as the ISO week,
+non-English names, barcodes, a third offset) falls back to the computer clock with a warning key; the variable never prints empty. `^SO` stays
+"Passthrough" in the command catalogue because it is written for variables but not modelled or read back; the catalogue notes say so.
+
+### Counters that remember: reserve, confirm, never reuse
+Opt-in per counter (off by default). The store keeps, per `labelId/counterName`, the next position (not a value), the last confirmed value, a
+fingerprint of kind/start/step/padding and the unconfirmed reservations. `Begin` reserves a block under an exclusive file lock and writes it before
+printing; `Complete(n)` confirms n and gives back the unused tail only if it is the newest block; a crash leaves the block pending, so its numbers are
+skipped and reported until the operator reclaims them. An edited counter (fingerprint changed) blocks printing until accepted or reset. A damaged
+`counters.json` is never read as empty (that would reuse numbers): every call fails with a key until an explicit recover moves the file aside.
+Atomic write = temp file, flush to disk, `File.Replace` (previous version kept as `.bak`). The lock is an exclusive OS file handle on a sidecar
+file, so it works across processes and sessions and cannot go stale. A failed print gives the numbers back unless the caller chooses to burn them.
+A label gets a `LabelDocument.Id` only when a remembering counter needs one; saving a copy under a new name shares the series unless `NewId()` is called.
+
+### Computed variables: a tiny grammar, not a scripting language
+Text and number literals, names, `&`, and a fixed list of 16 functions. No loops, assignment, reflection or I/O. Limits: 1000 characters, 16 levels,
+200 nodes, 10000 characters of output (checked before building, including `replace` and `padleft`). Errors carry a message key and a position.
+A name nothing supplies is empty plus a warning (like a missing placeholder), not a failure, so a column that only exists at merge time does not
+block design-time validation.
+
+### Prompts
+The core returns a `PromptSet` (what to ask) and validates answers into the data dictionary; it never shows UI. User regular expressions run with
+the non-backtracking engine, a 200 ms limit and a 200 character cap; unsupported constructs make the pattern invalid. Answers are cleaned
+(line breaks to spaces, control characters dropped, trimmed) before the checks.
+
+### Merge and MCP
+`MergeBatch` resolves every kind per record: one counter value per record (a skipped record leaves a gap that counts as used), dates read once at
+batch start unless asked per label, prompt answers shared by all records, variable warnings reported once. MCP `set_variable` takes `kind` and a
+`definition` object validated as a whole before the label changes. MCP previews resolve variables (counters read the store but never reserve);
+`print_label` resolves dates/computed values at send time, refuses remembering counters (it cannot record the numbers) and requires `answers` for prompts.
+
+## GS1 (Rotula.Core/Gs1)
+
+Details and the exact ZPL are in [gs1.md](gs1.md); the decisions behind them:
+
+* **GS1-128 is Code 128 in mode Ean (`^BC` mode D), not a new symbology or a new flag.** Mode D already starts with FNC1 and prints the
+  interpretation line with parentheses (guide p. 95), so a second switch would be ambiguous on import. The data is the element string with
+  parentheses; Rotula inserts `>8` after each variable-length element that is not the last (the guide's own sample, p. 104). Mode D with data that
+  does not start with `(` keeps its old meaning, so labels made before GS1 support print the same.
+* **GS1 DataMatrix writes `#` as the escape character (`^BX` parameter g).** The tilde is a ZPL control prefix and the underscore is the `^FH`
+  indicator Rotula uses (hex runs before escape processing, so `_1` would be read as hex). `#` is not in the GS1 character set, so values
+  never need it doubled. A file from another program with the default tilde escape is still read.
+* **No GS1 QR with FNC1 and no GS1 Aztec**: the guide has no FNC1 switch for `^BQ` or `^BO`. GS1 QR is a Digital Link URI in a plain QR Code
+  (option DigitalLink checks it). The preview encoder can draw FNC1 QR Codes (tested, `]Q3`) but nothing in the model asks for one.
+* **ITF-14 bearer bars are documented, not modelled.** `^B2` has no parameter for them and a `^GB` frame would come back as a separate box
+  when the ZPL is imported, which would break the round trip.
+* **Dictionary relations**: `ex=` is an error, `req=` is a warning, because the dictionary says associations are judged over all barcodes of the
+  item and labels split them over symbols. Repeated identifiers are an error when the values differ.
+* **The syntax tests are C# ports of the reference linters** (Apache-2.0 notice kept). `gcppos1/2` run in part (shape only, no registry
+  lookup) and the two coupon tests are not run; a test fails when a new dictionary release names a test that is neither run nor listed.
+  The century of a two-digit year uses an explicit reference year, never the clock inside the test.
+* **GS1 options travel in `ExportExtraOptions`** (`DataMatrixGs1`, `DigitalLink`), so the .rotula file needed no change.
+
+
+### Counters: no store is an error when printing, and the caller can own the confirmation
+A counter that remembers its value but has no counter store would silently start again at its first value, so `VariableJob.Begin` (and therefore
+`MergeBatch`) refuses with `Variable.Counter.NoStore`; a preview only warns. `MergeBatch` confirms the numbers it reserved when enumeration ends,
+which means "used when generated", the safe side; a caller that wants "used when sent" passes its own `VariableJob` in `MergeOptions.Job` and calls
+`Complete(lastSentRecordNumber)` itself. Store failures that are not I/O (settings changed between look and reserve, position exhausted) are
+`CounterStoreException`s with message keys, never bare `InvalidOperationException`s. A read-only look (previews, the MCP server) creates no folder
+and no lock when `counters.json` does not exist.
+
+### The printer-clock codes and ^SO parameter order are not confirmed on a printer
+The `^FC` code table and the `^SO` order (clock set, months, days, years, hours, minutes, seconds) come from the ZPL II Programming Guide as
+remembered by the author; no excerpt is in the repository and no printer with a clock was used. `docs/variables.md` says so. Confirm on hardware
+before the first release that advertises the printer-clock source.

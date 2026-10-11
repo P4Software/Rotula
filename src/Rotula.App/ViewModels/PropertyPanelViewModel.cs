@@ -5,6 +5,7 @@ using Rotula.App.Editing;
 using Rotula.App.Localization;
 using Rotula.App.Services;
 using Rotula.Core.Barcodes;
+using Rotula.Core.Barcodes.QrContent;
 using Rotula.Core.Elements;
 using Rotula.Core.Model;
 using Rotula.Core.Validation;
@@ -34,6 +35,19 @@ public sealed partial class PropertyPanelViewModel : ObservableObject
         _session.SelectionChanged += (_, _) => Rebuild();
         _session.DocumentChanged += (_, _) => OnDocumentChanged();
         Loc.Instance.LanguageChanged += (_, _) => Rebuild(force: true);
+        Rebuild(force: true);
+    }
+
+    private FieldsViewModel? _fields;
+
+    /// <summary>
+    /// Connects the shared list of available fields. The content rows (text, barcode data) then offer the field controls, and the
+    /// "no such column" warnings follow the loaded data. Called once by the main view-model, which creates the fields after this panel.
+    /// </summary>
+    public void AttachFields(FieldsViewModel fields)
+    {
+        _fields = fields;
+        fields.FieldsChanged += (_, _) => { _fieldsVersion++; foreach (var r in Rows) r.Refresh(); };
         Rebuild(force: true);
     }
 
@@ -85,7 +99,7 @@ public sealed partial class PropertyPanelViewModel : ObservableObject
         // only exist for Expanded) and whether a rotation that the symbology cannot print is still set (its row must stay until cleared).
         string barcodeLayout = e is BarcodeElement b
             ? $"{b.Symbology}/{b.DataBarType == DataBarType.Expanded}/{Enum.IsDefined(b.Symbology) && !BarcodeCatalog.Get(b.Symbology).SupportsRotation && b.Rotation is not null}"
-            : e?.GetType().Name ?? string.Empty;
+            : e is DataFieldElement ? nameof(TextElement) : e?.GetType().Name ?? string.Empty; // a legacy data field is edited as the text it is
         return sel[0] + ":" + barcodeLayout + ":" + (e is TextElement t && t.Block is not null);
     }
 
@@ -136,7 +150,6 @@ public sealed partial class PropertyPanelViewModel : ObservableObject
     {
         string type = e switch
         {
-            DataFieldElement => Loc.Get("Element.DataField"),
             TextElement => Loc.Get("Element.Text"),
             BarcodeElement b => Loc.EnumName(b.Symbology),
             BoxElement => Loc.Get("Element.Box"),
@@ -261,18 +274,37 @@ public sealed partial class PropertyPanelViewModel : ObservableObject
         }
     }
 
+    /// <summary>
+    /// The row of an element's content (text, barcode data). Typing merges into one undo step; inserting, binding and unbinding a field
+    /// are steps of their own so one Undo takes exactly one of them back.
+    /// </summary>
+    private TextRow ContentRow(string id, string labelKey, bool multiline, Func<string> get) =>
+        new(labelKey, get, v => EditContent(id, labelKey, v, null), multiline, fields: _fields,
+            setDiscrete: (v, undoKey) => EditContent(id, labelKey, v, undoKey),
+            warning: () => _fields?.MissingText(El<LabelElement>(id)) ?? string.Empty);
+
+    private void EditContent(string id, string labelKey, string value, string? discreteUndoKey)
+    {
+        bool hadSpec = _session.Document.Elements.FirstOrDefault(x => x.Id == id) is BarcodeElement { QrContentSpec.Length: > 0 };
+        _session.Edit(discreteUndoKey ?? "Undo.Property", d => FieldsViewModel.SetContent(d, d.Elements.FindIndex(x => x.Id == id), value),
+            mergeKey: discreteUndoKey is null ? $"prop:{id}:{labelKey}" : null);
+        // SetContent drops the builder definition when the text no longer matches it; remember that, so the panel can explain what happened.
+        if (hadSpec && _session.Document.Elements.FirstOrDefault(x => x.Id == id) is BarcodeElement { QrContentSpec.Length: 0 })
+        {
+            _specCleared.Add(id);
+            // The panel refreshed while the edit ran, before the note knew; ask the status line again.
+            foreach (var note in Rows.OfType<NoteRow>()) note.Refresh();
+        }
+    }
+
+    private readonly HashSet<string> _specCleared = new(StringComparer.Ordinal);
+
     private void BuildTextRows(TextElement element)
     {
         string id = element.Id;
         Rows.Add(new HeadingRow("Panel.Text"));
-        if (element is DataFieldElement)
-        {
-            AddText<DataFieldElement>(id, "Prop.Variable", e => e.VariableName, (e, v) => e.VariableName = v.Trim());
-        }
-        else
-        {
-            AddText<TextElement>(id, "Prop.Text", e => e.Text, (e, v) => e.Text = v, multiline: true);
-        }
+        // A legacy data-field element is shown as the text it is: its content is the field, written {{name}}.
+        Rows.Add(ContentRow(id, "Prop.Text", multiline: true, () => El<TextElement>(id).GetTemplate()));
         Rows.Add(new TextRow("Prop.FontId", () => El<TextElement>(id).FontId?.ToString() ?? string.Empty,
             v => Edit<TextElement>(id, "fontid", e => e.FontId = v.Length == 0 ? null : v[0]), maxLength: 1, hintKey: "Prop.FontId.Hint",
             validate: v => v.Length == 1 && !char.IsLetterOrDigit(v[0]) ? Loc.Get("Validation.FontId") : null));
@@ -295,7 +327,7 @@ public sealed partial class PropertyPanelViewModel : ObservableObject
     /// Data that nobody typed on purpose: empty, or one of the example values the designer itself puts in. Only such data is
     /// swapped for the new symbology's example when the symbology changes, so text the user wrote is never overwritten.
     /// </summary>
-    private static bool IsSampleData(string data) =>
+    internal static bool IsSampleData(string data) =>
         data.Length == 0 || data == "123456789" || data == "https://example.com" || BarcodeCatalog.All.Any(i => i.ExampleData == data);
 
     /// <summary>
@@ -309,6 +341,8 @@ public sealed partial class PropertyPanelViewModel : ObservableObject
         bool replaceData = IsSampleData(e.Data);
         e.Symbology = symbology;
         if (replaceData) e.Data = info.ExampleData;
+        // The builder definition only means something for a QR code; keeping it on another symbology would let it disagree with Data.
+        if (symbology != BarcodeSymbology.QrCode) e.QrContentSpec = string.Empty;
         if (!info.SupportsRotation) e.Rotation = null;
         if (info.AlwaysPrintsHumanReadable) e.HumanReadable = true;
         // Columns and rows mean different things (or nothing) per symbology, so a value from the old one is never carried over.
@@ -332,8 +366,14 @@ public sealed partial class PropertyPanelViewModel : ObservableObject
         Rows.Add(new NoteRow("Prop.PreviewNote", () => BarcodePreviewNotes.For(El<BarcodeElement>(id))));
         // Barcode data is validated by Core (BarcodeValidator); the messages appear below the rows while the user types,
         // instead of blocking the typing, because half-typed data is normally invalid.
-        AddText<BarcodeElement>(id, "Prop.Data", e => e.Data, (e, v) => e.Data = v, multiline: false);
-        foreach (var option in info.Options)
+        var dataRow = ContentRow(id, "Prop.Data", multiline: false, () => El<BarcodeElement>(id).Data);
+        // The builders sit next to the content: the QR content builder for QR codes, the GS1 builder for the symbologies that carry a GS1 element string.
+        if (info.Supports(BarcodeOption.QrContentSpec)) dataRow.WithAction(Loc.Get("QrContent.Open"), () => EditQrContent(id));
+        else if (info.Symbology is BarcodeSymbology.Code128 or BarcodeSymbology.DataMatrix) dataRow.WithAction(Loc.Get("Gs1Builder.Open"), () => EditGs1(id));
+        Rows.Add(dataRow);
+        // The builder status is the QrContentSpec option; it is shown first so it stays close to the content it describes.
+        if (info.Supports(BarcodeOption.QrContentSpec)) AddBarcodeOption(id, element, info, BarcodeOption.QrContentSpec);
+        foreach (var option in info.Options.Where(o => o != BarcodeOption.QrContentSpec))
             AddBarcodeOption(id, element, info, option);
     }
 
@@ -377,13 +417,41 @@ public sealed partial class PropertyPanelViewModel : ObservableObject
                 AddEnum<BarcodeElement, Code128Mode>(id, "Prop.Code128Mode", e => e.Code128Mode, (e, v) => e.Code128Mode = v);
                 break;
             case BarcodeOption.QrErrorCorrection:
-                AddEnum<BarcodeElement, QrErrorCorrection>(id, "Prop.QrErrorCorrection", e => e.QrErrorCorrection, (e, v) => e.QrErrorCorrection = v);
+                // The capacity meter lives in this row: how full the code is depends on this very choice.
+                Rows.Add(new ChoiceRow("Prop.QrErrorCorrection",
+                    QrSizing.ErrorCorrectionLevels.Select(c => new ChoiceItem(Enum.Parse<QrErrorCorrection>(c.Value), Loc.Get(c.LabelKey))).ToList(),
+                    () => El<BarcodeElement>(id).QrErrorCorrection, v => Edit<BarcodeElement>(id, "Prop.QrErrorCorrection", e => e.QrErrorCorrection = (QrErrorCorrection)v!))
+                { DetailSource = () => CapacityDetail(El<BarcodeElement>(id)) });
                 break;
             case BarcodeOption.QrModel:
-                AddInt<BarcodeElement>(id, "Prop.QrModel", e => e.QrModel, (e, v) => e.QrModel = v, 1, 2);
+                Rows.Add(new ChoiceRow("Prop.QrModel", QrSizing.Models.Select(c => new ChoiceItem(int.Parse(c.Value, CultureInfo.InvariantCulture), Loc.Get(c.LabelKey))).ToList(),
+                    () => El<BarcodeElement>(id).QrModel, v => Edit<BarcodeElement>(id, "Prop.QrModel", e => e.QrModel = (int)v!)));
+                break;
+            case BarcodeOption.QrMask:
+                Rows.Add(new ChoiceRow("Prop.QrMask", QrSizing.Masks.Select(c => new ChoiceItem(int.Parse(c.Value, CultureInfo.InvariantCulture), Loc.Get(c.LabelKey))).ToList(),
+                    () => El<BarcodeElement>(id).QrMask, v => Edit<BarcodeElement>(id, "Prop.QrMask", e => e.QrMask = (int)v!)));
+                break;
+            case BarcodeOption.QrInputMode:
+                Rows.Add(new ChoiceRow("Prop.QrInputMode", QrSizing.InputModes.Select(c => new ChoiceItem(Enum.Parse<QrInputMode>(c.Value), Loc.Get(c.LabelKey))).ToList(),
+                    () => El<BarcodeElement>(id).QrInputMode, v => Edit<BarcodeElement>(id, "Prop.QrInputMode", e => e.QrInputMode = (QrInputMode)v!)));
+                break;
+            case BarcodeOption.DigitalLink:
+                AddBool<BarcodeElement>(id, "Prop.DigitalLink", e => e.DigitalLink, (e, v) => e.DigitalLink = v);
+                break;
+            case BarcodeOption.DataMatrixGs1:
+                AddBool<BarcodeElement>(id, "Prop.DataMatrixGs1", e => e.DataMatrixGs1, (e, v) => e.DataMatrixGs1 = v);
+                break;
+            case BarcodeOption.QrContentSpec:
+                // One status row: what the content was built with, or that a hand edit removed the definition. Hidden while there is nothing to say.
+                Rows.Add(new NoteRow("Prop.QrContentSpec", () => SpecStatus(El<BarcodeElement>(id))));
                 break;
             case BarcodeOption.ModuleSize:
-                AddInt<BarcodeElement>(id, "Prop.ModuleSize", e => e.ModuleSize, (e, v) => e.ModuleSize = v, 1, 10, "Barcode.ModuleSize.Range");
+                if (sym == BarcodeSymbology.QrCode)
+                    Rows.Add(new IntRow("Prop.ModuleSize", () => El<BarcodeElement>(id).ModuleSize, v => Edit<BarcodeElement>(id, "Prop.ModuleSize", e => e.ModuleSize = v!.Value), 1, 10,
+                        rangeIssueKey: "Barcode.ModuleSize.Range")
+                    { FullWidth = true, DetailSource = () => ModuleSizeDetail(El<BarcodeElement>(id)) });
+                else
+                    AddInt<BarcodeElement>(id, "Prop.ModuleSize", e => e.ModuleSize, (e, v) => e.ModuleSize = v, 1, 10, "Barcode.ModuleSize.Range");
                 break;
             case BarcodeOption.Columns:
                 if (sym == BarcodeSymbology.Codablock)
@@ -477,6 +545,154 @@ public sealed partial class PropertyPanelViewModel : ObservableObject
                     break;
                 }
         }
+    }
+
+    // ----------------------------------------------------------------------------------- QR builder, capacity and size
+
+    private Func<QrContentBuilderViewModel, bool>? _showQrBuilder;
+    private Func<Gs1BuilderViewModel, bool>? _showGs1Builder;
+    private long _fieldsVersion;
+    private string _measureKey = string.Empty;
+    private (string? Payload, int Records) _measured;
+
+    /// <summary>The most records looked at when measuring how full a QR code is (the longest of them decides).</summary>
+    private const int MaxMeasuredRecords = 2000;
+
+    /// <summary>Connects the windows of the content builder and the GS1 builder (each returns true when the user applied). Without them the buttons do nothing.</summary>
+    public void AttachBuilders(Func<QrContentBuilderViewModel, bool> showQrBuilder, Func<Gs1BuilderViewModel, bool> showGs1Builder)
+    {
+        _showQrBuilder = showQrBuilder;
+        _showGs1Builder = showGs1Builder;
+    }
+
+    /// <summary>The "Built with: ..." line of the QR content, or the note that a hand edit removed the definition; empty when neither applies.</summary>
+    private string SpecStatus(BarcodeElement b)
+    {
+        if (b.QrContentSpec.Length > 0)
+            return QrContentSpec.TryParse(b.QrContentSpec, out var spec)
+                ? Loc.Get("QrContent.Status.Built", Loc.Get(QrContentSchema.For(spec.Kind).LabelKey))
+                : Loc.Get("QrContent.Status.Unreadable");
+        return _specCleared.Contains(b.Id) ? Loc.Get("QrContent.Status.Cleared") : string.Empty;
+    }
+
+    /// <summary>
+    /// The longest text the QR code will carry, over the loaded records (or the sample values when no data is loaded). Cached, because the
+    /// panel refreshes on every key press and resolving thousands of records each time would be wasteful.
+    /// </summary>
+    private (string? Payload, int Records) LongestPayload(BarcodeElement b)
+    {
+        var doc = _session.Document;
+        string key = string.Join('\u0001', b.Data, b.QrContentSpec, b.QrErrorCorrection, b.QrModel, _fieldsVersion, string.Join(';', doc.Variables.Select(v => v.Name + "=" + v.SampleValue)));
+        if (key == _measureKey) return _measured;
+        var records = _fields?.SampleRecords(MaxMeasuredRecords).ToList() ?? new List<IReadOnlyDictionary<string, string>>();
+        var sets = records.Count > 0 ? records.Cast<IReadOnlyDictionary<string, string>?>() : new IReadOnlyDictionary<string, string>?[] { null };
+        var texts = new List<string>();
+        foreach (var record in sets)
+        {
+            var scratch = new List<ValidationIssue>();
+            string text = QrContentBuilder.ResolveForElement(b, record, doc.Variables, scratch) ?? VariableResolver.Resolve(b.Data, record, doc.Variables, b.Id, scratch);
+            if (text.Length > 0) texts.Add(text);
+        }
+        _measured = (QrSizing.Longest(texts), records.Count);
+        _measureKey = key;
+        return _measured;
+    }
+
+    private RowDetail? CapacityDetail(BarcodeElement b)
+    {
+        var (payload, records) = LongestPayload(b);
+        var report = QrCapacityInfo.Describe(payload, b.QrErrorCorrection, b.QrModel);
+        var lines = new List<string> { report.Text };
+        if (report.Hint.Length > 0) lines.Add(report.Hint);
+        if (records > 1 && payload is not null) lines.Add(Loc.Get("Qr.Capacity.Basis", records));
+        return new RowDetail(string.Join(Environment.NewLine, lines), report.State is CapacityState.Dense or CapacityState.Overflow);
+    }
+
+    private RowDetail? ModuleSizeDetail(BarcodeElement b)
+    {
+        var report = QrCapacityInfo.Describe(LongestPayload(b).Payload, b.QrErrorCorrection, b.QrModel);
+        // Model 1 has no version table and an overflowing code has no symbol: the module is still worth describing.
+        int version = report.Fit is { Fits: true, Version: > 0 } fit ? fit.Version : 0;
+        return QrCapacityInfo.ModuleSize(version, b.ModuleSize, (int)_session.Document.Dpi);
+    }
+
+    /// <summary>
+    /// Opens the QR content builder for a barcode on the label and, when the user applies it, stores the structured definition and the
+    /// text it builds in one undo step. Returns true when something was applied.
+    /// </summary>
+    public bool EditQrContent(string elementId)
+    {
+        if (_showQrBuilder is null || _session.Document.Elements.FirstOrDefault(x => x.Id == elementId) is not BarcodeElement b) return false;
+        var vm = NewQrBuilder(b);
+        bool shown;
+        try { shown = _showQrBuilder(vm); }
+        finally { vm.Detach(); }
+        if (!shown || !vm.Applied) return false;
+        string template = vm.Template, spec = vm.SpecJson;
+        var level = vm.Level;
+        // One edit with no merge key: it never merges into the typing step before it, and one Undo takes back data, definition and level together.
+        _session.Edit("Undo.QrContentBuilder", d =>
+        {
+            if (d.Elements.FirstOrDefault(x => x.Id == elementId) is not BarcodeElement target) return;
+            ApplyQrResult(target, template, spec, level);
+        });
+        _specCleared.Remove(elementId);
+        return true;
+    }
+
+    /// <summary>
+    /// Lets the user start a new QR code from the content builder. The element is not on the label yet, so it is changed in place and the caller
+    /// adds it (the whole thing is then one undo step). Returns true when the user applied the builder.
+    /// </summary>
+    public bool PrepareNewQr(BarcodeElement element)
+    {
+        if (_showQrBuilder is null) return false;
+        var vm = NewQrBuilder(element);
+        bool shown;
+        try { shown = _showQrBuilder(vm); }
+        finally { vm.Detach(); }
+        if (!shown || !vm.Applied) return false;
+        ApplyQrResult(element, vm.Template, vm.SpecJson, vm.Level);
+        return true;
+    }
+
+    private static void ApplyQrResult(BarcodeElement target, string template, string specJson, QrErrorCorrection level)
+    {
+        // Data first, then the definition: the definition is only valid for exactly this Data (see FieldsViewModel.SetContent).
+        target.Data = template;
+        target.QrContentSpec = specJson;
+        target.QrErrorCorrection = level;
+    }
+
+    private QrContentBuilderViewModel NewQrBuilder(BarcodeElement b)
+    {
+        QrContentSpec? initial = b.QrContentSpec.Length > 0 && QrContentSpec.TryParse(b.QrContentSpec, out var spec) ? spec : null;
+        var settings = new QrBuilderSettings(b.QrErrorCorrection, b.QrModel, b.ModuleSize, (int)_session.Document.Dpi);
+        return new QrContentBuilderViewModel(_fields, initial, settings, initial is null ? b.Data : null, _session.Document.Variables);
+    }
+
+    /// <summary>
+    /// Opens the GS1 builder for a Code 128 or Data Matrix barcode and, when the user applies it, stores the element string and switches the
+    /// barcode to its GS1 form, all in one undo step. Returns true when something was applied.
+    /// </summary>
+    public bool EditGs1(string elementId)
+    {
+        if (_showGs1Builder is null || _session.Document.Elements.FirstOrDefault(x => x.Id == elementId) is not BarcodeElement b) return false;
+        var vm = new Gs1BuilderViewModel(_fields, b.Symbology, b.Data, _session.Document.Variables);
+        bool shown;
+        try { shown = _showGs1Builder(vm); }
+        finally { vm.Detach(); }
+        if (!shown || !vm.Applied) return false;
+        string data = vm.Template;
+        _session.Edit("Undo.Gs1Builder", d =>
+        {
+            if (d.Elements.FirstOrDefault(x => x.Id == elementId) is not BarcodeElement target) return;
+            target.Data = data;
+            // Without these switches the data is just text: GS1-128 needs mode D, GS1 DataMatrix its option (and cannot also be a Digital Link).
+            if (target.Symbology == BarcodeSymbology.Code128) target.Code128Mode = Code128Mode.Ean;
+            else if (target.Symbology == BarcodeSymbology.DataMatrix) { target.DataMatrixGs1 = true; target.DigitalLink = false; }
+        });
+        return true;
     }
 
     /// <summary>A drop-down of single characters (for example the Codabar start letters A to D).</summary>

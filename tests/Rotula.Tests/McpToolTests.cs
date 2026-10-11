@@ -222,7 +222,7 @@ public class McpToolTests : IDisposable
     {
         _env.Label.CreateLabel(100, 50);
         var r = _env.Elements.AddDataField("Name", 5, 5, sampleValue: "Ana");
-        Assert.Equal("dataField", r.Elements.Single().Type);
+        Assert.Equal("text", r.Elements.Single().Type); // compatibility tool: a plain text element with {{Name}} as its content
         Assert.Contains(r.Label.Variables, v => v.Name == "Name" && v.Sample == "Ana");
         Assert.Contains("Ana", _env.Label.GenerateZpl().Zpl);
         Assert.Throws<McpException>(() => _env.Elements.AddDataField("bad name!", 0, 0));

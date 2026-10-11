@@ -3,7 +3,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:loc="clr-namespace:Rotula.App.Localization"
              xmlns:vm="clr-namespace:Rotula.App.ViewModels"
-             xmlns:ctl="clr-namespace:Rotula.App.Controls">
+             xmlns:ctl="clr-namespace:Rotula.App.Controls"
+             xmlns:views="clr-namespace:Rotula.App.Views">
   <UserControl.Resources>
     <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
     <Style x:Key="RowLabel" TargetType="TextBlock">
@@ -11,6 +12,17 @@
       <Setter Property="FontSize" Value="12" />
       <Setter Property="Foreground" Value="{StaticResource MutedBrush}" />
       <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+
+    <!-- The second line of a row (printed size of a QR module, how full a QR code is): muted, or in the warning colour when it is a warning. -->
+    <Style x:Key="RowDetail" TargetType="TextBlock">
+      <Setter Property="FontSize" Value="11.5" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="Margin" Value="0,6,0,0" />
+      <Setter Property="Foreground" Value="{StaticResource MutedBrush}" />
+      <Style.Triggers>
+        <DataTrigger Binding="{Binding DetailIsWarning}" Value="True"><Setter Property="Foreground" Value="{StaticResource WarningBrush}" /></DataTrigger>
+      </Style.Triggers>
     </Style>
 
     <!-- Section heading: hairline above, bold title below. -->
@@ -27,6 +39,9 @@
         <TextBlock Text="{Binding Label}" Style="{StaticResource RowLabel}" />
         <TextBox Style="{StaticResource MonoTextBox}" Text="{Binding Text, UpdateSourceTrigger=LostFocus}" IsUndoEnabled="False"
                  ctl:FieldState.HasError="{Binding HasError}" AutomationProperties.Name="{Binding Label}" AutomationProperties.HelpText="{Binding Hint}" />
+        <TextBlock Text="{Binding Detail}" Style="{StaticResource RowDetail}" AutomationProperties.LiveSetting="Polite" AutomationProperties.Name="{Binding Detail}">
+          <TextBlock.Visibility><Binding Path="HasDetail" Converter="{StaticResource BoolToVisibility}" /></TextBlock.Visibility>
+        </TextBlock>
         <TextBlock Text="{Binding Error}" Style="{StaticResource ErrorText}" AutomationProperties.LiveSetting="Polite">
           <TextBlock.Visibility><Binding Path="HasError" Converter="{StaticResource BoolToVisibility}" /></TextBlock.Visibility>
         </TextBlock>
@@ -44,24 +59,112 @@
       </StackPanel>
     </DataTemplate>
 
+    <!--
+      Text rows. A row that edits an element's content (text, barcode data) also shows the field controls: a "Fixed value | Field" switch,
+      the field as a chip with an (x) to go back to a fixed value, an "Insert field" button for text that mixes both, and a quiet warning
+      when the field has no column in the loaded data.
+    -->
     <DataTemplate DataType="{x:Type vm:TextRow}">
       <StackPanel ToolTip="{Binding Hint}" Margin="0,0,0,12">
-        <TextBlock Text="{Binding Label}" Style="{StaticResource RowLabel}" />
-        <TextBox Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}" IsUndoEnabled="False" ctl:FieldState.HasError="{Binding HasError}"
-                 AutomationProperties.Name="{Binding Label}" AutomationProperties.HelpText="{Binding Hint}" TextWrapping="Wrap" AcceptsReturn="{Binding IsMultiline}">
-          <TextBox.Style>
-            <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+        <Grid Margin="0,0,0,4">
+          <TextBlock Text="{Binding Label}" Style="{StaticResource RowLabel}" Margin="0" VerticalAlignment="Center" HorizontalAlignment="Left" />
+          <Border HorizontalAlignment="Right" Background="{StaticResource HoverBrush}" CornerRadius="7" Padding="2" Visibility="{Binding IsFieldTarget, Converter={StaticResource BoolToVisibility}}"
+                  AutomationProperties.Name="{loc:T Fields.Mode.Tip}" ToolTip="{loc:T Fields.Mode.Tip}">
+            <StackPanel Orientation="Horizontal">
+              <Button Command="{Binding UnbindCommand}" AutomationProperties.Name="{loc:T Fields.Mode.Fixed}">
+                <Button.Template>
+                  <ControlTemplate TargetType="Button">
+                    <Border x:Name="Chrome" Background="Transparent" CornerRadius="5" MinHeight="26" Padding="10,0">
+                      <TextBlock x:Name="Caption" Text="{loc:T Fields.Mode.Fixed}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                      <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Chrome" Property="Background" Value="{StaticResource PressedBrush}" /></Trigger>
+                      <DataTrigger Binding="{Binding IsFixed}" Value="True">
+                        <Setter TargetName="Chrome" Property="Background" Value="{StaticResource SurfaceBrush}" />
+                        <Setter TargetName="Caption" Property="Foreground" Value="{StaticResource AccentBrush}" />
+                      </DataTrigger>
+                    </ControlTemplate.Triggers>
+                  </ControlTemplate>
+                </Button.Template>
+                <Button.Style>
+                  <Style TargetType="Button">
+                    <Setter Property="Cursor" Value="Hand" />
+                    <Setter Property="FocusVisualStyle" Value="{StaticResource FocusRing}" />
+                  </Style>
+                </Button.Style>
+              </Button>
+              <views:FieldPickerButton Bind="True" Caption="{loc:T Fields.Mode.Field}" Row="{Binding}" IsActive="{Binding IsBound}" Status="{Binding BoundToken}" />
+            </StackPanel>
+          </Border>
+        </Grid>
+        <Grid>
+          <TextBox x:Name="Box" Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}" IsUndoEnabled="False" ctl:FieldState.HasError="{Binding HasError}" ctl:FieldBox.Row="{Binding}"
+                   AutomationProperties.Name="{Binding Label}" AutomationProperties.HelpText="{Binding Hint}" TextWrapping="Wrap" AcceptsReturn="{Binding IsMultiline}">
+            <TextBox.Style>
+              <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+                <Style.Triggers>
+                  <DataTrigger Binding="{Binding IsMultiline}" Value="True">
+                    <Setter Property="MinHeight" Value="76" />
+                    <Setter Property="Padding" Value="12,9" />
+                    <Setter Property="VerticalContentAlignment" Value="Top" />
+                    <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
+                  </DataTrigger>
+                  <DataTrigger Binding="{Binding IsBound}" Value="True"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
+                </Style.Triggers>
+              </Style>
+            </TextBox.Style>
+          </TextBox>
+          <!-- The bound state: the field as a pill; (x) goes back to a fixed value. -->
+          <Border CornerRadius="6" MinHeight="40" Padding="12,0,6,0" Background="{StaticResource AccentTintBrush}" BorderBrush="{StaticResource AccentTintStrongBrush}" BorderThickness="1"
+                  ToolTip="{Binding BoundTip}" AutomationProperties.Name="{Binding BoundToken}" AutomationProperties.HelpText="{Binding BoundTip}">
+            <Border.Style>
+              <Style TargetType="Border">
+                <Setter Property="Visibility" Value="Collapsed" />
+                <Style.Triggers><DataTrigger Binding="{Binding IsBound}" Value="True"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers>
+              </Style>
+            </Border.Style>
+            <DockPanel>
+              <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}" Width="28" Height="28" VerticalAlignment="Center" Command="{Binding UnbindCommand}"
+                      ToolTip="{loc:T Fields.Unbind}" AutomationProperties.Name="{loc:T Fields.Unbind}" AutomationProperties.HelpText="{Binding BoundToken}">
+                <Path Style="{StaticResource Icon}" Data="{StaticResource IconClose}" Width="11" Height="11" />
+              </Button>
+              <Path DockPanel.Dock="Left" Style="{StaticResource Icon}" Data="{StaticResource IconDataField}" Width="16" Height="16" TextElement.Foreground="{StaticResource AccentBrush}" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding BoundToken}" DockPanel.Dock="Left" FontFamily="{StaticResource MonoFont}" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}" Margin="8,0,10,0"
+                         VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+              <TextBlock Text="{Binding BoundSample}" Foreground="{StaticResource MutedBrush}" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" TextAlignment="Right" />
+            </DockPanel>
+          </Border>
+        </Grid>
+        <!-- Fixed text: insert fields into it, or find out how to get fields at all. -->
+        <WrapPanel Margin="0,8,0,0">
+          <WrapPanel.Style>
+            <Style TargetType="WrapPanel">
+              <Setter Property="Visibility" Value="Collapsed" />
               <Style.Triggers>
-                <DataTrigger Binding="{Binding IsMultiline}" Value="True">
-                  <Setter Property="MinHeight" Value="76" />
-                  <Setter Property="Padding" Value="12,9" />
-                  <Setter Property="VerticalContentAlignment" Value="Top" />
-                  <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
-                </DataTrigger>
+                <MultiDataTrigger>
+                  <MultiDataTrigger.Conditions>
+                    <Condition Binding="{Binding IsFieldTarget}" Value="True" />
+                    <Condition Binding="{Binding IsFixed}" Value="True" />
+                  </MultiDataTrigger.Conditions>
+                  <Setter Property="Visibility" Value="Visible" />
+                </MultiDataTrigger>
               </Style.Triggers>
             </Style>
-          </TextBox.Style>
-        </TextBox>
+          </WrapPanel.Style>
+          <views:FieldPickerButton Caption="{loc:T Fields.Insert}" Row="{Binding}" Target="{Binding ElementName=Box}" Margin="0,0,12,0" />
+          <Button Style="{StaticResource LinkButton}" Command="{Binding Fields.OpenDataCommand}" Visibility="{Binding Fields.HasNoData, Converter={StaticResource BoolToVisibility}}"
+                  VerticalAlignment="Center" FontSize="12" AutomationProperties.Name="{loc:T Fields.OpenData}">
+            <TextBlock Text="{loc:T Fields.OpenData}" />
+          </Button>
+        </WrapPanel>
+        <!-- An extra button for rows that have a builder (Content builder, GS1 builder). -->
+        <Button Command="{Binding RunActionCommand}" Content="{Binding ActionCaption}" HorizontalAlignment="Left" Margin="0,8,0,0" Padding="12,0" MinHeight="30"
+                AutomationProperties.Name="{Binding ActionCaption}" Visibility="{Binding HasAction, Converter={StaticResource BoolToVisibility}}" />
+        <StackPanel Orientation="Horizontal" Margin="0,8,0,0" Visibility="{Binding HasWarning, Converter={StaticResource BoolToVisibility}}" ToolTip="{Binding WarningText}"
+                    AutomationProperties.LiveSetting="Polite">
+          <Path Style="{StaticResource Icon}" Data="{StaticResource IconWarning}" Width="14" Height="14" TextElement.Foreground="{StaticResource WarningBrush}" VerticalAlignment="Top" Margin="0,1,6,0" />
+          <TextBlock Text="{Binding WarningText}" Foreground="{StaticResource WarningBrush}" FontSize="12" TextWrapping="Wrap" MaxWidth="290" AutomationProperties.Name="{Binding WarningText}" />
+        </StackPanel>
         <TextBlock Text="{Binding Error}" Style="{StaticResource ErrorText}" AutomationProperties.LiveSetting="Polite">
           <TextBlock.Visibility><Binding Path="HasError" Converter="{StaticResource BoolToVisibility}" /></TextBlock.Visibility>
         </TextBlock>
@@ -89,6 +192,9 @@
             </GroupStyle>
           </ComboBox.GroupStyle>
         </ComboBox>
+        <TextBlock Text="{Binding Detail}" Style="{StaticResource RowDetail}" AutomationProperties.LiveSetting="Polite" AutomationProperties.Name="{Binding Detail}">
+          <TextBlock.Visibility><Binding Path="HasDetail" Converter="{StaticResource BoolToVisibility}" /></TextBlock.Visibility>
+        </TextBlock>
       </StackPanel>
     </DataTemplate>
 

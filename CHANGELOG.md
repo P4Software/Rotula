@@ -5,6 +5,18 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+- **Variables that work out their own value** (engine, file format and MCP; see `docs/variables.md`): date and time variables with offsets
+  (including business days), rounding, formats such as GS1 `YYMMDD` or the day of the year, and a choice of the computer clock or the printer's own
+  clock; serial-number counters that can remember their last value between sessions (reserve, then confirm, so a crash or a second window never
+  repeats a number); print-time prompts with validation; and computed variables from a small, safe formula language. Batch merge resolves all of
+  them per record. `.rotula` files that use them are saved as format version 7; other files are unchanged.
+- **Database add-ons (provider packs) for Oracle, Firebird, DuckDB and ClickHouse**, built as separate folders by `scripts\build-packs.cmd` (see
+  `docs/data-providers.md`). Each opens its data read-only (Oracle `SET TRANSACTION READ ONLY`, Firebird READ ONLY transaction, DuckDB read-only
+  file with external access off and locked settings, ClickHouse `readonly=1` on every request) behind the query check, and carries its own licence
+  notices. The query check now also refuses Oracle quoted database links (`table@"link"`), treats DuckDB block comments as nesting, and reads
+  ClickHouse quoted names with backslash escapes like the vendor documents. Provider API 1.1 (`FormatCell`, `IdentifierBackslashEscapes`).
+
 ## [0.1.0] - 2026-10-10
 
 First public version.

@@ -30,6 +30,12 @@ public partial class ConnectionManagerWindow : DialogWindow
         if (sender is FrameworkElement { DataContext: OptionFieldViewModel field }) field.Browse();
     }
 
+    // Opening the drop-down is an explicit user action, so it may load the list (once, and only when the fields it needs are filled in).
+    private void OnLookupDropDownOpened(object? sender, EventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: OptionFieldViewModel field }) _vm.OnLookupOpened(field);
+    }
+
     private void OnPasswordChanged(object sender, RoutedEventArgs e) => _vm.Password = PasswordInput.Password;
 
     /// <inheritdoc />

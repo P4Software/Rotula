@@ -35,6 +35,24 @@ public partial class DataWindow : DialogWindow
         };
     }
 
+    /// <summary>Opens the "Add as text / barcode / QR code" menu of a field (the arrow next to "Add to label").</summary>
+    private void OnAddMoreClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { DataContext: FieldItem field } button || _vm.Fields is not { } fields) return;
+        var menu = new ContextMenu { PlacementTarget = button, Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom };
+        void Add(string key, FieldElementKind kind)
+        {
+            var item = new MenuItem { Header = Localization.Loc.Get(key) };
+            item.Click += (_, _) => fields.AddToLabel(field, kind);
+            menu.Items.Add(item);
+        }
+        Add("Fields.AddAsText", FieldElementKind.Text);
+        Add("Fields.AddAsBarcode", FieldElementKind.Barcode);
+        Add("Fields.AddAsQr", FieldElementKind.Qr);
+        menu.IsOpen = true;
+        e.Handled = true;
+    }
+
     /// <summary>
     /// Creates one grid column per data column. Columns are built in code because their number and names come from the file;
     /// the cells bind by index (<c>[i]</c>) so a column name with dots or brackets can never break a binding path.

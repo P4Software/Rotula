@@ -331,15 +331,14 @@ public class AppViewModelTests : IDisposable
     }
 
     [Fact]
-    public void AddDataField_DeclaresAVariable_InTheSameUndoStep()
+    public void TheToolboxHasNoDataFieldTool_AnyElementCanBeBoundInstead()
     {
         var vm = Create();
-        vm.AddElementCommand.Execute(ToolboxKind.DataField);
-        Assert.Single(vm.Session.Document.Variables);
-        Assert.Equal(vm.Session.Document.Variables[0].Name, ((DataFieldElement)vm.Session.Document.Elements[0]).VariableName);
-        Assert.DoesNotContain(vm.Session.Document.Variables, v => v.Name == "x");
-        vm.UndoCommand.Execute(null);
-        Assert.Empty(vm.Session.Document.Variables);
+        Assert.DoesNotContain(vm.Toolbox, t => t.NameKey.Contains("DataField"));
+        Assert.DoesNotContain("DataField", Enum.GetNames<ToolboxKind>());
+        foreach (var item in vm.Toolbox.Where(t => t.Kind != ToolboxKind.Image))
+            vm.AddElementCommand.Execute(item.Kind);
+        Assert.DoesNotContain(vm.Session.Document.Elements, e => e is DataFieldElement);
     }
 
     [Fact]
