@@ -61,9 +61,9 @@ Design it, preview it, merge your data, print it. No account, no cloud, no telem
 
 <div align="center">
 
-### [Download the Rotula installer for Windows (signed)](https://github.com/P4Software/Rotula/releases/download/v0.2.0/Rotula-0.2.0-win-x64-setup.exe)
+### [Download the Rotula installer for Windows (signed)](https://github.com/P4Software/Rotula/releases/download/v0.3.0/Rotula-0.3.0-win-x64-setup.exe)
 
-`Rotula-0.2.0-win-x64-setup.exe` · 105 MB · installs for your user only, no administrator rights needed
+`Rotula-0.3.0-win-x64-setup.exe` · 105 MB · installs for your user only, no administrator rights needed
 
 Always the newest version: [github.com/P4Software/Rotula/releases/latest](https://github.com/P4Software/Rotula/releases/latest)
 
@@ -83,7 +83,7 @@ Every release also carries a `SHA256SUMS.txt` file.
 **1. Check the SHA-256 checksum.** In PowerShell, in the folder where you saved the file:
 
 ```powershell
-Get-FileHash .\Rotula-0.2.0-win-x64-setup.exe -Algorithm SHA256
+Get-FileHash .\Rotula-0.3.0-win-x64-setup.exe -Algorithm SHA256
 ```
 
 The hash must match the line for that file in `SHA256SUMS.txt` on the release page.
@@ -92,7 +92,7 @@ The hash must match the line for that file in `SHA256SUMS.txt` on the release pa
 Signatures** tab, select the signature and click **Details**; or use PowerShell:
 
 ```powershell
-Get-AuthenticodeSignature .\Rotula-0.2.0-win-x64-setup.exe | Format-List Status, SignerCertificate, TimeStamperCertificate
+Get-AuthenticodeSignature .\Rotula-0.3.0-win-x64-setup.exe | Format-List Status, SignerCertificate, TimeStamperCertificate
 ```
 
 `Status` should be `Valid` and the signer should be **Barrdega Sistemas NA LLC**, with a timestamp certificate present. The
