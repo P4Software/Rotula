@@ -5,6 +5,8 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-10-11
+
 ### Fixed
 - **PNG, JPEG and PDF export now show the record picked in the Data window**, as the canvas does. Before, a label with fields exported with the fields empty and a field barcode was drawn as a crossed red box.
 
