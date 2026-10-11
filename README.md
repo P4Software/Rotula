@@ -59,11 +59,11 @@ Design it, preview it, merge your data, print it. No account, no cloud, no telem
 
 <div align="center">
 
-### The first signed release (v0.1.0) is being prepared
+### [Download the Rotula installer for Windows (signed)](https://github.com/P4Software/Rotula/releases/download/v0.1.0/Rotula-0.1.0-win-x64-setup.exe)
 
-The installer will be published on the [Releases page](https://github.com/P4Software/Rotula/releases) as `Rotula-0.1.0-win-x64-setup.exe`. It installs for your user only, with no administrator rights needed. Watch the repository (Watch, then Custom, then Releases) to be told when it is out.
+`Rotula-0.1.0-win-x64-setup.exe` · 105 MB · installs for your user only, no administrator rights needed
 
-In the meantime you can build Rotula from source: see [Building from source](#building-from-source).
+Always the newest version: [github.com/P4Software/Rotula/releases/latest](https://github.com/P4Software/Rotula/releases/latest)
 
 </div>
 
