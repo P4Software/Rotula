@@ -172,9 +172,12 @@ public sealed class ElementTools
         return Add("add_image", unit, x, y, new ImageElement { Source = source }, bag);
     }
 
-    /// <summary>Adds a data field bound to a variable.</summary>
+    /// <summary>
+    /// Adds a text element whose content is a single <c>{{variable}}</c>. The tool keeps its name for compatibility with older prompts and
+    /// clients; the designer no longer has a separate data-field element (any element can be bound to a field), so this creates a plain text element.
+    /// </summary>
     [McpServerTool(Name = "add_data_field", Destructive = false, UseStructuredContent = true)]
-    [Description("Adds a text field whose content comes from a variable, for data merge: each record of a CSV, Excel or database source fills the field. The variable is declared if it does not exist yet; sampleValue is what shows when no data is merged. Use merge_preview to see a record in place.")]
+    [Description("Adds a text element whose content is {{variableName}}, for data merge: each record of a CSV, Excel or database source fills the field. The variable is declared if it does not exist yet; sampleValue is what shows when no data is merged. Use merge_preview to see a record in place.")]
     public ChangeResult AddDataField(
         [Description("Variable name: letters, digits and underscore. Matches a column name of the data source.")] string variableName,
         [Description("Distance from the left edge.")] double x,
@@ -193,7 +196,7 @@ public sealed class ElementTools
         ElementModel.RequireVariableName(variableName);
         var bag = Bag(("fontHeight", fontHeight), ("fontWidth", fontWidth), ("fontId", fontId), ("rotation", rotation),
             ("blockWidth", blockWidth), ("maxLines", maxLines), ("alignment", alignment), ("name", name));
-        return Add("add_data_field", unit, x, y, new DataFieldElement { VariableName = variableName }, bag, doc =>
+        return Add("add_data_field", unit, x, y, new TextElement { Text = "{{" + variableName + "}}" }, bag, doc =>
         {
             var existing = doc.Variables.FirstOrDefault(v => string.Equals(v.Name, variableName, StringComparison.OrdinalIgnoreCase));
             if (existing is null) doc.Variables.Add(new LabelVariable(variableName, ElementModel.Clip(sampleValue ?? variableName, 1000)));

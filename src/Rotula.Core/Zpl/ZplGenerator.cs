@@ -5,6 +5,7 @@ using Rotula.Core.Elements;
 using Rotula.Core.Imaging;
 using Rotula.Core.Model;
 using Rotula.Core.Validation;
+using Rotula.Core.Variables;
 using static System.FormattableString;
 
 namespace Rotula.Core.Zpl;
@@ -54,10 +55,31 @@ public static class ZplGenerator
     /// <summary>Generates ZPL for <paramref name="doc"/>, merging <paramref name="data"/> into <c>{{name}}</c> placeholders.</summary>
     /// <param name="doc">The label.</param>
     /// <param name="data">Variable values; missing names fall back to the declared sample values.</param>
-    public static ZplGenerationResult Generate(LabelDocument doc, IReadOnlyDictionary<string, string>? data = null)
+    public static ZplGenerationResult Generate(LabelDocument doc, IReadOnlyDictionary<string, string>? data = null) =>
+        GenerateCore(doc, data, null, null);
+
+    /// <summary>
+    /// Generates ZPL after resolving every variable of the label (dates, counters, prompts, computed values) from <paramref name="context"/>. The
+    /// clock, the data record, the operator's answers and the counter positions all come from the context, so the same label and context always give
+    /// the same bytes. Date variables whose source is the printer clock become clock codes (<c>^FC</c>, with <c>^SO</c> for offsets) in text fields.
+    /// Problems of the variables are part of the result's issues.
+    /// </summary>
+    /// <param name="doc">The label.</param>
+    /// <param name="context">Where variable values come from.</param>
+    /// <param name="quantity">When set, replaces the label's own print quantity (<c>^PQ</c>); a run whose labels all differ passes 1.</param>
+    public static ZplGenerationResult GenerateWithVariables(LabelDocument doc, VariableContext context, int? quantity = null)
+    {
+        ArgumentNullException.ThrowIfNull(doc);
+        ArgumentNullException.ThrowIfNull(context);
+        var resolution = VariableEngine.Resolve(doc, context);
+        return GenerateCore(doc, resolution.Values, resolution, quantity);
+    }
+
+    private static ZplGenerationResult GenerateCore(LabelDocument doc, IReadOnlyDictionary<string, string>? data, VariableResolution? resolution, int? quantity)
     {
         ArgumentNullException.ThrowIfNull(doc);
         var issues = new List<ValidationIssue>();
+        if (resolution is not null) issues.AddRange(resolution.Issues);
         int widthDots = doc.WidthDots, heightDots = doc.HeightDots;
         ValidateDocument(doc, widthDots, heightDots, issues);
 
@@ -87,17 +109,20 @@ public static class ZplGenerator
         Line("^FW" + RotationChar(doc.DefaultRotation));
         if (doc.DefaultFont is { } f) Line(Invariant($"^CF{f.FontId},{f.Height},{f.Width}"));
         foreach (var alias in doc.FontAliases) Line("^CW" + alias.Letter + "," + alias.Path);
+        // Offsets of the printer's secondary and third clock, defined once for the whole label before any field uses them.
+        if (resolution is not null)
+            foreach (var (clockSet, offset) in resolution.ClockOffsets.OrderBy(kv => kv.Key)) Line(PrinterClock.OffsetCommand(clockSet, offset));
 
         foreach (var element in doc.Elements)
         {
             int before = issues.Count;
-            string? field = EmitElement(doc, element, data, issues);
+            string? field = EmitElement(doc, element, data, resolution, issues);
             bool failed = issues.Skip(before).Any(i => i.Severity == ValidationSeverity.Error);
             if (field is not null && !failed) Line(field);
         }
 
         var p = doc.Print;
-        Line(Invariant($"^PQ{p.Quantity},{p.PauseEvery},{p.Replicates},{(p.OverridePause ? 'Y' : 'N')}"));
+        Line(Invariant($"^PQ{quantity ?? p.Quantity},{p.PauseEvery},{p.Replicates},{(p.OverridePause ? 'Y' : 'N')}"));
         Line("^XZ");
         return new ZplGenerationResult(sb.ToString(), issues);
     }
@@ -156,11 +181,11 @@ public static class ZplGenerator
 
     // ---- element emission ------------------------------------------------------------------
 
-    private static string? EmitElement(LabelDocument doc, LabelElement e, IReadOnlyDictionary<string, string>? data, List<ValidationIssue> issues)
+    private static string? EmitElement(LabelDocument doc, LabelElement e, IReadOnlyDictionary<string, string>? data, VariableResolution? resolution, List<ValidationIssue> issues)
     {
         switch (e)
         {
-            case TextElement t: return EmitText(doc, t, data, issues);
+            case TextElement t: return EmitText(doc, t, data, resolution, issues);
             case BarcodeElement b: return EmitBarcode(doc, b, data, issues);
             case BoxElement box: return EmitBox(doc, box, issues);
             case LineElement line: return EmitLine(doc, line, issues);
@@ -202,10 +227,10 @@ public static class ZplGenerator
 
     private static string YN(bool v) => v ? "Y" : "N";
 
-    private static string EmitText(LabelDocument doc, TextElement t, IReadOnlyDictionary<string, string>? data, List<ValidationIssue> issues)
+    private static string EmitText(LabelDocument doc, TextElement t, IReadOnlyDictionary<string, string>? data, VariableResolution? resolution, List<ValidationIssue> issues)
     {
         CheckPosition(t, doc, 0, 0, issues);
-        string resolved = VariableResolver.Resolve(t.GetTemplate(), data, doc.Variables, t.Id, issues);
+        string resolved = ResolveTextWithClock(doc, t, data, resolution, issues, out FieldClockOptions? autoClock);
         var sb = new StringBuilder(Origin(t));
 
         if (t.Direction != FieldDirection.Horizontal || t.InterCharacterGap != 0)
@@ -242,7 +267,7 @@ public static class ZplGenerator
             sb.Append("^TB").Append(Params(RotationOrEmpty(t.Rotation), box.WidthDots.ToString(CultureInfo.InvariantCulture), box.HeightDots.ToString(CultureInfo.InvariantCulture)));
         }
 
-        AppendDataField(sb, doc, t, resolved, allowLineBreaks: t.Block is not null, textBox: t.TextBox is not null, fdPrefix: string.Empty, issues);
+        AppendDataField(sb, doc, t, resolved, allowLineBreaks: t.Block is not null, textBox: t.TextBox is not null, fdPrefix: string.Empty, issues, autoClock);
         return sb.ToString();
     }
 
@@ -250,7 +275,7 @@ public static class ZplGenerator
     /// Writes the part of a data field after its command: field options, then the data (<c>^FD</c>, or <c>^SN</c> for a counting
     /// number) and finally <c>^FS</c>. Shared by text and barcodes so both support the same options.
     /// </summary>
-    private static void AppendDataField(StringBuilder sb, LabelDocument doc, FieldDataElement e, string text, bool allowLineBreaks, bool textBox, string fdPrefix, List<ValidationIssue> issues)
+    private static void AppendDataField(StringBuilder sb, LabelDocument doc, FieldDataElement e, string text, bool allowLineBreaks, bool textBox, string fdPrefix, List<ValidationIssue> issues, FieldClockOptions? derivedClock = null)
     {
         var serial = e.Serial;
         string? body = null; // the ^SN replacement for ^FD
@@ -289,7 +314,8 @@ public static class ZplGenerator
             if (embed is '^' or '~' || embed < ' ' || embed > '~') issues.Add(new ValidationIssue(ValidationSeverity.Error, "Field.Embed.Invalid", e.Id));
             sb.Append("^FE").Append(embed);
         }
-        if (e.Clock is { } clock)
+        // A clock the user set on the field wins; otherwise use the one derived from printer-clock date variables.
+        if ((e.Clock ?? derivedClock) is { } clock)
         {
             var present = new List<char> { clock.Primary };
             if (clock.Secondary is { } second) present.Add(second);
@@ -319,9 +345,72 @@ public static class ZplGenerator
         sb.Append("^FS");
     }
 
+    /// <summary>
+    /// Resolves the placeholders of a text field. Date variables bound to the printer clock are written as clock codes and the clock indicator
+    /// characters are chosen so that none of them occurs in the rest of the field's text (the printer would read it as a code).
+    /// </summary>
+    private static string ResolveTextWithClock(LabelDocument doc, TextElement t, IReadOnlyDictionary<string, string>? data, VariableResolution? resolution,
+        List<ValidationIssue> issues, out FieldClockOptions? derivedClock)
+    {
+        derivedClock = null;
+        string template = t.GetTemplate();
+        if (resolution is null || resolution.PrinterBindings.Count == 0)
+            return VariableResolver.Resolve(template, data, doc.Variables, t.Id, issues);
+        var used = VariableResolver.FindVariables(template).Where(resolution.PrinterBindings.ContainsKey)
+            .Distinct(StringComparer.OrdinalIgnoreCase).Select(n => resolution.PrinterBindings[n]).ToList();
+        if (used.Count == 0) return VariableResolver.Resolve(template, data, doc.Variables, t.Id, issues);
+
+        // Indicator per clock set (1 = primary, 2 = secondary, 3 = third).
+        var indicator = new Dictionary<int, char>();
+        var denied = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (t.Clock is { } own)
+        {
+            indicator[1] = own.Primary;
+            if (own.Secondary is { } s2) indicator[2] = s2;
+            if (own.Third is { } s3) indicator[3] = s3;
+            foreach (var b in used)
+                if (!indicator.ContainsKey(b.ClockSet)) denied.Add(b.VariableName);
+            foreach (var name in denied)
+                issues.Add(new ValidationIssue(ValidationSeverity.Warning, VariableMessageKeys.PrinterNoIndicator, t.Id, name));
+        }
+        else
+        {
+            // Everything that will be in the field apart from the clock codes: the fixed text, other variables' values and the separators inside the formats.
+            var probe = new HashSet<char>(VariableResolver.Resolve(template, data, doc.Variables, t.Id, new List<ValidationIssue>(), name => resolution.PrinterBindings.ContainsKey(name) ? string.Empty : null));
+            foreach (var b in used)
+                for (int i = 0; i < b.TokenFormat.Length; i++)
+                {
+                    if (b.TokenFormat[i] == '%') i++;
+                    else probe.Add(b.TokenFormat[i]);
+                }
+            int top = used.Max(b => b.ClockSet);
+            var free = PrinterClock.IndicatorCandidates.Where(c => !probe.Contains(c)).GetEnumerator();
+            for (int set = 1; set <= top; set++)
+            {
+                if (!free.MoveNext())
+                {
+                    // Not enough unused characters: fall back to computer values for the whole field.
+                    foreach (var b in used) issues.Add(new ValidationIssue(ValidationSeverity.Warning, VariableMessageKeys.PrinterNoFreeIndicator, t.Id, b.VariableName));
+                    return VariableResolver.Resolve(template, data, doc.Variables, t.Id, issues);
+                }
+                indicator[set] = free.Current;
+            }
+            derivedClock = new FieldClockOptions { Primary = indicator[1], Secondary = top >= 2 ? indicator[2] : null, Third = top >= 3 ? indicator[3] : null };
+        }
+
+        return VariableResolver.Resolve(template, data, doc.Variables, t.Id, issues, name =>
+        {
+            if (!resolution.PrinterBindings.TryGetValue(name, out var b) || denied.Contains(name) || !indicator.TryGetValue(b.ClockSet, out char c)) return null;
+            return PrinterClock.Render(b.TokenFormat, c);
+        });
+    }
+
     private static string? EmitBarcode(LabelDocument doc, BarcodeElement b, IReadOnlyDictionary<string, string>? data, List<ValidationIssue> issues)
     {
-        string resolved = VariableResolver.Resolve(b.Data, data, doc.Variables, b.Id, issues);
+        // A QR Code made by the content builder is built from its structured definition per record, so escaping is applied to the values
+        // after substitution; Data (the template) is only used when there is no definition.
+        string resolved = Barcodes.QrContent.QrContentBuilder.ResolveForElement(b, data, doc.Variables, issues)
+            ?? VariableResolver.Resolve(b.Data, data, doc.Variables, b.Id, issues);
         var found = BarcodeValidator.Validate(b, resolved);
         issues.AddRange(found);
         CheckPosition(b, doc, 0, 0, issues);
@@ -330,6 +419,10 @@ public static class ZplGenerator
         string payload = BarcodeValidator.NormalizeForPrinter(b, resolved);
         var sb = new StringBuilder(Origin(b));
         sb.Append(ZplBarcodeEmitter.Command(b, RotationOrEmpty(b.Rotation), RotationChar(doc.DefaultRotation), out string fdPrefix));
+        if (fdPrefix.Contains(ZplBarcodeEmitter.QrByteCountToken, StringComparison.Ordinal))
+            // Manual byte input states how many bytes follow, counted in the label's encoding (UTF-8 under ^CI28).
+            fdPrefix = fdPrefix.Replace(ZplBarcodeEmitter.QrByteCountToken,
+                Math.Min(9999, doc.Encoding.GetEncoding().GetByteCount(payload)).ToString("0000", CultureInfo.InvariantCulture), StringComparison.Ordinal);
         AppendDataField(sb, doc, b, payload, allowLineBreaks: false, textBox: false, fdPrefix, issues);
         return sb.ToString();
     }

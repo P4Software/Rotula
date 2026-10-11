@@ -289,6 +289,9 @@ public sealed record RenderBarcode : RenderElement
 
     /// <summary>MaxiCode structured append: total number of symbols.</summary>
     public int MaxiCodeSymbolTotal { get; init; } = 1;
+
+    /// <summary>The data is a GS1 element string with parentheses and the symbol is GS1-128 or GS1 DataMatrix (see <c>BarcodeEncodeOptions.Gs1</c>).</summary>
+    public bool Gs1 { get; init; }
 }
 
 /// <summary>A bitmap image, already decoded to an encoded PNG/JPEG byte array.</summary>

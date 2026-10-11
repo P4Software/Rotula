@@ -1,5 +1,6 @@
 using Rotula.Core.Elements;
 using Rotula.Core.Model;
+using Rotula.Core.Variables;
 using Rotula.Mcp.Hosting;
 using Rotula.Mcp.Session;
 
@@ -20,7 +21,7 @@ internal static class LabelView
             doc.MediaType.ToString(), doc.MediaTracking.ToString(), ElementModel.RotationText(doc.DefaultRotation),
             doc.DefaultFont is { } f ? $"font {f.FontId}, height {f.Height} dots, width {f.Width} dots" : null,
             doc.Encoding.ToString(), doc.Print.Quantity,
-            doc.Variables.Select(v => new VariableInfo(v.Name, v.SampleValue)).ToList(),
+            doc.Variables.Select(v => new VariableInfo(v.Name, v.SampleValue, v.Kind.ToString().ToLowerInvariant(), v.Kind == VariableKind.Text ? "" : VariableDefinitions.Describe(v))).ToList(),
             doc.Elements.Count, file, dirty, ctx.Session.UndoSteps);
     }
 

@@ -247,6 +247,30 @@ public sealed class BarcodeElement : FieldDataElement
     /// <summary>Code 49 starting mode: '0' to '5', or 'A' for automatic.</summary>
     public char Code49StartMode { get; set; } = 'A';
 
+    // ---- GS1 options ---------------------------------------------------------------------------
+    // GS1-128 needs no option of its own: it is Code 128 in mode Ean (^BC mode D), which starts with FNC1, and its data is a GS1 element
+    // string written with parentheses. GS1 DataBar Expanded takes the same kind of data. The two options below cover the rest.
+
+    /// <summary>
+    /// Data Matrix: the data is a GS1 element string written with parentheses, e.g. <c>(01)09506000134352(10)ABC</c>. The symbol is
+    /// printed as GS1 DataMatrix (FNC1 in the first position, FNC1 between variable-length elements).
+    /// </summary>
+    public bool DataMatrixGs1 { get; set; }
+    /// <summary>
+    /// QR Code and Data Matrix: the data is a GS1 Digital Link URI such as <c>https://id.gs1.org/01/09506000134352/10/ABC</c>, and is
+    /// checked as one. The symbol itself is an ordinary QR Code or Data Matrix: the URI is plain text, so nothing changes in the ZPL.
+    /// </summary>
+    public bool DigitalLink { get; set; }
+    /// <summary>QR Code mask pattern, 0-7 (^BQ parameter e); -1 leaves the parameter out so the printer uses its default (7).</summary>
+    public int QrMask { get; set; } = -1;
+    /// <summary>QR Code data input declared in the ^FD header: automatic, or manual with a character mode.</summary>
+    public QrInputMode QrInputMode { get; set; } = QrInputMode.Automatic;
+    /// <summary>
+    /// QR Code: the structured definition made by the content builder (kind and named fields, any of which may hold <c>{{field}}</c>
+    /// placeholders), as JSON; empty when the data was typed by hand. <see cref="Data"/> keeps the generated template.
+    /// </summary>
+    public string QrContentSpec { get; set; } = string.Empty;
+
     /// <summary>
     /// The options introduced for the later symbologies as culture-neutral text, listing only values that differ from
     /// their default. This lets a file format store them in one open-ended field instead of one field per option.
@@ -317,6 +341,11 @@ public sealed class BarcodeElement : FieldDataElement
         IntOption(nameof(Tlc39MicroModuleWidth), e => e.Tlc39MicroModuleWidth, (e, v) => e.Tlc39MicroModuleWidth = v),
         IntOption(nameof(Tlc39MicroRowHeight), e => e.Tlc39MicroRowHeight, (e, v) => e.Tlc39MicroRowHeight = v),
         CharOption(nameof(Code49StartMode), e => e.Code49StartMode, (e, v) => e.Code49StartMode = v),
+        BoolOption(nameof(DataMatrixGs1), e => e.DataMatrixGs1, (e, v) => e.DataMatrixGs1 = v),
+        BoolOption(nameof(DigitalLink), e => e.DigitalLink, (e, v) => e.DigitalLink = v),
+        IntOption(nameof(QrMask), e => e.QrMask, (e, v) => e.QrMask = v),
+        EnumOption(nameof(QrInputMode), e => e.QrInputMode, (e, v) => e.QrInputMode = v),
+        new(nameof(QrContentSpec), e => e.QrContentSpec, (e, t) => { if (t.Length > 20000) return false; e.QrContentSpec = t; return true; }),
     };
 }
 

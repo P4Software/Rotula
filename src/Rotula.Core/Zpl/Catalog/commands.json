@@ -270,7 +270,7 @@
       "preview": "NotPreviewed",
       "summary": "Chooses the characters that mark real-time-clock codes (date and time) inside a field.",
       "example": "^FO50,40^A0N,30,30^FC%,{,#^FD%d/%m/%Y^FS",
-      "notes": "The preview shows the codes as typed, not the date. Works only on printers with a clock."
+      "notes": "The preview shows the codes as typed, not the date. Works only on printers with a clock. A date variable set to use the printer clock writes this command by itself (see docs/variables.md)."
     },
     {
       "id": "^FD",
@@ -2325,7 +2325,7 @@
       "preview": "NotPreviewed",
       "summary": "Sets an offset added to the real-time clock for date and time codes.",
       "example": "^SO2,30",
-      "notes": "Kept verbatim."
+      "notes": "Kept verbatim when imported. Rotula also writes it by itself for date variables that use the printer clock with an offset (see docs/variables.md); that copy is not read back into the model."
     },
     {
       "id": "^SR",

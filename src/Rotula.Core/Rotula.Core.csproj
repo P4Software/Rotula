@@ -13,6 +13,8 @@
     <EmbeddedResource Include="Stocks\stocks.json" LogicalName="Rotula.Core.Stocks.stocks.json" />
     <!-- The ZPL command catalogue (status of every ZPL II command); read by ZplCommandCatalog and used to generate docs/zpl-coverage.md. -->
     <EmbeddedResource Include="Zpl\Catalog\commands.json" LogicalName="Rotula.Core.Zpl.Catalog.commands.json" />
+    <!-- The GS1 Application Identifier dictionary, built from the GS1 Barcode Syntax Dictionary (Apache-2.0) by tools/gs1-dictionary; read by Gs1Dictionary. -->
+    <EmbeddedResource Include="Gs1\Data\gs1-dictionary.json" LogicalName="Rotula.Core.Gs1.gs1-dictionary.json" />
   </ItemGroup>
 
   <ItemGroup>

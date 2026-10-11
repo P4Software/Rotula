@@ -2,6 +2,8 @@ using System.Globalization;
 using System.Text;
 using Rotula.Core.Model;
 using Rotula.Core.Validation;
+using Rotula.Core.Variables;
+using Rotula.Core.Variables.Counters;
 using Rotula.Core.Zpl;
 
 namespace Rotula.Core.Merge;
@@ -63,40 +65,85 @@ public static class MergeBatch
         report ??= new MergeReport();
         var options = data.Options;
 
-        for (int i = 0; i < data.RecordCount; i++)
+        // Variables with a definition (dates, counters, prompts, computed values) are resolved per record. A label without any keeps the plain path.
+        bool defined = VariableEngine.HasDefinitions(doc);
+        VariableJob? job = null;
+        bool ownsJob = false; // true: this batch reserved the numbers and confirms them; false: the caller passed MergeOptions.Job and confirms what was sent
+        var warned = new HashSet<string>(StringComparer.Ordinal);
+        if (defined)
         {
-            int number = i + 1;
-            report.Processed++;
-            var problems = new List<ValidationIssue>();
-            string? zpl = null;
-            try
+            if (options.Job is { } external) job = external;
+            else
             {
-                var values = data.BuildData(i, problems);
-                int? copies = ResolveCopies(data, i, problems);
-                var result = ZplGenerator.Generate(doc, values);
-                problems.AddRange(result.Issues);
-                if (!problems.Any(p => p.Severity == ValidationSeverity.Error))
-                    zpl = ApplyCopies(result.Zpl, copies, options.CopiesMode);
+                // One instant for the whole batch unless asked otherwise (CreateBatchContext), so a run that crosses midnight does not mix two dates.
+                job = VariableJob.Begin(doc, data.CreateBatchContext(), data.RecordCount);
+                ownsJob = true;
             }
-            catch (Exception ex) when (ex is not OutOfMemoryException)
-            {
-                // A defect in one record must never take the whole batch down.
-                problems.Add(new ValidationIssue(ValidationSeverity.Error, "Merge.Record.Failed", null, ex.GetType().Name));
-            }
-
-            foreach (var p in problems) report.Add(number, p);
-            if (zpl is null)
-            {
-                report.SkippedRecords.Add(number);
-                if (options.OnInvalidRecord == InvalidRecordPolicy.Stop)
+            foreach (var issue in job.Issues) report.Add(0, issue);
+            // A prompt with no answer and no data column of its name can never be satisfied, so say so once instead of failing every record.
+            bool unanswered = false;
+            foreach (var v in doc.Variables.Where(v => v.Kind == VariableKind.Prompt).DistinctBy(v => v.Name, StringComparer.OrdinalIgnoreCase))
+                if (!options.PromptAnswers.ContainsKey(v.Name) && data.Table.IndexOfColumn(v.Name) < 0)
                 {
-                    report.Stopped = true;
-                    yield break;
+                    report.Add(0, new ValidationIssue(ValidationSeverity.Error, VariableMessageKeys.PromptMissingAnswer, null, v.Name));
+                    unanswered = true;
                 }
-                continue;
+            if (!job.CanPrint || unanswered)
+            {
+                // Nothing reaches the printer, so the serial numbers this batch reserved are handed back (a job the caller owns is the caller's to cancel).
+                if (ownsJob) foreach (var issue in job.Cancel()) report.Add(0, issue);
+                report.Stopped = true;
+                yield break;
             }
-            report.Emitted++;
-            yield return new MergedLabel(number, zpl);
+        }
+
+        long usedThrough = 0; // highest record position handed out + 1: those serial numbers count as used, also when a record in between was skipped
+        try
+        {
+            for (int i = 0; i < data.RecordCount; i++)
+            {
+                int number = i + 1;
+                report.Processed++;
+                var problems = new List<ValidationIssue>();
+                string? zpl = null;
+                try
+                {
+                    var values = data.BuildData(i, problems);
+                    int? copies = ResolveCopies(data, i, problems);
+                    var result = job is null ? ZplGenerator.Generate(doc, values) : ZplGenerator.GenerateWithVariables(doc, job.ContextFor(i, values));
+                    // Variable warnings are the same for every record; say each of them once.
+                    problems.AddRange(result.Issues.Where(p => job is null || p.Severity == ValidationSeverity.Error || warned.Add(p.MessageKey + "|" + string.Join("|", p.Args))));
+                    if (!problems.Any(p => p.Severity == ValidationSeverity.Error))
+                        zpl = ApplyCopies(result.Zpl, copies, options.CopiesMode);
+                }
+                catch (Exception ex) when (ex is not OutOfMemoryException)
+                {
+                    // A defect in one record must never take the whole batch down.
+                    problems.Add(new ValidationIssue(ValidationSeverity.Error, "Merge.Record.Failed", null, ex.GetType().Name));
+                }
+
+                foreach (var p in problems) report.Add(number, p);
+                if (zpl is null)
+                {
+                    report.SkippedRecords.Add(number);
+                    if (options.OnInvalidRecord == InvalidRecordPolicy.Stop)
+                    {
+                        report.Stopped = true;
+                        yield break;
+                    }
+                    continue;
+                }
+                report.Emitted++;
+                usedThrough = i + 1;
+                yield return new MergedLabel(number, zpl);
+            }
+        }
+        finally
+        {
+            // Runs also when the consumer stops early (print failure, cancel): a label counts as used from the moment it was handed out,
+            // which is the safe side - a number is never printed twice, at worst one is skipped. A caller that wants only the labels that were
+            // really sent confirmed passes its own job (MergeOptions.Job) and completes it itself.
+            if (ownsJob && job is not null) foreach (var issue in job.Complete(usedThrough)) report.Add(0, issue);
         }
     }
 

@@ -12,6 +12,9 @@ namespace Rotula.Core.Zpl;
 /// </summary>
 internal static class ZplBarcodeEmitter
 {
+    /// <summary>Placeholder in a QR header for the four-digit byte count of manual byte input; the generator fills it in.</summary>
+    internal const string QrByteCountToken = "{QrByteCount}";
+
     private static string Int(int v) => v.ToString(CultureInfo.InvariantCulture);
     private static string YN(bool v) => v ? "Y" : "N";
 
@@ -57,12 +60,23 @@ internal static class ZplBarcodeEmitter
                 return by + "^B2" + Params(rot, h, hr, above, YN(b.CheckDigit));
             case BarcodeSymbology.QrCode:
                 // QR data carries its own header: error correction letter + "A" (automatic input mode) + comma.
-                fdPrefix = (b.QrErrorCorrection switch { QrErrorCorrection.Low => "L", QrErrorCorrection.Medium => "M", QrErrorCorrection.High => "H", _ => "Q" }) + "A,";
-                return "^BQ" + Params(rot, Int(b.QrModel), Int(b.ModuleSize));
+                // The header is the error correction letter, then the data input: "A," (automatic) or "M," and a character mode. For the byte
+                // mode the count (four digits) is only known with the data, so the generator replaces the byte count token.
+                fdPrefix = (b.QrErrorCorrection switch { QrErrorCorrection.Low => "L", QrErrorCorrection.Medium => "M", QrErrorCorrection.High => "H", _ => "Q" })
+                    + b.QrInputMode switch
+                    {
+                        QrInputMode.ManualNumeric => "M,N", QrInputMode.ManualAlphanumeric => "M,A", QrInputMode.ManualByte => "M,B" + QrByteCountToken,
+                        QrInputMode.ManualKanji => "M,K", _ => "A,",
+                    };
+                // ^BQ a,b,c,d,e: d (error correction) is left empty because the header above carries it; e is the mask, 0-7.
+                return "^BQ" + Params(rot, Int(b.QrModel), Int(b.ModuleSize), string.Empty, b.QrMask is >= 0 and <= 7 ? Int(b.QrMask) : string.Empty);
             case BarcodeSymbology.DataMatrix:
+                // Parameter g (the escape character, 7th) is only written for GS1 DataMatrix, where the field data uses ~1 for FNC1.
                 return "^BX" + Params(rot, Int(b.ModuleSize), "200",
                     b.Columns > 0 ? Int(b.Columns) : string.Empty,
-                    b.Rows > 0 ? Int(b.Rows) : string.Empty);
+                    b.Rows > 0 ? Int(b.Rows) : string.Empty,
+                    string.Empty,
+                    b.DataMatrixGs1 ? Gs1ZplData.DataMatrixEscape.ToString() : string.Empty);
             case BarcodeSymbology.Pdf417:
                 return byWidthOnly + "^B7" + Params(rot, h, Int(b.Pdf417SecurityLevel),
                     b.Columns > 0 ? Int(b.Columns) : string.Empty,

@@ -29,6 +29,17 @@ public static class LimitChecks
             throw new McpException($"That label has {doc.Elements.Count} elements; the limit is {settings.MaxElements} (maxElements in rotula-mcp.settings.json).");
         if (doc.Variables.Count > MaxVariables)
             throw new McpException($"That label declares {doc.Variables.Count} variables; the limit is {MaxVariables}.");
+        foreach (var v in doc.Variables)
+        {
+            // Definitions normally pass the file reader's caps already; this also covers labels built through tool calls and other sources.
+            if (v.Name.Length > Rotula.Core.Variables.VariableLimits.MaxNameLength || v.SampleValue.Length > Rotula.Core.Variables.VariableLimits.MaxValueLength
+                || (v.Computed?.Expression.Length ?? 0) > Rotula.Core.Variables.VariableLimits.MaxExpressionLength
+                || (v.Date?.Offsets.Count ?? 0) > Rotula.Core.Variables.VariableLimits.MaxOffsets
+                || (v.Date?.Holidays.Count ?? 0) > Rotula.Core.Variables.VariableLimits.MaxHolidays
+                || (v.Prompt?.Choices.Count ?? 0) > Rotula.Core.Variables.VariableLimits.MaxChoices
+                || (v.Prompt?.Pattern.Length ?? 0) > Rotula.Core.Variables.VariableLimits.MaxPatternLength)
+                throw new McpException($"The variable \"{(v.Name.Length > 40 ? v.Name[..40] + "..." : v.Name)}\" has a value or definition that is larger than the limits.");
+        }
         foreach (var e in doc.Elements)
         {
             switch (e)

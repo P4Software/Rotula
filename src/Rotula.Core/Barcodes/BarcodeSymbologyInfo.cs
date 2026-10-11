@@ -93,6 +93,16 @@ public enum BarcodeOption
     Tlc39MicroRowHeight,
     /// <summary>Code 49 starting mode, <c>Code49StartMode</c>.</summary>
     Code49StartMode,
+    /// <summary>Data Matrix carries a GS1 element string (GS1 DataMatrix, FNC1 first), <c>DataMatrixGs1</c>.</summary>
+    DataMatrixGs1,
+    /// <summary>The data is a GS1 Digital Link URI and is checked as one, <c>DigitalLink</c>.</summary>
+    DigitalLink,
+    /// <summary>QR mask pattern 0-7, or -1 for the printer's own choice (the parameter is left out), <c>QrMask</c>.</summary>
+    QrMask,
+    /// <summary>QR data input (automatic or manual with a character mode), <c>QrInputMode</c>.</summary>
+    QrInputMode,
+    /// <summary>The structured definition of a QR content (URL, Wi-Fi, vCard ...) as JSON, <c>QrContentSpec</c>.</summary>
+    QrContentSpec,
 }
 
 /// <summary>How a <see cref="BarcodeOption"/> relates to the printer resolution; the DPI converter decides what to scale from it.</summary>
@@ -177,7 +187,8 @@ public static class BarcodeCatalog
     private static readonly BarcodeSymbologyInfo[] Entries =
     {
         E(BarcodeSymbology.Code128, "Code 128", "^BC", BarcodeCategory.Linear, new[] { H, W, HR, HP, BarcodeOption.Code128Mode },
-            Ascii + ", except '>' (reserved for ZPL subset codes)", "Any length that fits the label", 1, null, null, "ROTULA-12345"),
+            Ascii + ", except '>' (reserved for ZPL subset codes). With the mode Ean (GS1-128): a GS1 element string with each identifier in parentheses, such as (01)09506000134352(17)251231(10)ABC123",
+            "Any length that fits the label; at most 48 data characters (identifiers and separators included) for GS1-128", 1, null, null, "ROTULA-12345"),
         E(BarcodeSymbology.Code39, "Code 39", "^B3", BarcodeCategory.Linear, new[] { H, W, R, HR, HP, CD },
             "A-Z, 0-9, space and - . $ / + %", "Any length that fits the label", 1, null, null, "ABC-123",
             note: "The bar ratio is drawn as 2:1 in the preview."),
@@ -189,10 +200,10 @@ public static class BarcodeCatalog
             Digits, "11 digits (check digit added) or 12 digits with a correct check digit", 11, 12, new[] { 11, 12 }, "03600029145"),
         E(BarcodeSymbology.Interleaved2Of5, "Interleaved 2 of 5", "^B2", BarcodeCategory.Linear, new[] { H, W, R, HR, HP, CD },
             Digits, "An even number of digits (odd when the printer adds the check digit)", 1, null, null, "1234567890"),
-        E(BarcodeSymbology.QrCode, "QR Code", "^BQ", BarcodeCategory.Matrix2D, new[] { BarcodeOption.QrModel, BarcodeOption.ModuleSize, BarcodeOption.QrErrorCorrection },
-            "Any text", "Up to 4296 characters", 1, 4296, null, "https://example.com"),
-        E(BarcodeSymbology.DataMatrix, "Data Matrix", "^BX", BarcodeCategory.Matrix2D, new[] { BarcodeOption.ModuleSize, BarcodeOption.Columns, BarcodeOption.Rows },
-            "Any text", "Up to 2335 characters", 1, 2335, null, "ROTULA 123"),
+        E(BarcodeSymbology.QrCode, "QR Code", "^BQ", BarcodeCategory.Matrix2D, new[] { BarcodeOption.QrModel, BarcodeOption.ModuleSize, BarcodeOption.QrErrorCorrection, BarcodeOption.QrMask, BarcodeOption.QrInputMode, BarcodeOption.DigitalLink, BarcodeOption.QrContentSpec },
+            "Any text. A GS1 Digital Link web address is a plain QR Code (option DigitalLink checks it)", "Up to 4296 characters", 1, 4296, null, "https://example.com"),
+        E(BarcodeSymbology.DataMatrix, "Data Matrix", "^BX", BarcodeCategory.Matrix2D, new[] { BarcodeOption.ModuleSize, BarcodeOption.Columns, BarcodeOption.Rows, BarcodeOption.DataMatrixGs1, BarcodeOption.DigitalLink },
+            "Any text; with the GS1 option, a GS1 element string written with parentheses such as (01)09506000134352(10)ABC", "Up to 2335 characters", 1, 2335, null, "ROTULA 123"),
         E(BarcodeSymbology.Pdf417, "PDF417", "^B7", BarcodeCategory.Stacked, new[] { H, W, BarcodeOption.Pdf417SecurityLevel, BarcodeOption.Columns, BarcodeOption.Rows, BarcodeOption.Pdf417Truncate },
             "Any text", "Up to 1850 characters", 1, 1850, null, "PDF417 sample payload"),
 

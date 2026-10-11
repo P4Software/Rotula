@@ -18,7 +18,9 @@ public sealed record LabelInfo(
 /// <summary>A declared variable.</summary>
 /// <param name="Name">Used as {{Name}} in text and barcode data.</param>
 /// <param name="Sample">Value shown when no data is merged.</param>
-public sealed record VariableInfo(string Name, string Sample);
+/// <param name="Kind">text, date, counter, prompt or computed.</param>
+/// <param name="Definition">A plain-language description of what the variable produces (empty for text).</param>
+public sealed record VariableInfo(string Name, string Sample, string Kind = "text", string Definition = "");
 
 /// <summary>Result of get_label.</summary>
 public sealed record GetLabelResult(LabelInfo Label, IReadOnlyList<ElementInfo> Elements);

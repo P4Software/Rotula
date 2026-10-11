@@ -1,7 +1,9 @@
 using System.Globalization;
 using Rotula.Core.Elements;
+using Rotula.Core.Gs1;
 using Rotula.Core.Model;
 using Rotula.Core.Validation;
+using Rotula.Core.Zpl;
 
 namespace Rotula.Core.Barcodes;
 
@@ -50,6 +52,7 @@ public static class BarcodeValidator
         if (data.Length > 0)
             ValidateData(barcode, data, Err);
         ValidateOptions(barcode, Err);
+        if (data.Length > 0) ValidateGs1(barcode, data, issues);
 
         // Settings that the ZPL command has no parameter for: they are not an error, but they will not be printed as chosen.
         if (!info.SupportsRotation && barcode.Rotation is not null)
@@ -68,6 +71,8 @@ public static class BarcodeValidator
         switch (b.Symbology)
         {
             case BarcodeSymbology.Code128:
+                // GS1-128 data (an element string with parentheses) is checked by ValidateGs1, which also knows how to send a '>' in a value.
+                if (IsGs128Data(b, data)) break;
                 // '>' starts a ZPL invocation sequence inside Code 128 data, so a literal one cannot be sent.
                 if (data.Any(c => c > 126 || c < 32)) Err("Barcode.Code128.Charset");
                 else if (data.Contains('>')) Err("Barcode.Code128.ReservedChar", ">");
@@ -97,6 +102,7 @@ public static class BarcodeValidator
                 if (b.QrModel is not (1 or 2)) Err("Barcode.Qr.Model");
                 if (b.ModuleSize < 1 || b.ModuleSize > 10) Err("Barcode.ModuleSize.Range", "1", "10");
                 if (data.Length > 4296) Err("Barcode.Qr.TooLong", "4296");
+                else ValidateQr(b, data, err);
                 break;
             case BarcodeSymbology.DataMatrix:
                 if (b.ModuleSize < 1 || b.ModuleSize > 10) Err("Barcode.ModuleSize.Range", "1", "10");
@@ -196,6 +202,90 @@ public static class BarcodeValidator
             default:
                 Err("Barcode.Symbology.Unknown");
                 break;
+        }
+    }
+
+    // ---- GS1 ---------------------------------------------------------------------------------------
+
+    /// <summary>
+    /// True when a Code 128 element is a GS1-128 symbol: mode D (UCC/EAN, which starts with FNC1) and data written as an element string
+    /// with parentheses. Data in mode D that does not start with a parenthesis keeps the older meaning (free text with an FNC1 start),
+    /// so labels made before GS1 support keep printing as they did.
+    /// </summary>
+    public static bool IsGs128Data(BarcodeElement b, string data) =>
+        b.Symbology == BarcodeSymbology.Code128 && b.Code128Mode == Code128Mode.Ean && data.TrimStart().StartsWith('(');
+
+    /// <summary>True when the element prints GS1 DataMatrix (the GS1 option is on and the data is an element string).</summary>
+    public static bool IsGs1DataMatrix(BarcodeElement b) => b.Symbology == BarcodeSymbology.DataMatrix && b.DataMatrixGs1;
+
+    private static ValidationIssue ForElement(ValidationIssue i, string id) => new(i.Severity, i.MessageKey, id, i.Args.ToArray());
+
+    private static void ValidateGs1(BarcodeElement b, string data, List<ValidationIssue> issues)
+    {
+        string id = b.Id;
+        void Add(IEnumerable<ValidationIssue> found) => issues.AddRange(found.Select(i => ForElement(i, id)));
+
+        if (IsGs128Data(b, data))
+        {
+            var message = Gs1Message.ParseBracketed(data, out var parse);
+            Add(parse);
+            if (message is null) return;
+            Add(Gs1Validator.ValidateForGs128(message));
+            // The printer drops parentheses and spaces in mode D, so a value that has one cannot be sent as it is.
+            if (message.Elements.Any(e => e.Value.Contains('(') || e.Value.Contains(')')))
+                issues.Add(new ValidationIssue(ValidationSeverity.Error, "Gs1.Gs128.Parentheses", id));
+            // Mode D computes the check digit itself; asking for another one (parameter e) would only confuse the interpretation line.
+            if (b.CheckDigit)
+                issues.Add(new ValidationIssue(ValidationSeverity.Warning, "Gs1.Gs128.CheckDigitOption", id));
+            return;
+        }
+
+        if (IsGs1DataMatrix(b))
+        {
+            if (b.DigitalLink) issues.Add(new ValidationIssue(ValidationSeverity.Error, "Gs1.Option.Conflict", id));
+            var message = Gs1Message.ParseBracketed(data, out var parse);
+            Add(parse);
+            if (message is not null) Add(Gs1Validator.Validate(message));
+            return;
+        }
+
+        if (b.DigitalLink && b.Symbology is BarcodeSymbology.QrCode or BarcodeSymbology.DataMatrix)
+        {
+            Gs1DigitalLink.Parse(data, out var uriIssues);
+            Add(uriIssues);
+            return;
+        }
+
+        // GS1 DataBar Expanded: the existing checks cover the shape of the data; the dictionary adds identifier formats and relations.
+        // Only when those checks passed, so that one mistake is not reported twice.
+        if (b.Symbology == BarcodeSymbology.DataBar && b.DataBarType == DataBarType.Expanded && !data.Contains('|')
+            && !issues.Any(i => i.Severity == ValidationSeverity.Error && i.MessageKey.StartsWith("Barcode.DataBar.", StringComparison.Ordinal))
+            && Gs1ElementString.Parse(data) is { Count: > 0 } elements)
+        {
+            var message = new Gs1Message(elements.Select(e => new Gs1Element(e.Ai.Trim(), e.Value)));
+            // Only errors: a DataBar often carries part of the data of an item, so "requires" and "repeated" warnings would nag.
+            // A space is not in the GS1 character set, but the DataBar encoder has always accepted it (ISO/IEC 646), so it stays accepted here.
+            Add(Gs1Validator.Validate(message).Where(i => i.Severity == ValidationSeverity.Error && !(i.MessageKey == "Gs1.Lint.Cset82" && i.Args.Count > 1 && i.Args[1] == " ")));
+        }
+    }
+
+    /// <summary>The QR options that depend on the data: mask, manual input modes, and whether the payload fits the model and level.</summary>
+    private static void ValidateQr(BarcodeElement b, string data, Action<string, string[]> err)
+    {
+        void Err(string key, params string[] args) => err(key, args);
+        if (b.QrMask is < -1 or > 7) Err("Barcode.Qr.Mask", "0", "7");
+        if (!Enum.IsDefined(b.QrInputMode)) Err("Barcode.Qr.InputMode");
+        switch (b.QrInputMode)
+        {
+            case QrInputMode.ManualNumeric when !AllDigits(data): Err("Barcode.Qr.ManualNumeric"); break;
+            case QrInputMode.ManualAlphanumeric when QrSizing.ModeOf(data) == QrDataMode.Byte: Err("Barcode.Qr.ManualAlphanumeric"); break;
+            case QrInputMode.ManualByte when System.Text.Encoding.UTF8.GetByteCount(data) > 9999: Err("Barcode.Qr.ManualByteLength", "9999"); break;
+        }
+        if (b.QrModel is 1 or 2)
+        {
+            var fit = QrSizing.Analyze(data, b.QrErrorCorrection, b.QrModel);
+            // The largest symbol of the model holds only so much at this level; the message gives the limit for the character mode in use.
+            if (!fit.Fits) Err("Barcode.Qr.Capacity", Num(fit.Units), Num(fit.MaxUnits), b.QrErrorCorrection.ToString());
         }
     }
 
@@ -350,6 +440,9 @@ public static class BarcodeValidator
     public static string NormalizeForPrinter(BarcodeElement barcode, string data)
     {
         ArgumentNullException.ThrowIfNull(barcode);
+        // GS1 data is stored with parentheses and no separators; each command wants its own spelling of FNC1 (see Gs1ZplData).
+        if (IsGs128Data(barcode, data) && Gs1Message.ParseBracketed(data, out _) is { } gs128) return Gs1ZplData.ToCode128ModeD(gs128);
+        if (IsGs1DataMatrix(barcode) && Gs1Message.ParseBracketed(data, out _) is { } gs1Dm) return Gs1ZplData.ToDataMatrix(gs1Dm);
         if (barcode.Symbology == BarcodeSymbology.DataBar && barcode.DataBarType != DataBarType.Expanded && data.Length == 14 && data.All(char.IsAsciiDigit))
             return data[..13];
         return NormalizeForPrinter(barcode.Symbology, data);

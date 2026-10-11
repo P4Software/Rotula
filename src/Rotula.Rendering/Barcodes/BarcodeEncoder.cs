@@ -1,5 +1,6 @@
 using System.Globalization;
 using Rotula.Core.Barcodes;
+using Rotula.Core.Gs1;
 using Rotula.Core.Model;
 using ZXing;
 using ZXing.Common;
@@ -118,6 +119,13 @@ public sealed record BarcodeEncodeOptions
 
     /// <summary>MaxiCode structured append: total number of symbols (1-8).</summary>
     public int MaxiCodeSymbolTotal { get; init; } = 1;
+
+    /// <summary>
+    /// The data is a GS1 element string written with parentheses, and the symbol is a GS1 symbol: Code 128 becomes GS1-128 (FNC1 after the
+    /// start character), Data Matrix gets FNC1 in the first position, QR Code gets the FNC1 first-position mode indicator. Ignored for
+    /// other symbologies.
+    /// </summary>
+    public bool Gs1 { get; init; }
 }
 
 /// <summary>Raised by <see cref="BarcodeEncoder.Encode"/> when the data cannot be represented in the symbology.</summary>
@@ -153,6 +161,8 @@ public static class BarcodeEncoder
             throw new BarcodeEncodingException("There is no data to encode in the barcode.");
         if (!HasPreviewEncoder(symbology))
             throw new BarcodeEncodingException($"{BarcodeCatalog.Get(symbology).DisplayName} has no preview in the designer; the printer draws it from the ZPL.");
+        if (options.Gs1 && symbology is BarcodeSymbology.Code128 or BarcodeSymbology.DataMatrix or BarcodeSymbology.QrCode)
+            return EncodeGs1(symbology, data, options);
 
         try
         {
@@ -214,6 +224,26 @@ public static class BarcodeEncoder
         }
 
         return EncodeWithZXing(symbology, data, options);
+    }
+
+    /// <summary>
+    /// GS1 element strings in Code 128 (GS1-128), Data Matrix and QR Code. The data is parsed once; each carrier then gets the FNC1 it
+    /// needs: ZXing's FNC1 character U+00F1 inside Code 128, the group separator inside QR Code, and codeword 232 in the Data Matrix.
+    /// </summary>
+    private static BarcodeMatrix EncodeGs1(BarcodeSymbology symbology, string data, BarcodeEncodeOptions options)
+    {
+        var message = Gs1Message.ParseBracketed(data, out _)
+            ?? throw new BarcodeEncodingException("The GS1 data must be written like (01)09506000134352(10)ABC123: each identifier in parentheses, followed by its value.");
+        switch (symbology)
+        {
+            case BarcodeSymbology.DataMatrix:
+                return Trim(DataMatrixGs1Encoder.Encode(message));
+            case BarcodeSymbology.Code128:
+                // ZXing writes the FNC1 that follows the start character itself when GS1_FORMAT is set; the one between elements is U+00F1.
+                return EncodeWithZXing(symbology, message.ToElementString('ñ'), options, gs1: true);
+            default:
+                return EncodeWithZXing(symbology, message.ToElementString(), options, gs1: true);
+        }
     }
 
     private static char StartStop(char c) => c is >= 'A' and <= 'D' ? c : 'A';
@@ -282,12 +312,19 @@ public static class BarcodeEncoder
         return new BarcodeMatrix(dark, BarcodeRowLayout.Square, null);
     }
 
-    private static BarcodeMatrix EncodeWithZXing(BarcodeSymbology symbology, string data, BarcodeEncodeOptions options)
+    private static BarcodeMatrix EncodeWithZXing(BarcodeSymbology symbology, string data, BarcodeEncodeOptions options, bool gs1 = false)
     {
         var linear = IsLinear(symbology);
 
         // Margin 0: printers do not add a quiet zone, the label background provides it.
         var hints = new Dictionary<EncodeHintType, object> { [EncodeHintType.MARGIN] = 0 };
+        if (gs1) hints[EncodeHintType.GS1_FORMAT] = true;
+        // Printers in ^CI28 mode send UTF-8 bytes without an ECI header, so text beyond Latin-1 is encoded the same way here.
+        if (symbology == BarcodeSymbology.QrCode && data.Any(c => c > 127))
+        {
+            hints[EncodeHintType.CHARACTER_SET] = "UTF-8";
+            hints[EncodeHintType.DISABLE_ECI] = true;
+        }
         if (symbology == BarcodeSymbology.QrCode)
             hints[EncodeHintType.ERROR_CORRECTION] = options.QrErrorCorrection switch
             {
@@ -357,6 +394,9 @@ public static class BarcodeEncoder
         bool digits = data.All(char.IsAsciiDigit);
         switch (symbology)
         {
+            // GS1-128 shows the identifiers in parentheses, as ^BC mode D prints them.
+            case BarcodeSymbology.Code128 when options.Gs1 && Gs1Message.ParseBracketed(data, out _) is { } gs1Message:
+                return gs1Message.ToHumanReadable();
             case BarcodeSymbology.Ean13 when data.Length == 12 && digits:
                 return data + Gs1CheckDigit(data);
             case BarcodeSymbology.UpcA when data.Length == 11 && digits:

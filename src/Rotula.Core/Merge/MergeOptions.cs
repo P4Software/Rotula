@@ -1,4 +1,15 @@
+using Rotula.Core.Variables.Counters;
+
 namespace Rotula.Core.Merge;
+
+/// <summary>When the date and time of date variables are read during a batch.</summary>
+public enum DateEvaluation
+{
+    /// <summary>Once, when the batch starts: every label carries the same date even if the run crosses midnight (default).</summary>
+    AtBatchStart,
+    /// <summary>For every label, so a long run shows the time that label was generated.</summary>
+    PerLabel,
+}
 
 /// <summary>How the number of copies per record is expressed in the ZPL.</summary>
 public enum CopiesMode
@@ -44,6 +55,27 @@ public sealed class MergeOptions
 
     /// <summary>Handling of records with validation errors; skip by default.</summary>
     public InvalidRecordPolicy OnInvalidRecord { get; set; } = InvalidRecordPolicy.Skip;
+
+    /// <summary>The clock and time zone used by date variables; null means the computer's. Tests pass a fake provider.</summary>
+    public TimeProvider? Time { get; set; }
+
+    /// <summary>The operator's answers to the label's prompts (variable name to answer), the same for every record. See <see cref="Rotula.Core.Variables.Prompts.PromptSet"/>.</summary>
+    public Dictionary<string, string> PromptAnswers { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Where counters that remember their value keep their position; null makes them count from their start.</summary>
+    public ICounterStore? CounterStore { get; set; }
+
+    /// <summary>Whether date variables are read once per batch (default) or for every label.</summary>
+    public DateEvaluation DateEvaluation { get; set; } = DateEvaluation.AtBatchStart;
+
+    /// <summary>
+    /// A print run the caller owns. Leave it null and the batch reserves the remembered serial numbers itself and confirms them when the
+    /// enumeration ends, which counts every label as used from the moment it is handed out (a failed send afterwards burns those numbers, never
+    /// reuses them). Set it to a job started with <c>VariableJob.Begin(doc, set.CreateBatchContext(), set.RecordCount)</c> to confirm only
+    /// what was really sent: the batch then reserves nothing and never completes the job, and after sending the caller calls
+    /// <c>job.Complete(n)</c> with the record number of the last label that reached the printer (or <c>Cancel()</c> if none did).
+    /// </summary>
+    public Rotula.Core.Variables.Counters.VariableJob? Job { get; set; }
 
     /// <summary>
     /// Maximum number of records (data rows that produced a label) per job when producing jobs; 0 means a single

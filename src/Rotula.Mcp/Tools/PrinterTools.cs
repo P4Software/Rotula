@@ -1,9 +1,12 @@
 using System.ComponentModel;
 using ModelContextProtocol;
 using ModelContextProtocol.Server;
+using System.Text.Json;
 using Rotula.Core.Elements;
 using Rotula.Core.Model;
 using Rotula.Core.Validation;
+using Rotula.Core.Variables;
+using Rotula.Core.Variables.Prompts;
 using Rotula.Core.Zpl;
 using Rotula.Mcp.Hosting;
 using Rotula.Mcp.Security;
@@ -55,11 +58,12 @@ public sealed class PrinterTools
 
     /// <summary>Prints the label after a dry run and a confirmation.</summary>
     [McpServerTool(Name = "print_label", Destructive = true, OpenWorld = true, UseStructuredContent = true)]
-    [Description("Prints the current label on a Windows printer, in two steps. Printing is switched off unless the person who installed the server allows it and lists the printer. The FIRST call never prints: it returns exactly what would be sent (printer, copies, label size, any resolution conversion, the start of the ZPL) and a one-time confirmationToken. Show that to the user and, only if they agree, call print_label again with the same printer and copies and that token to send exactly one job. The token expires quickly and stops working if the label, printer or copies change.")]
+    [Description("Prints the current label on a Windows printer, in two steps. Printing is switched off unless the person who installed the server allows it and lists the printer. The FIRST call never prints: it returns exactly what would be sent (printer, copies, label size, any resolution conversion, the start of the ZPL) and a one-time confirmationToken. Show that to the user and, only if they agree, call print_label again with the same printer and copies and that token to send exactly one job. The token expires quickly and stops working if the label, printer or copies change. Variables the label works out itself (dates, computed values, counters that do not remember their value) are worked out when the job is sent; a date from the printer's own clock is sent as the computer's date here. A label with a counter that remembers its last value between sessions is refused (print it from the Rotula app, which records the numbers used). A label that asks questions at print time needs answers: the refusal lists the questions; ask the user, then call again with answers.")]
     public async Task<PrintResultInfo> PrintLabel(
         [Description("Exact Windows printer name from list_printers; it must be on the allowed list.")] string printer,
         [Description("Number of labels. Capped by maxCopies in the settings (default 10).")] int copies = 1,
         [Description("The confirmationToken from the dry run. Leave empty for the first call.")] string? confirmationToken = null,
+        [Description("Answers to the label's print-time questions as an object of variable name to answer. Only needed when the label has prompt variables.")] Dictionary<string, string>? answers = null,
         CancellationToken cancellationToken = default)
     {
         // Rules that need no label come first so a disabled server answers instantly and never touches a printer.
@@ -87,16 +91,57 @@ public sealed class PrinterTools
 
         // Copies go on a copy of the label (^PQ); the working label is never altered by printing.
         doc.Print.Quantity = copies;
-        var generated = ZplGenerator.Generate(doc);
-        var issues = generated.Issues.Select(McpContext.ToInfo).ToList();
-        if (generated.HasErrors)
+
+        // Variables with a definition: this server cannot record serial numbers, and it must not guess answers.
+        VariableContext? variableContext = null;
+        IReadOnlyDictionary<string, string>? printData = null;
+        IReadOnlyDictionary<string, string>? fingerprintData = null;
+        var variableIssues = new List<ValidationIssue>();
+        if (VariableEngine.HasDefinitions(doc))
+        {
+            if (doc.Variables.FirstOrDefault(v => v.Kind == VariableKind.Counter && v.Counter is { Remember: true }) is { } remembering)
+            {
+                _ctx.Gate.Forget();
+                throw new McpException($"The counter \"{remembering.Name}\" remembers its last value between sessions. This server cannot record the numbers it prints, so the label is refused to avoid repeated serial numbers. Print it from the Rotula app, or switch off \"remember\" for that counter.");
+            }
+            var promptSet = PromptSet.Build(doc);
+            IReadOnlyDictionary<string, string>? checkedAnswers = null;
+            if (!promptSet.IsEmpty)
+            {
+                if (answers is null)
+                {
+                    _ctx.Gate.Forget();
+                    throw new McpException("This label asks questions at print time. Ask the user, then call print_label again with answers: " +
+                        string.Join("; ", promptSet.Items.Select(i => $"{i.Name} ({i.Label}, {i.InputType.ToString().ToLowerInvariant()}{(i.Required ? ", required" : "")}{(i.InitialValue.Length > 0 ? $", suggested \"{i.InitialValue}\"" : "")}{(i.Choices.Count > 0 ? ", one of " + string.Join("/", i.Choices) : "")})")) + ". Nothing was sent.");
+                }
+                var validation = promptSet.Validate(answers);
+                if (!validation.IsValid)
+                {
+                    _ctx.Gate.Forget();
+                    throw new McpException("Some answers cannot be used: " + string.Join(" ", validation.Issues.Take(6).Select(Messages.Describe)) + " Nothing was sent.");
+                }
+                checkedAnswers = validation.Values;
+            }
+            variableContext = new VariableContext { Time = _ctx.Time, PromptAnswers = checkedAnswers, RequirePromptAnswers = !promptSet.IsEmpty };
+            var resolution = VariableEngine.Resolve(doc, variableContext);
+            printData = resolution.Values;
+            variableIssues.AddRange(resolution.Issues);
+            // The confirmation covers the shape of the job, not the second it was made: the same label asked a minute later must still match its token.
+            var reference = variableContext.Clone();
+            reference.Now = new DateTimeOffset(2000, 1, 1, 0, 0, 0, TimeSpan.Zero);
+            fingerprintData = VariableEngine.Resolve(doc, reference).Values;
+        }
+
+        var generated = ZplGenerator.Generate(doc, printData);
+        var issues = variableIssues.Concat(generated.Issues).Select(McpContext.ToInfo).ToList();
+        if (generated.HasErrors || variableIssues.Any(i => i.Severity == ValidationSeverity.Error))
         {
             _ctx.Gate.Forget();
             throw new McpException("The label has errors and cannot be printed: " +
                                    string.Join(" ", issues.Where(i => i.Severity == "error").Take(6).Select(i => i.Message)) + " Nothing was sent.");
         }
 
-        string fingerprint = PrintGate.Fingerprint(name, copies, generated.Zpl);
+        string fingerprint = PrintGate.Fingerprint(name, copies, fingerprintData is null ? generated.Zpl : ZplGenerator.Generate(doc, fingerprintData).Zpl);
         var decision = _ctx.Gate.Evaluate(name, copies, fingerprint, confirmationToken);
         string size = $"{Units.Express(doc.Width, "mm", doc.Dpi):0.##} x {Units.Express(doc.Height, "mm", doc.Dpi):0.##} mm ({doc.WidthDots} x {doc.HeightDots} dots at {(int)doc.Dpi} DPI)";
         var preview = generated.Zpl.Split('\n').Take(PreviewLines).ToList();
@@ -129,7 +174,7 @@ public sealed class PrinterTools
 
             default:
                 // Exactly one job. The result is a value, never an exception; a failure is reported and nothing is retried.
-                var result = await _ctx.Print.PrintAsync(PrinterTarget.Spooler(name), doc, null, null, cancellationToken).ConfigureAwait(false);
+                var result = await _ctx.Print.PrintAsync(PrinterTarget.Spooler(name), doc, printData, null, cancellationToken).ConfigureAwait(false);
                 if (!result.Succeeded)
                     throw new McpException("The printer did not accept the job: " + Messages.Describe(result.Error!));
                 return new PrintResultInfo("sent", $"Sent one print job of {copies} label(s) to \"{name}\" ({result.BytesSent:N0} bytes).",

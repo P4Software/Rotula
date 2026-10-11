@@ -1,6 +1,8 @@
 using Rotula.Core.Elements;
 using Rotula.Core.Model;
 using Rotula.Core.Validation;
+using Rotula.Core.Variables;
+using Rotula.Core.Variables.Expressions;
 using Rotula.Core.Zpl;
 
 namespace Rotula.Core.Merge;
@@ -15,14 +17,19 @@ public sealed class MergeDataSet
     private readonly Dictionary<string, int> _placeholderColumn = new(StringComparer.OrdinalIgnoreCase);
     private readonly List<SerialCounter> _counters;
     private readonly List<ValidationIssue> _issues = new();
+    private readonly LabelDocument _doc;
+    // Names the label defines itself (date, counter, prompt, computed). They need no data column, so they are never reported as unmapped.
+    private readonly HashSet<string> _definedNames = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Binds <paramref name="table"/> to the placeholders found in <paramref name="doc"/>.</summary>
     public MergeDataSet(LabelDocument doc, MergeTable table, MergeOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(doc);
         ArgumentNullException.ThrowIfNull(table);
+        _doc = doc;
         Table = table;
         Options = options ?? new MergeOptions();
+        foreach (var v in doc.Variables) if (v.Kind != VariableKind.Text) _definedNames.Add(v.Name);
         _counters = Options.Counters;
         Placeholders = CollectPlaceholders(doc);
         BuildMapping();
@@ -77,15 +84,57 @@ public sealed class MergeDataSet
 
     /// <summary>
     /// Variable dictionary for the record at zero-based <paramref name="recordIndex"/>: every column under its own
-    /// name, mapped placeholders under their placeholder name, and counters under <c>#Name</c>. Keys are
-    /// case-insensitive. A counter that overflows in error mode is omitted (the label then reports it as missing);
+    /// name, mapped placeholders under their placeholder name, and counters under <c>#Name</c>. When the label defines
+    /// variables (dates, counters, prompts, computed values) their values are included as the preview would show them:
+    /// the clock is read now, counters show the next remembered position without reserving it, prompts show their defaults
+    /// (or the answers in <see cref="MergeOptions.PromptAnswers"/>). Keys are case-insensitive. A counter that overflows in error mode is omitted (the label then reports it as missing);
     /// <see cref="MergeBatch"/> reports it explicitly.
     /// </summary>
     public Dictionary<string, string> GetRecordData(int recordIndex)
     {
         if (recordIndex < 0 || recordIndex >= Table.RowCount) throw new ArgumentOutOfRangeException(nameof(recordIndex));
-        return BuildData(recordIndex, null);
+        var raw = BuildData(recordIndex, null);
+        if (!VariableEngine.HasDefinitions(_doc)) return raw;
+        return new Dictionary<string, string>(VariableEngine.Resolve(_doc, CreateContext(recordIndex, raw, null)).Values, StringComparer.OrdinalIgnoreCase);
     }
+
+    /// <summary>
+    /// The base context of a whole batch: the options' clock, prompt answers (required: a question nobody answered is an error) and counter store,
+    /// with the date fixed at the current instant unless <see cref="MergeOptions.DateEvaluation"/> asks for one reading per label. Pass it to
+    /// <c>VariableJob.Begin</c> to own the run (see <see cref="MergeOptions.Job"/>).
+    /// </summary>
+    public VariableContext CreateBatchContext()
+    {
+        DateTimeOffset? batchNow = Options.DateEvaluation == DateEvaluation.AtBatchStart ? (Options.Time ?? TimeProvider.System).GetUtcNow() : null;
+        var context = CreateContext(0, new Dictionary<string, string>(), batchNow);
+        context.RequirePromptAnswers = true;
+        return context;
+    }
+
+    /// <summary>
+    /// The variable context for the record at <paramref name="recordIndex"/>: its raw data (columns and merge counters), the options' prompt answers,
+    /// counter store and clock. Pass it to <see cref="ZplGenerator.GenerateWithVariables"/> or <see cref="VariableEngine.Resolve"/> to get exactly what
+    /// a batch would produce for that record (counters show their next position; nothing is reserved).
+    /// </summary>
+    public VariableContext CreateRecordContext(int recordIndex)
+    {
+        if (recordIndex < 0 || recordIndex >= Table.RowCount) throw new ArgumentOutOfRangeException(nameof(recordIndex));
+        return CreateContext(recordIndex, BuildData(recordIndex, null), null);
+    }
+
+    /// <summary>
+    /// The variable context for the record at <paramref name="recordIndex"/>: its raw data, the options' prompt answers, counter store and clock.
+    /// <paramref name="now"/> fixes the instant (batch start), or null to read the clock.
+    /// </summary>
+    internal VariableContext CreateContext(int recordIndex, Dictionary<string, string> raw, DateTimeOffset? now) => new()
+    {
+        Time = Options.Time ?? TimeProvider.System,
+        Now = now,
+        Record = raw,
+        PromptAnswers = Options.PromptAnswers.Count == 0 ? null : Options.PromptAnswers,
+        CounterStore = Options.CounterStore,
+        ItemIndex = recordIndex,
+    };
 
     internal Dictionary<string, string> BuildData(int recordIndex, List<ValidationIssue>? problems)
     {
@@ -112,6 +161,7 @@ public sealed class MergeDataSet
 
         foreach (var name in Placeholders)
         {
+            if (_definedNames.Contains(name) && Table.IndexOfColumn(name) < 0 && !Options.ColumnOverrides.ContainsKey(name)) continue;
             if (name.StartsWith('#'))
             {
                 bool known = _counters.Any(c => string.Equals(c.VirtualColumn, name, StringComparison.OrdinalIgnoreCase));
@@ -140,6 +190,15 @@ public sealed class MergeDataSet
             if (CopiesColumnIndex < 0) _issues.Add(new ValidationIssue(ValidationSeverity.Warning, "Merge.Copies.ColumnNotFound", null, Options.CopiesColumn));
             else usedColumns.Add(CopiesColumnIndex);
         }
+
+        // A column read only by a computed variable's expression is used too.
+        foreach (var v in _doc.Variables.Where(v => v.Kind == VariableKind.Computed))
+            if (ExpressionParser.Parse(v.Computed?.Expression, out _) is { } tree)
+                foreach (var reference in tree.References)
+                {
+                    int refColumn = Table.IndexOfColumn(reference);
+                    if (refColumn >= 0) usedColumns.Add(refColumn);
+                }
 
         for (int c = 0; c < Table.Columns.Count; c++)
             if (!usedColumns.Contains(c)) _issues.Add(new ValidationIssue(ValidationSeverity.Warning, "Merge.Column.Unused", null, Table.Columns[c]));

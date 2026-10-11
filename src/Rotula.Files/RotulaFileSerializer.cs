@@ -3,7 +3,9 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Rotula.Core.Elements;
 using Rotula.Core.Imaging;
+using Rotula.Core.Merge;
 using Rotula.Core.Model;
+using Rotula.Core.Variables;
 using Rotula.Core.Zpl;
 
 namespace Rotula.Files;
@@ -59,8 +61,14 @@ public static class RotulaFileSerializer
     /// </summary>
     public const int ZplCatalogFormatVersion = 6;
 
+    /// <summary>
+    /// Version 7: adds variable definitions (date, counter, prompt and computed kinds with their options) and the label "id" that keys counters
+    /// remembered between sessions. Plain text variables and labels without an id stay at the lower versions.
+    /// </summary>
+    public const int VariablesFormatVersion = 7;
+
     /// <summary>The newest format version this build can read. Files are written with the lowest version that can hold their content.</summary>
-    public const int CurrentFormatVersion = ZplCatalogFormatVersion;
+    public const int CurrentFormatVersion = VariablesFormatVersion;
 
     // Limits for untrusted values of the version 6 fields.
     private const int MaxStoredGraphics = 256;
@@ -71,11 +79,16 @@ public static class RotulaFileSerializer
     private const int MaxPathLength = 64;
     private const int MaxStockIdLength = 64;
 
+    // Limits for the untrusted variable definitions of version 7. Anything beyond them is dropped or clipped, never trusted.
+    private const int MaxVariables = 500;
+    private const int MaxLabelIdLength = 64;
+
     // Limits for the untrusted "extraOptions" object. The known option names are far shorter than this; anything longer
     // cannot be a valid value and is dropped instead of being handed to the model.
     private const int MaxExtraOptionCount = 64;
     private const int MaxExtraOptionNameLength = 48;
     private const int MaxExtraOptionValueLength = 64;
+    private const int MaxQrContentSpecLength = 20000;
 
     private const string ClipboardMarker = "rotulaElements";
 
@@ -116,6 +129,9 @@ public static class RotulaFileSerializer
         // Version 6 features are only written when used, so ToDto leaves them null; any one of them raises the stamp.
         if (UsesCatalogFeatures(dto))
             dto.FormatVersion = Math.Max(dto.FormatVersion, ZplCatalogFormatVersion);
+        // Variable definitions and the label id only exist from version 7; an older build would drop them silently, so it must refuse the file instead.
+        if (dto.Label.Id is not null || dto.Label.Variables.Any(v => v.Kind is not null) || dto.Merge?.DateEvaluation is not null)
+            dto.FormatVersion = Math.Max(dto.FormatVersion, VariablesFormatVersion);
         return JsonSerializer.Serialize(dto, Options);
     }
 
@@ -267,10 +283,11 @@ public static class RotulaFileSerializer
                 DefaultFont = d.DefaultFont is null ? null : new FontDto { FontId = d.DefaultFont.FontId.ToString(), Height = d.DefaultFont.Height, Width = d.DefaultFont.Width },
                 Encoding = new EncodingDto { CiCode = d.Encoding.CiCode, CodePage = d.Encoding.DotNetCodePage },
                 Print = new PrintOptionsDto { Quantity = d.Print.Quantity, PauseEvery = d.Print.PauseEvery, Replicates = d.Print.Replicates, OverridePause = d.Print.OverridePause },
-                Variables = d.Variables.Select(v => new VariableDto { Name = v.Name, SampleValue = v.SampleValue }).ToList(),
+                Variables = d.Variables.Select(VariableToDto).ToList(),
             },
         };
         var lab = dto.Label;
+        lab.Id = d.Id;
         lab.StockId = d.StockId;
         lab.LabelShift = d.LabelShift != 0 ? d.LabelShift : null;
         lab.LabelTop = d.LabelTop != 0 ? d.LabelTop : null;
@@ -285,6 +302,131 @@ public static class RotulaFileSerializer
         foreach (var e in d.Elements) dto.Elements.Add(ToDto(e));
         return dto;
     }
+
+    // ---------------------------------------------------------------------------------- variables
+
+    private static VariableDto VariableToDto(LabelVariable v)
+    {
+        var dto = new VariableDto { Name = v.Name, SampleValue = v.SampleValue };
+        // A plain variable is written exactly as before, so a label that only uses those stays readable by older builds.
+        if (v.Kind == VariableKind.Text) return dto;
+        dto.Kind = v.Kind.ToString();
+        switch (v.Kind)
+        {
+            case VariableKind.Date:
+                var d = v.Date ?? new DateVariableOptions();
+                dto.Date = new DateVariableDto
+                {
+                    Source = d.Source.ToString(),
+                    FixedValue = d.FixedValue?.ToString("yyyy-MM-dd'T'HH:mm:ss", CultureInfo.InvariantCulture),
+                    Offsets = d.Offsets.Select(o => new DateOffsetDto { Amount = o.Amount, Unit = o.Unit.ToString() }).ToList(),
+                    Format = d.Format, Culture = d.Culture, Utc = d.Utc, Rounding = d.Rounding.ToString(),
+                    Holidays = d.Holidays.Select(h => h.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)).ToList(),
+                };
+                break;
+            case VariableKind.Counter:
+                var c = v.Counter ?? new CounterVariableOptions();
+                dto.Counter = new CounterVariableDto
+                {
+                    Kind = c.Kind.ToString(), Start = c.Start, Step = c.Step, Padding = c.Padding, Prefix = c.Prefix, Suffix = c.Suffix,
+                    Overflow = c.Overflow.ToString(), Remember = c.Remember,
+                };
+                break;
+            case VariableKind.Prompt:
+                var p = v.Prompt ?? new PromptVariableOptions();
+                dto.Prompt = new PromptVariableDto
+                {
+                    Label = p.Label, InputType = p.InputType.ToString(), Default = p.Default, Required = p.Required, Pattern = p.Pattern,
+                    MinLength = p.MinLength, MaxLength = p.MaxLength, Choices = p.Choices.ToList(), Uppercase = p.Uppercase, RememberLast = p.RememberLast,
+                    HelpText = p.HelpText, OverrideRecord = p.OverrideRecord, DateFormat = p.DateFormat,
+                };
+                break;
+            case VariableKind.Computed:
+                var x = v.Computed ?? new ComputedVariableOptions();
+                dto.Computed = new ComputedVariableDto { Expression = x.Expression };
+                break;
+        }
+        return dto;
+    }
+
+    /// <summary>
+    /// Reads a variable. Definitions are untrusted: lists are capped, text is clipped, unknown names fall back to defaults, and a kind whose options
+    /// are missing or unreadable opens as a plain text variable (keeping its sample value) instead of failing the whole file.
+    /// </summary>
+    private static LabelVariable VariableFromDto(VariableDto v)
+    {
+        string name = Clip(v.Name ?? string.Empty, VariableLimits.MaxNameLength);
+        var variable = new LabelVariable(name, Clip(v.SampleValue ?? string.Empty, VariableLimits.MaxValueLength));
+        if (!TryParse<VariableKind>(v.Kind, out var kind) || kind == VariableKind.Text) return variable;
+        switch (kind)
+        {
+            case VariableKind.Date when v.Date is { } d:
+            {
+                var o = new DateVariableOptions
+                {
+                    Source = TryParse<DateSource>(d.Source, out var src) ? src : DateSource.ComputerClock,
+                    FixedValue = d.FixedValue is { Length: <= 32 } fx && DateTime.TryParseExact(fx, "yyyy-MM-dd'T'HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out var fixedDate) ? fixedDate : null,
+                    Format = Clip(string.IsNullOrEmpty(d.Format) ? "iso" : d.Format, VariableLimits.MaxFormatLength),
+                    Culture = Clip(d.Culture ?? string.Empty, 40),
+                    Utc = d.Utc,
+                    Rounding = TryParse<DateRounding>(d.Rounding, out var rounding) ? rounding : DateRounding.None,
+                };
+                foreach (var off in (d.Offsets ?? new()).Take(VariableLimits.MaxOffsets))
+                    if (off is not null && TryParse<DateUnit>(off.Unit, out var unit))
+                        o.Offsets.Add(new DateOffset(Math.Clamp(off.Amount, -VariableLimits.MaxOffsetAmount, VariableLimits.MaxOffsetAmount), unit));
+                foreach (var h in (d.Holidays ?? new()).Take(VariableLimits.MaxHolidays))
+                    if (h is { Length: <= 10 } && DateOnly.TryParseExact(h, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var holiday))
+                        o.Holidays.Add(holiday);
+                variable.Kind = kind;
+                variable.Date = o;
+                break;
+            }
+            case VariableKind.Counter when v.Counter is { } c:
+                variable.Kind = kind;
+                variable.Counter = new CounterVariableOptions
+                {
+                    Kind = TryParse<CounterKind>(c.Kind, out var ck) ? ck : CounterKind.Numeric,
+                    Start = Clip(c.Start ?? "1", 40),
+                    Step = c.Step,
+                    Padding = c.Padding,
+                    Prefix = Clip(c.Prefix ?? string.Empty, VariableLimits.MaxAffixLength),
+                    Suffix = Clip(c.Suffix ?? string.Empty, VariableLimits.MaxAffixLength),
+                    Overflow = TryParse<CounterOverflow>(c.Overflow, out var ov) ? ov : CounterOverflow.Wrap,
+                    Remember = c.Remember,
+                };
+                break;
+            case VariableKind.Prompt when v.Prompt is { } p:
+            {
+                var o = new PromptVariableOptions
+                {
+                    Label = Clip(p.Label ?? string.Empty, VariableLimits.MaxPromptTextLength),
+                    InputType = TryParse<PromptInputType>(p.InputType, out var it) ? it : PromptInputType.Text,
+                    Default = Clip(p.Default ?? string.Empty, VariableLimits.MaxValueLength),
+                    Required = p.Required,
+                    Pattern = Clip(p.Pattern ?? string.Empty, VariableLimits.MaxPatternLength),
+                    MinLength = Math.Clamp(p.MinLength, 0, VariableLimits.MaxValueLength),
+                    MaxLength = Math.Clamp(p.MaxLength, 0, VariableLimits.MaxValueLength),
+                    Uppercase = p.Uppercase,
+                    RememberLast = p.RememberLast,
+                    HelpText = Clip(p.HelpText ?? string.Empty, VariableLimits.MaxPromptTextLength),
+                    OverrideRecord = p.OverrideRecord,
+                    DateFormat = Clip(string.IsNullOrEmpty(p.DateFormat) ? "yyyy-MM-dd" : p.DateFormat, VariableLimits.MaxFormatLength),
+                };
+                foreach (var choice in (p.Choices ?? new()).Take(VariableLimits.MaxChoices))
+                    if (choice is not null) o.Choices.Add(Clip(choice, VariableLimits.MaxPromptTextLength));
+                variable.Kind = kind;
+                variable.Prompt = o;
+                break;
+            }
+            case VariableKind.Computed when v.Computed is { } x:
+                variable.Kind = kind;
+                variable.Computed = new ComputedVariableOptions { Expression = Clip(x.Expression ?? string.Empty, VariableLimits.MaxExpressionLength) };
+                break;
+        }
+        return variable;
+    }
+
+    private static string Clip(string s, int max) => s.Length > max ? s[..max] : s;
 
     private static MeasureDto ToDto(Measure m) => new() { Value = m.Value, Unit = m.Unit.ToString() };
 
@@ -390,7 +532,10 @@ public static class RotulaFileSerializer
                 JsonValueKind.False => "false",
                 _ => null, // objects, arrays and null are never valid option values
             };
-            if (text is null || text.Length > MaxExtraOptionValueLength) continue;
+            // The QR content builder's definition is a JSON text of several hundred characters (kind plus every field), so it gets
+            // its own, larger cap; every other option is a short word or number.
+            int limit = name == nameof(Rotula.Core.Barcodes.BarcodeOption.QrContentSpec) ? MaxQrContentSpecLength : MaxExtraOptionValueLength;
+            if (text is null || text.Length > limit) continue;
             result[name] = text;
         }
         return result;
@@ -435,7 +580,8 @@ public static class RotulaFileSerializer
                 : throw new ArgumentException("Unsupported encoding."),
             Print = new PrintOptions { Quantity = l.Print.Quantity, PauseEvery = l.Print.PauseEvery, Replicates = l.Print.Replicates, OverridePause = l.Print.OverridePause },
         };
-        foreach (var v in l.Variables) doc.Variables.Add(new LabelVariable(v.Name, v.SampleValue));
+        doc.Id = l.Id is { Length: > 0 and <= MaxLabelIdLength } labelId && labelId.All(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_') ? labelId : null;
+        foreach (var v in l.Variables.Take(MaxVariables)) doc.Variables.Add(VariableFromDto(v));
         ReadCatalogSettings(l, doc);
         foreach (var e in dto.Elements) doc.Elements.Add(FromDto(e));
         return doc;

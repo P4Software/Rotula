@@ -221,6 +221,21 @@ public enum QrErrorCorrection
     High,
 }
 
+/// <summary>How the data of a QR Code is declared to the printer in the <c>^FD</c> header (the guide's "data input" and "character mode").</summary>
+public enum QrInputMode
+{
+    /// <summary>Automatic input, header <c>A,</c>: the printer picks the character modes itself.</summary>
+    Automatic,
+    /// <summary>Manual input, numeric characters only, header <c>M,N</c>.</summary>
+    ManualNumeric,
+    /// <summary>Manual input, alphanumeric characters (digits, capital letters, space and $ % * + - . / :), header <c>M,A</c>.</summary>
+    ManualAlphanumeric,
+    /// <summary>Manual input, 8-bit bytes, header <c>M,B</c> followed by the byte count as four digits.</summary>
+    ManualByte,
+    /// <summary>Manual input, Kanji (Shift JIS double-byte characters), header <c>M,K</c>.</summary>
+    ManualKanji,
+}
+
 /// <summary>How a grey image is reduced to black and white.</summary>
 public enum ImageDitherMode
 {

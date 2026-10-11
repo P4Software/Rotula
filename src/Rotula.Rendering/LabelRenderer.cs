@@ -586,6 +586,7 @@ public static class LabelRenderer
                 DataBarSegmentsPerRow = bc.DataBarSegmentsPerRow,
                 DataBarSeparatorHeight = bc.DataBarSeparatorHeight,
                 AztecErrorControl = bc.AztecErrorControl,
+                Gs1 = bc.Gs1,
             };
             _matrix = BarcodeEncoder.TryEncode(bc.Symbology, bc.Data, options, out var error);
             if (_matrix is null)

@@ -1,11 +1,13 @@
 using System.ComponentModel;
 using System.Reflection;
+using System.Text.Json;
 using ModelContextProtocol;
 using ModelContextProtocol.Server;
 using Rotula.Core.Barcodes;
 using Rotula.Core.Elements;
 using Rotula.Core.Model;
 using Rotula.Core.Validation;
+using Rotula.Core.Variables;
 using Rotula.Core.Zpl;
 using Rotula.Core.Zpl.Import;
 using Rotula.Files;
@@ -220,20 +222,37 @@ public sealed class LabelTools
 
     /// <summary>Declares or updates a variable.</summary>
     [McpServerTool(Name = "set_variable", Destructive = false, UseStructuredContent = true)]
-    [Description("Declares a variable (or changes its sample value). Variables are used as {{name}} inside text and barcode data and are filled from data files when merging; the sample value is what shows when no data is merged.")]
+    [Description("Declares a variable (or changes it). Variables are used as {{name}} inside text and barcode data. kind \"text\" (default) is filled from data files when merging and shows the sample value otherwise. The other kinds produce their value themselves: \"date\" (today or a fixed date, with offsets such as +30 days, a format such as gs1 or julian, from the computer clock or the printer's own clock), \"counter\" (serial numbers; it may remember its last value between sessions in the Rotula app), \"prompt\" (a question the operator answers at print time) and \"computed\" (a small expression over other variables, such as upper(left(sku, 3)) & '-' & padleft(qty, 4, '0')). Give the settings of those kinds in the definition object. date: source (computer|printer|fixed), fixedDate, offsets (list such as [\"+30 days\", \"-1 month\", \"2 business days\"]; units seconds, minutes, hours, days, businessDays, weeks, months, years), format (a preset - iso, isoDateTime, compact, gs1, julian, julianYear, week, isoWeek, weekSunday, weekMonday, monthDayYear, expiry, dmy, mdy, time, timeSeconds - or a .NET pattern like dd/MM/yyyy), culture, utc, rounding (None, StartOfDay, EndOfDay, StartOfMonth, EndOfMonth, StartOfYear, EndOfYear), holidays. counter: kind (numeric|alphanumeric), start, step, padding, prefix, suffix, overflow (wrap|error), remember. prompt: label, type (text|number|date|choice), default, required, pattern, minLength, maxLength, choices, uppercase, rememberLast, helpText, overrideRecord, dateFormat. computed: expression (functions: concat, join, upper, lower, trim, length, left, right, substring, padleft, padright, replace, ifempty, coalesce, number, date; & joins text). Changing the kind drops the old definition. Unknown settings are refused with the valid ones.")]
     public ChangeResult SetVariable(
         [Description("Variable name: letters, digits and underscore.")] string name,
-        [Description("The value shown when no data is merged.")] string sampleValue = "")
+        [Description("The value shown when no data is merged (for other kinds: the fallback when the variable cannot be worked out).")] string sampleValue = "",
+        [Description("text (default), date, counter, prompt or computed. Leave out to keep the variable's current kind.")] string? kind = null,
+        [Description("The settings of the kind as an object, for example {\"offsets\":[\"+30 days\"],\"format\":\"gs1\"} for a date. Settings not given keep their current value.")] Dictionary<string, JsonElement>? definition = null)
     {
         ElementModel.RequireVariableName(name);
+        var requestedKind = kind is null ? (VariableKind?)null : ElementModel.ParseEnum<VariableKind>(kind, "variable kind");
+        // Work on a copy and check it as a whole before the label changes, so a refused definition leaves everything as it was.
+        var candidate = _ctx.Session.GetCopy().Document.Variables
+            .FirstOrDefault(x => string.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase))?.Clone() ?? new LabelVariable(name);
+        candidate.SampleValue = ElementModel.Clip(sampleValue, 1000);
+        if (kind is null && definition is { Count: > 0 } && candidate.Kind == VariableKind.Text)
+            throw new McpException("This variable is plain text. Say which kind the settings are for: kind date, counter, prompt or computed.");
+        VariableDefinitions.Apply(candidate, requestedKind ?? candidate.Kind, definition);
+        var probe = new LabelDocument();
+        probe.Variables.Add(candidate);
+        var errors = VariableEngine.ValidateDefinitions(probe).Where(i => i.Severity == Rotula.Core.Validation.ValidationSeverity.Error).ToList();
+        if (errors.Count > 0)
+            throw new McpException("That definition cannot be used: " + string.Join(" ", errors.Take(5).Select(Messages.Describe)) + " Nothing was changed.");
+
         _ctx.Session.Mutate("set_variable", doc =>
         {
-            var v = doc.Variables.FirstOrDefault(x => string.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase));
-            if (v is null) doc.Variables.Add(new LabelVariable(name, ElementModel.Clip(sampleValue, 1000)));
-            else v.SampleValue = ElementModel.Clip(sampleValue, 1000);
+            int at = doc.Variables.FindIndex(x => string.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase));
+            if (at < 0) doc.Variables.Add(candidate);
+            else doc.Variables[at] = candidate;
             return 0;
         });
-        return LabelView.Change(_ctx, $"Variable {name} set.");
+        _ctx.Gate.Forget();
+        return LabelView.Change(_ctx, $"Variable {name} set ({VariableDefinitions.Describe(candidate)}).");
     }
 
     /// <summary>Undoes the last change.</summary>
@@ -322,7 +341,7 @@ public sealed class LabelTools
         [Description("Replace the .zpl file if it exists. Default false.")] bool overwrite = false)
     {
         var doc = _ctx.Session.GetCopy().Document;
-        var result = ZplGenerator.Generate(doc);
+        var result = _ctx.GeneratePreview(doc);
         string? saved = null;
         if (path is not null)
         {

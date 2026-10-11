@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Logging;
 using Rotula.Core.Model;
 using Rotula.Core.Validation;
+using Rotula.Core.Variables;
+using Rotula.Core.Variables.Counters;
 using Rotula.Core.Zpl;
 using Rotula.Data;
 using Rotula.Mcp.Security;
@@ -62,11 +64,43 @@ public sealed class McpContext
     /// <summary>Diagnostics sink (stderr / log file); never receives label contents unless debug logging is on.</summary>
     public ILogger? Logger { get; }
 
+    /// <summary>The clock used for dates in previews and prints (the computer's; tests replace it).</summary>
+    public TimeProvider Time { get; set; } = TimeProvider.System;
+
+    /// <summary>
+    /// Where counters that remember their value are looked up. The server only ever reads it (to show the next number in a preview); it never
+    /// reserves or changes a number, which is why print_label refuses labels with such counters. Null shows them from their start.
+    /// </summary>
+    public ICounterStore? CounterStore { get; set; }
+
+    /// <summary>A variable context for previews: this server's clock and counter memory, no prompt answers, the given data record.</summary>
+    public VariableContext PreviewContext(IReadOnlyDictionary<string, string>? record = null) =>
+        new() { Time = Time, CounterStore = CounterStore, Record = record };
+
+    /// <summary>Generates ZPL for a preview or export, resolving dates, counters, prompts (defaults) and computed variables.</summary>
+    public ZplGenerationResult GeneratePreview(LabelDocument doc) =>
+        VariableEngine.HasDefinitions(doc) ? ZplGenerator.GenerateWithVariables(doc, PreviewContext()) : ZplGenerator.Generate(doc);
+
+    /// <summary>The variable values to draw a preview with: resolved when the label has definitions, otherwise the record unchanged.</summary>
+    public IReadOnlyDictionary<string, string>? PreviewData(LabelDocument doc, IReadOnlyDictionary<string, string>? record = null) =>
+        VariableEngine.HasDefinitions(doc) ? VariableEngine.BuildPreviewData(doc, PreviewContext(record)) : record;
+
     /// <summary>Runs the generator and returns its findings in plain language, optionally only those of one element.</summary>
     public static IReadOnlyList<IssueInfo> Validate(LabelDocument doc, string? onlyElementId = null, IReadOnlyDictionary<string, string>? data = null)
     {
-        var result = ZplGenerator.Generate(doc, data);
-        return result.Issues
+        var issues = new List<ValidationIssue>();
+        if (VariableEngine.HasDefinitions(doc))
+        {
+            // Validation is about the design, not today's date, so the computer clock and no counter memory are enough.
+            issues.AddRange(ZplGenerator.GenerateWithVariables(doc, new VariableContext { Record = data }).Issues);
+            foreach (var issue in VariableEngine.ValidateDefinitions(doc))
+                if (!issues.Contains(issue)) issues.Add(issue);
+        }
+        else
+        {
+            issues.AddRange(ZplGenerator.Generate(doc, data).Issues);
+        }
+        return issues
             .Where(i => onlyElementId is null || i.ElementId == onlyElementId)
             .Select(ToInfo)
             .ToList();

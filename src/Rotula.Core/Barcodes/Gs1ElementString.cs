@@ -30,7 +30,9 @@ public static class Gs1ElementString
     private static readonly Regex Whole = new(@"^(\(\d{2,4}\)[^()]+)+$", RegexOptions.CultureInvariant | RegexOptions.Compiled);
     private static readonly Regex Piece = new(@"\((\d{2,4})\)([^()]*)", RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
-    // Application identifiers with a predefined length need no FNC1 after them (GS1 General Specifications, 5.4.8.3).
+    // Application identifiers with a predefined length need no FNC1 after them (GS1 General Specifications, 5.4.8.3). The GS1 Syntax
+    // Dictionary (Gs1Dictionary) is the authority; this list of two-digit prefixes only answers for an identifier the dictionary does not
+    // define, so that older data keeps its separators exactly as before.
     private static readonly HashSet<string> FixedLengthPrefixes = new()
     {
         "00", "01", "02", "03", "04", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "31", "32", "33", "34", "35", "36", "41",
@@ -42,6 +44,10 @@ public static class Gs1ElementString
     /// <summary>True when GS1 DataBar Expanded can encode <paramref name="c"/> in a value (digits, letters and the characters of ISO/IEC 646 set 82 plus the space).</summary>
     public static bool IsEncodable(char c) =>
         c is >= '0' and <= '9' or >= 'A' and <= 'Z' or >= 'a' and <= 'z' || AlphanumericPunctuation.Contains(c) || IsoIecPunctuation.Contains(c);
+
+    /// <summary>True when no FNC1 separator follows the value of <paramref name="ai"/>: the dictionary's answer, or the two-digit prefix rule for an unknown identifier.</summary>
+    public static bool IsPredefinedLength(string ai) =>
+        Gs1.Gs1Dictionary.Find(ai) is { } def ? def.PredefinedLength : FixedLengthPrefixes.Contains(ai[..2]);
 
     /// <summary>The elements (identifier, value) in order; empty when the text is not an element string.</summary>
     public static IReadOnlyList<(string Ai, string Value)> Parse(string data) =>
@@ -59,7 +65,7 @@ public static class Gs1ElementString
             var (ai, value) = elements[i];
             if (value.Any(c => !IsEncodable(c))) return Gs1ElementStringProblem.Character;
             sb.Append(ai).Append(value);
-            if (i < elements.Count - 1 && !FixedLengthPrefixes.Contains(ai[..2])) sb.Append(Fnc1);
+            if (i < elements.Count - 1 && !IsPredefinedLength(ai)) sb.Append(Fnc1);
         }
         reduced = sb.ToString();
         return reduced.Length > MaxReducedLength ? Gs1ElementStringProblem.TooLong : null;

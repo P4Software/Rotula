@@ -83,7 +83,8 @@ public static class LabelDocumentAdapter
             case BarcodeElement b:
             {
                 var info = BarcodeCatalog.Get(b.Symbology);
-                var data1 = VariableResolver.Resolve(b.Data, data, doc.Variables, b.Id, issues);
+                var data1 = Core.Barcodes.QrContent.QrContentBuilder.ResolveForElement(b, data, doc.Variables, issues)
+                    ?? VariableResolver.Resolve(b.Data, data, doc.Variables, b.Id, issues);
                 // Symbologies (or options) without an exact preview are drawn as a labelled placeholder: the printer still
                 // prints the real symbol from the generated ZPL, so the designer must not pretend to show it.
                 if (BarcodeCatalog.GetPreviewLimitation(b) is not null)
@@ -122,6 +123,7 @@ public static class LabelDocumentAdapter
                     MaxiCodeMode = b.MaxiCodeMode,
                     MaxiCodeSymbolNumber = b.MaxiCodeSymbolNumber,
                     MaxiCodeSymbolTotal = b.MaxiCodeSymbolTotal,
+                    Gs1 = BarcodeValidator.IsGs128Data(b, data1) || BarcodeValidator.IsGs1DataMatrix(b),
                     Rotation = rotation,
                     Typeset = typeset,
                     Reverse = b.ReverseField,

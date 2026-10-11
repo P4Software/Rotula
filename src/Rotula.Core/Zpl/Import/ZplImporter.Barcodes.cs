@@ -18,6 +18,11 @@ internal sealed partial class ZplImporter
         string[] p = f.BarcodeParams;
         switch (f.BarcodeCommand)
         {
+            case "BC":
+                // Mode D field data with parentheses is GS1-128; it is only taken over when Rotula would write exactly the same ZPL back.
+                if (UpperChar(p, 5) == 'D' && (f.Data ?? string.Empty).TrimStart().StartsWith('(') && !Gs1ZplData.TryFromCode128ModeD(f.Data!, out _))
+                    return new Rejection("Import.Barcode.Gs1.Data", new[] { "^BC" });
+                break;
             case "BR":
                 int type = ParseIntQuiet(p, 1) ?? 1;
                 if (type is < 1 or > 6) return new Rejection("Import.Barcode.DataBar.Type", new[] { type.ToString(CultureInfo.InvariantCulture) });
@@ -82,7 +87,10 @@ internal sealed partial class ZplImporter
                 Rot();
                 Line(1);
                 b.Code128Mode = UpperChar(p, 5) switch { 'U' => Code128Mode.Ucc, 'A' => Code128Mode.Automatic, 'D' => Code128Mode.Ean, _ => Code128Mode.None };
-                b.Data = NormalizeCode128(b, data, f);
+                if (b.Code128Mode == Code128Mode.Ean && Gs1ZplData.TryFromCode128ModeD(data.TrimStart(), out var gs128))
+                    b.Data = gs128!.ToBracketed();
+                else
+                    b.Data = NormalizeCode128(b, data, f);
                 break;
             case "B3":
                 Linear(BarcodeSymbology.Code39);
@@ -119,13 +127,22 @@ internal sealed partial class ZplImporter
                 b.QrModel = Int(p, 1, c) is 1 ? 1 : 2;
                 b.ModuleSize = Math.Clamp(Int(p, 2, c) ?? 1, 1, 10);
                 b.QrErrorCorrection = UpperChar(p, 3) switch { 'L' => QrErrorCorrection.Low, 'M' => QrErrorCorrection.Medium, 'H' => QrErrorCorrection.High, _ => QrErrorCorrection.Quartile };
+                b.QrMask = Int(p, 4, c) is { } mask and >= 0 and <= 7 ? mask : -1;
                 var qr = QrHeader.Match(data);
                 if (qr.Success)
                 {
                     b.QrErrorCorrection = qr.Groups[1].Value switch { "L" => QrErrorCorrection.Low, "M" => QrErrorCorrection.Medium, "H" => QrErrorCorrection.High, _ => QrErrorCorrection.Quartile };
-                    b.Data = qr.Groups[3].Value;
+                    string rest = qr.Groups[3].Value;
+                    b.Data = rest;
                     if (qr.Groups[2].Value == "M")
-                        Warn("Import.Barcode.Qr.ManualMode", f.StartPosition, "^BQ", b.Id);
+                    {
+                        // Manual input: the character mode letter (and for bytes a four-digit count) precedes the data.
+                        if (rest.Length > 0 && rest[0] == 'N') { b.QrInputMode = QrInputMode.ManualNumeric; b.Data = rest[1..]; }
+                        else if (rest.Length > 0 && rest[0] == 'A') { b.QrInputMode = QrInputMode.ManualAlphanumeric; b.Data = rest[1..]; }
+                        else if (rest.Length > 0 && rest[0] == 'K') { b.QrInputMode = QrInputMode.ManualKanji; b.Data = rest[1..]; }
+                        else if (rest.Length >= 5 && rest[0] == 'B' && rest.Skip(1).Take(4).All(char.IsAsciiDigit)) { b.QrInputMode = QrInputMode.ManualByte; b.Data = rest[5..]; }
+                        else Warn("Import.Barcode.Qr.ManualMode", f.StartPosition, "^BQ", b.Id);
+                    }
                 }
                 break;
             case "BX":
@@ -136,6 +153,14 @@ internal sealed partial class ZplImporter
                     Warn("Import.Barcode.DataMatrix.Quality", f.StartPosition, "^BX", b.Id, quality.ToString(CultureInfo.InvariantCulture));
                 b.Columns = Math.Clamp(Int(p, 3, c) ?? 0, 0, 144);
                 b.Rows = Math.Clamp(Int(p, 4, c) ?? 0, 0, 144);
+                // GS1 DataMatrix: FNC1 first (written as the escape character of parameter g, default tilde, followed by 1). Only taken over when
+                // Rotula would write the same field data back; anything else stays plain text as before.
+                char escape = Opt(p, 6) is { Length: 1 } g ? g[0] : '~';
+                if ((Int(p, 2, c) ?? 0) == 200 && Gs1ZplData.TryFromDataMatrix(data, escape, out var gs1Dm))
+                {
+                    b.DataMatrixGs1 = true;
+                    b.Data = gs1Dm!.ToBracketed();
+                }
                 break;
             case "B7":
                 ModuleOnly(BarcodeSymbology.Pdf417);

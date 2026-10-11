@@ -94,6 +94,108 @@ public sealed class VariableDto
     public string Name { get; set; } = string.Empty;
     /// <summary>Sample value.</summary>
     public string SampleValue { get; set; } = string.Empty;
+
+    // ---- format version 7: omitted for a plain text variable.
+
+    /// <summary>Kind name (<c>Date</c>, <c>Counter</c>, <c>Prompt</c>, <c>Computed</c>); null means a plain text variable.</summary>
+    public string? Kind { get; set; }
+    /// <summary>Date settings (kind Date).</summary>
+    public DateVariableDto? Date { get; set; }
+    /// <summary>Counter settings (kind Counter).</summary>
+    public CounterVariableDto? Counter { get; set; }
+    /// <summary>Prompt settings (kind Prompt).</summary>
+    public PromptVariableDto? Prompt { get; set; }
+    /// <summary>Expression (kind Computed).</summary>
+    public ComputedVariableDto? Computed { get; set; }
+}
+
+/// <summary>One step of date arithmetic.</summary>
+public sealed class DateOffsetDto
+{
+    /// <summary>Amount; negative goes back in time.</summary>
+    public int Amount { get; set; }
+    /// <summary>Unit name (Seconds, Minutes, Hours, Days, BusinessDays, Weeks, Months, Years).</summary>
+    public string Unit { get; set; } = "Days";
+}
+
+/// <summary>Settings of a date variable.</summary>
+public sealed class DateVariableDto
+{
+    /// <summary>Source name: ComputerClock, PrinterClock or Fixed.</summary>
+    public string Source { get; set; } = "ComputerClock";
+    /// <summary>The fixed date and time as <c>yyyy-MM-ddTHH:mm:ss</c> (kind Fixed).</summary>
+    public string? FixedValue { get; set; }
+    /// <summary>Offsets in order.</summary>
+    public List<DateOffsetDto> Offsets { get; set; } = new();
+    /// <summary>Preset id or .NET pattern.</summary>
+    public string Format { get; set; } = "iso";
+    /// <summary>Culture name; empty is invariant.</summary>
+    public string Culture { get; set; } = string.Empty;
+    /// <summary>Use UTC.</summary>
+    public bool Utc { get; set; }
+    /// <summary>Rounding name.</summary>
+    public string Rounding { get; set; } = "None";
+    /// <summary>Holidays as <c>yyyy-MM-dd</c>.</summary>
+    public List<string> Holidays { get; set; } = new();
+}
+
+/// <summary>Settings of a counter variable.</summary>
+public sealed class CounterVariableDto
+{
+    /// <summary>Numeric or Alphanumeric.</summary>
+    public string Kind { get; set; } = "Numeric";
+    /// <summary>First value.</summary>
+    public string Start { get; set; } = "1";
+    /// <summary>Increment.</summary>
+    public int Step { get; set; } = 1;
+    /// <summary>Minimum digits.</summary>
+    public int Padding { get; set; }
+    /// <summary>Text before the number.</summary>
+    public string Prefix { get; set; } = string.Empty;
+    /// <summary>Text after the number.</summary>
+    public string Suffix { get; set; } = string.Empty;
+    /// <summary>Wrap or Error.</summary>
+    public string Overflow { get; set; } = "Wrap";
+    /// <summary>Remember the last value between sessions.</summary>
+    public bool Remember { get; set; }
+}
+
+/// <summary>Settings of a prompt variable.</summary>
+public sealed class PromptVariableDto
+{
+    /// <summary>Question text.</summary>
+    public string Label { get; set; } = string.Empty;
+    /// <summary>Text, Number, Date or Choice.</summary>
+    public string InputType { get; set; } = "Text";
+    /// <summary>Suggested answer.</summary>
+    public string Default { get; set; } = string.Empty;
+    /// <summary>An answer is required.</summary>
+    public bool Required { get; set; }
+    /// <summary>Regular expression.</summary>
+    public string Pattern { get; set; } = string.Empty;
+    /// <summary>Minimum length.</summary>
+    public int MinLength { get; set; }
+    /// <summary>Maximum length.</summary>
+    public int MaxLength { get; set; }
+    /// <summary>Allowed answers of a choice prompt.</summary>
+    public List<string> Choices { get; set; } = new();
+    /// <summary>Convert to upper case.</summary>
+    public bool Uppercase { get; set; }
+    /// <summary>Offer the last answer next time.</summary>
+    public bool RememberLast { get; set; }
+    /// <summary>Help text.</summary>
+    public string HelpText { get; set; } = string.Empty;
+    /// <summary>The answer wins over a data column of the same name.</summary>
+    public bool OverrideRecord { get; set; }
+    /// <summary>Output pattern of a date answer.</summary>
+    public string DateFormat { get; set; } = "yyyy-MM-dd";
+}
+
+/// <summary>Settings of a computed variable.</summary>
+public sealed class ComputedVariableDto
+{
+    /// <summary>The expression text.</summary>
+    public string Expression { get; set; } = string.Empty;
 }
 
 /// <summary>Label-level settings.</summary>
@@ -146,6 +248,9 @@ public sealed class LabelDto
     public List<FontAliasDto>? FontAliases { get; set; }
     /// <summary>Graphics downloaded by the file (~DG).</summary>
     public List<StoredGraphicDto>? StoredGraphics { get; set; }
+
+    /// <summary>Stable identity of the label (format version 7); keys the counters that remember their value.</summary>
+    public string? Id { get; set; }
 }
 
 /// <summary>Print speeds.</summary>

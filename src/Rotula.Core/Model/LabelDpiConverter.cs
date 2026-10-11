@@ -67,6 +67,7 @@ public static class LabelDpiConverter
                 : null,
             Encoding = source.Encoding,
             StockId = source.StockId,
+            Id = source.Id,
             // Dot offsets scale with the resolution; the other printer settings are resolution independent.
             LabelShift = c.Dots(source.LabelShift, int.MinValue),
             LabelTop = c.Dots(source.LabelTop, int.MinValue),
@@ -89,7 +90,7 @@ public static class LabelDpiConverter
         if (!same)
             foreach (var g in source.StoredGraphics)
                 issues.Add(new ValidationIssue(ValidationSeverity.Warning, "Dpi.Graphic.NotScaled", null, g.Path));
-        foreach (var v in source.Variables) doc.Variables.Add(new LabelVariable(v.Name, v.SampleValue));
+        foreach (var v in source.Variables) doc.Variables.Add(v.Clone());
         foreach (var e in source.Elements) doc.Elements.Add(ConvertElement(e, c));
         return new DpiConversionResult(doc, issues);
     }

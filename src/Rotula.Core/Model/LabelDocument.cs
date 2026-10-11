@@ -1,4 +1,5 @@
 using Rotula.Core.Elements;
+using Rotula.Core.Variables;
 using Rotula.Core.Zpl;
 
 namespace Rotula.Core.Model;
@@ -166,10 +167,13 @@ public sealed class StoredGraphic
     }
 }
 
-/// <summary>A declared variable with the sample value used when no data is merged.</summary>
+/// <summary>
+/// A declared variable. A plain variable (<see cref="VariableKind.Text"/>) has a sample value used when no data is merged; the other kinds
+/// (date, counter, prompt, computed) carry a definition in the matching options property and produce their value when the label is generated.
+/// </summary>
 public sealed class LabelVariable
 {
-    /// <summary>Creates a variable.</summary>
+    /// <summary>Creates a plain text variable.</summary>
     public LabelVariable(string name, string sampleValue = "")
     {
         Name = name;
@@ -178,8 +182,31 @@ public sealed class LabelVariable
 
     /// <summary>Variable name used in <c>{{name}}</c> placeholders (letters, digits, underscore).</summary>
     public string Name { get; set; }
-    /// <summary>Value used when the merge data has no entry for <see cref="Name"/>.</summary>
+    /// <summary>
+    /// Value used when nothing else supplies one: the merge data has no entry (text), the operator gave no answer and the prompt has no default
+    /// (prompt), or the definition cannot be evaluated.
+    /// </summary>
     public string SampleValue { get; set; }
+
+    /// <summary>What produces the value. Only the options object that matches the kind is used; the others are ignored.</summary>
+    public VariableKind Kind { get; set; } = VariableKind.Text;
+    /// <summary>Settings of a <see cref="VariableKind.Date"/> variable.</summary>
+    public DateVariableOptions? Date { get; set; }
+    /// <summary>Settings of a <see cref="VariableKind.Counter"/> variable.</summary>
+    public CounterVariableOptions? Counter { get; set; }
+    /// <summary>Settings of a <see cref="VariableKind.Prompt"/> variable.</summary>
+    public PromptVariableOptions? Prompt { get; set; }
+    /// <summary>Settings of a <see cref="VariableKind.Computed"/> variable.</summary>
+    public ComputedVariableOptions? Computed { get; set; }
+
+    /// <summary>
+    /// A deep copy including the definition. Code that copies variables (undo snapshots, resolution conversion) must use this,
+    /// not <c>new LabelVariable(Name, SampleValue)</c>, or the definition is lost.
+    /// </summary>
+    public LabelVariable Clone() => new(Name, SampleValue)
+    {
+        Kind = Kind, Date = Date?.Clone(), Counter = Counter?.Clone(), Prompt = Prompt?.Clone(), Computed = Computed?.Clone(),
+    };
 }
 
 /// <summary>
@@ -235,6 +262,19 @@ public sealed class LabelDocument
     public List<FontAlias> FontAliases { get; } = new();
     /// <summary>Graphics the file downloads (ZPL <c>~DG</c>), written before the label; recalls in the label can then be previewed.</summary>
     public List<StoredGraphic> StoredGraphics { get; } = new();
+
+    /// <summary>
+    /// Stable identity of this label, or null while it has none. It keys the counters that remember their value between sessions, so it is only
+    /// created when such a counter is switched on (<see cref="EnsureId"/>) and is saved with the label. A copy saved under a new name keeps the
+    /// id and therefore shares the numbering; call <see cref="NewId"/> to start an independent series.
+    /// </summary>
+    public string? Id { get; set; }
+
+    /// <summary>Gives the label an id if it has none and returns it.</summary>
+    public string EnsureId() => Id ??= Guid.NewGuid().ToString("N");
+
+    /// <summary>Replaces the id with a fresh one (use after "save as a new label" so the copy does not share counters) and returns it.</summary>
+    public string NewId() => Id = Guid.NewGuid().ToString("N");
 
     /// <summary>Declared variables with sample values.</summary>
     public List<LabelVariable> Variables { get; } = new();

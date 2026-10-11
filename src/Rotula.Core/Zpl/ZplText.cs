@@ -85,13 +85,21 @@ public static class VariableResolver
     /// Replaces every placeholder. Lookup order: merge data, then the declared sample value. An unknown
     /// name becomes an empty string and adds a <c>Variable.Missing</c> warning.
     /// </summary>
-    public static string Resolve(string template, IReadOnlyDictionary<string, string>? data, IEnumerable<LabelVariable> declared, string? elementId, ICollection<ValidationIssue> issues)
+    public static string Resolve(string template, IReadOnlyDictionary<string, string>? data, IEnumerable<LabelVariable> declared, string? elementId, ICollection<ValidationIssue> issues) =>
+        Resolve(template, data, declared, elementId, issues, null);
+
+    /// <summary>
+    /// Like the other overload, but <paramref name="literal"/> may supply the replacement text of a name before any lookup happens (null means "not mine").
+    /// The generator uses it to write printer clock codes for date variables.
+    /// </summary>
+    public static string Resolve(string template, IReadOnlyDictionary<string, string>? data, IEnumerable<LabelVariable> declared, string? elementId, ICollection<ValidationIssue> issues, Func<string, string?>? literal)
     {
         if (template.IndexOf("{{", StringComparison.Ordinal) < 0) return template;
         var declaredList = declared as IList<LabelVariable> ?? declared.ToList();
         return Token.Replace(template, m =>
         {
             string name = m.Groups[1].Value;
+            if (literal?.Invoke(name) is { } forced) return forced;
             if (data is not null && data.TryGetValue(name, out var value)) return value;
             var decl = declaredList.FirstOrDefault(v => v.Name == name);
             if (decl is not null) return decl.SampleValue;

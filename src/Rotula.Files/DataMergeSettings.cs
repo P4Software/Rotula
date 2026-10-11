@@ -54,6 +54,9 @@ public sealed class DataMergeSettings
     /// <summary>True when the batch ZPL export writes one file per job.</summary>
     public bool OneFilePerJob { get; set; }
 
+    /// <summary>Whether date variables are read once when the batch starts (default) or for every label. Saved from format version 7 on.</summary>
+    public DateEvaluation DateEvaluation { get; set; } = DateEvaluation.AtBatchStart;
+
     /// <summary>
     /// The database query this label reads its records from, or null when the data comes from a file. Holds only the NAME of a
     /// saved connection and the query text (see <see cref="DatabaseQueryReference"/>): host, user, password and connection
@@ -66,7 +69,7 @@ public sealed class DataMergeSettings
     public bool IsEmpty =>
         string.IsNullOrEmpty(SourcePath) && string.IsNullOrEmpty(SheetName) && Delimiter == "auto" && HasHeader && ColumnOverrides.Count == 0
         && Counters.Count == 0 && CopiesPerRecord is null && string.IsNullOrEmpty(CopiesColumn) && CopiesMode == CopiesMode.PrintQuantity
-        && OnInvalidRecord == InvalidRecordPolicy.Skip && MaxRecordsPerJob == 0 && !OneFilePerJob && Database is null;
+        && OnInvalidRecord == InvalidRecordPolicy.Skip && MaxRecordsPerJob == 0 && !OneFilePerJob && Database is null && DateEvaluation == DateEvaluation.AtBatchStart;
 }
 
 /// <summary>The saved form of a database data source: a query reference, the parameter defaults and the row cap.</summary>
@@ -149,6 +152,8 @@ public sealed class MergeDto
     public int? MaxRecordsPerJob { get; set; }
     /// <summary>One ZPL file per job when exporting.</summary>
     public bool? OneFilePerJob { get; set; }
+    /// <summary>"AtBatchStart" or "PerLabel" (format version 7); omitted for the default.</summary>
+    public string? DateEvaluation { get; set; }
     /// <summary>Database data source (format version 4); only a connection NAME and the query, never credentials.</summary>
     public DatabaseDto? Database { get; set; }
 }
@@ -212,6 +217,7 @@ internal static class MergeSettingsMapper
         }).ToList(),
         CopiesPerRecord = s.CopiesPerRecord, CopiesColumn = s.CopiesColumn, CopiesMode = s.CopiesMode.ToString(),
         OnInvalidRecord = s.OnInvalidRecord.ToString(), MaxRecordsPerJob = s.MaxRecordsPerJob, OneFilePerJob = s.OneFilePerJob,
+        DateEvaluation = s.DateEvaluation == DateEvaluation.AtBatchStart ? null : s.DateEvaluation.ToString(),
         Database = s.Database is null ? null : new DatabaseDto
         {
             ConnectionName = s.Database.Reference.ConnectionName, Query = s.Database.Reference.Query, MaxRows = s.Database.MaxRows,
@@ -260,6 +266,7 @@ internal static class MergeSettingsMapper
             OnInvalidRecord = Enum.TryParse<InvalidRecordPolicy>(d.OnInvalidRecord, out var ip) ? ip : InvalidRecordPolicy.Skip,
             MaxRecordsPerJob = Math.Max(0, d.MaxRecordsPerJob ?? 0),
             OneFilePerJob = d.OneFilePerJob ?? false,
+            DateEvaluation = Enum.TryParse<DateEvaluation>(d.DateEvaluation, out var de) && Enum.IsDefined(de) ? de : DateEvaluation.AtBatchStart,
             Database = DatabaseFromDto(d.Database),
         };
         if (d.ColumnOverrides is not null)

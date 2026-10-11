@@ -5,6 +5,7 @@ using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 using Rotula.Core.Merge;
 using Rotula.Core.Model;
+using Rotula.Core.Variables;
 using Rotula.Core.Zpl;
 using Rotula.Data;
 using Rotula.Mcp.Hosting;
@@ -41,7 +42,8 @@ public sealed class PreviewTools
         [Description("Replace the .png file if it exists. Default false.")] bool overwrite = false)
     {
         var doc = _ctx.Session.GetCopy().Document;
-        return Render(doc, null, maxPixels, path, overwrite, extra: null);
+        // Dates, counters, prompts (defaults) and computed variables show their value, not their sample text.
+        return Render(doc, _ctx.PreviewData(doc), maxPixels, path, overwrite, extra: null);
     }
 
     /// <summary>Previews one record of a data source on the label.</summary>
@@ -98,10 +100,15 @@ public sealed class PreviewTools
         if (record < 1 || record > table.RowCount)
             throw new McpException($"Record {record} does not exist; the source has {table.RowCount} record(s). Counting starts at 1.");
 
-        var set = new MergeDataSet(doc, table);
-        var data = set.GetRecordData(record - 1);
-        var unmapped = set.Placeholders.Where(p => !p.StartsWith('#') && !set.Mapping.ContainsKey(p)).ToList();
-        var result = ZplGenerator.Generate(doc, data);
+        var set = new MergeDataSet(doc, table, new MergeOptions { Time = _ctx.Time, CounterStore = _ctx.CounterStore });
+        // One context per record: the data columns plus the label's own variables (dates, counters, computed values), resolved the way a batch would.
+        var recordContext = set.CreateRecordContext(record - 1);
+        var resolved = VariableEngine.Resolve(doc, recordContext);
+        var data = resolved.Values;
+        // A variable the label defines itself needs no column, so it is not "unmapped".
+        var defined = doc.Variables.Where(v => v.Kind != VariableKind.Text).Select(v => v.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var unmapped = set.Placeholders.Where(p => !p.StartsWith('#') && !set.Mapping.ContainsKey(p) && !defined.Contains(p)).ToList();
+        var result = ZplGenerator.GenerateWithVariables(doc, recordContext);
         var issues = result.Issues.Select(McpContext.ToInfo).ToList();
         var recordValues = data.ToDictionary(kv => kv.Key, kv => Clip(kv.Value), StringComparer.OrdinalIgnoreCase);
         var info = new MergePreviewResult(label, record, table.RowCount, table.Columns, recordValues, unmapped, issues, result.Zpl,

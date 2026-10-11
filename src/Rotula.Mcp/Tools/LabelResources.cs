@@ -1,7 +1,6 @@
 using System.ComponentModel;
 using ModelContextProtocol;
 using ModelContextProtocol.Server;
-using Rotula.Core.Zpl;
 using Rotula.Files;
 using Rotula.Mcp.Hosting;
 
@@ -19,7 +18,7 @@ public sealed class LabelResources
     /// <summary>The ZPL of the open label.</summary>
     [McpServerResource(UriTemplate = "rotula://label/zpl", Name = "current_label_zpl", MimeType = "text/plain")]
     [Description("The ZPL II program of the label that is open now, regenerated each time it is read.")]
-    public string CurrentZpl() => ZplGenerator.Generate(_ctx.Session.GetCopy().Document).Zpl;
+    public string CurrentZpl() => _ctx.GeneratePreview(_ctx.Session.GetCopy().Document).Zpl;
 
     /// <summary>The .rotula JSON of the open label.</summary>
     [McpServerResource(UriTemplate = "rotula://label/json", Name = "current_label_json", MimeType = "application/json")]

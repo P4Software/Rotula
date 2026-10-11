@@ -30,7 +30,11 @@ public static class Program
         using var stderrLog = new StderrLoggerProvider();
         try
         {
-            var context = new McpContext(loaded.Settings, new PrintService());
+            var context = new McpContext(loaded.Settings, new PrintService())
+            {
+                // Read-only use: previews show the next remembered serial number; the server never reserves or changes one.
+                CounterStore = new Rotula.Files.FileCounterStore(Rotula.Files.FileCounterStore.DefaultPath),
+            };
             using var host = McpServerBuilder.Build(context, stderrLog, fileLog);
             var log = host.Services.GetRequiredService<ILoggerFactory>().CreateLogger("Rotula.Mcp");
             log.LogInformation("Rotula MCP server {Version} started. Settings file: {Path}. Printing {Printing}, databases {Database}.",
