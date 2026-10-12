@@ -5690,4 +5690,52 @@ Brand and product names belong to their owners; Rotula is not affiliated with th
   <data name="Preview.Unavailable" xml:space="preserve">
     <value>The preview cannot be drawn right now. Zoom out or make the label smaller and try again; your label is not affected.</value>
   </data>
+  <data name="Panel.Format.Fit" xml:space="preserve">
+    <value>Text fit</value>
+  </data>
+  <data name="Panel.Format.Fit.Mode" xml:space="preserve">
+    <value>When the text is too long</value>
+  </data>
+  <data name="Panel.Format.Fit.Mode.None" xml:space="preserve">
+    <value>Leave as designed</value>
+  </data>
+  <data name="Panel.Format.Fit.Mode.Shrink" xml:space="preserve">
+    <value>Shrink to fit</value>
+  </data>
+  <data name="Panel.Format.Fit.Mode.Grow" xml:space="preserve">
+    <value>Grow height</value>
+  </data>
+  <data name="Panel.Format.Fit.Hint.None" xml:space="preserve">
+    <value>The box stays as designed. Text that does not fit is cut off when printed.</value>
+  </data>
+  <data name="Panel.Format.Fit.Hint.Shrink" xml:space="preserve">
+    <value>Each label uses the largest size, between the smallest and the largest below, at which all the text fits the box. With data, every record gets its own size.</value>
+  </data>
+  <data name="Panel.Format.Fit.Hint.Grow" xml:space="preserve">
+    <value>The size stays the same and the box gets as many lines as the text needs, up to the limit below. Things placed under it do not move.</value>
+  </data>
+  <data name="Panel.Format.Fit.Min" xml:space="preserve">
+    <value>Smallest size (pt)</value>
+  </data>
+  <data name="Panel.Format.Fit.Max" xml:space="preserve">
+    <value>Largest size (pt)</value>
+  </data>
+  <data name="Panel.Format.Fit.Cap" xml:space="preserve">
+    <value>Most lines</value>
+  </data>
+  <data name="Panel.Format.Fit.Ignore" xml:space="preserve">
+    <value>Do not warn when the text does not fit</value>
+  </data>
+  <data name="Panel.Format.Fit.Ignore.Tip" xml:space="preserve">
+    <value>Use it when cutting the text off is what you want.</value>
+  </data>
+  <data name="Panel.Format.Fit.Error.Order" xml:space="preserve">
+    <value>The smallest size cannot be larger than the largest size.</value>
+  </data>
+  <data name="Undo.Format.Fit.Mode" xml:space="preserve">
+    <value>change text fit</value>
+  </data>
+  <data name="Undo.Format.Fit.Limit" xml:space="preserve">
+    <value>change text fit limit</value>
+  </data>
 </root>

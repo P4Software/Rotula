@@ -495,3 +495,27 @@ and no lock when `counters.json` does not exist.
 The `^FC` code table and the `^SO` order (clock set, months, days, years, hours, minutes, seconds) come from the ZPL II Programming Guide as
 remembered by the author; no excerpt is in the repository and no printer with a clock was used. `docs/variables.md` says so. Confirm on hardware
 before the first release that advertises the printer-clock source.
+
+
+## Text fit (Rotula.Core/Text)
+
+### Text fit is Rotula-only metadata; the ZPL carries computed values
+A wrapped text block can shrink its font (between a smallest and a largest size) or grow its lines (up to a cap). `TextFitOptions` lives on
+`TextBlockOptions.Fit`, is saved in the .rotula file (format version 9, only when a block uses it, so every other file keeps its old version and an
+older build refuses a version 9 file instead of printing the block cut off), and is decided by one function, `TextFitResolver`, called by the ZPL
+generator (and so by every record of a data merge, each record gets its own size), the Windows-font picture, the canvas preview and the overflow
+warning of the text panel. The printer never sees the mode: it receives plain `^A` and `^FB` values, so importing that ZPL gives an ordinary block
+with the computed height, width and lines, and the fit mode is not restored. That loss is by design (the printer-side text has no such concept).
+
+### Sizes are points; measuring reuses the two existing measurers
+The limits are stored in points for printer and Windows fonts alike (the size box already shows points for both). A printer font's height is stored
+in dots, a Windows font's in points; keeping the limits in points means a font switch or a 203/300 dpi conversion never rescales them. A printer
+font is measured with `TextFitEstimator` (the estimate behind the overflow warning, now with a candidate-size overload), a Windows font with
+`ITextRasterizer.Measure` (the layout the preview and the printed picture use). No third measurer exists. The search is a linear scan from the
+largest size down (whole dots; half points for a Windows font; at most 200 candidates): bitmap fonts scale in whole cell multiples and word wrap is
+not monotonic, so a binary search could miss the largest size that fits. An explicit font width follows the height, as the resize handles do.
+
+### Grow never shrinks the block, and nothing moves
+Grow gives the block as many lines as the text needs, between the block's own line count and the cap. Elements below do not move (the designer
+decides the layout); at the cap the normal overflow warning stays. "Do not warn" silences that warning in any mode. A text whose content the printer
+produces (`^SN`, `^SF`, clock codes) is not fitted, because its real length is unknown when the ZPL is made. Text boxes (`^TB`) are not fitted.

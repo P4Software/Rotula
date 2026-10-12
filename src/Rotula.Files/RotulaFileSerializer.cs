@@ -73,8 +73,14 @@ public static class RotulaFileSerializer
     /// </summary>
     public const int TextFormattingFormatVersion = 8;
 
+    /// <summary>
+    /// Version 9: adds the text fit of a wrapped text block ("fit" inside "block": shrink the font or grow the lines, with its limits). An older build would
+    /// ignore it and print the block cut off, so it must refuse the file. Blocks without a fit stay at the lower versions.
+    /// </summary>
+    public const int TextFitFormatVersion = 9;
+
     /// <summary>The newest format version this build can read. Files are written with the lowest version that can hold their content.</summary>
-    public const int CurrentFormatVersion = TextFormattingFormatVersion;
+    public const int CurrentFormatVersion = TextFitFormatVersion;
 
     // Limits for untrusted values of the version 6 fields.
     private const int MaxStoredGraphics = 256;
@@ -141,6 +147,8 @@ public static class RotulaFileSerializer
         // An older build would show a Windows-font text with a plain printer font and lose the stored font, so it must refuse the file instead.
         if (dto.Elements.Any(e => e is TextElementDto { Font: not null } or TextElementDto { StoredFontPath: not null }))
             dto.FormatVersion = Math.Max(dto.FormatVersion, TextFormattingFormatVersion);
+        if (dto.Elements.Any(e => e is TextElementDto { Block.Fit: not null }))
+            dto.FormatVersion = Math.Max(dto.FormatVersion, TextFitFormatVersion);
         return JsonSerializer.Serialize(dto, Options);
     }
 
@@ -491,6 +499,11 @@ public static class RotulaFileSerializer
             {
                 WidthDots = t.Block.WidthDots, MaxLines = t.Block.MaxLines, LineSpacing = t.Block.LineSpacing,
                 Alignment = t.Block.Alignment.ToString(), HangingIndent = t.Block.HangingIndent,
+                // A fit that changes nothing is not written, so a block without one is saved exactly as before.
+                Fit = t.Block.Fit is { IsDefault: false } f ? new TextFitDto
+                {
+                    Mode = f.Mode.ToString(), MinSize = f.MinSize, MaxSize = f.MaxSize, MaxLinesCap = f.MaxLinesCap, IgnoreOverflowWarning = f.IgnoreOverflowWarning,
+                } : null,
             };
             td.TextBox = t.TextBox is null ? null : new TextBoxDto { WidthDots = t.TextBox.WidthDots, HeightDots = t.TextBox.HeightDots };
             td.Direction = t.Direction == FieldDirection.Horizontal ? null : t.Direction.ToString();
@@ -767,8 +780,22 @@ public static class RotulaFileSerializer
         {
             WidthDots = d.Block.WidthDots, MaxLines = d.Block.MaxLines, LineSpacing = d.Block.LineSpacing,
             Alignment = Parse<TextAlignment>(d.Block.Alignment), HangingIndent = d.Block.HangingIndent,
+            Fit = FitFromDto(d.Block.Fit),
         };
         return t;
+    }
+
+    /// <summary>Reads the text fit of a file. It is untrusted, so the mode falls back to None and the limits are clamped to what the fit can use.</summary>
+    private static Rotula.Core.Text.TextFitOptions? FitFromDto(TextFitDto? d)
+    {
+        if (d is null) return null;
+        var mode = TryParse<Rotula.Core.Text.TextFitMode>(d.Mode, out var m) ? m : Rotula.Core.Text.TextFitMode.None;
+        var fit = new Rotula.Core.Text.TextFitOptions
+        {
+            Mode = mode, MinSize = d.MinSize, MaxSize = d.MaxSize, MaxLinesCap = Math.Clamp(d.MaxLinesCap, 1, 9999), IgnoreOverflowWarning = d.IgnoreOverflowWarning,
+        };
+        (fit.MinSize, fit.MaxSize) = fit.NormalizedRange();
+        return fit.IsDefault ? null : fit;
     }
 
     /// <summary>Reads the font choice of a file. It is untrusted, so the family is clipped and cleaned, the size is bounded and an unusable choice becomes "no Windows font".</summary>

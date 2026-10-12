@@ -295,6 +295,9 @@ public class DpiBarcodeScalingTests
         ["BarcodeElement.MaxiCodeSymbolTotal"] = "count",
         // text
         ["TextBlockOptions.MaxLines"] = "count",
+        ["TextFitOptions.MinSize"] = "points, resolution independent",
+        ["TextFitOptions.MaxSize"] = "points, resolution independent",
+        ["TextFitOptions.MaxLinesCap"] = "count",
         // shapes / images
         ["BoxElement.CornerRounding"] = "ZPL rounding degree 0-8",
         ["ImageElement.Threshold"] = "luminance 0-255",

@@ -465,7 +465,7 @@ public class AppDatabaseTests : IDisposable
         Assert.Equal("1", FormatOf(null));
         Assert.Equal("2", FormatOf(new DataMergeSettings { MaxRecordsPerJob = 5 }));
         Assert.Equal("4", FormatOf(WithQuery("Warehouse", "SELECT 1")));
-        Assert.Equal(RotulaFileSerializer.TextFormattingFormatVersion, RotulaFileSerializer.CurrentFormatVersion);
+        Assert.Equal(RotulaFileSerializer.TextFitFormatVersion, RotulaFileSerializer.CurrentFormatVersion);
 
         // Raw ZPL needs version 3; together with a database reference the file must still say 4, never be lowered to 3.
         doc.Elements.Add(new RawZplElement { Zpl = "^FO10,10^FDx^FS" });

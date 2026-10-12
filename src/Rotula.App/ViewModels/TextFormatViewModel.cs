@@ -123,7 +123,7 @@ public sealed partial class TextFormatViewModel : ObservableObject
         var owner = System.Windows.Threading.Dispatcher.CurrentDispatcher;
         Loc.Instance.SubscribeWeak(this, self =>
         {
-            void Rebuild() { self._fontsBuilt = false; self.Refresh(); }
+            void Rebuild() { self._fontsBuilt = false; self._fitModes = null; self.Refresh(); }
             if (owner.CheckAccess()) Rebuild(); else owner.BeginInvoke(Rebuild);
         });
         Refresh();
@@ -566,13 +566,24 @@ public sealed partial class TextFormatViewModel : ObservableObject
         string text = ResolveText(doc, t);
         bool boxed = t.Block is not null || t.TextBox is not null;
         var font = FontChoice.FromElement(t, doc.DefaultFont?.FontId ?? '0');
-        if (!font.IsWindows)
-            return boxed && text.Length > 0
-                ? new TextFit(TextFitEstimator.Estimate(t, text, doc.DefaultFont), true, false, string.Empty)
-                : TextFit.Fine;
-
+        // The text fit decides the size and the lines the label will really print with; the warning is about that result, not about the
+        // designed values, so "shrink to fit" does not warn while the text fits at the size it picks.
         var rasterizer = _rasterizer();
+        var fitted = TextFitResolver.Resolve(doc, t, text, rasterizer);
+        bool ignore = t.Block?.Fit is { IgnoreOverflowWarning: true };
+        if (!font.IsWindows)
+        {
+            if (!boxed || text.Length == 0) return TextFit.Fine;
+            var estimate = fitted?.Overflow ?? TextFitEstimator.Estimate(t, text, doc.DefaultFont);
+            return new TextFit(ignore ? TextOverflow.None : estimate, true, false, string.Empty);
+        }
+
         if (rasterizer is null || font.Validate() is not null) return TextFit.Fine;
+        if (fitted?.PointSize is { } fittedSize)
+        {
+            font = font.Clone();
+            font.PointSize = fittedSize;
+        }
         // Without text there is nothing to lay out, but a missing font should still be reported: measure a sample word.
         string measured = text.Length > 0 ? text : "Ag";
         if (!boxed || text.Length == 0)
@@ -581,8 +592,8 @@ public sealed partial class TextFormatViewModel : ObservableObject
             return new TextFit(TextOverflow.None, false, plain.FontSubstituted, plain.ActualFamily);
         }
         var m = rasterizer.Measure(new TextRasterRequest(text, font, (int)doc.Dpi, t.Block?.WidthDots ?? t.TextBox?.WidthDots ?? 0, t.TextBox?.HeightDots ?? 0,
-            t.Block?.MaxLines ?? 0, t.Block?.LineSpacing ?? 0, t.Block?.Alignment ?? Rotula.Core.Model.TextAlignment.Left, t.Block?.HangingIndent ?? 0));
-        return new TextFit(m.Overflow, false, m.FontSubstituted, m.ActualFamily);
+            fitted?.MaxLines ?? t.Block?.MaxLines ?? 0, t.Block?.LineSpacing ?? 0, t.Block?.Alignment ?? Rotula.Core.Model.TextAlignment.Left, t.Block?.HangingIndent ?? 0));
+        return new TextFit(ignore ? TextOverflow.None : m.Overflow, false, m.FontSubstituted, m.ActualFamily);
     }
 
     /// <summary>Makes the box big enough for the text: wider when a word sticks out, more lines otherwise. One undo step.</summary>
@@ -634,6 +645,142 @@ public sealed partial class TextFormatViewModel : ObservableObject
         return false;
     }
 
+    // ------------------------------------------------------------------------------- text fit
+
+    private string[]? _fitModes;
+    private string _fitMinText = string.Empty, _fitMaxText = string.Empty, _fitCapText = string.Empty, _fitError = string.Empty;
+
+    private TextFitOptions? CurrentFit => Current?.Block?.Fit;
+
+    /// <summary>The modes in the order of <see cref="TextFitMode"/>, translated, for the mode list.</summary>
+    public IReadOnlyList<string> FitModes => _fitModes ??= new[]
+    {
+        Loc.Get("Panel.Format.Fit.Mode.None"), Loc.Get("Panel.Format.Fit.Mode.Shrink"), Loc.Get("Panel.Format.Fit.Mode.Grow"),
+    };
+
+    /// <summary>True when the text fit section is shown: it needs a wrapped block (a single line has no box to fit).</summary>
+    public bool ShowFit => IsActive && IsWrap;
+
+    /// <summary>Index of the chosen mode in <see cref="FitModes"/>. Setting it changes the block as one undo step; a negative index (the list is being rebuilt) is ignored.</summary>
+    public int FitModeIndex
+    {
+        get => (int)(CurrentFit?.Mode ?? TextFitMode.None);
+        set
+        {
+            if (_refreshing || value < 0 || value > (int)TextFitMode.Grow || value == FitModeIndex) return;
+            SetFitMode((TextFitMode)value);
+        }
+    }
+
+    /// <summary>True while shrink mode is chosen (the size limits are shown).</summary>
+    public bool FitIsShrink => CurrentFit?.Mode == TextFitMode.Shrink;
+
+    /// <summary>True while grow mode is chosen (the line cap is shown).</summary>
+    public bool FitIsGrow => CurrentFit?.Mode == TextFitMode.Grow;
+
+    /// <summary>The plain-language explanation of the chosen mode.</summary>
+    public string FitHint => Loc.Get("Panel.Format.Fit.Hint." + (CurrentFit?.Mode ?? TextFitMode.None));
+
+    /// <summary>Smallest size (points) as typed. Typing changes the label as soon as the number is valid.</summary>
+    public string FitMinText { get => _fitMinText; set { if (SetProperty(ref _fitMinText, value ?? string.Empty) && !_refreshing) ApplyFitLimit(isMin: true, _fitMinText); } }
+
+    /// <summary>Largest size (points) as typed.</summary>
+    public string FitMaxText { get => _fitMaxText; set { if (SetProperty(ref _fitMaxText, value ?? string.Empty) && !_refreshing) ApplyFitLimit(isMin: false, _fitMaxText); } }
+
+    /// <summary>The most lines grow mode may give the block, as typed.</summary>
+    public string FitCapText { get => _fitCapText; set { if (SetProperty(ref _fitCapText, value ?? string.Empty) && !_refreshing) ApplyFitCap(_fitCapText); } }
+
+    /// <summary>Do not warn when the text does not fit.</summary>
+    public bool FitIgnoreWarning
+    {
+        get => CurrentFit?.IgnoreOverflowWarning ?? false;
+        set
+        {
+            if (_refreshing || value == FitIgnoreWarning || Current?.Block is null) return;
+            EditFit("Undo.Format.Fit.Mode", fit => fit.IgnoreOverflowWarning = value);
+        }
+    }
+
+    /// <summary>Plain-language problem with a typed limit; empty when fine.</summary>
+    public string FitError { get => _fitError; private set { if (SetProperty(ref _fitError, value)) OnPropertyChanged(nameof(HasFitError)); } }
+
+    /// <summary>True when <see cref="FitError"/> is set.</summary>
+    public bool HasFitError => FitError.Length > 0;
+
+    private void SetFitMode(TextFitMode mode)
+    {
+        EditFit("Undo.Format.Fit.Mode", (fit, d, t) =>
+        {
+            bool wasPlain = fit.Mode == TextFitMode.None;
+            fit.Mode = mode;
+            if (mode == TextFitMode.Shrink && wasPlain)
+            {
+                // Start from the size the text has now: the largest it may be is today's size, the smallest is about half of it.
+                double now = Math.Round(CurrentPoints(t, d) * 2) / 2;
+                fit.MaxSize = Math.Clamp(now, 2, FontChoice.MaxPointSize);
+                fit.MinSize = Math.Clamp(Math.Max(1, Math.Round(now / 2)), 1, fit.MaxSize);
+            }
+        });
+        FitError = string.Empty;
+    }
+
+    private void ApplyFitLimit(bool isMin, string text)
+    {
+        text = text.Trim();
+        if (!TryParseNumber(text, out double pt) || double.IsNaN(pt) || double.IsInfinity(pt)) { FitError = Loc.Get(text.Length == 0 ? "Validation.Required" : "Validation.NotNumber"); return; }
+        // A printer font cannot be smaller than 10 dots, so its limit in points depends on the resolution; round up so the shown value is allowed.
+        double lowest = _font.IsWindows ? TextFitOptions.LowestSize : Math.Max(TextFitOptions.LowestSize, Math.Ceiling(FontChoice.DotsToPoints(10, Dpi) * 10) / 10);
+        if (pt < lowest || pt > FontChoice.MaxPointSize)
+        {
+            FitError = Loc.Get("Validation.Range", lowest.ToString("0.##", CultureInfo.CurrentCulture), FontChoice.MaxPointSize.ToString("0.##", CultureInfo.CurrentCulture));
+            return;
+        }
+        var fit = CurrentFit;
+        if (fit is null) return;
+        pt = Math.Round(pt, 2);
+        if ((isMin && pt > fit.MaxSize) || (!isMin && pt < fit.MinSize)) { FitError = Loc.Get("Panel.Format.Fit.Error.Order"); return; }
+        FitError = string.Empty;
+        string key = isMin ? "min" : "max";
+        EditFit("Undo.Format.Fit.Limit", f => { if (isMin) f.MinSize = pt; else f.MaxSize = pt; }, mergeKey: $"format:{_id}:fit{key}");
+    }
+
+    private void ApplyFitCap(string text)
+    {
+        text = text.Trim();
+        if (!int.TryParse(text, NumberStyles.Integer, CultureInfo.CurrentCulture, out int cap)) { FitError = Loc.Get(text.Length == 0 ? "Validation.Required" : "Validation.NotNumber"); return; }
+        if (cap < 1 || cap > 9999) { FitError = Loc.Get("Validation.Range", "1", "9999"); return; }
+        FitError = string.Empty;
+        EditFit("Undo.Format.Fit.Limit", f => f.MaxLinesCap = cap, mergeKey: $"format:{_id}:fitcap");
+    }
+
+    private void EditFit(string undoKey, Action<TextFitOptions> change, string? mergeKey = null) => EditFit(undoKey, (f, _, _) => change(f), mergeKey);
+
+    /// <summary>
+    /// Changes the text fit of the selected block as one undo step. A fresh copy is edited, never the shared object (undo snapshots hold their own),
+    /// and a fit that ends up changing nothing is removed so the file stays as it was before the feature.
+    /// </summary>
+    private void EditFit(string undoKey, Action<TextFitOptions, LabelDocument, TextElement> change, string? mergeKey = null)
+    {
+        Edit(undoKey, (t, d) =>
+        {
+            if (t.Block is not { } block) return;
+            var fit = block.Fit?.Clone() ?? new TextFitOptions();
+            change(fit, d, t);
+            block.Fit = fit.IsDefault ? null : fit;
+        }, mergeKey);
+    }
+
+    /// <summary>Puts the element's fit limits into the text boxes, without overwriting what the user is typing while it still means the same number.</summary>
+    private void RefreshFitTexts(TextFitOptions? fit)
+    {
+        string Keep(string typed, double value) => TryParseNumber(typed.Trim(), out double d) && Math.Abs(d - value) < 0.005 ? typed : FormatPoints(value);
+        var shown = fit ?? new TextFitOptions();
+        _fitMinText = Keep(_fitMinText, shown.MinSize);
+        _fitMaxText = Keep(_fitMaxText, shown.MaxSize);
+        _fitCapText = shown.MaxLinesCap.ToString(CultureInfo.CurrentCulture);
+        _fitError = string.Empty;
+    }
+
     // ------------------------------------------------------------------------------- refresh
 
     /// <summary>Re-reads everything from the selected element. Called on every selection and document change (including undo and redo).</summary>
@@ -663,6 +810,7 @@ public sealed partial class TextFormatViewModel : ObservableObject
                 if (!sameTyped) _sizeText = FormatPoints(pt);
                 _sizeError = string.Empty;
                 _fit = Evaluate(doc, t);
+                RefreshFitTexts(t.Block?.Fit);
             }
         }
         finally { _refreshing = false; }

@@ -85,8 +85,13 @@ public sealed class ElementBoundsCalculator
         {
             // A wrapped text is as wide as its block and as tall as its lines; a rotated one swaps the two.
             double lineDots = t.Font is { IsWindows: true } f ? FontChoice.PointsToDots(f.PointSize, (int)doc.Dpi) * 1.5 : (t.FontHeight ?? doc.DefaultFont?.Height ?? 30) * 1.5;
+            // The text fit can make the text larger (shrink mode up to its largest size) or taller (grow mode up to its cap): the probe must hold the worst case.
+            int probeLines = block.MaxLines;
+            if (block.Fit is { Mode: Rotula.Core.Text.TextFitMode.Grow } grow) probeLines = Math.Max(probeLines, grow.MaxLinesCap);
+            if (block.Fit is { Mode: Rotula.Core.Text.TextFitMode.Shrink } shrink)
+                lineDots = Math.Max(lineDots, FontChoice.PointsToDots(shrink.NormalizedRange().Max, (int)doc.Dpi) * 1.5);
             double along = Math.Clamp(block.WidthDots, 1, 9999);
-            double across = Math.Clamp(block.MaxLines, 1, 9999) * (lineDots + Math.Abs(block.LineSpacing));
+            double across = Math.Clamp(probeLines, 1, 9999) * (lineDots + Math.Abs(block.LineSpacing));
             bool swap = EffectiveRotation(t, doc) is FieldRotation.Rotated90 or FieldRotation.Rotated270;
             w = (int)Math.Min(MaxProbeSide, (swap ? across : along) + 2 * ProbePad);
             h = (int)Math.Min(MaxProbeSide, (swap ? along : across) + 2 * ProbePad);

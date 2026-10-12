@@ -243,6 +243,10 @@ public static class ZplGenerator
         string resolved = ResolveTextWithClock(doc, t, data, resolution, issues, out FieldClockOptions? autoClock);
         var sb = new StringBuilder(Origin(t));
 
+        // Text fit: decided here, for this record's own text, so every label of a data merge gets the size its content needs. The printer only
+        // ever sees the computed ^A / ^FB values; the fit mode itself is Rotula metadata.
+        var fitted = TextFitResolver.Resolve(doc, t, resolved, rasterizer);
+
         if (t.Direction != FieldDirection.Horizontal || t.InterCharacterGap != 0)
         {
             if (t.InterCharacterGap < 0 || t.InterCharacterGap > 9999)
@@ -255,11 +259,12 @@ public static class ZplGenerator
         char? fontId = t.Font is { IsWindows: false } printerChoice ? printerChoice.PrinterFontId : t.FontId;
         if (t.Font is { IsWindows: false, Bold: true } or { IsWindows: false, Italic: true } or { IsWindows: false, Underline: true })
             issues.Add(new ValidationIssue(ValidationSeverity.Warning, "Text.Style.PrinterFont", t.Id));
-        if (fontId is not null || t.StoredFontPath is not null || t.FontHeight is not null || t.FontWidth is not null || t.Rotation is not null)
+        if (fontId is not null || t.StoredFontPath is not null || t.FontHeight is not null || t.FontWidth is not null || t.Rotation is not null || fitted?.FontHeight is not null)
         {
             // Unset parts come from ^CF; when the document has none, fall back to ZPL's scalable font so ^A is always complete.
+            // A fitted size is always written in full (height and width), because the default width would not follow a smaller height.
             var def = doc.DefaultFont ?? new FontSpec('0', 30, 30);
-            int h = t.FontHeight ?? def.Height, w = t.FontWidth ?? def.Width;
+            int h = fitted?.FontHeight ?? t.FontHeight ?? def.Height, w = fitted?.FontWidth ?? t.FontWidth ?? def.Width;
             if (h < 10 || h > 32000 || w < 0 || w > 32000)
                 issues.Add(new ValidationIssue(ValidationSeverity.Error, "Font.Size.Range", t.Id, "10", "32000"));
             if (t.StoredFontPath is { } stored)
@@ -276,7 +281,7 @@ public static class ZplGenerator
             if (b.WidthDots < 1 || b.WidthDots > 9999) issues.Add(new ValidationIssue(ValidationSeverity.Error, "Text.Block.Width.Range", t.Id, "1", "9999"));
             if (b.MaxLines < 1 || b.MaxLines > 9999) issues.Add(new ValidationIssue(ValidationSeverity.Error, "Text.Block.MaxLines.Range", t.Id, "1", "9999"));
             char just = b.Alignment switch { TextAlignment.Center => 'C', TextAlignment.Right => 'R', TextAlignment.Justified => 'J', _ => 'L' };
-            sb.Append(Invariant($"^FB{b.WidthDots},{b.MaxLines},{b.LineSpacing},{just},{b.HangingIndent}"));
+            sb.Append(Invariant($"^FB{b.WidthDots},{fitted?.MaxLines ?? b.MaxLines},{b.LineSpacing},{just},{b.HangingIndent}"));
         }
         if (t.TextBox is { } box)
         {
@@ -288,9 +293,10 @@ public static class ZplGenerator
         }
 
         // The printer does not tell how wide its letters are, so this is an estimate; the picture of a Windows font is measured exactly instead.
-        if (t.Block is not null || t.TextBox is not null)
+        // A fitted text was already measured at its final size; "ignore" silences the warning for blocks where cut-off text is intended.
+        if ((t.Block is not null || t.TextBox is not null) && t.Block?.Fit is not { IgnoreOverflowWarning: true })
         {
-            var fit = TextFitEstimator.Estimate(t, resolved, doc.DefaultFont);
+            var fit = fitted?.Overflow ?? TextFitEstimator.Estimate(t, resolved, doc.DefaultFont);
             if (fit != TextOverflow.None) issues.Add(new ValidationIssue(ValidationSeverity.Warning, "Text.Overflow.Estimated", t.Id));
         }
 

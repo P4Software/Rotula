@@ -5,6 +5,9 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+- **Text fit for wrapped text** (Properties panel, Text fit): choose what a text block does when its text is longer than the box. "Shrink to fit" uses the largest font size, between a smallest and a largest size you set, at which all the text fits; "Grow height" adds lines, up to a limit you set, so all the text shows. With data merge every record gets the size or the lines its own text needs, the canvas shows the same size that prints, and "Do not warn" hides the does-not-fit warning when cutting the text off is what you want. Labels that do not use it are saved exactly as before; a label that does cannot be opened by older versions of Rotula.
+
 ## [0.3.5] - 2026-10-12
 
 ### Fixed
