@@ -1,7 +1,6 @@
 using Rotula.Core.Elements;
 using Rotula.Core.Gs1;
 using Rotula.Core.Model;
-using ZXing;
 
 namespace Rotula.Tests.Showcase;
 
@@ -16,8 +15,7 @@ internal static partial class ShowcaseLabels
         var b = new LabelBuilder(4, 6, 300, 3);
         int m = 60, inner = b.W - 2 * m;
         string ean = Gs1Keys.AppendCheckDigit("590123412345");
-        var scans = new List<ExpectedScan>();
-        const string Serif = "Georgia", Body = "Palatino Linotype", Heavy = "Arial";
+        const string Serif = "Georgia", Body = "Palatino Linotype", Heavy = "Arial Black";
 
         // ---- brand: a beehive (dome ellipse, three bands, entrance) inside a ring, with the name set in Georgia
         b.Circle(m, m + 4, 150, 9);
@@ -142,8 +140,7 @@ internal static partial class ShowcaseLabels
         b.Text(cx, sy + 72, "12 OZ", Heavy, 19, bold: true);
         b.Text(cx + b.TextWidth("12 OZ", Heavy, 19, true) + 22, sy + 94, "(340 g)", Ui, 11, bold: true);
         var bc = b.BarcodeFit(cx, sy + 190, BarcodeSymbology.Ean13, ean, cw, e => { e.Height = b.H - m - (sy + 190) - 62; e.HumanReadable = true; }, center: true);
-        scans.Add(LabelBuilder.Expect(bc, BarcodeFormat.EAN_13));
 
-        return new ShowcaseLabel("food-nutrition-label", b.Doc, new[] { Single(scans.ToArray()) });
+        return new ShowcaseLabel("food-nutrition-label", b.Doc, new[] { Single() });
     }
 }

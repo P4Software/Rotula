@@ -2,7 +2,6 @@ using Rotula.Core.Elements;
 using Rotula.Core.Gs1;
 using Rotula.Core.Model;
 using Rotula.Core.Text;
-using ZXing;
 
 namespace Rotula.Tests.Showcase;
 
@@ -65,8 +64,7 @@ internal static partial class ShowcaseLabels
         b.Text(480, 434, "SALE", Industrial, 20, bold: true, width: b.W - m - 480, align: TextAlignment.Center, reverse: true, condition: onSale);
         b.Text(480, 506, "SAVE ${{Save}}", Ui, 7, bold: true, width: b.W - m - 480, align: TextAlignment.Center, reverse: true, condition: onSale);
 
-        var variants = records.Select((r, i) => new ShowcaseVariant("-" + (i + 1), r,
-            new[] { LabelBuilder.Expect(ean, BarcodeFormat.EAN_13, r["Ean"] + Gs1Keys.CheckDigit(r["Ean"])) }, r["Name"])).ToArray();
+        var variants = records.Select((r, i) => new ShowcaseVariant("-" + (i + 1), r, r["Name"])).ToArray();
         return new ShowcaseLabel("shelf-price-tags", b.Doc, variants, SheetLayout.Column);
     }
 

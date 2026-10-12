@@ -177,30 +177,30 @@ salida es determinista y en ASCII puro, así que puedes versionarla, compararla 
 
 ## Galería
 
-Etiquetas reales, dibujadas en Rotula y generadas con la exportación PNG de Rotula. Abre el archivo correspondiente de [`docs/showcase`](docs/showcase) para ver cómo está hecha cada una.
+Etiquetas reales, generadas con la exportación PNG de Rotula a partir de los archivos de [`docs/showcase`](docs/showcase). Ábrelas en Rotula para ver cómo están hechas, o modifica una y guárdala.
 
 <table>
 <tr>
-<td align="center" valign="top"><img src="docs/images/showcase/gs1-pallet-label.png" alt="Etiqueta de palé GS1-128 con códigos de SSCC, GTIN, lote y caducidad" width="420"><br><sub>Palé GS1-128: SSCC, GTIN, lote y fecha de caducidad.</sub></td>
-<td align="center" valign="top"><img src="docs/images/showcase/parcel-shipping-label.png" alt="Etiqueta de envío de paquete con PDF417, Data Matrix, barras POSTNET y un número de seguimiento Code 128" width="420"><br><sub>Paquete: PDF417, Data Matrix, barras POSTNET y Code 128.</sub></td>
+<td align="center" valign="top"><img src="docs/images/showcase/gs1-pallet-label.png" alt="Etiqueta de palé GS1-128 con códigos de SSCC, GTIN, lote y caducidad" width="440"><br><sub>Palé GS1-128: SSCC, GTIN, lote y fecha de caducidad.</sub></td>
+<td align="center" valign="top"><img src="docs/images/showcase/parcel-shipping-label.png" alt="Etiqueta de envío de paquete con PDF417, Data Matrix, barras POSTNET y un número de seguimiento Code 128" width="440"><br><sub>Paquete: PDF417, Data Matrix, barras POSTNET y Code 128.</sub></td>
 </tr>
 <tr>
-<td align="center" valign="top"><img src="docs/images/showcase/food-nutrition-label.png" alt="Etiqueta de producto alimentario con tabla nutricional, recuadro de alérgenos y EAN-13" width="420"><br><sub>Alimento: tabla nutricional, alérgenos y EAN-13.</sub></td>
-<td align="center" valign="top"><img src="docs/images/showcase/wine-bottle-label.png" alt="Etiqueta de botella de vino con fuentes con serifa de Windows, texto lateral girado y adornos" width="420"><br><sub>Vino: fuentes de Windows, texto girado y adornos dibujados.</sub></td>
+<td align="center" valign="top"><img src="docs/images/showcase/food-nutrition-label.png" alt="Etiqueta de producto alimentario con tabla nutricional, recuadro de alérgenos y EAN-13" width="440"><br><sub>Alimento: tabla nutricional, alérgenos y EAN-13.</sub></td>
+<td align="center" valign="top"><img src="docs/images/showcase/wine-bottle-label.png" alt="Etiqueta de botella de vino con fuentes con serifa de Windows, texto lateral girado y adornos" width="440"><br><sub>Vino: fuentes de Windows, texto girado y adornos dibujados.</sub></td>
 </tr>
 <tr>
-<td align="center" valign="top"><img src="docs/images/showcase/lab-specimen-label.png" alt="Etiqueta de muestra de laboratorio con cabecera en impresión inversa, Data Matrix y Code 128" width="420"><br><sub>Muestra de laboratorio a 600 dpi: cabecera inversa, Data Matrix.</sub></td>
-<td align="center" valign="top"><img src="docs/images/showcase/asset-tag.png" alt="Etiqueta de activo informático con código QR, Code 128 y un logotipo dibujado con formas" width="420"><br><sub>Activo: código QR, Code 128 y logotipo dibujado con formas.</sub></td>
+<td align="center" valign="top"><img src="docs/images/showcase/lab-specimen-label.png" alt="Etiqueta de muestra de laboratorio con cabecera en impresión inversa, Data Matrix y Code 128" width="440"><br><sub>Muestra de laboratorio a 600 dpi: cabecera inversa, Data Matrix.</sub></td>
+<td align="center" valign="top"><img src="docs/images/showcase/asset-tag.png" alt="Etiqueta de activo informático con código QR, Code 128 y un logotipo dibujado con formas" width="440"><br><sub>Activo: código QR, Code 128 y logotipo dibujado con formas.</sub></td>
 </tr>
 <tr>
-<td align="center" valign="top"><img src="docs/images/showcase/shelf-price-tags.png" alt="Tres etiquetas de precio de estantería hechas con una etiqueta y tres registros de datos" width="420"><br><sub>Estantería: tres registros de datos, banda SALE solo si hay oferta.</sub></td>
-<td align="center" valign="top"><img src="docs/images/showcase/conditions-hazard-label.png" alt="La misma etiqueta impresa dos veces: con el panel de PELIGRO y con el panel de sin riesgos" width="420"><br><sub>Condiciones: panel DANGER solo si el campo Hazard tiene valor.</sub></td>
+<td align="center" valign="top"><img src="docs/images/showcase/shelf-price-tags.png" alt="Tres etiquetas de precio de estantería hechas con una etiqueta y tres registros de datos" width="440"><br><sub>Estantería: tres registros de datos, banda SALE solo si hay oferta.</sub></td>
+<td align="center" valign="top"><img src="docs/images/showcase/conditions-hazard-label.png" alt="La misma etiqueta impresa dos veces: con el panel de PELIGRO y con el panel de sin riesgos" width="440"><br><sub>Condiciones: panel DANGER solo si el campo Hazard tiene valor.</sub></td>
 </tr>
 </table>
 
-Todas las marcas, direcciones y números son ficticios, y solo se usan fuentes que vienen con Windows. Los códigos de barras son reales: cada uno se lee de vuelta con un decodificador al generar las imágenes. Los ejemplos de estantería y de peligro incluyen el CSV que los llena, para que puedas repetirlos con la [combinación de datos](#combinación-de-datos).
+Todas las marcas, direcciones y números son ficticios, y solo se usan fuentes que vienen con Windows. Los códigos de barras son reales: cada uno que un decodificador puede leer se lee de vuelta al generar las imágenes. Los ejemplos de estantería y de peligro incluyen el CSV que los llena, para que puedas repetirlos con la [combinación de datos](#combinación-de-datos).
 
-Para regenerar las imágenes (PowerShell, desde la raíz del repositorio): `$env:ROTULA_RENDER_SHOWCASE=1; dotnet test tests/Rotula.Tests --filter ShowcaseRenderTests`
+Para volver a generar las imágenes a partir de los archivos (PowerShell, desde la raíz del repositorio): `$env:ROTULA_RENDER_SHOWCASE=1; dotnet test tests/Rotula.Tests --filter ShowcaseRenderTests`
 
 ---
 

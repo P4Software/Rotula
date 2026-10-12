@@ -1,6 +1,5 @@
 using Rotula.Core.Elements;
 using Rotula.Core.Model;
-using ZXing;
 
 namespace Rotula.Tests.Showcase;
 
@@ -15,7 +14,6 @@ internal static partial class ShowcaseLabels
         var b = new LabelBuilder(3, 2, 300, 5);
         string assetId = "NW-004172";
         string url = "https://assets.nimbusworks.example/a/NW-004172";
-        var scans = new List<ExpectedScan>();
 
         // ---- rounded frame around everything, a heavier outline than the inner rules
         b.Frame(12, 12, b.W - 24, b.H - 24, 8, round: 1);
@@ -36,7 +34,6 @@ internal static partial class ShowcaseLabels
         var qr = b.Barcode(hx, qy, BarcodeSymbology.QrCode, url, e => { e.ModuleSize = 6; e.QrErrorCorrection = QrErrorCorrection.Medium; });
         var qrSize = LabelBuilder.BarsSize(qr);
         b.TextCentered(hx + qrSize.Width / 2, qy + qrSize.Height + 18, "SCAN TO REPORT", Ui, 5.5, bold: true);
-        scans.Add(LabelBuilder.Expect(qr, BarcodeFormat.QR_CODE));
 
         // ---- identity, to the right of the QR code
         int rx = hx + qrSize.Width + 40, rw = hx + hw - rx - 40;
@@ -57,7 +54,6 @@ internal static partial class ShowcaseLabels
         // ---- Code 128 along the foot, a warranty note beside it
         int by = b.H - 40 - 118;
         var bc = b.BarcodeFit(hx, by, BarcodeSymbology.Code128, "NW004172", 360, e => { e.Height = 70; e.HumanReadable = true; });
-        scans.Add(LabelBuilder.Expect(bc, BarcodeFormat.CODE_128));
         b.VRule(hx + 395, by + 4, 98, 3);
         b.Text(hx + 425, by + 4, "PURCHASED", Ui, 5, bold: true);
         b.Text(hx + 425, by + 34, "12 SEP 2025", Ui, 7, bold: true);
@@ -66,6 +62,6 @@ internal static partial class ShowcaseLabels
         // ---- tamper strip along the right edge: text turned 90 degrees, its box set directly by its top-left corner
         b.Text(b.W - 66, qy, "VOID IF REMOVED", Ui, 5, bold: true, rotation: FieldRotation.Rotated90);
 
-        return new ShowcaseLabel("asset-tag", b.Doc, new[] { Single(scans.ToArray()) });
+        return new ShowcaseLabel("asset-tag", b.Doc, new[] { Single() });
     }
 }

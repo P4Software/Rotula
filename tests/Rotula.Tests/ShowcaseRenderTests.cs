@@ -1,4 +1,6 @@
 using System.Text;
+using Rotula.Core.Elements;
+using Rotula.Core.Gs1;
 using Rotula.Core.Model;
 using Rotula.Files;
 using Rotula.Rendering;
@@ -26,11 +28,14 @@ internal sealed class ShowcaseFactAttribute : FactAttribute
 }
 
 /// <summary>
-/// Regenerates the README gallery: builds each label of <see cref="ShowcaseLabels"/>, saves it as <c>docs/showcase/*.rotula</c>, reloads that
-/// file (so the picture proves the saved file, not the in-memory object), renders it with Rotula's own PNG exporter and writes the presentation
-/// picture to <c>docs/images/showcase/*.png</c>. Every barcode of every picture is read back with ZXing, so a gallery image can never show a
-/// symbol a scanner cannot read.
-/// <para>To regenerate: <c>$env:ROTULA_RENDER_SHOWCASE=1; dotnet test tests/Rotula.Tests --filter ShowcaseRenderTests</c> (PowerShell).</para>
+/// Renders the README gallery. The files in <c>docs/showcase</c> (<c>*.rotula</c>, plus the <c>*.csv</c> of the labels that use data merge) are the
+/// source: each one is loaded exactly as a user would open it, rendered with Rotula's own PNG exporter, and the presentation picture is written to
+/// <c>docs/images/showcase/*.png</c>. Every barcode the label prints is found in the rendered picture and read back with ZXing, so a gallery image
+/// can never show a symbol a scanner cannot read. Because the barcodes are discovered from the rendered label, a label edited in Rotula and
+/// saved over its file is checked just the same.
+/// <para>To render: <c>$env:ROTULA_RENDER_SHOWCASE=1; dotnet test tests/Rotula.Tests --filter ShowcaseRenderTests</c> (PowerShell).</para>
+/// <para>The files were first generated from the C# drawing code in <c>Showcase/</c>. Setting <c>ROTULA_REBUILD_SHOWCASE_SOURCES=1</c> as well
+/// writes them again from that code, which overwrites any edit made in Rotula.</para>
 /// </summary>
 public class ShowcaseRenderTests
 {
@@ -55,6 +60,7 @@ public class ShowcaseRenderTests
         string pictures = Path.Combine(root, "docs", "images", "showcase");
         Directory.CreateDirectory(sources);
         Directory.CreateDirectory(pictures);
+        bool rebuild = Environment.GetEnvironmentVariable("ROTULA_REBUILD_SHOWCASE_SOURCES") == "1";
 
         // Optional filter, handy while designing a single label: ROTULA_SHOWCASE_ONLY=wine
         string? only = Environment.GetEnvironmentVariable("ROTULA_SHOWCASE_ONLY");
@@ -65,28 +71,35 @@ public class ShowcaseRenderTests
             if (only is { Length: > 0 } && !label.Name.Contains(only, StringComparison.OrdinalIgnoreCase)) continue;
 
             string file = Path.Combine(sources, label.Name + ".rotula");
-            RotulaFileSerializer.Save(label.Document, file);
-            // Render from the saved file: what the gallery shows is what a user gets when opening it.
-            var reloaded = RotulaFileSerializer.Load(file);
+            string csv = Path.Combine(sources, label.Name + ".csv");
+            if (rebuild)
+            {
+                RotulaFileSerializer.Save(label.Document, file);
+                // A label shown with several data records also gets them as a CSV file, so the example can be repeated with Data merge.
+                if (label.Variants.Count > 1 && label.Variants.All(v => v.Record is not null))
+                    File.WriteAllText(csv, ToCsv(label.Variants.Select(v => v.Record!).ToList()), new UTF8Encoding(false));
+            }
+            Assert.True(File.Exists(file), $"{file} is missing. Run once with ROTULA_REBUILD_SHOWCASE_SOURCES=1 to create it.");
+            var document = RotulaFileSerializer.Load(file);
 
-            // A label that is shown with several data records also gets them as a CSV file, so the example can be repeated with Data merge.
-            if (label.Variants.Count > 1 && label.Variants.All(v => v.Record is not null))
-                File.WriteAllText(Path.Combine(sources, label.Name + ".csv"), ToCsv(label.Variants.Select(v => v.Record!).ToList()), new UTF8Encoding(false));
+            // The records come from the CSV file, in order, one per variant.
+            var records = File.Exists(csv) ? ReadRecords(csv) : null;
 
             var sheet = new List<(SKBitmap Picture, string Caption)>();
-            foreach (var variant in label.Variants)
+            for (int i = 0; i < label.Variants.Count; i++)
             {
-                var render = LabelDocumentAdapter.ToRenderLabel(reloaded, variant.Record);
+                var variant = label.Variants[i];
+                var record = records is null ? null : records[i];
+                var render = LabelDocumentAdapter.ToRenderLabel(document, record);
                 using var result = LabelRenderer.RenderBitmap(render);
                 Assert.Empty(result.Issues);
 
                 // Also exercise the real exporter once, so a regression in SavePng shows up here.
                 string raw = Path.Combine(Path.GetTempPath(), "rotula-showcase-" + label.Name + variant.Suffix + ".png");
-                var issues = LabelExporter.SavePng(render, raw);
-                Assert.Empty(issues);
+                Assert.Empty(LabelExporter.SavePng(render, raw));
                 File.Delete(raw);
 
-                failures.AddRange(CheckScans(label.Name + variant.Suffix, result.Bitmap, variant.Scans));
+                failures.AddRange(CheckScans(label.Name + variant.Suffix, result.Bitmap, PlanScans(render)));
 
                 if (label.Layout != SheetLayout.Separate) sheet.Add((result.Bitmap.Copy(), variant.Caption));
                 else WritePicture(Path.Combine(pictures, label.Name + variant.Suffix + ".png"), result.Bitmap);
@@ -113,7 +126,59 @@ public class ShowcaseRenderTests
         return sb.ToString();
     }
 
+    /// <summary>Reads the records of a showcase CSV with Rotula's own reader, as a user's Data merge would.</summary>
+    private static List<Dictionary<string, string>> ReadRecords(string csvPath)
+    {
+        var table = Rotula.Core.Merge.CsvReader.ReadFile(csvPath);
+        return table.Rows.Select(row => table.Columns.Select((name, i) => (name, value: i < row.Length ? row[i] : string.Empty))
+            .ToDictionary(c => c.name, c => c.value)).ToList();
+    }
+
     // ------------------------------------------------------------------------------------------ scanning
+
+    /// <summary>A barcode that must be readable in a rendered picture: the symbology, the text a scanner returns and where the symbol is.</summary>
+    private sealed record ExpectedScan(BarcodeFormat Format, string Text, int X, int Y, int Width, int Height, bool Gs1);
+
+    /// <summary>
+    /// Finds every barcode the label prints (conditions already applied) and works out what a decoder must read from it. Symbologies ZXing cannot
+    /// read (POSTNET, MaxiCode and others) are left out.
+    /// </summary>
+    private static List<ExpectedScan> PlanScans(RenderLabel label)
+    {
+        var plan = new List<ExpectedScan>();
+        foreach (var rb in label.Elements.OfType<RenderBarcode>())
+        {
+            BarcodeFormat? format = rb.Symbology switch
+            {
+                BarcodeSymbology.Code128 => BarcodeFormat.CODE_128,
+                BarcodeSymbology.Ean13 => BarcodeFormat.EAN_13,
+                BarcodeSymbology.QrCode => BarcodeFormat.QR_CODE,
+                BarcodeSymbology.DataMatrix => BarcodeFormat.DATA_MATRIX,
+                BarcodeSymbology.Pdf417 => BarcodeFormat.PDF_417,
+                _ => null,
+            };
+            if (format is null) continue;
+
+            // Measure the symbol with the same encoder the renderer used.
+            var probe = new BarcodeElement
+            {
+                Symbology = rb.Symbology, Data = rb.Data, ModuleWidth = rb.ModuleDots, ModuleSize = rb.ModuleDots, Height = rb.HeightDots,
+                QrErrorCorrection = rb.QrErrorCorrection, Pdf417SecurityLevel = rb.Pdf417SecurityLevel, CheckDigit = rb.CheckDigit,
+                Code128Mode = rb.Gs1 ? Code128Mode.Ean : Code128Mode.Automatic, DataMatrixGs1 = rb.Gs1 && rb.Symbology == BarcodeSymbology.DataMatrix,
+            };
+            (int w, int h) = LabelBuilder.BarsSize(probe);
+            bool linear = rb.Symbology is BarcodeSymbology.Code128 or BarcodeSymbology.Ean13;
+            int hri = linear && rb.ShowText ? 70 : 0;
+            bool turned = rb.Rotation is RenderRotation.Rotate90 or RenderRotation.Rotate270;
+            int rw = turned ? h + hri : w, rh = turned ? w : h + hri;
+            const int quiet = 24;
+
+            // EAN-13 data may be given without its check digit; a scanner always reports all 13 digits.
+            string text = rb.Symbology == BarcodeSymbology.Ean13 && rb.Data.Length == 12 ? rb.Data + Gs1Keys.CheckDigit(rb.Data) : rb.Data;
+            plan.Add(new ExpectedScan(format.Value, text, (int)rb.X - quiet, (int)rb.Y - quiet, rw + 2 * quiet, rh + 2 * quiet, rb.Gs1));
+        }
+        return plan;
+    }
 
     /// <summary>Removes what differs between how a GS1 scanner reports data and how the label is written: parentheses, FNC1 and the identifier.</summary>
     private static string Normalize(string text) =>
@@ -124,9 +189,8 @@ public class ShowcaseRenderTests
         foreach (var e in expected)
         {
             // Crop to the symbol's area: a reader given the whole label may lock on a neighbouring symbol of the same family.
-            var r = e.Region ?? new ScanRegion(0, 0, bitmap.Width, bitmap.Height);
-            int x0 = Math.Max(0, r.X), y0 = Math.Max(0, r.Y);
-            int w = Math.Min(bitmap.Width - x0, r.Width), h = Math.Min(bitmap.Height - y0, r.Height);
+            int x0 = Math.Max(0, e.X), y0 = Math.Max(0, e.Y);
+            int w = Math.Min(bitmap.Width - x0, e.Width), h = Math.Min(bitmap.Height - y0, e.Height);
             // ZXing wants luminance bytes; the picture is black on white so a plain grey conversion is exact.
             var gray = new byte[w * h];
             for (int y = 0; y < h; y++)
@@ -149,15 +213,17 @@ public class ShowcaseRenderTests
 
             // A GS1 label must read as GS1: the reader reports the "]C1" symbology identifier only when the symbol starts with FNC1, which a plain
             // Code 128 that merely contains parentheses would not.
-            bool gs1Expected = e.Format == BarcodeFormat.CODE_128 && e.Text.StartsWith('(');
             string? identifier = result?.ResultMetadata is { } meta && meta.TryGetValue(ResultMetadataType.SYMBOLOGY_IDENTIFIER, out var id) ? id?.ToString() : null;
-            if (gs1Expected && result is not null && identifier != "]C1") { yield return $"{name}: \"{e.Text}\" was not read as GS1-128 (identifier {identifier ?? "none"})."; continue; }
+            if (e.Gs1 && e.Format == BarcodeFormat.CODE_128 && result is not null && identifier != "]C1")
+            {
+                yield return $"{name}: \"{e.Text}\" was not read as GS1-128 (identifier {identifier ?? "none"}).";
+                continue;
+            }
 
             if (result is null) yield return $"{name}: {e.Format} \"{e.Text}\" could not be read at all.";
             else if (Normalize(result.Text) != Normalize(e.Text)) yield return $"{name}: {e.Format} read \"{result.Text}\" instead of \"{e.Text}\".";
         }
     }
-
 
     // ------------------------------------------------------------------------------------------ presentation
 

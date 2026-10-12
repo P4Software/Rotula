@@ -2,7 +2,6 @@ using Rotula.Core.Elements;
 using Rotula.Core.Gs1;
 using Rotula.Core.Model;
 using Rotula.Core.Text;
-using ZXing;
 
 namespace Rotula.Tests.Showcase;
 
@@ -29,5 +28,5 @@ internal static partial class ShowcaseLabels
     private const string Industrial = "Bahnschrift";
     private const string Ui = "Segoe UI";
 
-    private static ShowcaseVariant Single(params ExpectedScan[] scans) => new(string.Empty, null, scans);
+    private static ShowcaseVariant Single() => new(string.Empty, null);
 }

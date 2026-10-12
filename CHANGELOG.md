@@ -10,6 +10,10 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - **Text fit for wrapped text** (Properties panel, Text fit): choose what a text block does when its text is longer than the box. "Shrink to fit" uses the largest font size, between a smallest and a largest size you set, at which all the text fits; "Grow height" adds lines, up to a limit you set, so all the text shows. With data merge every record gets the size or the lines its own text needs, the canvas shows the same size that prints, and "Do not warn" hides the does-not-fit warning when cutting the text off is what you want. Labels that do not use it are saved exactly as before; a label that does cannot be opened by older versions of Rotula.
 - **Print an object only when you want it**: in the new Printing section of the properties, mark an object "Do not print this object" (a note or guide that never reaches the printer or an export), set "Print only when" a field equals, does not equal, contains, is empty or is not empty a value (so a warning can appear on some labels only), and "Lock position" so nothing moves it by accident. The Objects list and the canvas show small No print, Hidden and Locked badges.
 
+### Fixed
+- **Windows fonts that are named after a style now draw in that style.** "Arial Black", "Segoe UI Semibold", "Segoe UI Black", "Bahnschrift Condensed" and similar names used to be replaced by the default font in the preview, PNG/PDF export and print picture; they now resolve to their parent family at the weight and width the name says.
+- **Arial Narrow, Franklin Gothic Medium and other families Windows lists only under their own name now draw in that font** instead of the default one: when the font manager does not know the family, Rotula loads the installed font file.
+
 ## [0.3.5] - 2026-10-12
 
 ### Fixed

@@ -1,6 +1,5 @@
 using Rotula.Core.Elements;
 using Rotula.Core.Model;
-using ZXing;
 
 namespace Rotula.Tests.Showcase;
 
@@ -17,7 +16,6 @@ internal static partial class ShowcaseLabels
         int m = 70, inner = b.W - 2 * m;
         string accession = "ACC-26-0094817";
         string matrix = "ACC-26-0094817|MRN 0048-77213|CBC+BMP|EDTA";
-        var scans = new List<ExpectedScan>();
 
         // ---- reverse header: a test tube drawn from a rounded frame and a rounded fill, the title, and a white STAT tab
         b.Fill(m, m, inner, 190, round: 2);
@@ -38,7 +36,6 @@ internal static partial class ShowcaseLabels
         var dm = b.Barcode(0, py, BarcodeSymbology.DataMatrix, matrix, e => e.ModuleSize = 11);
         var dmSize = LabelBuilder.BarsSize(dm);
         dm.X = m + inner - dmSize.Width;
-        scans.Add(LabelBuilder.Expect(dm, BarcodeFormat.DATA_MATRIX));
 
         // ---- facts grid: a rounded frame split by hairlines into 3 x 2 cells
         int gy = py + 310, gh = 260;
@@ -63,11 +60,10 @@ internal static partial class ShowcaseLabels
         int by = gy + gh + 40;
         int barW = inner - 330;
         var bc = b.BarcodeFit(m, by, BarcodeSymbology.Code128, accession, barW, e => { e.Height = b.H - m - by - 54; e.HumanReadable = true; }, center: false);
-        scans.Add(LabelBuilder.Expect(bc, BarcodeFormat.CODE_128));
         b.TextRight(m + inner, by + 6, "LAB 0F-22", Industrial, 7.5, bold: true);
         b.TextRight(m + inner, by + 66, "PRINTED", Ui, 5, bold: true);
         b.TextRight(m + inner, by + 104, "12 OCT 2026  08:44", Ui, 5.5);
 
-        return new ShowcaseLabel("lab-specimen-label", b.Doc, new[] { Single(scans.ToArray()) });
+        return new ShowcaseLabel("lab-specimen-label", b.Doc, new[] { Single() });
     }
 }
