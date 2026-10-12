@@ -234,6 +234,15 @@
           <MenuItem Header="{loc:T Menu.AlignCenterV}" Command="{Binding AlignCommand}" CommandParameter="{x:Static ed:AlignKind.CenterVertical}" />
           <MenuItem Header="{loc:T Menu.AlignBottom}" Command="{Binding AlignCommand}" CommandParameter="{x:Static ed:AlignKind.Bottom}" />
         </MenuItem>
+        <!-- The same six, always measured against the label (the plain Align uses the selection box when several objects are selected). -->
+        <MenuItem Header="{loc:T Menu.AlignToLabel}">
+          <MenuItem Header="{loc:T Menu.AlignLeft}" Command="{Binding AlignToLabelCommand}" CommandParameter="{x:Static ed:AlignKind.Left}" />
+          <MenuItem Header="{loc:T Menu.AlignCenterH}" Command="{Binding AlignToLabelCommand}" CommandParameter="{x:Static ed:AlignKind.CenterHorizontal}" />
+          <MenuItem Header="{loc:T Menu.AlignRight}" Command="{Binding AlignToLabelCommand}" CommandParameter="{x:Static ed:AlignKind.Right}" />
+          <MenuItem Header="{loc:T Menu.AlignTop}" Command="{Binding AlignToLabelCommand}" CommandParameter="{x:Static ed:AlignKind.Top}" />
+          <MenuItem Header="{loc:T Menu.AlignCenterV}" Command="{Binding AlignToLabelCommand}" CommandParameter="{x:Static ed:AlignKind.CenterVertical}" />
+          <MenuItem Header="{loc:T Menu.AlignBottom}" Command="{Binding AlignToLabelCommand}" CommandParameter="{x:Static ed:AlignKind.Bottom}" />
+        </MenuItem>
         <MenuItem Header="{loc:T Menu.Distribute}">
           <MenuItem Header="{loc:T Menu.DistributeH}" Command="{Binding DistributeCommand}" CommandParameter="{x:Static ed:DistributeKind.Horizontal}" />
           <MenuItem Header="{loc:T Menu.DistributeV}" Command="{Binding DistributeCommand}" CommandParameter="{x:Static ed:DistributeKind.Vertical}" />

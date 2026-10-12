@@ -355,6 +355,18 @@ public abstract class ElementDto
     public bool? NotPrintable { get; set; }
     /// <summary>True when the object is locked against moving, resizing and deleting in the designer.</summary>
     public bool? Locked { get; set; }
+
+    // ---- format version 11: omitted from the file while the element has no anchor.
+
+    /// <summary>Anchor point name (<c>TopLeft</c> ... <c>BottomRight</c>), or null for an absolute position. Format version 11.</summary>
+    public string? Anchor { get; set; }
+    /// <summary>
+    /// What the anchor is measured from: <c>Element</c>, or null/<c>Label</c> for the label. Format version 11. (Named "relativeTo" rather than
+    /// "reference" because a recall element already writes its stored-object name as "reference".)
+    /// </summary>
+    public string? RelativeTo { get; set; }
+    /// <summary>Id of the element the anchor is measured from when <see cref="RelativeTo"/> is <c>Element</c>. Format version 11.</summary>
+    public string? ReferenceElementId { get; set; }
 }
 
 /// <summary>A per-record printing rule of an object. Format version 9.</summary>

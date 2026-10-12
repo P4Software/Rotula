@@ -5876,4 +5876,79 @@ Las marcas y los nombres de producto pertenecen a sus dueños; Rotula no está a
   <data name="Badge.Locked.Tip" xml:space="preserve">
     <value>Bloqueado: este objeto no se puede mover, cambiar de tamaño ni borrar hasta que lo desbloquee.</value>
   </data>
+  <data name="Prop.Anchor" xml:space="preserve">
+    <value>Punto de anclaje</value>
+  </data>
+  <data name="Prop.Anchor.Hint" xml:space="preserve">
+    <value>A qué punto de este objeto se refiere la posición. Con un anclaje, X e Y son la distancia desde el mismo punto de la referencia (la etiqueta u otro objeto), así que el objeto conserva su lugar cuando la etiqueta cambia de tamaño o la referencia se mueve. Elegir un punto nunca mueve el objeto: solo cambian los números.</value>
+  </data>
+  <data name="Prop.Anchor.Free" xml:space="preserve">
+    <value>Libre</value>
+  </data>
+  <data name="Prop.Anchor.Free.Tip" xml:space="preserve">
+    <value>Sin anclaje: X e Y son la esquina superior izquierda (o la línea base) medidas desde el origen de la etiqueta, como antes.</value>
+  </data>
+  <data name="Prop.Anchor.Free.Status" xml:space="preserve">
+    <value>Posición libre (X e Y desde el origen de la etiqueta)</value>
+  </data>
+  <data name="Enum.AnchorPoint.TopLeft" xml:space="preserve">
+    <value>Superior izquierda</value>
+  </data>
+  <data name="Enum.AnchorPoint.TopCenter" xml:space="preserve">
+    <value>Superior centro</value>
+  </data>
+  <data name="Enum.AnchorPoint.TopRight" xml:space="preserve">
+    <value>Superior derecha</value>
+  </data>
+  <data name="Enum.AnchorPoint.MiddleLeft" xml:space="preserve">
+    <value>Centro izquierda</value>
+  </data>
+  <data name="Enum.AnchorPoint.Center" xml:space="preserve">
+    <value>Centro</value>
+  </data>
+  <data name="Enum.AnchorPoint.MiddleRight" xml:space="preserve">
+    <value>Centro derecha</value>
+  </data>
+  <data name="Enum.AnchorPoint.BottomLeft" xml:space="preserve">
+    <value>Inferior izquierda</value>
+  </data>
+  <data name="Enum.AnchorPoint.BottomCenter" xml:space="preserve">
+    <value>Inferior centro</value>
+  </data>
+  <data name="Enum.AnchorPoint.BottomRight" xml:space="preserve">
+    <value>Inferior derecha</value>
+  </data>
+  <data name="Prop.Reference" xml:space="preserve">
+    <value>Relativo a</value>
+  </data>
+  <data name="Prop.Reference.Hint" xml:space="preserve">
+    <value>Desde dónde se mide el anclaje: la propia etiqueta u otro objeto de esta etiqueta. Un objeto relativo a otro lo sigue cuando este se mueve o cambia de tamaño.</value>
+  </data>
+  <data name="Prop.Reference.Label" xml:space="preserve">
+    <value>La etiqueta</value>
+  </data>
+  <data name="Prop.Reference.Missing" xml:space="preserve">
+    <value>(el objeto ya no existe)</value>
+  </data>
+  <data name="Prop.X.Offset" xml:space="preserve">
+    <value>Desplazamiento X (puntos)</value>
+  </data>
+  <data name="Prop.Y.Offset" xml:space="preserve">
+    <value>Desplazamiento Y (puntos)</value>
+  </data>
+  <data name="Prop.Offset.Hint" xml:space="preserve">
+    <value>Distancia desde el punto de anclaje de la referencia hasta el punto de anclaje de este objeto. Los valores negativos van hacia la izquierda o hacia arriba.</value>
+  </data>
+  <data name="Anchor.Cycle" xml:space="preserve">
+    <value>{0} ya está posicionado relativo a este objeto (directamente o a través de otro objeto), así que este objeto no puede ser relativo a él. Elija otra referencia.</value>
+  </data>
+  <data name="Issue.Element.Anchor.Cycle" xml:space="preserve">
+    <value>Este objeto y "{0}" están posicionados uno relativo al otro, así que ninguno tiene lugar y este se deja fuera de la etiqueta. Haga que uno de ellos sea relativo a la etiqueta.</value>
+  </data>
+  <data name="Issue.Element.Anchor.MissingReference" xml:space="preserve">
+    <value>El objeto respecto al cual está posicionado este ya no existe, así que se coloca relativo a la etiqueta.</value>
+  </data>
+  <data name="Menu.AlignToLabel" xml:space="preserve">
+    <value>Alinear con la etiqueta</value>
+  </data>
 </root>

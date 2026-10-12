@@ -5876,4 +5876,79 @@ Brand and product names belong to their owners; Rotula is not affiliated with th
   <data name="Badge.Locked.Tip" xml:space="preserve">
     <value>Locked: this object cannot be moved, resized or deleted until you unlock it.</value>
   </data>
+  <data name="Prop.Anchor" xml:space="preserve">
+    <value>Anchor point</value>
+  </data>
+  <data name="Prop.Anchor.Hint" xml:space="preserve">
+    <value>Which point of this object the position refers to. With an anchor, X and Y are the distance from the same point of the reference (the label, or another object), so the object keeps its place when the label is resized or the reference moves. Choosing a point never moves the object: only the numbers change.</value>
+  </data>
+  <data name="Prop.Anchor.Free" xml:space="preserve">
+    <value>Free</value>
+  </data>
+  <data name="Prop.Anchor.Free.Tip" xml:space="preserve">
+    <value>No anchor: X and Y are the top-left corner (or the baseline) measured from the label home, as before.</value>
+  </data>
+  <data name="Prop.Anchor.Free.Status" xml:space="preserve">
+    <value>Free position (X and Y from the label home)</value>
+  </data>
+  <data name="Enum.AnchorPoint.TopLeft" xml:space="preserve">
+    <value>Top left</value>
+  </data>
+  <data name="Enum.AnchorPoint.TopCenter" xml:space="preserve">
+    <value>Top centre</value>
+  </data>
+  <data name="Enum.AnchorPoint.TopRight" xml:space="preserve">
+    <value>Top right</value>
+  </data>
+  <data name="Enum.AnchorPoint.MiddleLeft" xml:space="preserve">
+    <value>Middle left</value>
+  </data>
+  <data name="Enum.AnchorPoint.Center" xml:space="preserve">
+    <value>Centre</value>
+  </data>
+  <data name="Enum.AnchorPoint.MiddleRight" xml:space="preserve">
+    <value>Middle right</value>
+  </data>
+  <data name="Enum.AnchorPoint.BottomLeft" xml:space="preserve">
+    <value>Bottom left</value>
+  </data>
+  <data name="Enum.AnchorPoint.BottomCenter" xml:space="preserve">
+    <value>Bottom centre</value>
+  </data>
+  <data name="Enum.AnchorPoint.BottomRight" xml:space="preserve">
+    <value>Bottom right</value>
+  </data>
+  <data name="Prop.Reference" xml:space="preserve">
+    <value>Relative to</value>
+  </data>
+  <data name="Prop.Reference.Hint" xml:space="preserve">
+    <value>What the anchor is measured from: the label itself, or another object of this label. An object that is relative to another one follows it when it moves or changes size.</value>
+  </data>
+  <data name="Prop.Reference.Label" xml:space="preserve">
+    <value>The label</value>
+  </data>
+  <data name="Prop.Reference.Missing" xml:space="preserve">
+    <value>(object no longer exists)</value>
+  </data>
+  <data name="Prop.X.Offset" xml:space="preserve">
+    <value>X offset (dots)</value>
+  </data>
+  <data name="Prop.Y.Offset" xml:space="preserve">
+    <value>Y offset (dots)</value>
+  </data>
+  <data name="Prop.Offset.Hint" xml:space="preserve">
+    <value>Distance from the anchor point of the reference to the anchor point of this object. Negative values go left or up.</value>
+  </data>
+  <data name="Anchor.Cycle" xml:space="preserve">
+    <value>{0} is already positioned relative to this object (directly or through another object), so this object cannot be relative to it. Choose another reference.</value>
+  </data>
+  <data name="Issue.Element.Anchor.Cycle" xml:space="preserve">
+    <value>This object and "{0}" are positioned relative to each other, so neither has a place and this one is left out of the label. Make one of them relative to the label.</value>
+  </data>
+  <data name="Issue.Element.Anchor.MissingReference" xml:space="preserve">
+    <value>The object this one is positioned relative to no longer exists, so it is placed relative to the label instead.</value>
+  </data>
+  <data name="Menu.AlignToLabel" xml:space="preserve">
+    <value>Align to label</value>
+  </data>
 </root>

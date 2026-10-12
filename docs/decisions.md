@@ -550,3 +550,38 @@ PDF417 2X; Aztec none) with the source named next to each in the code. A symbolo
 safe margin and not a claim about a standard. The fit check (symbol plus quiet zones against the label width) runs only for upright fields; the canvas
 guide handles every rotation because it grows the real frame along the reading axis. All three new findings are warnings, never errors: the label still
 prints. Thresholds: a 1-dot module at 300 dpi or more; a linear narrow bar under 2 dots at 203 dpi.
+
+## Relative position (Rotula.Core/Layout)
+
+### One anchor point, taken on both the object and its reference; X/Y are the vector between them
+An element may carry an `Anchor` (one of nine points: corners, edge middles, centre) and a reference (`RelativeTo`: the label, or another element
+by id). The same point is taken on the object's box and on the reference's box, and X/Y are the signed distance from the reference's point to the
+object's point (so a bottom-right object 10 dots inside the corner has X = Y = -10). One point rather than two keeps the panel a single 3 x 3
+grid, which is what people know from other designers; the signed offset is the plain reading of "X/Y are an offset" and needs no inward/outward
+convention. An element without an anchor is untouched: its X/Y stay the absolute origin and its ZPL is byte-for-byte as before. The label
+reference is the full label (margins included, at minus the home), the same box the Align commands use.
+
+### The ZPL stays absolute; one resolver places things, for every record, and the canvas uses it too
+`AnchorResolver` turns anchors into absolute origins; the ZPL generator (so every record of a data merge), the preview adapter and the designer's
+bounds calculator all call it, so what the canvas shows is where the printer puts the object. It runs per record because text widths change per
+record. Sizes come from `ElementSizeEstimator`: exact for shapes and images, exact for Windows-font text (the rasterizer the Text Fit feature uses,
+so the fitted size is honoured), and an **estimate** for printer-font text (`TextFitEstimator`, the same nominal character width behind the
+overflow warning) and barcodes (module count of the symbology times the module width, text band as the preview draws it). An anchored
+printer-font text can therefore sit a few dots off on paper, as the overflow warning can be a few dots off; the canvas and the ZPL always agree
+with each other, and an object relative to a Windows-font text is exact. Core gets no drawing code and the generator gets no new parameter.
+
+### Circles are refused in the panel and are an error in the file; a missing reference falls back to the label
+A reference that would make two objects relative to each other (directly or through others) is refused in the "Relative to" drop-down with a
+sentence naming the other object, and nothing is written. A file that carries a circle anyway (hand edited) gets an error per object on the
+circle and those objects are left out of the ZPL, like any other invalid field; the preview draws them at their raw numbers. A reference to an
+element that no longer exists (a file edited elsewhere, a paste from another label) is a warning and the label stands in, so the object keeps a
+place. Deleting a reference in the designer never produces that case: its followers are made relative to the label with the numbers that keep
+them exactly where they are, in the same undo step.
+
+### Choosing an anchor changes the numbers, never the picture; moving a reference moves its followers once
+Picking an anchor point or a reference in the panel recomputes X/Y so the object stays put (`OffsetKeepingPosition`). Dragging, nudging and
+aligning a selection skip the elements that follow another selected element, because those move with their reference already. Resizing works on
+bounds, so an anchored object keeps its anchored edge where the handle rule says. Duplicating or pasting a pair rewires the copy's reference to the
+copied reference. The .rotula file stores `anchor`, `relativeTo` and `referenceElementId` (version 11, stamped only when an anchor is used; the
+field is `relativeTo` rather than `reference` because a recall element already writes its stored-object name as `reference`). ZPL import never
+creates anchors; the MCP server reads and writes X/Y as they are (offsets for an anchored object) and does not expose anchors yet.

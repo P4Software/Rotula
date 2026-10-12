@@ -293,6 +293,8 @@ public sealed class DesignCanvas : FrameworkElement
         var union = RectD.UnionAll(selected.Select(_vm.Session.Bounds.GetFrame));
         if (selected.Count > 1) dc.DrawRectangle(null, new Pen(AccentBrush, 1), ToPixelRect(union));
 
+        if (selected.Count == 1) DrawAnchorMarker(dc, selected[0]);
+
         // No handles on a locked object (the frame alone shows it is selected).
         if (selected.Count != 1 || selected[0].Locked) return;
         var r = ToPixelRect(union);
@@ -307,6 +309,32 @@ public sealed class DesignCanvas : FrameworkElement
         var rot = new Point(top.X, top.Y - HitTesting.RotateHandleOffsetPixels);
         dc.DrawLine(new Pen(AccentBrush, 1), top, rot);
         dc.DrawEllipse(Brushes.White, new Pen(AccentBrush, 1.5), rot, HandleSize / 2 + 1, HandleSize / 2 + 1);
+    }
+
+    private static readonly Pen AnchorLinkPen = CreatePen(Color.FromArgb(170, 0xC8, 0x42, 0x0F), 1, new DashStyle(new double[] { 4, 3 }, 0));
+
+    /// <summary>
+    /// Marks the anchor point of a selected anchored object: a filled dot on the corner, edge or centre of its frame, and a dashed line to the
+    /// same point of the object it is relative to (nothing for the label, whose edges speak for themselves). Drawn by the canvas only; it never
+    /// reaches a print or an export.
+    /// </summary>
+    private void DrawAnchorMarker(DrawingContext dc, LabelElement e)
+    {
+        if (e.Anchor is not { } anchor) return;
+        var session = _vm!.Session;
+        var frame = session.Bounds.GetFrame(e);
+        var (ax, ay) = new Rotula.Core.Layout.DotRect(frame.X, frame.Y, frame.Width, frame.Height).PointAt(anchor);
+        var own = ToPixel(ax, ay);
+        if (e.RelativeTo == Rotula.Core.Model.AnchorReference.Element && session.Document.Elements.FirstOrDefault(x => x.Id == e.ReferenceElementId) is { } reference
+            && !ReferenceEquals(reference, e))
+        {
+            var rf = session.Bounds.GetFrame(reference);
+            var (rx, ry) = new Rotula.Core.Layout.DotRect(rf.X, rf.Y, rf.Width, rf.Height).PointAt(anchor);
+            var target = ToPixel(rx, ry);
+            dc.DrawLine(AnchorLinkPen, own, target);
+            dc.DrawEllipse(Brushes.White, new Pen(AccentBrush, 1.5), target, 4, 4);
+        }
+        dc.DrawEllipse(AccentBrush, new Pen(Brushes.White, 1.5), own, 5, 5);
     }
 
     private void DrawGuides(DrawingContext dc, Rect labelRect)
@@ -371,7 +399,10 @@ public sealed class DesignCanvas : FrameworkElement
             else if (!session.IsSelected(hit)) session.Select(hit);
             _mode = Mode.Move;
             // Locked objects stay where they are even when they are part of a dragged selection; with only locked ones there is nothing to drag.
-            _origins = session.SelectedElements.Where(el => !el.Locked).ToDictionary(el => el.Id, el => (el.X, el.Y));
+            // An object positioned relative to another dragged one follows it by itself, so only the independent ones get the distance.
+            var unlocked = session.SelectedElements.Where(el => !el.Locked).ToList();
+            var independent = EditorCommands.IndependentlyMovable(Doc, unlocked);
+            _origins = unlocked.Where(el => independent.Contains(el.Id)).ToDictionary(el => el.Id, el => (el.X, el.Y));
             _gesture = _origins.Count > 0 ? session.BeginGesture() : null;
             _startBounds = session.Bounds.GetSelectionBounds(session.SelectedElements.Where(el => !el.Locked).ToList());
             CaptureMouse();

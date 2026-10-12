@@ -1,4 +1,5 @@
 using Rotula.Core.Elements;
+using Rotula.Core.Layout;
 using Rotula.Core.Model;
 
 namespace Rotula.App.Editing;
@@ -96,12 +97,30 @@ public sealed class EditorCommands
         }, selectionAfter: () => new[] { element.Id });
     }
 
-    /// <summary>Deletes the selected elements.</summary>
+    /// <summary>
+    /// Deletes the selected elements. An object that was positioned relative to a deleted one becomes relative to the label instead, with the
+    /// numbers that keep it exactly where it is, so deleting a reference never moves anything else.
+    /// </summary>
     public void DeleteSelected()
     {
         var ids = Unlocked(_s.SelectedElements).Select(e => e.Id).ToHashSet();
         if (ids.Count == 0) return;
-        _s.Edit("Undo.Delete", d => d.Elements.RemoveAll(e => ids.Contains(e.Id)), selectionAfter: () => Array.Empty<string>());
+        // Worked out before the delete, while the references still exist to measure against.
+        var rebound = new Dictionary<string, (int X, int Y)>(StringComparer.Ordinal);
+        foreach (var e in _s.Document.Elements)
+            if (!ids.Contains(e.Id) && e.Anchor is not null && e.RelativeTo == AnchorReference.Element && e.ReferenceElementId is { } refId && ids.Contains(refId))
+                rebound[e.Id] = _s.Bounds.OffsetKeepingPosition(e, e.Anchor, AnchorReference.Label, null);
+        _s.Edit("Undo.Delete", d =>
+        {
+            d.Elements.RemoveAll(e => ids.Contains(e.Id));
+            foreach (var e in d.Elements)
+                if (rebound.TryGetValue(e.Id, out var offset))
+                {
+                    e.RelativeTo = AnchorReference.Label;
+                    e.ReferenceElementId = null;
+                    (e.X, e.Y) = offset;
+                }
+        }, selectionAfter: () => Array.Empty<string>());
     }
 
     /// <summary>Copies the selection with fresh ids, offset a little so the copy is visible, and selects the copies.</summary>
@@ -109,12 +128,35 @@ public sealed class EditorCommands
     {
         var copies = _s.SelectedElements.Select(e => ElementCloner.Clone(e, newId: true)).ToList();
         if (copies.Count == 0) return;
+        RemapReferences(_s.SelectedElements, copies, _s.Document);
         foreach (var c in copies)
         {
             c.X += PasteOffsetDots;
             c.Y += PasteOffsetDots;
         }
         _s.Edit("Undo.Duplicate", d => d.Elements.AddRange(copies), selectionAfter: () => copies.Select(c => c.Id).ToList());
+    }
+
+    /// <summary>
+    /// Points the copies' references at the copies: when A and B are copied together and B is relative to A, B' becomes relative to A'. A
+    /// reference to something that is neither copied nor on this label (a paste from another label) falls back to the label, so the copy
+    /// still has a place.
+    /// </summary>
+    private static void RemapReferences(IReadOnlyList<LabelElement> originals, IReadOnlyList<LabelElement> copies, LabelDocument doc)
+    {
+        var map = new Dictionary<string, string>(StringComparer.Ordinal);
+        for (int i = 0; i < originals.Count && i < copies.Count; i++) map[originals[i].Id] = copies[i].Id;
+        var present = doc.Elements.Select(e => e.Id).ToHashSet(StringComparer.Ordinal);
+        foreach (var c in copies)
+        {
+            if (c.Anchor is null || c.RelativeTo != AnchorReference.Element || c.ReferenceElementId is not { } refId) continue;
+            if (map.TryGetValue(refId, out var copied)) c.ReferenceElementId = copied;
+            else if (!present.Contains(refId))
+            {
+                c.RelativeTo = AnchorReference.Label;
+                c.ReferenceElementId = null;
+            }
+        }
     }
 
     /// <summary>The clipboard text for the current selection, or null when nothing is selected.</summary>
@@ -140,6 +182,7 @@ public sealed class EditorCommands
             c.Y += PasteOffsetDots * _pasteCount;
             fresh.Add(c);
         }
+        RemapReferences(items, fresh, _s.Document);
         _s.Edit("Undo.Paste", d => d.Elements.AddRange(fresh), selectionAfter: () => fresh.Select(c => c.Id).ToList());
         return true;
     }
@@ -212,13 +255,24 @@ public sealed class EditorCommands
     // ------------------------------------------------------------------------------- move / nudge / rotate
 
     /// <summary>
+    /// The ids of the elements a move of <paramref name="selection"/> must shift itself: an element positioned relative to another one of the
+    /// selection (directly or through others) moves along with it, so adding the distance to it as well would move it twice.
+    /// </summary>
+    public static HashSet<string> IndependentlyMovable(LabelDocument doc, IReadOnlyList<LabelElement> selection)
+    {
+        var ids = selection.Select(e => e.Id).ToHashSet(StringComparer.Ordinal);
+        if (!AnchorResolver.HasAnchors(doc)) return ids;
+        return selection.Where(e => !AnchorResolver.FollowsAny(doc, e, ids)).Select(e => e.Id).ToHashSet(StringComparer.Ordinal);
+    }
+
+    /// <summary>
     /// Moves the selection. Repeated nudges within a second merge into one undo step.
     /// </summary>
     public void Nudge(int dx, int dy)
     {
         var sel = Unlocked(_s.SelectedElements);
         if (sel.Count == 0 || (dx == 0 && dy == 0)) return;
-        var movable = sel.Select(e => e.Id).ToHashSet();
+        var movable = IndependentlyMovable(_s.Document, sel);
         _s.Edit("Undo.Move", d =>
         {
             foreach (var e in d.Elements.Where(e => movable.Contains(e.Id)))
@@ -264,8 +318,21 @@ public sealed class EditorCommands
         var sel = _s.SelectedElements;
         if (sel.Count == 0) return;
         // A locked object still counts for the reference box (it is a fine anchor to line the others up with) but it is never moved.
-        RectD reference = sel.Count == 1 ? LabelRect(_s.Document) : _s.Bounds.GetSelectionBounds(sel);
-        var movable = Unlocked(sel).Select(e => e.Id).ToHashSet();
+        AlignTo(kind, sel.Count == 1 ? LabelRect(_s.Document) : _s.Bounds.GetSelectionBounds(sel));
+    }
+
+    /// <summary>Aligns every selected element to the label's edges or centre, however many are selected.</summary>
+    public void AlignToLabel(AlignKind kind)
+    {
+        if (_s.SelectedElements.Count == 0) return;
+        AlignTo(kind, LabelRect(_s.Document));
+    }
+
+    private void AlignTo(AlignKind kind, RectD reference)
+    {
+        var sel = _s.SelectedElements;
+        // An element that follows another selected one lands where its reference lands; moving it as well would double the shift.
+        var movable = IndependentlyMovable(_s.Document, Unlocked(sel));
         if (movable.Count == 0) return;
         _s.Edit("Undo.Align", d =>
         {
