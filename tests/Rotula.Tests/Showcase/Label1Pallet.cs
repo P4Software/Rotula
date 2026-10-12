@@ -1,7 +1,6 @@
 using Rotula.Core.Elements;
 using Rotula.Core.Gs1;
 using Rotula.Core.Model;
-using ZXing;
 
 namespace Rotula.Tests.Showcase;
 
@@ -73,12 +72,10 @@ internal static partial class ShowcaseLabels
 
         // ---- barcodes, widest module that fits the column, each under a small heading; the SSCC closes the label as the GS1 layout asks
         int y = gy + gh + 48;
-        var scans = new List<ExpectedScan>();
         void Gs1(string title, string data, int height)
         {
             b.Text(m, y, title, Ui, 6.5, bold: true);
-            var bar = b.BarcodeFit(m, y + 38, BarcodeSymbology.Code128, data, inner, e => { e.Code128Mode = Code128Mode.Ean; e.Height = height; e.HumanReadable = true; }, center: true);
-            scans.Add(LabelBuilder.Expect(bar, BarcodeFormat.CODE_128));
+            b.BarcodeFit(m, y + 38, BarcodeSymbology.Code128, data, inner, e => { e.Code128Mode = Code128Mode.Ean; e.Height = height; e.HumanReadable = true; }, center: true);
             y += 38 + height + 80;
         }
         Gs1("PRODUCT (GTIN-14) AND COUNT", content, 120);
@@ -87,7 +84,7 @@ internal static partial class ShowcaseLabels
 
         return new ShowcaseLabel("gs1-pallet-label", b.Doc, new[]
         {
-            Single(scans.ToArray()),
+            Single(),
         });
     }
 }

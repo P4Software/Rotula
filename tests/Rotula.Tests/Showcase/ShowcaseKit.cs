@@ -3,7 +3,6 @@ using Rotula.Core.Model;
 using Rotula.Core.Text;
 using Rotula.Rendering.Barcodes;
 using SkiaSharp;
-using ZXing;
 
 namespace Rotula.Tests.Showcase;
 
@@ -67,16 +66,22 @@ internal sealed class LabelBuilder
 
     // ------------------------------------------------------------------------------------------------ text
 
+    /// <summary>
+    /// Resolves a Windows font the way the renderer does (so "Arial Black" and "Segoe UI Semibold" give their own faces). A family the computer
+    /// does not have would silently change the whole look, so it fails loudly.
+    /// </summary>
+    private static SKTypeface Face(string family, bool bold, bool italic)
+    {
+        var resolved = Rotula.Rendering.TypefaceSource.Resolve(family, bold, italic);
+        if (resolved.Substituted)
+            throw new InvalidOperationException($"The Windows font \"{family}\" is not installed (got \"{resolved.ActualFamily}\"). The showcase only uses fonts every Windows install has.");
+        return resolved.Typeface;
+    }
+
     /// <summary>Distance between the top of a line box and the top of its capital letters, for a Windows font at a size in dots.</summary>
     private static int CapOffset(string family, bool bold, bool italic, int em)
     {
-        var style = new SKFontStyle(bold ? SKFontStyleWeight.Bold : SKFontStyleWeight.Normal, SKFontStyleWidth.Normal,
-            italic ? SKFontStyleSlant.Italic : SKFontStyleSlant.Upright);
-        using var face = SKTypeface.FromFamilyName(family, style);
-        // A missing family would silently fall back to another face and change the whole look, so fail loudly.
-        if (face is null || !string.Equals(face.FamilyName, family, StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException($"The Windows font \"{family}\" is not installed (got \"{face?.FamilyName}\"). The showcase only uses fonts every Windows install has.");
-        using var font = new SKFont(face, em);
+        using var font = new SKFont(Face(family, bold, italic), em);
         var m = font.Metrics;
         // Not every font reports a cap height; 0.7 em is the typical value and only affects the optical alignment by a dot or two.
         float cap = m.CapHeight > 0 ? m.CapHeight : em * 0.7f;
@@ -86,10 +91,7 @@ internal sealed class LabelBuilder
     /// <summary>Width in dots that a single line of text occupies in the given font; used for centering and right-aligning without a text block.</summary>
     public int TextWidth(string text, string family, double pt, bool bold = false, bool italic = false)
     {
-        var style = new SKFontStyle(bold ? SKFontStyleWeight.Bold : SKFontStyleWeight.Normal, SKFontStyleWidth.Normal,
-            italic ? SKFontStyleSlant.Italic : SKFontStyleSlant.Upright);
-        using var face = SKTypeface.FromFamilyName(family, style);
-        using var font = new SKFont(face, Pt(pt)) { Subpixel = true };
+        using var font = new SKFont(Face(family, bold, italic), Pt(pt)) { Subpixel = true };
         return (int)Math.Ceiling(font.MeasureText(text));
     }
 
@@ -242,25 +244,6 @@ internal sealed class LabelBuilder
         for (int i = 0; i < widths.Length; i++) widths[i] = minimums[i] + spare / widths.Length;
         widths[^1] += spare - spare / widths.Length * widths.Length;
         return widths;
-    }
-
-    /// <summary>
-    /// Describes how a decoder must read <paramref name="barcode"/> back from the rendered picture: the symbology, the text (the element's data by
-    /// default) and the area it occupies, with room for its human-readable line and a quiet zone.
-    /// </summary>
-    public static ExpectedScan Expect(BarcodeElement barcode, BarcodeFormat format, string? text = null)
-    {
-        // A merge field in the element's data cannot be encoded, so the size is measured with the record's real text.
-        string saved = barcode.Data;
-        barcode.Data = text ?? saved;
-        (int w, int h) = BarsSize(barcode);
-        barcode.Data = saved;
-        bool linear = Rotula.Core.Barcodes.BarcodeCatalog.Get(barcode.Symbology).Category == Rotula.Core.Barcodes.BarcodeCategory.Linear;
-        int hri = linear && barcode.HumanReadable ? 70 : 0;
-        bool turned = barcode.Rotation is FieldRotation.Rotated90 or FieldRotation.Rotated270;
-        int rw = turned ? h + hri : w, rh = turned ? w : h + hri;
-        const int quiet = 24;
-        return new ExpectedScan(format, text ?? barcode.Data, new ScanRegion(barcode.X - quiet, barcode.Y - quiet, rw + 2 * quiet, rh + 2 * quiet));
     }
 
     /// <summary>

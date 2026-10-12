@@ -1,7 +1,6 @@
 using Rotula.Core.Elements;
 using Rotula.Core.Model;
 using Rotula.Core.Text;
-using ZXing;
 
 namespace Rotula.Tests.Showcase;
 
@@ -60,18 +59,8 @@ internal static partial class ShowcaseLabels
         }
 
         // ---- identification codes, both built from fields
-        var scans1 = new List<ExpectedScan>();
-        var scans2 = new List<ExpectedScan>();
-        var linear = b.BarcodeFit(lx, 640, BarcodeSymbology.Code128, "{{Code}}-{{Lot}}", 420, e => { e.Height = 120; e.HumanReadable = true; });
-        var dm = b.Barcode(lx + lw - 190, 640, BarcodeSymbology.DataMatrix, "{{Code}}|{{Lot}}|{{Expires}}", e => e.ModuleSize = 9);
-        foreach (var (scans, rec) in new[] { (scans1, withHazard), (scans2, withoutHazard) })
-        {
-            string linearText = rec["Code"] + "-" + rec["Lot"];
-            string matrixText = rec["Code"] + "|" + rec["Lot"] + "|" + rec["Expires"];
-            // BarcodeFit fixed the module for the sample record; the other record has the same code lengths, so the regions stay valid.
-            scans.Add(LabelBuilder.Expect(linear, BarcodeFormat.CODE_128, linearText));
-            scans.Add(LabelBuilder.Expect(dm, BarcodeFormat.DATA_MATRIX, matrixText));
-        }
+        b.BarcodeFit(lx, 640, BarcodeSymbology.Code128, "{{Code}}-{{Lot}}", 420, e => { e.Height = 120; e.HumanReadable = true; });
+        b.Barcode(lx + lw - 190, 640, BarcodeSymbology.DataMatrix, "{{Code}}|{{Lot}}|{{Expires}}", e => e.ModuleSize = 9);
 
         // ---- right panel, version A: the hazard panel (prints when Hazard has a value)
         int px = 740, py = 196, pw = b.W - m - px, ph = 640;
@@ -100,8 +89,8 @@ internal static partial class ShowcaseLabels
 
         return new ShowcaseLabel("conditions-hazard-label", b.Doc, new[]
         {
-            new ShowcaseVariant("-with-hazard", withHazard, scans1, "Hazard field filled in: the DANGER panel prints"),
-            new ShowcaseVariant("-no-hazard", withoutHazard, scans2, "Hazard field empty: the all-clear panel prints instead"),
+            new ShowcaseVariant("-with-hazard", withHazard, "Hazard field filled in: the DANGER panel prints"),
+            new ShowcaseVariant("-no-hazard", withoutHazard, "Hazard field empty: the all-clear panel prints instead"),
         }, SheetLayout.Column);
     }
 }

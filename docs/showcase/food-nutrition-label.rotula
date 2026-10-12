@@ -216,7 +216,7 @@
       "type": "text",
       "font": {
         "source": "Windows",
-        "familyName": "Arial",
+        "familyName": "Arial Black",
         "bold": true,
         "italic": false,
         "underline": false,
@@ -225,7 +225,7 @@
       "text": "Nutrition Facts",
       "id": "0000000000000000000000000000000d",
       "x": 82,
-      "y": 416,
+      "y": 404,
       "originKind": "Origin",
       "reverseField": false
     },
@@ -330,7 +330,7 @@
       "type": "text",
       "font": {
         "source": "Windows",
-        "familyName": "Arial",
+        "familyName": "Arial Black",
         "bold": true,
         "italic": false,
         "underline": false,
@@ -338,8 +338,8 @@
       },
       "text": "230",
       "id": "00000000000000000000000000000014",
-      "x": 474,
-      "y": 663,
+      "x": 443,
+      "y": 645,
       "originKind": "Origin",
       "reverseField": false
     },
@@ -1537,7 +1537,7 @@
       "type": "text",
       "font": {
         "source": "Windows",
-        "familyName": "Arial",
+        "familyName": "Arial Black",
         "bold": true,
         "italic": false,
         "underline": false,
@@ -1546,7 +1546,7 @@
       "text": "12 OZ",
       "id": "00000000000000000000000000000063",
       "x": 690,
-      "y": 1433,
+      "y": 1418,
       "originKind": "Origin",
       "reverseField": false
     },
@@ -1562,7 +1562,7 @@
       },
       "text": "(340 g)",
       "id": "00000000000000000000000000000064",
-      "x": 932,
+      "x": 967,
       "y": 1453,
       "originKind": "Origin",
       "reverseField": false
