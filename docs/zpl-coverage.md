@@ -99,7 +99,7 @@ Nothing is silently dropped.
 | `^FE` | Field number embedding character | Supported | Yes | Yes | No | Chooses the character that marks references to numbered fields inside the data of a field. The text is written unchanged; the printer expands the references. |
 | `^FH` | Hexadecimal escapes in field data | Supported | Yes | Yes | Close | Lets field data carry any byte as an underscore and two hex digits, so accents and control characters survive. Written automatically whenever the text needs it. |
 | `^FM` | Multiple field origins | Passthrough | No | No | Box | Gives the places where each part of a PDF417 or MicroPDF417 symbol that is split over several symbols is printed. A field that uses it is kept whole as raw ZPL. |
-| `^FN` | Field number | Supported | Yes | Yes | No | Gives a field a number so its data can be filled in or reused later; an optional prompt can be stored with it. Kept on the field and written back. Filling numbered fields from a stored template is not done by Rotula yet. |
+| `^FN` | Field number | Supported | Yes | Yes | No | Gives a field a number so its data can be filled in or reused later; an optional prompt can be stored with it. A numbered field becomes a {{placeholder}} named after the prompt (Customer name gives {{Customer_name}}) or Field plus the number, with the field's data as the sample value, so it can be filled from a data merge. The number and prompt stay on the field and are written back unchanged. Saving the label as a stored format writes every placeholder as a numbered field. |
 | `^FO` | Field origin | Supported | Yes | Yes | Exact | Starts a field and places its top-left corner at the given position. |
 | `^FP` | Field direction | Supported | Yes | Yes | No | Prints the characters of a text field top to bottom or right to left, with an optional gap between characters. Text fields only. The preview always draws left to right. |
 | `^FR` | Reverse a field | Supported | Yes | Yes | Exact | Prints one field as the opposite of what is already under it. |
@@ -180,7 +180,7 @@ Nothing is silently dropped.
 
 | Command | Name | Status | Generate | Read | Preview | What it does |
 |---|---|---|:---:|:---:|:---:|---|
-| `^DF` | Store format | Planned | No | No | No | Saves the commands that follow as a reusable template in the printer's memory. Templates, with numbered fields filled in at print time, are planned. Today the command is kept verbatim with a warning. |
+| `^DF` | Store format | Planned | No | No | No | Saves the commands that follow as a reusable template in the printer's memory. Rotula can write a label as a stored format (ZplGenerator.GenerateStoredFormat): ^DF right after ^XA and every {{placeholder}} as a numbered field without data. Opening such a file keeps the ^DF command verbatim with a notice, and its numbered fields come back as placeholders; the stored-format name itself is not part of the label model yet. |
 | `~DG` | Download graphic | Supported | Yes | Yes | Exact | Sends a bitmap to the printer's memory under a name, to be printed later with ^XG or ^IM. Kept as a document setting and written before the label. A recall in the same file is drawn in the preview. |
 | `~DN` | Abort graphic download | Out of scope | No | No | No | Stops a graphic download that is in progress. *Out of scope: A diagnostic or immediate printer action that prints nothing on the label.* |
 | `~DY` | Download object | Supported | No | Yes | Exact | Sends a file (a bitmap, font or other object) to the printer's memory. Only plain bitmap data (hex or Z64 text, format A, type G or B) is understood; it is written back as ~DG. PNG, TrueType and binary downloads are kept as raw ZPL. |
@@ -190,7 +190,7 @@ Nothing is silently dropped.
 | `^IM` | Image move | Passthrough | No | No | Box | Prints a graphic stored on the printer at its original size. Kept as a stored-object placeholder. When the same file downloads the graphic with ~DG, the preview draws it. |
 | `^IS` | Image save | Passthrough | No | No | No | Saves the label format as an image in the printer's memory instead of printing it. Kept verbatim with a warning. |
 | `^TO` | Transfer object | Out of scope | No | No | No | Copies stored objects from one storage device to another. *Out of scope: Manages the printer's own storage; it does not change what a label looks like.* |
-| `^XF` | Recall format | Planned | No | No | No | Prints a stored template, filling its numbered fields. Planned together with ^DF. Today the recall is kept as a stored-object placeholder with a warning. |
+| `^XF` | Recall format | Planned | No | No | No | Prints a stored template, filling its numbered fields. Rotula can write the recall of a label saved as a stored format (ZplGenerator.GenerateFormatRecall): ^XF followed by one numbered field per placeholder with its value. Opening a file with a recall keeps it as a stored-object placeholder with a notice, because the format lives on the printer; numbered fields after it come back as placeholders. |
 | `^XG` | Recall graphic | Passthrough | No | No | Box | Prints a graphic stored on the printer, at a chosen magnification. Kept as a stored-object placeholder. When the same file downloads the graphic with ~DG, the preview draws it. |
 
 ### Media

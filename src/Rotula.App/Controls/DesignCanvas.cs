@@ -293,22 +293,38 @@ public sealed class DesignCanvas : FrameworkElement
         var union = RectD.UnionAll(selected.Select(_vm.Session.Bounds.GetFrame));
         if (selected.Count > 1) dc.DrawRectangle(null, new Pen(AccentBrush, 1), ToPixelRect(union));
 
-        if (selected.Count == 1) DrawAnchorMarker(dc, selected[0]);
-
-        // No handles on a locked object (the frame alone shows it is selected).
-        if (selected.Count != 1 || selected[0].Locked) return;
-        var r = ToPixelRect(union);
-        foreach (var h in Enum.GetValues<ResizeHandle>())
+        // No handles on a locked object (the frame alone shows it is selected); its anchor marker is still drawn below.
+        if (selected.Count == 1 && !selected[0].Locked)
         {
-            var (hx, hy) = HitTesting.HandlePosition(union, h);
-            var p = ToPixel(hx, hy);
-            dc.DrawRectangle(Brushes.White, new Pen(AccentBrush, 1), new Rect(p.X - HandleSize / 2, p.Y - HandleSize / 2, HandleSize, HandleSize));
+            var r = ToPixelRect(union);
+            // The anchor point of a single anchored object coincides with one of the eight handles (the ninth, the centre, has no handle); that
+            // handle is left out so the anchor dot drawn afterwards stands in for it, instead of the two fighting for the same pixels.
+            var anchorPixel = AnchorPixel(selected[0]);
+            foreach (var h in Enum.GetValues<ResizeHandle>())
+            {
+                var (hx, hy) = HitTesting.HandlePosition(union, h);
+                var p = ToPixel(hx, hy);
+                if (anchorPixel is { } a && Math.Abs(a.X - p.X) < 0.5 && Math.Abs(a.Y - p.Y) < 0.5) continue;
+                dc.DrawRectangle(Brushes.White, new Pen(AccentBrush, 1), new Rect(p.X - HandleSize / 2, p.Y - HandleSize / 2, HandleSize, HandleSize));
+            }
+            // Rotate handle: a circle above the top edge, joined to it by a thin stem.
+            var top = new Point(r.X + r.Width / 2, r.Y);
+            var rot = new Point(top.X, top.Y - HitTesting.RotateHandleOffsetPixels);
+            dc.DrawLine(new Pen(AccentBrush, 1), top, rot);
+            dc.DrawEllipse(Brushes.White, new Pen(AccentBrush, 1.5), rot, HandleSize / 2 + 1, HandleSize / 2 + 1);
         }
-        // Rotate handle: a circle above the top edge, joined to it by a thin stem.
-        var top = new Point(r.X + r.Width / 2, r.Y);
-        var rot = new Point(top.X, top.Y - HitTesting.RotateHandleOffsetPixels);
-        dc.DrawLine(new Pen(AccentBrush, 1), top, rot);
-        dc.DrawEllipse(Brushes.White, new Pen(AccentBrush, 1.5), rot, HandleSize / 2 + 1, HandleSize / 2 + 1);
+
+        // Last, so the handles never cover it: a white handle square drawn on top of the anchor dot hid it completely.
+        if (selected.Count == 1) DrawAnchorMarker(dc, selected[0]);
+    }
+
+    /// <summary>The pixel position of the element's anchor point on its selection frame, or null when the element is free.</summary>
+    private Point? AnchorPixel(LabelElement e)
+    {
+        if (e.Anchor is not { } anchor) return null;
+        var frame = _vm!.Session.Bounds.GetFrame(e);
+        var (ax, ay) = new Rotula.Core.Layout.DotRect(frame.X, frame.Y, frame.Width, frame.Height).PointAt(anchor);
+        return ToPixel(ax, ay);
     }
 
     private static readonly Pen AnchorLinkPen = CreatePen(Color.FromArgb(170, 0xC8, 0x42, 0x0F), 1, new DashStyle(new double[] { 4, 3 }, 0));
@@ -320,11 +336,8 @@ public sealed class DesignCanvas : FrameworkElement
     /// </summary>
     private void DrawAnchorMarker(DrawingContext dc, LabelElement e)
     {
-        if (e.Anchor is not { } anchor) return;
+        if (e.Anchor is not { } anchor || AnchorPixel(e) is not { } own) return;
         var session = _vm!.Session;
-        var frame = session.Bounds.GetFrame(e);
-        var (ax, ay) = new Rotula.Core.Layout.DotRect(frame.X, frame.Y, frame.Width, frame.Height).PointAt(anchor);
-        var own = ToPixel(ax, ay);
         if (e.RelativeTo == Rotula.Core.Model.AnchorReference.Element && session.Document.Elements.FirstOrDefault(x => x.Id == e.ReferenceElementId) is { } reference
             && !ReferenceEquals(reference, e))
         {

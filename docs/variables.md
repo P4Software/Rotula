@@ -269,6 +269,27 @@ The `.rotula` file stores the definitions. A label that only uses plain text var
 still open it). A label with a definition, or with a label id, is saved as **format version 7**; an older Rotula says the file is newer instead of
 silently dropping the definition. Files are untrusted input: lists are capped, text is clipped, unknown kinds open as plain variables.
 
+### Numbered fields in ZPL (`^FN`) and stored formats (`^DF` / `^XF`)
+
+ZPL has its own idea of a variable: a *numbered field*. `^FN3"Customer name"` marks a field whose data is filled in later, usually when a
+format stored on the printer is recalled. Rotula treats numbered fields as placeholders, both ways:
+
+* **Import.** A field with `^FN` becomes `{{Customer_name}}` (the prompt text made into a name: letters, digits and underscores) or
+  `{{Field3}}` when there is no prompt. The data the field carried (`^FD`) becomes the variable's sample value, so the label prints exactly as
+  before and the field can be filled from a data file or a database. Fields that share a number share the variable, as they share their data
+  on the printer. The number and prompt stay on the element, so exporting the label writes the same `^FN3"Customer name"` again. A field with
+  a printer-side serial number (`^SN`) is left alone: its data is a start value, not something to fill in.
+* **Stored format.** `ZplGenerator.GenerateStoredFormat(label, "R:SHIP.ZPL")` writes the label with `^DF` right after `^XA` and every text
+  or barcode whose content is exactly one `{{placeholder}}` as a numbered field without data (`^FN1"Customer"`). Elements that already have a
+  field number keep it; the others get the lowest free numbers in label order, one number per name. The print quantity is left out.
+* **Recall.** `ZplGenerator.GenerateFormatRecall(label, "R:SHIP.ZPL", data)` writes `^XF` followed by one `^FN n^FD value` per number (data
+  values, or the sample values) and the print quantity. The numbering is the one the stored format got, so the two always match
+  (`ZplGenerationResult.FormatFields` lists it).
+* **What cannot be numbered**: a field that mixes fixed text with placeholders (`Order {{Order}}`, the printer replaces the whole data), a text
+  in a Windows font (printed as a picture) and a QR code (its data starts with a header). They are written with their current value and
+  reported as `Format.Field.Mixed` / `Format.Field.Picture`. Opening a stored format keeps the `^DF` line as raw ZPL with a notice; the fields
+  come back as placeholders.
+
 ### Using it from an AI assistant (MCP)
 
 `set_variable` takes a `kind` (`text`, `date`, `counter`, `prompt`, `computed`) and a `definition` object. See [mcp.md](mcp.md).
@@ -421,6 +442,8 @@ lists them; a test checks that every key has text in both languages.
 | `Variable.Expr.Cycle` | variable, position (0), chain `a > b > a` |
 | `Variable.Expr.ResultTooLong` | variable, position, limit |
 | `Variable.Expr.NotNumber` / `.NotDate` / `.BadFormat` | variable, position, function, value |
+| `Format.Path.Invalid` | the stored format name (error) |
+| `Format.Field.Mixed` / `Format.Field.Picture` | none; the issue carries the element id (warning) |
 
 ### File format version 7
 

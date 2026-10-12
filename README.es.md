@@ -150,10 +150,13 @@ dentro de la etiqueta.
 
 ### Lee exactamente lo que recibe la impresora
 
-El panel ZPL muestra el código generado, en vivo y de solo lectura, con un botón Copiar ZPL y un botón Exportar .zpl. La
-salida es determinista y en ASCII puro, así que puedes versionarla, compararla o enviarla con cualquier otra herramienta.
+El panel ZPL muestra el código generado en vivo, con un botón Copiar ZPL y un botón Exportar .zpl. La salida es determinista y
+en ASCII puro, así que puedes versionarla, compararla o enviarla con cualquier otra herramienta. El panel también es un editor:
+escribe o pega ZPL y, tras una breve pausa, la etiqueta se reconstruye a partir de él (un paso de deshacer por edición); una
+insignia indica si el texto está generado o editado a mano, "Volver al diseño" lo regenera, la línea de estado nombra cualquier
+comando que se conservó como ZPL sin procesar, y una línea de ayuda explica el comando bajo el cursor y sus parámetros.
 
-<p align="center"><img src="docs/images/zpl-panel.png" alt="El panel de código ZPL de solo lectura bajo el lienzo, con el ZPL generado" width="800"></p>
+<p align="center"><img src="docs/images/zpl-panel.png" alt="El panel de código ZPL bajo el lienzo, con el ZPL generado" width="800"></p>
 
 ### Todo de un vistazo
 

@@ -887,7 +887,7 @@
     <value>Variables</value>
   </data>
   <data name="Panel.Zpl" xml:space="preserve">
-    <value>ZPL code (read-only)</value>
+    <value>ZPL code (editable: the label follows what you type)</value>
   </data>
   <data name="Preset.100x150mm" xml:space="preserve">
     <value>100 x 150 mm</value>
@@ -2051,7 +2051,7 @@
     <value>Kind of the selected object</value>
   </data>
   <data name="Zpl.Output" xml:space="preserve">
-    <value>ZPL OUTPUT</value>
+    <value>ZPL CODE</value>
   </data>
   <data name="Zpl.ExportButton" xml:space="preserve">
     <value>Export .zpl</value>
@@ -5950,5 +5950,80 @@ Brand and product names belong to their owners; Rotula is not affiliated with th
   </data>
   <data name="Menu.AlignToLabel" xml:space="preserve">
     <value>Align to label</value>
+  </data>
+  <data name="Zpl.Revert" xml:space="preserve">
+    <value>Revert to design</value>
+  </data>
+  <data name="Zpl.Revert.Tip" xml:space="preserve">
+    <value>Throw away the typed text and show the ZPL generated from the design again.</value>
+  </data>
+  <data name="Zpl.State.Generated" xml:space="preserve">
+    <value>Generated</value>
+  </data>
+  <data name="Zpl.State.Pending" xml:space="preserve">
+    <value>Editing...</value>
+  </data>
+  <data name="Zpl.State.Edited" xml:space="preserve">
+    <value>Edited by hand - re-imported</value>
+  </data>
+  <data name="Zpl.Status.Generated" xml:space="preserve">
+    <value>Generated from the design. Type or paste ZPL here; the label follows after a short pause.</value>
+  </data>
+  <data name="Zpl.Status.Pending" xml:space="preserve">
+    <value>Waiting for a pause in typing before re-importing...</value>
+  </data>
+  <data name="Zpl.Status.Empty" xml:space="preserve">
+    <value>Nothing to import: the text is empty. The label was left as it was.</value>
+  </data>
+  <data name="Zpl.Status.Clean" xml:space="preserve">
+    <value>Re-imported. Every command was understood.</value>
+  </data>
+  <data name="Zpl.Status.Kept.One" xml:space="preserve">
+    <value>Re-imported. 1 command is not supported and was kept as raw ZPL: {0}</value>
+  </data>
+  <data name="Zpl.Status.Kept.Many" xml:space="preserve">
+    <value>Re-imported. {0} commands are not supported and were kept as raw ZPL: {1}</value>
+  </data>
+  <data name="Zpl.Status.More" xml:space="preserve">
+    <value>{0} more</value>
+  </data>
+  <data name="Zpl.Status.Notices.One" xml:space="preserve">
+    <value>1 other notice (hover for details)</value>
+  </data>
+  <data name="Zpl.Status.Notices.Many" xml:space="preserve">
+    <value>{0} other notices (hover for details)</value>
+  </data>
+  <data name="Zpl.Status.MultipleLabels" xml:space="preserve">
+    <value>The text holds {0} labels; the first one is used</value>
+  </data>
+  <data name="Zpl.Status.Rebound" xml:space="preserve">
+    <value>{0} data field(s) bound again</value>
+  </data>
+  <data name="Zpl.Hint.Idle" xml:space="preserve">
+    <value>Put the caret on a command (^XX or ~XX) to see what it does and what its parameters mean.</value>
+  </data>
+  <data name="Zpl.Hint.Unknown" xml:space="preserve">
+    <value>{0} is not a ZPL command Rotula knows. It will be kept as raw ZPL.</value>
+  </data>
+  <data name="Zpl.Hint.Kept" xml:space="preserve">
+    <value>not modelled by the designer: kept as raw ZPL</value>
+  </data>
+  <data name="Zpl.Hint.Name" xml:space="preserve">
+    <value>ZPL command reference</value>
+  </data>
+  <data name="Zpl.Status.Name" xml:space="preserve">
+    <value>Result of the last re-import</value>
+  </data>
+  <data name="Undo.ZplSource" xml:space="preserve">
+    <value>ZPL text edit</value>
+  </data>
+  <data name="Issue.Format.Path.Invalid" xml:space="preserve">
+    <value>The stored format name {0} is not valid. Use a drive letter, up to 16 letters or digits and the .ZPL extension, for example R:SHIP.ZPL.</value>
+  </data>
+  <data name="Issue.Format.Field.Mixed" xml:space="preserve">
+    <value>This field mixes fixed text with data fields, so the stored format cannot fill it in at print time. It was written with its current value.</value>
+  </data>
+  <data name="Issue.Format.Field.Picture" xml:space="preserve">
+    <value>This text uses a Windows font and prints as a picture, so the stored format cannot fill its data fields in at print time.</value>
   </data>
 </root>

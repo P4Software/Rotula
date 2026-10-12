@@ -345,7 +345,7 @@
       "preview": "NotPreviewed",
       "summary": "Gives a field a number so its data can be filled in or reused later; an optional prompt can be stored with it.",
       "example": "^FO50,40^A0N,30,30^FN3\"Name\"^FDSample^FS",
-      "notes": "Kept on the field and written back. Filling numbered fields from a stored template is not done by Rotula yet."
+      "notes": "A numbered field becomes a {{placeholder}} named after the prompt (Customer name gives {{Customer_name}}) or Field plus the number, with the field's data as the sample value, so it can be filled from a data merge. The number and prompt stay on the field and are written back unchanged. Saving the label as a stored format writes every placeholder as a numbered field."
     },
     {
       "id": "^FO",
@@ -1260,7 +1260,7 @@
       "preview": "NotPreviewed",
       "summary": "Saves the commands that follow as a reusable template in the printer's memory.",
       "example": "^DFR:FORM.ZPL",
-      "notes": "Templates, with numbered fields filled in at print time, are planned. Today the command is kept verbatim with a warning."
+      "notes": "Rotula can write a label as a stored format (ZplGenerator.GenerateStoredFormat): ^DF right after ^XA and every {{placeholder}} as a numbered field without data. Opening such a file keeps the ^DF command verbatim with a notice, and its numbered fields come back as placeholders; the stored-format name itself is not part of the label model yet."
     },
     {
       "id": "~DG",
@@ -1410,7 +1410,7 @@
       "preview": "NotPreviewed",
       "summary": "Prints a stored template, filling its numbered fields.",
       "example": "^XFR:FORM.ZPL",
-      "notes": "Planned together with ^DF. Today the recall is kept as a stored-object placeholder with a warning."
+      "notes": "Rotula can write the recall of a label saved as a stored format (ZplGenerator.GenerateFormatRecall): ^XF followed by one numbered field per placeholder with its value. Opening a file with a recall keeps it as a stored-object placeholder with a notice, because the format lives on the printer; numbered fields after it come back as placeholders."
     },
     {
       "id": "^XG",
