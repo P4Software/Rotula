@@ -669,12 +669,15 @@
             </StackPanel>
           </DockPanel>
           <!-- Under the editor: what the command under the caret means, then what the last re-import did. Both show their full text as a tooltip. -->
-          <StackPanel DockPanel.Dock="Bottom" Margin="16,2,12,8">
-            <TextBlock Text="{Binding ZplSource.HintText}" ToolTip="{Binding ZplSource.HintDetail}" FontFamily="{StaticResource MonoFont}" FontSize="11.5"
-                       Foreground="{StaticResource CodeTextBrush}" TextTrimming="CharacterEllipsis" AutomationProperties.Name="{loc:T Zpl.Hint.Name}" AutomationProperties.LiveSetting="Polite" />
-            <TextBlock Text="{Binding ZplSource.StatusText}" ToolTip="{Binding ZplSource.StatusDetail}" FontSize="11.5" Margin="0,2,0,0"
-                       Foreground="{StaticResource CodeMutedBrush}" TextTrimming="CharacterEllipsis" AutomationProperties.Name="{loc:T Zpl.Status.Name}" AutomationProperties.LiveSetting="Polite" />
-          </StackPanel>
+          <!-- The hairline matters: the hint is monospace in the code colour, and without it the line looked like one more line of the ZPL text. -->
+          <Border DockPanel.Dock="Bottom" Margin="16,0,12,8" Padding="0,5,0,0" BorderThickness="0,1,0,0" BorderBrush="#2A2C34">
+            <StackPanel>
+              <TextBlock Text="{Binding ZplSource.HintText}" ToolTip="{Binding ZplSource.HintDetail}" FontFamily="{StaticResource MonoFont}" FontSize="11.5"
+                         Foreground="{StaticResource CodeTextBrush}" TextTrimming="CharacterEllipsis" AutomationProperties.Name="{loc:T Zpl.Hint.Name}" AutomationProperties.LiveSetting="Polite" />
+              <TextBlock Text="{Binding ZplSource.StatusText}" ToolTip="{Binding ZplSource.StatusDetail}" FontSize="11.5" Margin="0,2,0,0"
+                         Foreground="{StaticResource CodeMutedBrush}" TextTrimming="CharacterEllipsis" AutomationProperties.Name="{loc:T Zpl.Status.Name}" AutomationProperties.LiveSetting="Polite" />
+            </StackPanel>
+          </Border>
           <!-- The editor's own undo is off so Ctrl+Z reaches the label's undo stack, where every re-import is one step. -->
           <TextBox x:Name="ZplEditor" Text="{Binding ZplSource.Text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsUndoEnabled="False"
                    FontFamily="{StaticResource MonoFont}" FontSize="12" Background="Transparent" Foreground="{StaticResource CodeTextBrush}"
