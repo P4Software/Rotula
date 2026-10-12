@@ -33,6 +33,7 @@ Design it, preview it, merge your data, print it. No account, no cloud, no telem
 
 - [Download](#download)
 - [Feature tour](#feature-tour)
+- [Gallery](#gallery)
 - [Why Rotula](#why-rotula)
 - [Quick start](#quick-start)
 - [Import existing ZPL](#import-existing-zpl)
@@ -168,6 +169,35 @@ deterministic and plain ASCII, so you can version it, diff it or send it with an
 | **Printing** | Windows spooler (RAW, including USB) and TCP port 9100, DPI and paper detection, printer profiles, test label |
 | **Resolution** | Convert a label between 203, 300 and 600 dpi while keeping its physical size |
 | **Languages** | English and Spanish, switchable live |
+
+---
+
+## Gallery
+
+Real labels, drawn in Rotula and rendered by Rotula's own PNG export. Open the matching file from [`docs/showcase`](docs/showcase) to see how each one is built.
+
+<table>
+<tr>
+<td align="center" valign="top"><img src="docs/images/showcase/gs1-pallet-label.png" alt="GS1-128 pallet label with SSCC, GTIN, batch and best-before barcodes" width="420"><br><sub>GS1-128 pallet label: SSCC, GTIN, batch and best-before date.</sub></td>
+<td align="center" valign="top"><img src="docs/images/showcase/parcel-shipping-label.png" alt="Parcel shipping label with PDF417, Data Matrix, POSTNET bars and a Code 128 tracking number" width="420"><br><sub>Parcel label: PDF417, Data Matrix, POSTNET bars, Code 128.</sub></td>
+</tr>
+<tr>
+<td align="center" valign="top"><img src="docs/images/showcase/food-nutrition-label.png" alt="Food product label with a nutrition panel, allergen box and EAN-13" width="420"><br><sub>Food label: nutrition panel, allergen box and EAN-13.</sub></td>
+<td align="center" valign="top"><img src="docs/images/showcase/wine-bottle-label.png" alt="Wine bottle label set in Windows serif fonts with turned side text and ornaments" width="420"><br><sub>Wine label: Windows fonts, turned text, drawn ornaments.</sub></td>
+</tr>
+<tr>
+<td align="center" valign="top"><img src="docs/images/showcase/lab-specimen-label.png" alt="Laboratory specimen label with a reverse-print header, Data Matrix and Code 128" width="420"><br><sub>Lab specimen label at 600 dpi: reverse header, Data Matrix.</sub></td>
+<td align="center" valign="top"><img src="docs/images/showcase/asset-tag.png" alt="IT asset tag with a QR code, Code 128 and a logo mark drawn from shapes" width="420"><br><sub>Asset tag: QR code, Code 128 and a logo drawn from shapes.</sub></td>
+</tr>
+<tr>
+<td align="center" valign="top"><img src="docs/images/showcase/shelf-price-tags.png" alt="Three shelf price tags made from one label and three data records" width="420"><br><sub>Shelf tags: three data records, SALE band only when needed.</sub></td>
+<td align="center" valign="top"><img src="docs/images/showcase/conditions-hazard-label.png" alt="The same label printed twice: with the DANGER panel and with the all-clear panel" width="420"><br><sub>Conditions: DANGER panel only when the Hazard field is set.</sub></td>
+</tr>
+</table>
+
+All brands, addresses and numbers are fictional, and only fonts that ship with Windows are used. The barcodes are real: every one is read back with a decoder when the images are made. The shelf-tag and hazard examples come with the CSV that fills them, so you can repeat them with [Data merge](#data-merge).
+
+To regenerate the images (PowerShell, from the repository root): `$env:ROTULA_RENDER_SHOWCASE=1; dotnet test tests/Rotula.Tests --filter ShowcaseRenderTests`
 
 ---
 

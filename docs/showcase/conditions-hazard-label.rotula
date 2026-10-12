@@ -1,0 +1,854 @@
+{
+  "formatVersion": 10,
+  "generator": "Rotula",
+  "label": {
+    "width": {
+      "value": 4,
+      "unit": "Inches"
+    },
+    "height": {
+      "value": 3,
+      "unit": "Inches"
+    },
+    "dpi": 300,
+    "orientation": "Normal",
+    "margins": {
+      "left": {
+        "value": 0,
+        "unit": "Dots"
+      },
+      "top": {
+        "value": 0,
+        "unit": "Dots"
+      },
+      "right": {
+        "value": 0,
+        "unit": "Dots"
+      },
+      "bottom": {
+        "value": 0,
+        "unit": "Dots"
+      }
+    },
+    "mediaType": "ThermalTransfer",
+    "mediaTracking": "Web",
+    "defaultRotation": "Normal",
+    "defaultFont": {
+      "fontId": "0",
+      "height": 30,
+      "width": 30
+    },
+    "encoding": {
+      "ciCode": 28
+    },
+    "print": {
+      "quantity": 1,
+      "pauseEvery": 0,
+      "replicates": 1,
+      "overridePause": false
+    },
+    "variables": [
+      {
+        "name": "Product",
+        "sampleValue": "Isopropyl Alcohol 99.9%"
+      },
+      {
+        "name": "Detail",
+        "sampleValue": "Laboratory grade  \u00B7  CAS 67-63-0"
+      },
+      {
+        "name": "Code",
+        "sampleValue": "OB-4410"
+      },
+      {
+        "name": "Lot",
+        "sampleValue": "L2610A"
+      },
+      {
+        "name": "Net",
+        "sampleValue": "1 L"
+      },
+      {
+        "name": "Made",
+        "sampleValue": "02 SEP 2026"
+      },
+      {
+        "name": "Expires",
+        "sampleValue": "SEP 2029"
+      },
+      {
+        "name": "Hazard",
+        "sampleValue": "FLAMMABLE LIQUID AND VAPOUR"
+      }
+    ],
+    "id": "00000000000000000000000000000008"
+  },
+  "elements": [
+    {
+      "type": "box",
+      "widthDots": 1104,
+      "heightDots": 110,
+      "thicknessDots": 1104,
+      "color": "Black",
+      "cornerRounding": 2,
+      "id": "00000000000000000000000000000001",
+      "x": 48,
+      "y": 48,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "diagonalLine",
+      "widthDots": 40,
+      "heightDots": 30,
+      "thicknessDots": 6,
+      "color": "White",
+      "lean": "Left",
+      "id": "00000000000000000000000000000002",
+      "x": 96,
+      "y": 88,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "diagonalLine",
+      "widthDots": 40,
+      "heightDots": 30,
+      "thicknessDots": 6,
+      "color": "White",
+      "lean": "Right",
+      "id": "00000000000000000000000000000003",
+      "x": 96,
+      "y": 112,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "circle",
+      "diameterDots": 34,
+      "thicknessDots": 34,
+      "color": "White",
+      "id": "00000000000000000000000000000004",
+      "x": 76,
+      "y": 84,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "circle",
+      "diameterDots": 28,
+      "thicknessDots": 28,
+      "color": "White",
+      "id": "00000000000000000000000000000005",
+      "x": 128,
+      "y": 68,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "circle",
+      "diameterDots": 28,
+      "thicknessDots": 28,
+      "color": "White",
+      "id": "00000000000000000000000000000006",
+      "x": 128,
+      "y": 118,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Bahnschrift",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 11
+      },
+      "text": "ORCHARD BRIDGE CHEMICALS",
+      "id": "00000000000000000000000000000007",
+      "x": 188,
+      "y": 68,
+      "originKind": "Origin",
+      "reverseField": true
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 6
+      },
+      "text": "FINE CHEMICALS  \u00B7  SINCE 1987",
+      "id": "00000000000000000000000000000008",
+      "x": 190,
+      "y": 109,
+      "originKind": "Origin",
+      "reverseField": true
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Bahnschrift",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 14
+      },
+      "text": "{{Code}}",
+      "block": {
+        "widthDots": 260,
+        "maxLines": 1,
+        "lineSpacing": 0,
+        "alignment": "Right",
+        "hangingIndent": 0
+      },
+      "id": "00000000000000000000000000000009",
+      "x": 868,
+      "y": 77,
+      "originKind": "Origin",
+      "reverseField": true
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 6.5
+      },
+      "text": "PRODUCT",
+      "id": "0000000000000000000000000000000a",
+      "x": 48,
+      "y": 186,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Bahnschrift",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 21
+      },
+      "text": "{{Product}}",
+      "block": {
+        "widthDots": 640,
+        "maxLines": 1,
+        "lineSpacing": 0,
+        "alignment": "Left",
+        "hangingIndent": 0,
+        "fit": {
+          "mode": "Shrink",
+          "minSize": 12,
+          "maxSize": 21,
+          "maxLinesCap": 20,
+          "ignoreOverflowWarning": false
+        }
+      },
+      "id": "0000000000000000000000000000000b",
+      "x": 48,
+      "y": 229,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "pointSize": 9
+      },
+      "text": "{{Detail}}",
+      "id": "0000000000000000000000000000000c",
+      "x": 48,
+      "y": 308,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "line",
+      "lengthDots": 640,
+      "thicknessDots": 4,
+      "direction": "Horizontal",
+      "color": "Black",
+      "id": "0000000000000000000000000000000d",
+      "x": 48,
+      "y": 376,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 6
+      },
+      "text": "LOT",
+      "id": "0000000000000000000000000000000e",
+      "x": 48,
+      "y": 401,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 11.5
+      },
+      "text": "{{Lot}}",
+      "id": "0000000000000000000000000000000f",
+      "x": 48,
+      "y": 428,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 6
+      },
+      "text": "NET CONTENTS",
+      "id": "00000000000000000000000000000010",
+      "x": 368,
+      "y": 401,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 11.5
+      },
+      "text": "{{Net}}",
+      "id": "00000000000000000000000000000011",
+      "x": 368,
+      "y": 428,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 6
+      },
+      "text": "MANUFACTURED",
+      "id": "00000000000000000000000000000012",
+      "x": 48,
+      "y": 499,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 11.5
+      },
+      "text": "{{Made}}",
+      "id": "00000000000000000000000000000013",
+      "x": 48,
+      "y": 526,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 6
+      },
+      "text": "EXPIRES",
+      "id": "00000000000000000000000000000014",
+      "x": 368,
+      "y": 499,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 11.5
+      },
+      "text": "{{Expires}}",
+      "id": "00000000000000000000000000000015",
+      "x": 368,
+      "y": 526,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "barcode",
+      "symbology": "Code128",
+      "data": "{{Code}}-{{Lot}}",
+      "height": 120,
+      "moduleWidth": 1,
+      "wideBarRatio": 3,
+      "humanReadable": true,
+      "humanReadablePosition": "Below",
+      "checkDigit": false,
+      "code128Mode": "Automatic",
+      "qrErrorCorrection": "Quartile",
+      "qrModel": 2,
+      "moduleSize": 1,
+      "columns": 0,
+      "rows": 0,
+      "pdf417SecurityLevel": 2,
+      "pdf417Truncate": false,
+      "id": "00000000000000000000000000000016",
+      "x": 48,
+      "y": 640,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "barcode",
+      "symbology": "DataMatrix",
+      "data": "{{Code}}|{{Lot}}|{{Expires}}",
+      "height": 100,
+      "moduleWidth": 2,
+      "wideBarRatio": 3,
+      "humanReadable": true,
+      "humanReadablePosition": "Below",
+      "checkDigit": false,
+      "code128Mode": "Automatic",
+      "qrErrorCorrection": "Quartile",
+      "qrModel": 2,
+      "moduleSize": 9,
+      "columns": 0,
+      "rows": 0,
+      "pdf417SecurityLevel": 2,
+      "pdf417Truncate": false,
+      "id": "00000000000000000000000000000017",
+      "x": 498,
+      "y": 640,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "box",
+      "widthDots": 412,
+      "heightDots": 640,
+      "thicknessDots": 9,
+      "color": "Black",
+      "cornerRounding": 1,
+      "id": "00000000000000000000000000000018",
+      "x": 740,
+      "y": 196,
+      "originKind": "Origin",
+      "reverseField": false,
+      "printCondition": {
+        "field": "Hazard",
+        "operator": "IsNotEmpty",
+        "value": ""
+      }
+    },
+    {
+      "type": "box",
+      "widthDots": 412,
+      "heightDots": 118,
+      "thicknessDots": 412,
+      "color": "Black",
+      "cornerRounding": 1,
+      "id": "00000000000000000000000000000019",
+      "x": 740,
+      "y": 196,
+      "originKind": "Origin",
+      "reverseField": false,
+      "printCondition": {
+        "field": "Hazard",
+        "operator": "IsNotEmpty",
+        "value": ""
+      }
+    },
+    {
+      "type": "box",
+      "widthDots": 412,
+      "heightDots": 58,
+      "thicknessDots": 412,
+      "color": "Black",
+      "cornerRounding": 0,
+      "id": "0000000000000000000000000000001a",
+      "x": 740,
+      "y": 256,
+      "originKind": "Origin",
+      "reverseField": false,
+      "printCondition": {
+        "field": "Hazard",
+        "operator": "IsNotEmpty",
+        "value": ""
+      }
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Bahnschrift",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 19
+      },
+      "text": "DANGER",
+      "block": {
+        "widthDots": 412,
+        "maxLines": 1,
+        "lineSpacing": 0,
+        "alignment": "Center",
+        "hangingIndent": 0
+      },
+      "id": "0000000000000000000000000000001b",
+      "x": 740,
+      "y": 223,
+      "originKind": "Origin",
+      "reverseField": true,
+      "printCondition": {
+        "field": "Hazard",
+        "operator": "IsNotEmpty",
+        "value": ""
+      }
+    },
+    {
+      "type": "diagonalLine",
+      "widthDots": 84,
+      "heightDots": 84,
+      "thicknessDots": 12,
+      "color": "Black",
+      "lean": "Right",
+      "id": "0000000000000000000000000000001c",
+      "x": 862,
+      "y": 350,
+      "originKind": "Origin",
+      "reverseField": false,
+      "printCondition": {
+        "field": "Hazard",
+        "operator": "IsNotEmpty",
+        "value": ""
+      }
+    },
+    {
+      "type": "diagonalLine",
+      "widthDots": 84,
+      "heightDots": 84,
+      "thicknessDots": 12,
+      "color": "Black",
+      "lean": "Left",
+      "id": "0000000000000000000000000000001d",
+      "x": 946,
+      "y": 350,
+      "originKind": "Origin",
+      "reverseField": false,
+      "printCondition": {
+        "field": "Hazard",
+        "operator": "IsNotEmpty",
+        "value": ""
+      }
+    },
+    {
+      "type": "diagonalLine",
+      "widthDots": 84,
+      "heightDots": 84,
+      "thicknessDots": 12,
+      "color": "Black",
+      "lean": "Left",
+      "id": "0000000000000000000000000000001e",
+      "x": 862,
+      "y": 434,
+      "originKind": "Origin",
+      "reverseField": false,
+      "printCondition": {
+        "field": "Hazard",
+        "operator": "IsNotEmpty",
+        "value": ""
+      }
+    },
+    {
+      "type": "diagonalLine",
+      "widthDots": 84,
+      "heightDots": 84,
+      "thicknessDots": 12,
+      "color": "Black",
+      "lean": "Right",
+      "id": "0000000000000000000000000000001f",
+      "x": 946,
+      "y": 434,
+      "originKind": "Origin",
+      "reverseField": false,
+      "printCondition": {
+        "field": "Hazard",
+        "operator": "IsNotEmpty",
+        "value": ""
+      }
+    },
+    {
+      "type": "box",
+      "widthDots": 16,
+      "heightDots": 54,
+      "thicknessDots": 54,
+      "color": "Black",
+      "cornerRounding": 8,
+      "id": "00000000000000000000000000000020",
+      "x": 938,
+      "y": 388,
+      "originKind": "Origin",
+      "reverseField": false,
+      "printCondition": {
+        "field": "Hazard",
+        "operator": "IsNotEmpty",
+        "value": ""
+      }
+    },
+    {
+      "type": "circle",
+      "diameterDots": 20,
+      "thicknessDots": 20,
+      "color": "Black",
+      "id": "00000000000000000000000000000021",
+      "x": 936,
+      "y": 456,
+      "originKind": "Origin",
+      "reverseField": false,
+      "printCondition": {
+        "field": "Hazard",
+        "operator": "IsNotEmpty",
+        "value": ""
+      }
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 8.5
+      },
+      "text": "{{Hazard}}",
+      "block": {
+        "widthDots": 364,
+        "maxLines": 3,
+        "lineSpacing": 2,
+        "alignment": "Left",
+        "hangingIndent": 0
+      },
+      "id": "00000000000000000000000000000022",
+      "x": 764,
+      "y": 535,
+      "originKind": "Origin",
+      "reverseField": false,
+      "printCondition": {
+        "field": "Hazard",
+        "operator": "IsNotEmpty",
+        "value": ""
+      }
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "pointSize": 7
+      },
+      "text": "Causes serious eye irritation. Keep away from heat and flames.",
+      "block": {
+        "widthDots": 364,
+        "maxLines": 3,
+        "lineSpacing": 2,
+        "alignment": "Left",
+        "hangingIndent": 0
+      },
+      "id": "00000000000000000000000000000023",
+      "x": 764,
+      "y": 685,
+      "originKind": "Origin",
+      "reverseField": false,
+      "printCondition": {
+        "field": "Hazard",
+        "operator": "IsNotEmpty",
+        "value": ""
+      }
+    },
+    {
+      "type": "box",
+      "widthDots": 412,
+      "heightDots": 640,
+      "thicknessDots": 4,
+      "color": "Black",
+      "cornerRounding": 1,
+      "id": "00000000000000000000000000000024",
+      "x": 740,
+      "y": 196,
+      "originKind": "Origin",
+      "reverseField": false,
+      "printCondition": {
+        "field": "Hazard",
+        "operator": "IsEmpty",
+        "value": ""
+      }
+    },
+    {
+      "type": "circle",
+      "diameterDots": 180,
+      "thicknessDots": 9,
+      "color": "Black",
+      "id": "00000000000000000000000000000025",
+      "x": 856,
+      "y": 326,
+      "originKind": "Origin",
+      "reverseField": false,
+      "printCondition": {
+        "field": "Hazard",
+        "operator": "IsEmpty",
+        "value": ""
+      }
+    },
+    {
+      "type": "diagonalLine",
+      "widthDots": 30,
+      "heightDots": 30,
+      "thicknessDots": 14,
+      "color": "Black",
+      "lean": "Left",
+      "id": "00000000000000000000000000000026",
+      "x": 898,
+      "y": 414,
+      "originKind": "Origin",
+      "reverseField": false,
+      "printCondition": {
+        "field": "Hazard",
+        "operator": "IsEmpty",
+        "value": ""
+      }
+    },
+    {
+      "type": "diagonalLine",
+      "widthDots": 70,
+      "heightDots": 90,
+      "thicknessDots": 14,
+      "color": "Black",
+      "lean": "Right",
+      "id": "00000000000000000000000000000027",
+      "x": 928,
+      "y": 354,
+      "originKind": "Origin",
+      "reverseField": false,
+      "printCondition": {
+        "field": "Hazard",
+        "operator": "IsEmpty",
+        "value": ""
+      }
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Bahnschrift",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 13
+      },
+      "text": "NO SPECIAL HAZARDS",
+      "block": {
+        "widthDots": 412,
+        "maxLines": 2,
+        "lineSpacing": 2,
+        "alignment": "Center",
+        "hangingIndent": 0
+      },
+      "id": "00000000000000000000000000000028",
+      "x": 740,
+      "y": 557,
+      "originKind": "Origin",
+      "reverseField": false,
+      "printCondition": {
+        "field": "Hazard",
+        "operator": "IsEmpty",
+        "value": ""
+      }
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "pointSize": 8
+      },
+      "text": "Store below 30 \u00B0C in a closed container, away from direct sunlight.",
+      "block": {
+        "widthDots": 364,
+        "maxLines": 3,
+        "lineSpacing": 4,
+        "alignment": "Center",
+        "hangingIndent": 0
+      },
+      "id": "00000000000000000000000000000029",
+      "x": 764,
+      "y": 683,
+      "originKind": "Origin",
+      "reverseField": false,
+      "printCondition": {
+        "field": "Hazard",
+        "operator": "IsEmpty",
+        "value": ""
+      }
+    }
+  ]
+}

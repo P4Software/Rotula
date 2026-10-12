@@ -1,0 +1,660 @@
+{
+  "formatVersion": 8,
+  "generator": "Rotula",
+  "label": {
+    "width": {
+      "value": 4,
+      "unit": "Inches"
+    },
+    "height": {
+      "value": 6,
+      "unit": "Inches"
+    },
+    "dpi": 300,
+    "orientation": "Normal",
+    "margins": {
+      "left": {
+        "value": 0,
+        "unit": "Dots"
+      },
+      "top": {
+        "value": 0,
+        "unit": "Dots"
+      },
+      "right": {
+        "value": 0,
+        "unit": "Dots"
+      },
+      "bottom": {
+        "value": 0,
+        "unit": "Dots"
+      }
+    },
+    "mediaType": "ThermalTransfer",
+    "mediaTracking": "Web",
+    "defaultRotation": "Normal",
+    "defaultFont": {
+      "fontId": "0",
+      "height": 30,
+      "width": 30
+    },
+    "encoding": {
+      "ciCode": 28
+    },
+    "print": {
+      "quantity": 1,
+      "pauseEvery": 0,
+      "replicates": 1,
+      "overridePause": false
+    },
+    "variables": [],
+    "id": "00000000000000000000000000000001"
+  },
+  "elements": [
+    {
+      "type": "box",
+      "widthDots": 1080,
+      "heightDots": 140,
+      "thicknessDots": 1080,
+      "color": "Black",
+      "cornerRounding": 2,
+      "id": "00000000000000000000000000000001",
+      "x": 60,
+      "y": 60,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "circle",
+      "diameterDots": 84,
+      "thicknessDots": 10,
+      "color": "White",
+      "id": "00000000000000000000000000000002",
+      "x": 92,
+      "y": 88,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "circle",
+      "diameterDots": 32,
+      "thicknessDots": 32,
+      "color": "White",
+      "id": "00000000000000000000000000000003",
+      "x": 118,
+      "y": 114,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Bahnschrift",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 17
+      },
+      "text": "KESTREL VALLEY",
+      "id": "00000000000000000000000000000004",
+      "x": 210,
+      "y": 84,
+      "originKind": "Origin",
+      "reverseField": true
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 7.5
+      },
+      "text": "FOODS  \u00B7  DISTRIBUTION",
+      "id": "00000000000000000000000000000005",
+      "x": 210,
+      "y": 144,
+      "originKind": "Origin",
+      "reverseField": true
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Bahnschrift",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 17
+      },
+      "text": "PALLET",
+      "id": "00000000000000000000000000000006",
+      "x": 859,
+      "y": 84,
+      "originKind": "Origin",
+      "reverseField": true
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 7.5
+      },
+      "text": "LOGISTICS LABEL",
+      "id": "00000000000000000000000000000007",
+      "x": 856,
+      "y": 144,
+      "originKind": "Origin",
+      "reverseField": true
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 6.5
+      },
+      "text": "SHIP FROM",
+      "id": "00000000000000000000000000000008",
+      "x": 60,
+      "y": 240,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 11
+      },
+      "text": "Kestrel Valley Foods",
+      "id": "00000000000000000000000000000009",
+      "x": 60,
+      "y": 277,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "pointSize": 9
+      },
+      "text": "Distribution Centre 4\n18 Harrow Quay\nTilbury, Essex RM18 7AA",
+      "block": {
+        "widthDots": 520,
+        "maxLines": 3,
+        "lineSpacing": 4,
+        "alignment": "Left",
+        "hangingIndent": 0
+      },
+      "id": "0000000000000000000000000000000a",
+      "x": 60,
+      "y": 340,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "line",
+      "lengthDots": 250,
+      "thicknessDots": 3,
+      "direction": "Vertical",
+      "color": "Black",
+      "id": "0000000000000000000000000000000b",
+      "x": 599,
+      "y": 250,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 6.5
+      },
+      "text": "SHIP TO",
+      "id": "0000000000000000000000000000000c",
+      "x": 620,
+      "y": 240,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 11
+      },
+      "text": "Marlow \u0026 Finch Grocers",
+      "id": "0000000000000000000000000000000d",
+      "x": 620,
+      "y": 277,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "pointSize": 9
+      },
+      "text": "Goods-in Bay 7\n201 Canal Street\nManchester M1 5QA",
+      "block": {
+        "widthDots": 520,
+        "maxLines": 3,
+        "lineSpacing": 4,
+        "alignment": "Left",
+        "hangingIndent": 0
+      },
+      "id": "0000000000000000000000000000000e",
+      "x": 620,
+      "y": 340,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "line",
+      "lengthDots": 1080,
+      "thicknessDots": 3,
+      "direction": "Horizontal",
+      "color": "Black",
+      "id": "0000000000000000000000000000000f",
+      "x": 60,
+      "y": 520,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 6.5
+      },
+      "text": "CONTENT",
+      "id": "00000000000000000000000000000010",
+      "x": 60,
+      "y": 550,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Bahnschrift",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 22
+      },
+      "text": "ORGANIC OAT FLAKES",
+      "id": "00000000000000000000000000000011",
+      "x": 60,
+      "y": 596,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "pointSize": 10
+      },
+      "text": "12 \u00D7 750 g retail cartons  \u00B7  ambient storage",
+      "id": "00000000000000000000000000000012",
+      "x": 60,
+      "y": 672,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "box",
+      "widthDots": 291,
+      "heightDots": 130,
+      "thicknessDots": 4,
+      "color": "Black",
+      "cornerRounding": 2,
+      "id": "00000000000000000000000000000013",
+      "x": 60,
+      "y": 750,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 6.5
+      },
+      "text": "BATCH / LOT",
+      "id": "00000000000000000000000000000014",
+      "x": 84,
+      "y": 760,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Bahnschrift",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 13.5
+      },
+      "text": "KV24A117",
+      "id": "00000000000000000000000000000015",
+      "x": 84,
+      "y": 807,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "box",
+      "widthDots": 353,
+      "heightDots": 130,
+      "thicknessDots": 4,
+      "color": "Black",
+      "cornerRounding": 2,
+      "id": "00000000000000000000000000000016",
+      "x": 363,
+      "y": 750,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 6.5
+      },
+      "text": "BEST BEFORE",
+      "id": "00000000000000000000000000000017",
+      "x": 387,
+      "y": 760,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Bahnschrift",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 13.5
+      },
+      "text": "31 OCT 2027",
+      "id": "00000000000000000000000000000018",
+      "x": 387,
+      "y": 807,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "box",
+      "widthDots": 140,
+      "heightDots": 130,
+      "thicknessDots": 4,
+      "color": "Black",
+      "cornerRounding": 2,
+      "id": "00000000000000000000000000000019",
+      "x": 728,
+      "y": 750,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 6.5
+      },
+      "text": "CASES",
+      "id": "0000000000000000000000000000001a",
+      "x": 752,
+      "y": 760,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Bahnschrift",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 13.5
+      },
+      "text": "48",
+      "id": "0000000000000000000000000000001b",
+      "x": 752,
+      "y": 807,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "box",
+      "widthDots": 260,
+      "heightDots": 130,
+      "thicknessDots": 4,
+      "color": "Black",
+      "cornerRounding": 2,
+      "id": "0000000000000000000000000000001c",
+      "x": 880,
+      "y": 750,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 6.5
+      },
+      "text": "GROSS WEIGHT",
+      "id": "0000000000000000000000000000001d",
+      "x": 904,
+      "y": 760,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Bahnschrift",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 13.5
+      },
+      "text": "612.4 kg",
+      "id": "0000000000000000000000000000001e",
+      "x": 904,
+      "y": 807,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 6.5
+      },
+      "text": "PRODUCT (GTIN-14) AND COUNT",
+      "id": "0000000000000000000000000000001f",
+      "x": 60,
+      "y": 918,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "barcode",
+      "symbology": "Code128",
+      "data": "(02)09506000134352(37)48",
+      "height": 120,
+      "moduleWidth": 6,
+      "wideBarRatio": 3,
+      "humanReadable": true,
+      "humanReadablePosition": "Below",
+      "checkDigit": false,
+      "code128Mode": "Ean",
+      "qrErrorCorrection": "Quartile",
+      "qrModel": 2,
+      "moduleSize": 6,
+      "columns": 0,
+      "rows": 0,
+      "pdf417SecurityLevel": 2,
+      "pdf417Truncate": false,
+      "id": "00000000000000000000000000000020",
+      "x": 132,
+      "y": 966,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 6.5
+      },
+      "text": "BEST BEFORE AND BATCH",
+      "id": "00000000000000000000000000000021",
+      "x": 60,
+      "y": 1156,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "barcode",
+      "symbology": "Code128",
+      "data": "(15)271031(10)KV24A117",
+      "height": 120,
+      "moduleWidth": 5,
+      "wideBarRatio": 3,
+      "humanReadable": true,
+      "humanReadablePosition": "Below",
+      "checkDigit": false,
+      "code128Mode": "Ean",
+      "qrErrorCorrection": "Quartile",
+      "qrModel": 2,
+      "moduleSize": 5,
+      "columns": 0,
+      "rows": 0,
+      "pdf417SecurityLevel": 2,
+      "pdf417Truncate": false,
+      "id": "00000000000000000000000000000022",
+      "x": 100,
+      "y": 1204,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 6.5
+      },
+      "text": "SSCC \u2013 SERIAL SHIPPING CONTAINER CODE",
+      "id": "00000000000000000000000000000023",
+      "x": 60,
+      "y": 1394,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "barcode",
+      "symbology": "Code128",
+      "data": "(00)306141410004172587",
+      "height": 254,
+      "moduleWidth": 6,
+      "wideBarRatio": 3,
+      "humanReadable": true,
+      "humanReadablePosition": "Below",
+      "checkDigit": false,
+      "code128Mode": "Ean",
+      "qrErrorCorrection": "Quartile",
+      "qrModel": 2,
+      "moduleSize": 6,
+      "columns": 0,
+      "rows": 0,
+      "pdf417SecurityLevel": 2,
+      "pdf417Truncate": false,
+      "id": "00000000000000000000000000000024",
+      "x": 132,
+      "y": 1442,
+      "originKind": "Origin",
+      "reverseField": false
+    }
+  ]
+}

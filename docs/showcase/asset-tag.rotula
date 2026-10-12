@@ -1,0 +1,455 @@
+{
+  "formatVersion": 8,
+  "generator": "Rotula",
+  "label": {
+    "width": {
+      "value": 3,
+      "unit": "Inches"
+    },
+    "height": {
+      "value": 2,
+      "unit": "Inches"
+    },
+    "dpi": 300,
+    "orientation": "Normal",
+    "margins": {
+      "left": {
+        "value": 0,
+        "unit": "Dots"
+      },
+      "top": {
+        "value": 0,
+        "unit": "Dots"
+      },
+      "right": {
+        "value": 0,
+        "unit": "Dots"
+      },
+      "bottom": {
+        "value": 0,
+        "unit": "Dots"
+      }
+    },
+    "mediaType": "ThermalTransfer",
+    "mediaTracking": "Web",
+    "defaultRotation": "Normal",
+    "defaultFont": {
+      "fontId": "0",
+      "height": 30,
+      "width": 30
+    },
+    "encoding": {
+      "ciCode": 28
+    },
+    "print": {
+      "quantity": 1,
+      "pauseEvery": 0,
+      "replicates": 1,
+      "overridePause": false
+    },
+    "variables": [],
+    "id": "00000000000000000000000000000005"
+  },
+  "elements": [
+    {
+      "type": "box",
+      "widthDots": 876,
+      "heightDots": 576,
+      "thicknessDots": 8,
+      "color": "Black",
+      "cornerRounding": 1,
+      "id": "00000000000000000000000000000001",
+      "x": 12,
+      "y": 12,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "box",
+      "widthDots": 820,
+      "heightDots": 100,
+      "thicknessDots": 820,
+      "color": "Black",
+      "cornerRounding": 2,
+      "id": "00000000000000000000000000000002",
+      "x": 40,
+      "y": 40,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "circle",
+      "diameterDots": 34,
+      "thicknessDots": 34,
+      "color": "White",
+      "id": "00000000000000000000000000000003",
+      "x": 66,
+      "y": 84,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "circle",
+      "diameterDots": 50,
+      "thicknessDots": 50,
+      "color": "White",
+      "id": "00000000000000000000000000000004",
+      "x": 86,
+      "y": 66,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "circle",
+      "diameterDots": 38,
+      "thicknessDots": 38,
+      "color": "White",
+      "id": "00000000000000000000000000000005",
+      "x": 124,
+      "y": 80,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "box",
+      "widthDots": 82,
+      "heightDots": 22,
+      "thicknessDots": 82,
+      "color": "White",
+      "cornerRounding": 8,
+      "id": "00000000000000000000000000000006",
+      "x": 74,
+      "y": 100,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Bahnschrift",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 16
+      },
+      "text": "NIMBUS WORKS",
+      "id": "00000000000000000000000000000007",
+      "x": 190,
+      "y": 50,
+      "originKind": "Origin",
+      "reverseField": true
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 5.5
+      },
+      "text": "IT ASSET  \u00B7  PROPERTY OF NIMBUS WORKS LTD",
+      "id": "00000000000000000000000000000008",
+      "x": 192,
+      "y": 105,
+      "originKind": "Origin",
+      "reverseField": true
+    },
+    {
+      "type": "barcode",
+      "symbology": "QrCode",
+      "data": "https://assets.nimbusworks.example/a/NW-004172",
+      "height": 100,
+      "moduleWidth": 2,
+      "wideBarRatio": 3,
+      "humanReadable": true,
+      "humanReadablePosition": "Below",
+      "checkDigit": false,
+      "code128Mode": "Automatic",
+      "qrErrorCorrection": "Medium",
+      "qrModel": 2,
+      "moduleSize": 6,
+      "columns": 0,
+      "rows": 0,
+      "pdf417SecurityLevel": 2,
+      "pdf417Truncate": false,
+      "id": "00000000000000000000000000000009",
+      "x": 40,
+      "y": 168,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 5.5
+      },
+      "text": "SCAN TO REPORT",
+      "id": "0000000000000000000000000000000a",
+      "x": 43,
+      "y": 375,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 5.5
+      },
+      "text": "ASSET ID",
+      "id": "0000000000000000000000000000000b",
+      "x": 278,
+      "y": 159,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Bahnschrift",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 20
+      },
+      "text": "NW-004172",
+      "id": "0000000000000000000000000000000c",
+      "x": 278,
+      "y": 189,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "line",
+      "lengthDots": 542,
+      "thicknessDots": 4,
+      "direction": "Horizontal",
+      "color": "Black",
+      "id": "0000000000000000000000000000000d",
+      "x": 278,
+      "y": 274,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 5
+      },
+      "text": "ITEM",
+      "id": "0000000000000000000000000000000e",
+      "x": 278,
+      "y": 294,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 7.5
+      },
+      "text": "Latitude 5440 laptop",
+      "id": "0000000000000000000000000000000f",
+      "x": 428,
+      "y": 286,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 5
+      },
+      "text": "LOCATION",
+      "id": "00000000000000000000000000000010",
+      "x": 278,
+      "y": 342,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 7.5
+      },
+      "text": "HQ-3  \u00B7  Desk 3.14",
+      "id": "00000000000000000000000000000011",
+      "x": 428,
+      "y": 334,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 5
+      },
+      "text": "ASSIGNED",
+      "id": "00000000000000000000000000000012",
+      "x": 278,
+      "y": 390,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 7.5
+      },
+      "text": "Finance \u2013 R. Alvarez",
+      "id": "00000000000000000000000000000013",
+      "x": 428,
+      "y": 382,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "barcode",
+      "symbology": "Code128",
+      "data": "NW004172",
+      "height": 70,
+      "moduleWidth": 3,
+      "wideBarRatio": 3,
+      "humanReadable": true,
+      "humanReadablePosition": "Below",
+      "checkDigit": false,
+      "code128Mode": "Automatic",
+      "qrErrorCorrection": "Quartile",
+      "qrModel": 2,
+      "moduleSize": 3,
+      "columns": 0,
+      "rows": 0,
+      "pdf417SecurityLevel": 2,
+      "pdf417Truncate": false,
+      "id": "00000000000000000000000000000014",
+      "x": 40,
+      "y": 442,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "line",
+      "lengthDots": 98,
+      "thicknessDots": 3,
+      "direction": "Vertical",
+      "color": "Black",
+      "id": "00000000000000000000000000000015",
+      "x": 435,
+      "y": 446,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 5
+      },
+      "text": "PURCHASED",
+      "id": "00000000000000000000000000000016",
+      "x": 465,
+      "y": 438,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 7
+      },
+      "text": "12 SEP 2025",
+      "id": "00000000000000000000000000000017",
+      "x": 465,
+      "y": 465,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 5
+      },
+      "text": "WARRANTY TO 09 / 2028",
+      "id": "00000000000000000000000000000018",
+      "x": 465,
+      "y": 508,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 5
+      },
+      "text": "VOID IF REMOVED",
+      "id": "00000000000000000000000000000019",
+      "x": 834,
+      "y": 168,
+      "originKind": "Origin",
+      "rotation": "Rotated90",
+      "reverseField": false
+    }
+  ]
+}

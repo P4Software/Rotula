@@ -1,0 +1,578 @@
+{
+  "formatVersion": 8,
+  "generator": "Rotula",
+  "label": {
+    "width": {
+      "value": 3,
+      "unit": "Inches"
+    },
+    "height": {
+      "value": 2,
+      "unit": "Inches"
+    },
+    "dpi": 600,
+    "orientation": "Normal",
+    "margins": {
+      "left": {
+        "value": 0,
+        "unit": "Dots"
+      },
+      "top": {
+        "value": 0,
+        "unit": "Dots"
+      },
+      "right": {
+        "value": 0,
+        "unit": "Dots"
+      },
+      "bottom": {
+        "value": 0,
+        "unit": "Dots"
+      }
+    },
+    "mediaType": "ThermalTransfer",
+    "mediaTracking": "Web",
+    "defaultRotation": "Normal",
+    "defaultFont": {
+      "fontId": "0",
+      "height": 30,
+      "width": 30
+    },
+    "encoding": {
+      "ciCode": 28
+    },
+    "print": {
+      "quantity": 1,
+      "pauseEvery": 0,
+      "replicates": 1,
+      "overridePause": false
+    },
+    "variables": [],
+    "id": "00000000000000000000000000000004"
+  },
+  "elements": [
+    {
+      "type": "box",
+      "widthDots": 1660,
+      "heightDots": 190,
+      "thicknessDots": 1660,
+      "color": "Black",
+      "cornerRounding": 2,
+      "id": "00000000000000000000000000000001",
+      "x": 70,
+      "y": 70,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "box",
+      "widthDots": 44,
+      "heightDots": 130,
+      "thicknessDots": 8,
+      "color": "White",
+      "cornerRounding": 8,
+      "id": "00000000000000000000000000000002",
+      "x": 114,
+      "y": 100,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "box",
+      "widthDots": 28,
+      "heightDots": 52,
+      "thicknessDots": 52,
+      "color": "White",
+      "cornerRounding": 8,
+      "id": "00000000000000000000000000000003",
+      "x": 122,
+      "y": 170,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Bahnschrift",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 12
+      },
+      "text": "SPECIMEN LABEL",
+      "id": "00000000000000000000000000000004",
+      "x": 200,
+      "y": 98,
+      "originKind": "Origin",
+      "reverseField": true
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 6.5
+      },
+      "text": "BLOOD  \u00B7  EDTA  \u00B7  LAVENDER CAP",
+      "id": "00000000000000000000000000000005",
+      "x": 202,
+      "y": 168,
+      "originKind": "Origin",
+      "reverseField": true
+    },
+    {
+      "type": "box",
+      "widthDots": 330,
+      "heightDots": 134,
+      "thicknessDots": 330,
+      "color": "White",
+      "cornerRounding": 3,
+      "id": "00000000000000000000000000000006",
+      "x": 1372,
+      "y": 98,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Bahnschrift",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 14
+      },
+      "text": "STAT",
+      "id": "00000000000000000000000000000007",
+      "x": 1407,
+      "y": 122,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 5.5
+      },
+      "text": "PATIENT",
+      "id": "00000000000000000000000000000008",
+      "x": 70,
+      "y": 298,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Bahnschrift",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 15
+      },
+      "text": "ABERNATHY, Leona M.",
+      "id": "00000000000000000000000000000009",
+      "x": 70,
+      "y": 351,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 8
+      },
+      "text": "DOB 14 MAR 1978   \u00B7   F   \u00B7   48 y",
+      "id": "0000000000000000000000000000000a",
+      "x": 70,
+      "y": 458,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "pointSize": 8
+      },
+      "text": "MRN 0048-77213   \u00B7   ENC 7710-3302",
+      "id": "0000000000000000000000000000000b",
+      "x": 70,
+      "y": 522,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "barcode",
+      "symbology": "DataMatrix",
+      "data": "ACC-26-0094817|MRN 0048-77213|CBC\u002BBMP|EDTA",
+      "height": 100,
+      "moduleWidth": 2,
+      "wideBarRatio": 3,
+      "humanReadable": true,
+      "humanReadablePosition": "Below",
+      "checkDigit": false,
+      "code128Mode": "Automatic",
+      "qrErrorCorrection": "Quartile",
+      "qrModel": 2,
+      "moduleSize": 11,
+      "columns": 0,
+      "rows": 0,
+      "pdf417SecurityLevel": 2,
+      "pdf417Truncate": false,
+      "id": "0000000000000000000000000000000c",
+      "x": 1466,
+      "y": 315,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "box",
+      "widthDots": 1660,
+      "heightDots": 260,
+      "thicknessDots": 5,
+      "color": "Black",
+      "cornerRounding": 2,
+      "id": "0000000000000000000000000000000d",
+      "x": 70,
+      "y": 625,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "line",
+      "lengthDots": 260,
+      "thicknessDots": 3,
+      "direction": "Vertical",
+      "color": "Black",
+      "id": "0000000000000000000000000000000e",
+      "x": 623,
+      "y": 625,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "line",
+      "lengthDots": 260,
+      "thicknessDots": 3,
+      "direction": "Vertical",
+      "color": "Black",
+      "id": "0000000000000000000000000000000f",
+      "x": 1176,
+      "y": 625,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "line",
+      "lengthDots": 1660,
+      "thicknessDots": 3,
+      "direction": "Horizontal",
+      "color": "Black",
+      "id": "00000000000000000000000000000010",
+      "x": 70,
+      "y": 754,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 5
+      },
+      "text": "COLLECTED",
+      "id": "00000000000000000000000000000011",
+      "x": 104,
+      "y": 629,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 7
+      },
+      "text": "12 OCT  08:42",
+      "id": "00000000000000000000000000000012",
+      "x": 104,
+      "y": 663,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 5
+      },
+      "text": "COLLECTOR",
+      "id": "00000000000000000000000000000013",
+      "x": 657,
+      "y": 629,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 7
+      },
+      "text": "RN J. MORALES",
+      "id": "00000000000000000000000000000014",
+      "x": 657,
+      "y": 663,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 5
+      },
+      "text": "WARD / BED",
+      "id": "00000000000000000000000000000015",
+      "x": 1210,
+      "y": 629,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 7
+      },
+      "text": "4 WEST  \u00B7  12",
+      "id": "00000000000000000000000000000016",
+      "x": 1210,
+      "y": 663,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 5
+      },
+      "text": "TEST PANEL",
+      "id": "00000000000000000000000000000017",
+      "x": 104,
+      "y": 759,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 7
+      },
+      "text": "CBC \u002B BMP",
+      "id": "00000000000000000000000000000018",
+      "x": 104,
+      "y": 793,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 5
+      },
+      "text": "FASTING",
+      "id": "00000000000000000000000000000019",
+      "x": 657,
+      "y": 759,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 7
+      },
+      "text": "YES  \u00B7  12 h",
+      "id": "0000000000000000000000000000001a",
+      "x": 657,
+      "y": 793,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 5
+      },
+      "text": "ORDERED BY",
+      "id": "0000000000000000000000000000001b",
+      "x": 1210,
+      "y": 759,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 7
+      },
+      "text": "DR. P. OKAFOR",
+      "id": "0000000000000000000000000000001c",
+      "x": 1210,
+      "y": 793,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "barcode",
+      "symbology": "Code128",
+      "data": "ACC-26-0094817",
+      "height": 151,
+      "moduleWidth": 7,
+      "wideBarRatio": 3,
+      "humanReadable": true,
+      "humanReadablePosition": "Below",
+      "checkDigit": false,
+      "code128Mode": "Automatic",
+      "qrErrorCorrection": "Quartile",
+      "qrModel": 2,
+      "moduleSize": 7,
+      "columns": 0,
+      "rows": 0,
+      "pdf417SecurityLevel": 2,
+      "pdf417Truncate": false,
+      "id": "0000000000000000000000000000001d",
+      "x": 70,
+      "y": 925,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Bahnschrift",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 7.5
+      },
+      "text": "LAB 0F-22",
+      "id": "0000000000000000000000000000001e",
+      "x": 1434,
+      "y": 926,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 5
+      },
+      "text": "PRINTED",
+      "id": "0000000000000000000000000000001f",
+      "x": 1552,
+      "y": 975,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "pointSize": 5.5
+      },
+      "text": "12 OCT 2026  08:44",
+      "id": "00000000000000000000000000000020",
+      "x": 1334,
+      "y": 1012,
+      "originKind": "Origin",
+      "reverseField": false
+    }
+  ]
+}
