@@ -1,0 +1,143 @@
+{
+  "formatVersion": 8,
+  "generator": "Rotula",
+  "label": {
+    "width": {
+      "value": 4,
+      "unit": "Inches"
+    },
+    "height": {
+      "value": 3,
+      "unit": "Inches"
+    },
+    "dpi": 300,
+    "orientation": "Normal",
+    "margins": {
+      "left": {
+        "value": 0,
+        "unit": "Dots"
+      },
+      "top": {
+        "value": 0,
+        "unit": "Dots"
+      },
+      "right": {
+        "value": 0,
+        "unit": "Dots"
+      },
+      "bottom": {
+        "value": 0,
+        "unit": "Dots"
+      }
+    },
+    "mediaType": "ThermalTransfer",
+    "mediaTracking": "Web",
+    "defaultRotation": "Normal",
+    "defaultFont": {
+      "fontId": "0",
+      "height": 30,
+      "width": 30
+    },
+    "encoding": {
+      "ciCode": 28
+    },
+    "print": {
+      "quantity": 1,
+      "pauseEvery": 0,
+      "replicates": 1,
+      "overridePause": false
+    },
+    "variables": []
+  },
+  "elements": [
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Arial Rounded MT",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 19.9
+      },
+      "text": "{{Sku}}",
+      "fontId": "A",
+      "fontHeight": 83,
+      "id": "0d8b9598eb474ac9a698506ab81d06a2",
+      "name": "SKu",
+      "x": 191,
+      "y": 53,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "text": "{{description}}",
+      "fontHeight": 83,
+      "block": {
+        "widthDots": 1119,
+        "maxLines": 8,
+        "lineSpacing": 0,
+        "alignment": "Center",
+        "hangingIndent": 0
+      },
+      "id": "f5832f882cee41dda71503449cfba1ae",
+      "x": 39,
+      "y": 221,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "barcode",
+      "symbology": "Code128",
+      "data": "{{UPC}}",
+      "height": 270,
+      "moduleWidth": 9,
+      "wideBarRatio": 3,
+      "humanReadable": true,
+      "humanReadablePosition": "Below",
+      "checkDigit": false,
+      "code128Mode": "Automatic",
+      "qrErrorCorrection": "Quartile",
+      "qrModel": 2,
+      "moduleSize": 4,
+      "columns": 0,
+      "rows": 0,
+      "pdf417SecurityLevel": 2,
+      "pdf417Truncate": false,
+      "id": "bad2f10d1e4b4b059c4fd459d6fc4b7f",
+      "x": 140,
+      "y": 496,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "box",
+      "widthDots": 1022,
+      "heightDots": 378,
+      "thicknessDots": 3,
+      "color": "Black",
+      "cornerRounding": 0,
+      "id": "0e28bcda6d9842309210edf04860b388",
+      "x": 88,
+      "y": 449,
+      "originKind": "Origin",
+      "reverseField": false
+    }
+  ],
+  "merge": {
+    "delimiter": "auto",
+    "hasHeader": true,
+    "counters": [],
+    "copiesMode": "PrintQuantity",
+    "onInvalidRecord": "Skip",
+    "maxRecordsPerJob": 0,
+    "oneFilePerJob": false,
+    "database": {
+      "connectionName": "GLENN-DT",
+      "query": "select Sku, UPC, description from products where sku like \u002738m%\u0027",
+      "parameters": [],
+      "maxRows": 100000
+    }
+  }
+}

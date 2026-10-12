@@ -93,6 +93,46 @@ public class AppDataSelectionTests : IDisposable
         Assert.False(HasPlaceholderRed(_fake.ExportPath), "The export drew the placeholder instead of the barcode of the shown record.");
     }
 
+    /// <summary>Counts dark pixels (text or bars) inside a rectangle of the exported picture.</summary>
+    private static int DarkPixels(SkiaSharp.SKBitmap bitmap, int left, int top, int width, int height)
+    {
+        int count = 0;
+        for (int y = top; y < top + height && y < bitmap.Height; y++)
+            for (int x = left; x < left + width && x < bitmap.Width; x++)
+            {
+                var c = bitmap.GetPixel(x, y);
+                if (c.Red < 100 && c.Green < 100 && c.Blue < 100) count++;
+            }
+        return count;
+    }
+
+    /// <summary>
+    /// The real label a user reported (4 x 3 in at 300 dpi: SKU, wrapped description and a Code 128 of a field, all from a data file): after
+    /// loading the file and its data, the PNG and JPEG must show the text and the barcode of the record on screen, not an empty label.
+    /// </summary>
+    [Theory]
+    [InlineData("png")]
+    [InlineData("jpg")]
+    public async Task ImageExports_OfAFieldLabel_ShowTheSkuTheDescriptionAndTheBarcode(string extension)
+    {
+        string label = Path.Combine(ZplParserTestSupport.FixturesDir(), "field-label-with-data.rotula");
+        Assert.True(_main.LoadFile(label));
+        await Data.LoadAsync(Csv("Sku,UPC,description\n38M-BLK,603679585511,NAUTICA COTT/SPAN 3PK 5 in BOXER BRIEF\n38M-WHT,603679585528,SECOND ITEM\n"));
+        Assert.Equal(2, Data.RecordCount);
+
+        _fake.ExportPath = Path.Combine(_dir, "label." + extension);
+        if (extension == "png") _main.ExportPngCommand.Execute(null); else _main.ExportJpegCommand.Execute(null);
+
+        using var bitmap = SkiaSharp.SKBitmap.Decode(_fake.ExportPath);
+        Assert.Equal((1200, 900), (bitmap.Width, bitmap.Height));
+        Assert.False(HasPlaceholderRed(_fake.ExportPath));
+        Assert.True(DarkPixels(bitmap, 190, 50, 400, 90) > 500, "The SKU text is missing.");
+        Assert.True(DarkPixels(bitmap, 40, 220, 1120, 180) > 2000, "The description text is missing.");
+        Assert.True(DarkPixels(bitmap, 140, 496, 910, 270) > 20000, "The barcode is missing.");
+        string keep = Environment.GetEnvironmentVariable("ROTULA_TEST_KEEP") ?? "";
+        if (keep.Length > 0) File.Copy(_fake.ExportPath, Path.Combine(keep, "label." + extension), true);
+    }
+
     // ------------------------------------------------------------------------------------ ticking
 
     [Fact]
