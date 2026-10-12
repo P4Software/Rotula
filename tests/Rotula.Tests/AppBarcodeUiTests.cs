@@ -30,7 +30,7 @@ public class AppBarcodeUiTests : IDisposable
 
     /// <summary>Label keys of the rows that edit barcode options (everything between the picker and the end).</summary>
     private static List<string> OptionKeys(PropertyPanelViewModel p) =>
-        p.Rows.SkipWhile(r => r.LabelKey != "Prop.Data").Skip(1).Select(r => r.LabelKey).ToList();
+        p.Rows.SkipWhile(r => r.LabelKey != "Prop.Data").Skip(1).TakeWhile(r => r.LabelKey != "Panel.Printing").Select(r => r.LabelKey).ToList();
 
     [Theory]
     [InlineData(BarcodeSymbology.Codabar, new[] { "Prop.BarHeight", "Prop.ModuleWidth", "Prop.WideBarRatio", "Prop.HumanReadable", "Prop.HumanReadablePosition", "Prop.CodabarStart", "Prop.CodabarStop" })]

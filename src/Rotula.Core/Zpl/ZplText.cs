@@ -100,11 +100,35 @@ public static class VariableResolver
         {
             string name = m.Groups[1].Value;
             if (literal?.Invoke(name) is { } forced) return forced;
-            if (data is not null && data.TryGetValue(name, out var value)) return value;
-            var decl = declaredList.FirstOrDefault(v => v.Name == name);
-            if (decl is not null) return decl.SampleValue;
+            if (TryLookup(name, data, declaredList, out var value)) return value;
             issues.Add(new ValidationIssue(ValidationSeverity.Warning, "Variable.Missing", elementId, name));
             return string.Empty;
         });
+    }
+
+    /// <summary>
+    /// Looks one name up the way a placeholder is resolved: the record data first, then the declared variable's sample value.
+    /// Shared by placeholder substitution and by print conditions, so both always see the same value for a name.
+    /// </summary>
+    /// <param name="name">The field or variable name (no braces).</param>
+    /// <param name="data">Record values, or null.</param>
+    /// <param name="declared">Declared variables.</param>
+    /// <param name="value">The value, or an empty string when the name is found nowhere.</param>
+    /// <returns>True when the name was found.</returns>
+    public static bool TryLookup(string name, IReadOnlyDictionary<string, string>? data, IEnumerable<LabelVariable> declared, out string value)
+    {
+        if (data is not null && data.TryGetValue(name, out var found))
+        {
+            value = found;
+            return true;
+        }
+        var decl = declared.FirstOrDefault(v => v.Name == name);
+        if (decl is not null)
+        {
+            value = decl.SampleValue;
+            return true;
+        }
+        value = string.Empty;
+        return false;
     }
 }

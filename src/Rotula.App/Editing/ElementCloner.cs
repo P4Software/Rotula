@@ -76,6 +76,7 @@ public static class ElementCloner
         c.OriginKind = e.OriginKind;
         c.Rotation = e.Rotation;
         c.ReverseField = e.ReverseField;
+        e.CopyObjectSettingsTo(c);
         return c;
     }
 
@@ -95,6 +96,7 @@ public static class ElementCloner
         plain.OriginKind = field.OriginKind;
         plain.Rotation = field.Rotation;
         plain.ReverseField = field.ReverseField;
+        field.CopyObjectSettingsTo(plain);
         return plain;
     }
 

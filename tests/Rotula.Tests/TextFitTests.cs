@@ -309,8 +309,8 @@ public class TextFitTests
     [Fact]
     public void File_NewerVersionIsRefused_AndHostileFitValuesAreClamped()
     {
-        Assert.Equal(RotulaFileSerializer.TextFitFormatVersion, RotulaFileSerializer.CurrentFormatVersion);
-        Assert.Throws<RotulaFileException>(() => RotulaFileSerializer.Deserialize("{\"formatVersion\":10}"));
+        Assert.True(RotulaFileSerializer.CurrentFormatVersion >= RotulaFileSerializer.TextFitFormatVersion);
+        Assert.Throws<RotulaFileException>(() => RotulaFileSerializer.Deserialize("{\"formatVersion\":" + (RotulaFileSerializer.CurrentFormatVersion + 1) + "}"));
 
         var doc = CoreTestSupport.NewDoc(Block(Long, Shrink()));
         string json = RotulaFileSerializer.Serialize(doc)

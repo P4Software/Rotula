@@ -22,13 +22,14 @@ public static class LabelDocumentAdapter
     /// <summary>Converts a label document into render input.</summary>
     /// <param name="doc">The design.</param>
     /// <param name="data">Variable values; missing names fall back to the declared sample values.</param>
-    public static RenderLabel ToRenderLabel(LabelDocument doc, IReadOnlyDictionary<string, string>? data = null)
+    /// <param name="includeNonPrinting">
+    /// False (the default, used by every print and export) leaves out objects marked "do not print" and objects whose condition is false for
+    /// <paramref name="data"/>. True keeps them, flagged <see cref="RenderElement.Dimmed"/>, for the designer's canvas.
+    /// </param>
+    public static RenderLabel ToRenderLabel(LabelDocument doc, IReadOnlyDictionary<string, string>? data = null, bool includeNonPrinting = false)
     {
         ArgumentNullException.ThrowIfNull(doc);
-        // Dates, counters, prompts and computed values only exist once resolved; without this the preview would show the bare sample
-        // text of a variable that has a definition. Nothing is reserved or remembered: a counter shows the number the next label gets.
-        if (Rotula.Core.Variables.VariableEngine.HasDefinitions(doc))
-            data = Rotula.Core.Variables.VariableEngine.BuildPreviewData(doc, new Rotula.Core.Variables.VariableContext { Record = data });
+        data = ResolvePreviewData(doc, data);
         int dpi = (int)doc.Dpi;
         int homeX = doc.Margins.Left.ToDots(doc.Dpi);
         int homeY = doc.Margins.Top.ToDots(doc.Dpi);
@@ -38,10 +39,13 @@ public static class LabelDocumentAdapter
         var elements = new List<RenderElement>(doc.Elements.Count);
         foreach (var e in doc.Elements)
         {
+            // Decided on the data that fills this record's placeholders, exactly as the ZPL generator does, so the picture and the print agree.
+            bool printed = ElementPrinting.IsPrinted(e, data, doc.Variables);
+            if (!printed && !includeNonPrinting) continue;
             var mapped = Map(doc, e, data, ignored);
             if (mapped is null) continue;
             // ^LS moves everything to the left, ^LT moves the whole format down (or up when negative).
-            elements.Add(mapped with { X = e.X + homeX - doc.LabelShift, Y = e.Y + homeY + doc.LabelTop });
+            elements.Add(mapped with { X = e.X + homeX - doc.LabelShift, Y = e.Y + homeY + doc.LabelTop, Dimmed = !printed });
         }
 
         return new RenderLabel(doc.WidthDots, doc.HeightDots, dpi, elements);
@@ -49,6 +53,28 @@ public static class LabelDocumentAdapter
 
     // Stateless and thread safe; shared so the preview does not build one per element.
     private static readonly SkiaTextRasterizer FitRasterizer = new();
+
+    /// <summary>
+    /// Dates, counters, prompts and computed values only exist once resolved; without this the preview would show the bare sample
+    /// text of a variable that has a definition. Nothing is reserved or remembered: a counter shows the number the next label gets.
+    /// </summary>
+    private static IReadOnlyDictionary<string, string>? ResolvePreviewData(LabelDocument doc, IReadOnlyDictionary<string, string>? data) =>
+        Rotula.Core.Variables.VariableEngine.HasDefinitions(doc)
+            ? Rotula.Core.Variables.VariableEngine.BuildPreviewData(doc, new Rotula.Core.Variables.VariableContext { Record = data })
+            : data;
+
+    /// <summary>
+    /// The ids of the elements that are not part of the printed label for <paramref name="data"/> (marked "do not print", or their condition is
+    /// false). Uses the same value resolution as <see cref="ToRenderLabel"/>, so the designer's badges agree with the picture and the ZPL.
+    /// </summary>
+    /// <param name="doc">The design.</param>
+    /// <param name="data">The shown record, or null for the sample values.</param>
+    public static HashSet<string> FindNotPrinted(LabelDocument doc, IReadOnlyDictionary<string, string>? data = null)
+    {
+        ArgumentNullException.ThrowIfNull(doc);
+        var resolved = ResolvePreviewData(doc, data);
+        return doc.Elements.Where(e => !ElementPrinting.IsPrinted(e, resolved, doc.Variables)).Select(e => e.Id).ToHashSet();
+    }
 
     private static RenderElement? Map(LabelDocument doc, LabelElement e, IReadOnlyDictionary<string, string>? data, List<ValidationIssue> issues)
     {

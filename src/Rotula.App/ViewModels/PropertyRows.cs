@@ -520,6 +520,45 @@ public sealed partial class ActionRow : PropertyRow
     public override void Refresh() { }
 }
 
+/// <summary>
+/// The "field to check" line of a printing rule: a text box for the field name plus the shared field picker, and a quiet warning when no
+/// data column or variable has that name. The text and the picker live in an inner <see cref="TextRow"/> because the picker button works on one.
+/// </summary>
+public sealed partial class ConditionFieldRow : PropertyRow
+{
+    private readonly Func<string> _warning;
+
+    /// <summary>Creates the row.</summary>
+    /// <param name="labelKey">Resource key of the label.</param>
+    /// <param name="field">The text row that holds the field name and knows the available fields.</param>
+    /// <param name="warning">Returns the "no such field" warning, or an empty string.</param>
+    /// <param name="hintKey">Resource key of the tool tip.</param>
+    public ConditionFieldRow(string labelKey, TextRow field, Func<string> warning, string? hintKey = null) : base(labelKey, hintKey)
+    {
+        Field = field;
+        _warning = warning;
+        _warningText = warning();
+    }
+
+    /// <summary>The inner row that holds the field name.</summary>
+    public TextRow Field { get; }
+
+    /// <summary>The "no such field" warning, empty when the field exists.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasWarning))]
+    private string _warningText;
+
+    /// <summary>True when there is a warning to show.</summary>
+    public bool HasWarning => WarningText.Length > 0;
+
+    /// <inheritdoc />
+    public override void Refresh()
+    {
+        Field.Refresh();
+        WarningText = _warning();
+    }
+}
+
 /// <summary>A heading that groups rows.</summary>
 public sealed class HeadingRow : PropertyRow
 {

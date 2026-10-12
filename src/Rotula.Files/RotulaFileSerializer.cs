@@ -79,8 +79,14 @@ public static class RotulaFileSerializer
     /// </summary>
     public const int TextFitFormatVersion = 9;
 
+    /// <summary>
+    /// Version 10: adds the per-object printing settings: "printCondition" (field, operator, value), "notPrintable" and "locked". Labels whose objects use none
+    /// of them stay at the lower versions, so older copies of Rotula still open them.
+    /// </summary>
+    public const int ObjectConditionsFormatVersion = 10;
+
     /// <summary>The newest format version this build can read. Files are written with the lowest version that can hold their content.</summary>
-    public const int CurrentFormatVersion = TextFitFormatVersion;
+    public const int CurrentFormatVersion = ObjectConditionsFormatVersion;
 
     // Limits for untrusted values of the version 6 fields.
     private const int MaxStoredGraphics = 256;
@@ -149,6 +155,9 @@ public static class RotulaFileSerializer
             dto.FormatVersion = Math.Max(dto.FormatVersion, TextFormattingFormatVersion);
         if (dto.Elements.Any(e => e is TextElementDto { Block.Fit: not null }))
             dto.FormatVersion = Math.Max(dto.FormatVersion, TextFitFormatVersion);
+        // An older build would print an object that is marked "do not print", ignore its condition and forget its lock, so it must refuse the file instead.
+        if (dto.Elements.Any(e => e.PrintCondition is not null || e.NotPrintable is not null || e.Locked is not null))
+            dto.FormatVersion = Math.Max(dto.FormatVersion, ObjectConditionsFormatVersion);
         return JsonSerializer.Serialize(dto, Options);
     }
 
@@ -528,6 +537,10 @@ public static class RotulaFileSerializer
         dto.OriginKind = e.OriginKind.ToString();
         dto.Rotation = e.Rotation?.ToString();
         dto.ReverseField = e.ReverseField;
+        dto.PrintCondition = e.PrintCondition is null ? null
+            : new PrintConditionDto { Field = e.PrintCondition.Field, Operator = e.PrintCondition.Operator.ToString(), Value = e.PrintCondition.Value };
+        dto.NotPrintable = e.NotPrintable ? true : null;
+        dto.Locked = e.Locked ? true : null;
         return dto;
     }
 
@@ -729,6 +742,12 @@ public static class RotulaFileSerializer
         e.OriginKind = Parse<FieldOriginKind>(dto.OriginKind);
         e.Rotation = dto.Rotation is null ? null : Parse<FieldRotation>(dto.Rotation);
         e.ReverseField = dto.ReverseField;
+        e.NotPrintable = dto.NotPrintable ?? false;
+        e.Locked = dto.Locked ?? false;
+        // The rule is untrusted text: clipped, and a rule whose operator is not known is dropped (the object then prints as it did before the rule).
+        e.PrintCondition = dto.PrintCondition is { } pc && TryParse<ConditionOperator>(pc.Operator, out var op)
+            ? new PrintCondition { Field = Clip(pc.Field ?? string.Empty, PrintCondition.MaxTextLength), Operator = op, Value = Clip(pc.Value ?? string.Empty, PrintCondition.MaxTextLength) }
+            : null;
         return e;
     }
 

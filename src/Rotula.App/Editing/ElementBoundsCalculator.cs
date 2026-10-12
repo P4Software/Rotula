@@ -263,6 +263,10 @@ public sealed class ElementBoundsCalculator
         clone.Y = ProbePad;
         // Reverse printing inverts what is underneath; on a blank probe that would make the whole area ink.
         clone.ReverseField = false;
+        // An object that is switched off for the shown record still has a size and must stay selectable; the renderer would otherwise skip it and
+        // it would measure blank.
+        clone.NotPrintable = false;
+        clone.PrintCondition = null;
         temp.Elements.Add(clone);
 
         try

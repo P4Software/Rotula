@@ -124,6 +124,10 @@ public sealed class MergeDataSet
         var list = new List<string>();
         foreach (var e in doc.Elements)
         {
+            // A print condition reads a field too: listing it lets it be mapped to a data column and keeps that column from being reported as unused.
+            if (e.PrintCondition is { } condition && PrintCondition.NormalizeField(condition.Field) is { Length: > 0 } conditionField
+                && VariableResolver.FindVariables("{{" + conditionField + "}}").Count == 1 && seen.Add(conditionField))
+                list.Add(conditionField);
             string? template = e switch
             {
                 TextElement t => t.GetTemplate(),

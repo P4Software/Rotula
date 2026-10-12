@@ -519,3 +519,14 @@ not monotonic, so a binary search could miss the largest size that fits. An expl
 Grow gives the block as many lines as the text needs, between the block's own line count and the cap. Elements below do not move (the designer
 decides the layout); at the cap the normal overflow warning stays. "Do not warn" silences that warning in any mode. A text whose content the printer
 produces (`^SN`, `^SF`, clock codes) is not fitted, because its real length is unknown when the ZPL is made. Text boxes (`^TB`) are not fitted.
+
+### Per-object printing: conditions, "do not print" and lock
+Every object has an optional `printCondition` (field, operator, value), a `notPrintable` flag and a design-time `locked` flag, stored in the .rotula
+file from format version 10 (stamped only when one is used, so old builds refuse such a file instead of printing a note or ignoring a rule).
+The condition reads the field through `VariableResolver.TryLookup`, the same lookup `{{field}}` uses (record data first, then the declared sample),
+on the data of that record after variables are resolved, so computed, date and counter values work. Comparisons ignore case and surrounding
+spaces; a missing field counts as empty and warns; a rule with no field yet does not hide the object. A switched-off object is skipped before it is
+emitted or validated, so a barcode invalid only on a record where it is hidden does not stop that record. The renderer leaves such objects out of
+prints and PNG/JPEG/PDF; only the design canvas draws them dimmed (`includeNonPrinting`), and the Preview window shows the printed result. Lock is
+enforced in `EditorCommands` (move, nudge, resize, rotate, align, distribute, delete, cut) and never touches ZPL; property edits stay allowed.
+Condition fields are listed as merge placeholders so they can be mapped to columns. ZPL import never creates conditions or locks.

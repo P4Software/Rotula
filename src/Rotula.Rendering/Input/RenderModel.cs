@@ -85,6 +85,12 @@ public abstract record RenderElement
     /// Reverse print (ZPL ^FR): the element inverts whatever is already under it instead of painting black.
     /// </summary>
     public bool Reverse { get; init; }
+
+    /// <summary>
+    /// Design view only: the element is not part of the printed label (marked "do not print", or its condition is false for the shown record)
+    /// but is drawn faintly so it can still be found and selected. Never set for prints and exports.
+    /// </summary>
+    public bool Dimmed { get; init; }
 }
 
 /// <summary>A block of text.</summary>

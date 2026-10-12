@@ -450,7 +450,7 @@ public class AppBuilderTests : IDisposable
 
     // ------------------------------------------------------------------------------ option rows
 
-    private List<string> Keys() => _main.Properties.Rows.SkipWhile(r => r.LabelKey != "Prop.Data").Skip(1).Select(r => r.LabelKey).ToList();
+    private List<string> Keys() => _main.Properties.Rows.SkipWhile(r => r.LabelKey != "Prop.Data").Skip(1).TakeWhile(r => r.LabelKey != "Panel.Printing").Select(r => r.LabelKey).ToList();
 
     [Fact]
     public void TheQrRows_AreTheCatalogueOptions_WithTheNewControls()

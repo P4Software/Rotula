@@ -107,7 +107,9 @@ public sealed partial class PropertyPanelViewModel : ObservableObject
         string barcodeLayout = e is BarcodeElement b
             ? $"{b.Symbology}/{b.DataBarType == DataBarType.Expanded}/{Enum.IsDefined(b.Symbology) && !BarcodeCatalog.Get(b.Symbology).SupportsRotation && b.Rotation is not null}"
             : e is DataFieldElement ? nameof(TextElement) : e?.GetType().Name ?? string.Empty; // a legacy data field is edited as the text it is
-        return sel[0] + ":" + barcodeLayout + ":" + (e is TextElement t && t.Block is not null);
+        // Whether the element has a printing rule, and whether that rule needs a value, decide which Printing rows exist.
+        string rule = e?.PrintCondition is { } pc ? (pc.UsesValue ? "rule+value" : "rule") : "norule";
+        return sel[0] + ":" + barcodeLayout + ":" + (e is TextElement t && t.Block is not null) + ":" + rule;
     }
 
     private void Rebuild(bool force = false)
@@ -284,6 +286,68 @@ public sealed partial class PropertyPanelViewModel : ObservableObject
                 AddBool<ImageElement>(id, "Prop.Invert", e => e.Invert, (e, v) => e.Invert = v);
                 break;
         }
+
+        BuildPrintingRows(element);
+    }
+
+    /// <summary>
+    /// The "Printing" section: do not print, print only when a field has a value (the rule), and lock the position. These are the same for
+    /// every kind of object, so they come last. Changing whether a rule exists or whether it needs a value changes which rows exist, so
+    /// <see cref="SelectionKey"/> includes that shape and the panel rebuilds then.
+    /// </summary>
+    private void BuildPrintingRows(LabelElement element)
+    {
+        string id = element.Id;
+        Rows.Add(new HeadingRow("Panel.Printing"));
+        Rows.Add(new BoolRow("Prop.NotPrintable", () => El<LabelElement>(id).NotPrintable,
+            v => Edit<LabelElement>(id, "notprintable", e => e.NotPrintable = v), "Prop.NotPrintable.Hint"));
+        Rows.Add(new BoolRow("Prop.Condition.Enable", () => El<LabelElement>(id).PrintCondition is not null,
+            v => Edit<LabelElement>(id, "condition", e => e.PrintCondition = v ? NewCondition() : null), "Prop.Condition.Enable.Hint") { RebuildOnChange = true });
+
+        if (element.PrintCondition is { } condition)
+        {
+            var fieldText = new TextRow("Prop.Condition.Field", () => El<LabelElement>(id).PrintCondition?.Field ?? string.Empty,
+                v => Edit<LabelElement>(id, "conditionfield", e =>
+                {
+                    // The picker hands over "{{Name}}"; the rule stores the bare name, which is what the user would type.
+                    if (e.PrintCondition is { } c) c.Field = PrintCondition.NormalizeField(v);
+                }),
+                maxLength: PrintCondition.MaxTextLength, hintKey: "Prop.Condition.Field.Hint",
+                validate: v => string.IsNullOrWhiteSpace(v) ? Loc.Get("Condition.Field.Required") : null, fields: _fields);
+            Rows.Add(new ConditionFieldRow("Prop.Condition.Field", fieldText, () => ConditionFieldWarning(id), "Prop.Condition.Field.Hint"));
+            Rows.Add(new ChoiceRow("Prop.Condition.Operator", ChoiceRow.ForEnum<ConditionOperator>(), () => El<LabelElement>(id).PrintCondition?.Operator,
+                v => Edit<LabelElement>(id, "conditionoperator", e => { if (e.PrintCondition is { } c) c.Operator = (ConditionOperator)v!; })));
+            if (condition.UsesValue)
+                Rows.Add(new TextRow("Prop.Condition.Value", () => El<LabelElement>(id).PrintCondition?.Value ?? string.Empty,
+                    v => Edit<LabelElement>(id, "conditionvalue", e => { if (e.PrintCondition is { } c) c.Value = v; }),
+                    maxLength: PrintCondition.MaxTextLength, hintKey: "Prop.Condition.Value.Hint"));
+            // The rule in a plain sentence, so nobody has to guess what the operator and value add up to.
+            Rows.Add(new NoteRow("Prop.Condition.Summary", () => ConditionSummary(id)));
+        }
+
+        Rows.Add(new BoolRow("Prop.Locked", () => El<LabelElement>(id).Locked, v => Edit<LabelElement>(id, "locked", e => e.Locked = v), "Prop.Locked.Hint"));
+    }
+
+    private PrintCondition NewCondition() =>
+        // Starting with the first available field saves a step; with no data loaded the box stays empty and says what to do.
+        new() { Field = _fields?.Fields.FirstOrDefault()?.Token ?? string.Empty, Operator = ConditionOperator.Equals };
+
+    /// <summary>The "no such field" warning for the rule of an element, or an empty string.</summary>
+    private string ConditionFieldWarning(string id)
+    {
+        if (_fields is null || _session.Document.Elements.FirstOrDefault(x => x.Id == id)?.PrintCondition is not { } c) return string.Empty;
+        string field = PrintCondition.NormalizeField(c.Field);
+        return field.Length == 0 || _fields.Find(field) is not null ? string.Empty : Loc.Get("Condition.FieldMissing", field);
+    }
+
+    private string ConditionSummary(string id)
+    {
+        var e = _session.Document.Elements.FirstOrDefault(x => x.Id == id);
+        if (e?.PrintCondition is not { } c) return string.Empty;
+        if (e.NotPrintable) return Loc.Get("Condition.Summary.NotPrintable");
+        string field = PrintCondition.NormalizeField(c.Field);
+        if (field.Length == 0) return Loc.Get("Condition.Summary.NoField");
+        return Loc.Get("Condition.Summary." + c.Operator, field, c.Value.Trim());
     }
 
     /// <summary>

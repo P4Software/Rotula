@@ -5738,4 +5738,112 @@ Brand and product names belong to their owners; Rotula is not affiliated with th
   <data name="Undo.Format.Fit.Limit" xml:space="preserve">
     <value>change text fit limit</value>
   </data>
+  <data name="Panel.Printing" xml:space="preserve">
+    <value>Printing</value>
+  </data>
+  <data name="Prop.NotPrintable" xml:space="preserve">
+    <value>Do not print this object</value>
+  </data>
+  <data name="Prop.NotPrintable.Hint" xml:space="preserve">
+    <value>The object stays on the label in the designer, for example as a note or a guide, but it is never printed or exported.</value>
+  </data>
+  <data name="Prop.Condition.Enable" xml:space="preserve">
+    <value>Print only when</value>
+  </data>
+  <data name="Prop.Condition.Enable.Hint" xml:space="preserve">
+    <value>Leave this object out of the labels where the rule below is not true, for example to print a warning only for some records.</value>
+  </data>
+  <data name="Prop.Condition.Field" xml:space="preserve">
+    <value>Field to check</value>
+  </data>
+  <data name="Prop.Condition.Field.Hint" xml:space="preserve">
+    <value>The data column or variable whose value decides whether this object is printed.</value>
+  </data>
+  <data name="Prop.Condition.PickField" xml:space="preserve">
+    <value>Pick field</value>
+  </data>
+  <data name="Prop.Condition.Operator" xml:space="preserve">
+    <value>Comparison</value>
+  </data>
+  <data name="Prop.Condition.Value" xml:space="preserve">
+    <value>Value to compare with</value>
+  </data>
+  <data name="Prop.Condition.Value.Hint" xml:space="preserve">
+    <value>Capital letters and spaces around the text do not matter: Yes, yes and " YES " are the same.</value>
+  </data>
+  <data name="Prop.Condition.Summary" xml:space="preserve">
+    <value>Printing rule</value>
+  </data>
+  <data name="Prop.Locked" xml:space="preserve">
+    <value>Lock position</value>
+  </data>
+  <data name="Prop.Locked.Hint" xml:space="preserve">
+    <value>A locked object cannot be moved, resized or deleted with the mouse or keyboard until you unlock it. You can still select it and change its properties here. Locking does not change what is printed.</value>
+  </data>
+  <data name="Enum.ConditionOperator.Equals" xml:space="preserve">
+    <value>equals</value>
+  </data>
+  <data name="Enum.ConditionOperator.NotEquals" xml:space="preserve">
+    <value>does not equal</value>
+  </data>
+  <data name="Enum.ConditionOperator.IsEmpty" xml:space="preserve">
+    <value>is empty</value>
+  </data>
+  <data name="Enum.ConditionOperator.IsNotEmpty" xml:space="preserve">
+    <value>is not empty</value>
+  </data>
+  <data name="Enum.ConditionOperator.Contains" xml:space="preserve">
+    <value>contains</value>
+  </data>
+  <data name="Condition.Summary.Equals" xml:space="preserve">
+    <value>Prints only when {0} equals "{1}".</value>
+  </data>
+  <data name="Condition.Summary.NotEquals" xml:space="preserve">
+    <value>Prints only when {0} does not equal "{1}".</value>
+  </data>
+  <data name="Condition.Summary.IsEmpty" xml:space="preserve">
+    <value>Prints only when {0} is empty.</value>
+  </data>
+  <data name="Condition.Summary.IsNotEmpty" xml:space="preserve">
+    <value>Prints only when {0} is not empty.</value>
+  </data>
+  <data name="Condition.Summary.Contains" xml:space="preserve">
+    <value>Prints only when {0} contains "{1}".</value>
+  </data>
+  <data name="Condition.Summary.NoField" xml:space="preserve">
+    <value>Choose the field to check. Until then this object always prints.</value>
+  </data>
+  <data name="Condition.Summary.NotPrintable" xml:space="preserve">
+    <value>This object is never printed, whatever the rule says.</value>
+  </data>
+  <data name="Condition.Field.Required" xml:space="preserve">
+    <value>Choose the field to check.</value>
+  </data>
+  <data name="Condition.FieldMissing" xml:space="preserve">
+    <value>There is no field or variable called "{0}" in the loaded data or the label. It is treated as empty, so check the name.</value>
+  </data>
+  <data name="Issue.Element.Condition.FieldMissing" xml:space="preserve">
+    <value>The printing rule of this object looks at "{0}", but no data column or variable has that name. It is treated as empty, so check the name.</value>
+  </data>
+  <data name="Status.LockedSkipped" xml:space="preserve">
+    <value>Locked objects were left alone. Clear "Lock position" in the properties to change them.</value>
+  </data>
+  <data name="Badge.NotPrintable" xml:space="preserve">
+    <value>No print</value>
+  </data>
+  <data name="Badge.NotPrintable.Tip" xml:space="preserve">
+    <value>Marked "Do not print": this object is never printed or exported.</value>
+  </data>
+  <data name="Badge.HiddenByCondition" xml:space="preserve">
+    <value>Hidden</value>
+  </data>
+  <data name="Badge.HiddenByCondition.Tip" xml:space="preserve">
+    <value>The printing rule of this object is not true for the record shown, so it is left out of this label.</value>
+  </data>
+  <data name="Badge.Locked" xml:space="preserve">
+    <value>Locked</value>
+  </data>
+  <data name="Badge.Locked.Tip" xml:space="preserve">
+    <value>Locked: this object cannot be moved, resized or deleted until you unlock it.</value>
+  </data>
 </root>
