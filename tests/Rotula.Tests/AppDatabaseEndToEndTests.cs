@@ -137,17 +137,8 @@ public class AppDatabaseEndToEndTests : IDisposable
         Assert.DoesNotContain(_db.Replace("\\", "\\\\"), json);
         Assert.DoesNotContain("stock.db", json);
 
-        // --- a label written by another program is not trusted yet: opening it reads nothing until the user clicks once
+        // --- reopen in a fresh app: the label brings its data back by itself (no button), the same records as before
         var again = NewMain(store);
-        Assert.True(again.LoadFile(label));
-        await again.DataReload;
-        Assert.False(again.Data.HasData);
-        Assert.True(again.Data.Database.IsReferencePending);
-        await again.Data.Database.ConnectReferenceAsync();
-        Assert.True(again.Data.HasData, again.Data.Database.ResultText);
-
-        // --- that click made the file trusted: in a fresh app the same label now brings its data back by itself
-        again = NewMain(store);
         Assert.True(again.LoadFile(label));
         await again.DataReload;
         Assert.True(again.Data.HasData, again.Data.Database.ResultText);

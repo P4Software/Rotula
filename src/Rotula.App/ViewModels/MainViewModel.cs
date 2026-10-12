@@ -113,8 +113,6 @@ public sealed partial class MainViewModel : ObservableObject
         Data = new DataMergeViewModel(services.Printing, Printer, () => Session.Document, () => DocumentName, services.Files, services.Messages, services.Database, services.Dialogs, Variables);
         Data.SettingsEdited += (_, _) => Session.MarkDirty();
         Data.PreviewDataChanged += (_, _) => OnPreviewDataChanged();
-        // Reloading a label's remembered data on purpose is the user vouching for that file.
-        Data.RememberedDataReloaded += (_, _) => TrustHash(_openedHash);
         Fields = new FieldsViewModel(Session, Commands, Data, services.Messages, text => StatusMessage = text, () => services.Dialogs.ShowDataWindow(Data));
         Data.Fields = Fields;
         Properties.AttachFields(Fields);
@@ -761,17 +759,11 @@ public sealed partial class MainViewModel : ObservableObject
     {
         try
         {
-            // One read gives both the content that is parsed and the hash that decides trust, so the file cannot change in between.
-            byte[] bytes = File.ReadAllBytes(path);
-            string hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(bytes));
-            using var reader = new StreamReader(new MemoryStream(bytes), System.Text.Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
-            var content = RotulaFileSerializer.DeserializeFile(reader.ReadToEnd());
-            _openedHash = hash;
+            var content = RotulaFileSerializer.LoadFile(path);
             OpenDocument(content.Document, path, merge: content.Merge);
-            // The label remembers where its data came from. Only a file this PC trusts (saved here, or reloaded on purpose before) reads it
-            // again by itself; a file from elsewhere shows its saved query and waits for the Reload / Connect and reload data click, because
-            // its query would otherwise run on the user's own database connection without them having seen it.
-            DataReload = _settings.TrustedLabels.Contains(hash) ? ReloadRememberedDataQuietlyAsync(path) : Task.CompletedTask;
+            // The label remembers where its data came from; read it again now so the canvas shows real values, not empty fields. The
+            // same checks as the Reload buttons apply (local drive, read-only guard, saved connection by name).
+            DataReload = ReloadRememberedDataQuietlyAsync(path);
             AddRecent(path);
             StatusMessage = Loc.Get("Status.Opened", Path.GetFileName(path));
             return true;
@@ -790,7 +782,6 @@ public sealed partial class MainViewModel : ObservableObject
 
     private void OpenDocument(LabelDocument doc, string? path, bool markDirty = false, DataMergeSettings? merge = null)
     {
-        if (path is null) _openedHash = null;   // a new or imported label has no file to vouch for yet
         // Data settings are replaced first: the loaded data belonged to the previous label, and only the settings are kept per file.
         Data.Apply(merge);
         Session.Load(doc, markDirty);
@@ -829,8 +820,6 @@ public sealed partial class MainViewModel : ObservableObject
         }
         FilePath = path;
         Session.MarkSaved();
-        TrustFile(path);   // the user just made this file here
-        _openedHash = HashOf(path);
         AddRecent(path);
         StatusMessage = Loc.Get("Status.Saved", Path.GetFileName(path));
         return true;
@@ -844,29 +833,6 @@ public sealed partial class MainViewModel : ObservableObject
     {
         await Data.ReloadRememberedDataAsync();
         if (FilePath == path && !Session.Undo.CanUndo && Session.IsDirty) Session.MarkSaved();
-    }
-
-    private const int MaxTrusted = 500;
-
-    /// <summary>SHA-256 of the whole file as hex, or null when it cannot be read.</summary>
-    private static string? HashOf(string? path)
-    {
-        if (string.IsNullOrEmpty(path)) return null;
-        try { return Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(path))); }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return null; }
-    }
-
-    /// <summary>Hash of the file content exactly as it was opened; what a later "reload on purpose" vouches for, even if the file changed on disk since.</summary>
-    private string? _openedHash;
-
-    private void TrustFile(string? path) => TrustHash(HashOf(path));
-
-    private void TrustHash(string? h)
-    {
-        if (h is null || _settings.TrustedLabels.Contains(h)) return;
-        _settings.TrustedLabels.Add(h);
-        while (_settings.TrustedLabels.Count > MaxTrusted) _settings.TrustedLabels.RemoveAt(0);
-        SaveSettings();
     }
 
     private void AddRecent(string path)

@@ -54,12 +54,13 @@ The Data window has a source switch: File (CSV / Excel) or Database. Database mo
 `DialogWindow` style). Both talk to `Rotula.Data` only through `IDatabaseServices` (the saved connections plus a factory), so view-models run with fakes.
 - **Same pipeline**: "Use this data" produces a `MergeTable` and goes through the same `SetTable` / `Rebind` path as a CSV, so mapping, counters, copies,
   the record navigator and batch print/export are unchanged. A table is read in full up to the row cap (the 100-row preview is only a preview).
-- **Reconnects when the user opens a label this PC trusts** (changed 0.3.4; before, a button was needed): a label is trusted when the user saved it here or reloaded its
-  data on purpose; the SHA-256 of the whole file is kept in the settings (`TrustedLabels`), so an edited query loses trust. Any other label shows its query and waits for a click,
-  because it could be anyone's and its query would run on the user's own connection. For a trusted label, opening looks the NAME up in the user's saved connections and runs the saved query, so the canvas shows real values at once. The checks are unchanged: the query text from a
-  file is untrusted and the guard (`SqlGuard`) checks it before anything is sent; no host, user or password is in the file; a missing connection or a failure shows
-  its plain-language reason in the Data window (no dialog) and "Connect and reload data" stays for a retry. A data file is reloaded the same way, through the
-  same local-drive check as the Reload button. Nothing connects before the user opens that label.
+- **Reconnects when the user opens a label** (0.3.4, then 0.3.5 for every label; before, a button was needed): opening a label that refers to a connection looks the NAME up
+  in the user's own saved connections and runs the saved query, so the canvas shows real values at once. Glenn decided on 2026-10-12 to drop the idea of a per-file trust list
+  (SHA-256 of the file, set by saving or by a manual reload): a label opened for the first time still showed the red crossed box, which was the original complaint. The accepted
+  tradeoff, raised by an automated security review: a label from someone else can run its saved SELECT on the user's own saved connection when opened. The limits that stay: the
+  query goes through the read-only guard (`SqlGuard`) before anything is sent, the file holds no host, user or password, only a connection the user already saved under that exact
+  name is used, and the rows stay on the PC. A failure shows its plain-language reason in the Data window (no dialog) and "Connect and reload data" stays for a retry. A data file
+  is reloaded the same way, through the same local-drive check as the Reload button. Reading the data again does not mark the label as changed.
 - **The .rotula file holds only** the connection NAME, the query text, parameter defaults (name, value, type) and the row cap (format version 4, `merge.database`).
   The DTO has no member for host, user, password or connection string; a test asserts that, and that a hand-edited file cannot smuggle them back in. A table is
   saved as the quoted `SELECT * FROM ...` the engine built.

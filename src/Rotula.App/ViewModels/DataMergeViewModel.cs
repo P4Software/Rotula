@@ -84,7 +84,6 @@ public sealed partial class DataMergeViewModel : OperationViewModel
         _messages = messages;
         Database = new DatabaseSourceViewModel(database ?? new DatabaseServices(), dialogs, messages, files);
         Database.DataSelected += OnDatabaseDataSelected;
-        Database.ReferenceReloaded += (_, _) => RememberedDataReloaded?.Invoke(this, EventArgs.Empty);
 
         DelimiterChoices = new[]
         {
@@ -363,9 +362,6 @@ public sealed partial class DataMergeViewModel : OperationViewModel
         await LoadAsync(path);
     }
 
-    /// <summary>Raised after the label's remembered data (a file, or the saved query of a database) was read again by a Reload / Connect and reload click.</summary>
-    public event EventHandler? RememberedDataReloaded;
-
     /// <summary>Loads the remembered data file again.</summary>
     [RelayCommand]
     private async Task ReloadAsync()
@@ -384,11 +380,11 @@ public sealed partial class DataMergeViewModel : OperationViewModel
             SetResult(Loc.Get("Data.Reload.Missing", local), true);
             return;
         }
-        if (await LoadAsync(local)) RememberedDataReloaded?.Invoke(this, EventArgs.Empty);
+        await LoadAsync(local);
     }
 
     /// <summary>
-    /// Brings back the data a label was saved with, right after the user opened a label this PC trusts, so the fields and barcodes show real
+    /// Brings back the data a label was saved with, right after the user opened that label, so the fields and barcodes show real
     /// values instead of empty boxes. It does exactly what the Reload / "Connect and reload data" buttons do, so every safety
     /// check stays: a file must be on a local drive, a query goes through the read-only guard, and a database is reached only
     /// through a connection the user already saved under that name (the label stores no host or password). A failure is

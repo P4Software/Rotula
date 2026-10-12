@@ -353,33 +353,22 @@ public class AppDatabaseTests : IDisposable
     // ------------------------------------------------------------------------------------ opening a label never connects
 
     [Fact]
-    public async Task OpeningAnUntrustedLabelThatRefersToAConnection_ConnectsToNothing_UntilTheUserClicks()
+    public async Task OpeningALabelThatRefersToAConnection_ReconnectsByNameAndShowsTheDataWithoutAClick()
     {
-        // A label this PC has never saved or reloaded may have been written by anyone: its query must not run on the user's own connection unseen.
         string path = SaveLabel(WithQuery("warehouse", "SELECT Name, Qty FROM Products WHERE Qty > @min", new QueryParameterSetting("min", "3", "number")));
         Assert.True(_main.LoadFile(path));
         await _main.DataReload;
 
-        Assert.Empty(_store.Opened);
-        Assert.Empty(_source.Queries);
-        Assert.False(Data.HasData);
-        Assert.True(Db.IsReferencePending);
-        Assert.Contains("SELECT Name, Qty FROM Products", Db.ReferenceQuery);   // shown to the user before the first run
-
-        // The user's own click runs it, and from then on this exact file is trusted: reopened, it reconnects by itself.
-        await Db.ConnectReferenceAsync();
+        // The label stores only the connection NAME; it is found in the user's own saved list and the query ran through the guard.
         Assert.Equal("Warehouse", Assert.Single(_store.Opened));
+        var q = Assert.Single(_source.Queries);
+        Assert.Equal(3m, q.Parameters!["min"]);
+        Assert.Equal(500, q.MaxRows);
         Assert.True(Data.HasData);
+        Assert.False(Db.IsReferencePending);
         Assert.Equal(2, Data.RecordCount);
-
-        var again = new MainViewModel(_fake.Build());
-        Assert.True(again.LoadFile(path));
-        await again.DataReload;
-        Assert.True(again.Data.HasData);
-        Assert.False(again.Data.Database.IsReferencePending);
-        Assert.NotNull(again.Data.CurrentData);
-        Assert.Equal(3m, _source.Queries.Last().Parameters!["min"]);
-        Assert.Equal(500, _source.Queries.Last().MaxRows);
+        Assert.NotNull(Data.CurrentData);
+        Assert.False(_main.Session.IsDirty, "Reading the data again is not an edit.");
     }
 
     [Fact]

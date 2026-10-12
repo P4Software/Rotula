@@ -140,7 +140,7 @@ public class AppDataSelectionTests : IDisposable
         await Load(3);
         string label = Path.Combine(_dir, "withdata.rotula");
         Assert.True(_main.Data.HasData);
-        _fake.SavePath = label;          // saving here is what makes this PC trust the file
+        _fake.SavePath = label;
         _main.SaveCommand.Execute(null);
 
         var again = Build();

@@ -116,20 +116,16 @@ public class AppUntrustedPathTests : IDisposable
     }
 
     [Fact]
-    public async Task OpeningAnUntrustedLabelWithALocalHint_DoesNotLookAtTheFileSystem_UntilReloadIsClicked()
+    public async Task OpeningALabelWithALocalHint_LooksOnlyThroughTheReloadChecks_AndAMissingFileIsExplainedNotRaised()
     {
-        // The hint points to a file that does not exist. A label this PC does not trust is not probed on open (CanReload stays true and no
-        // message appears); the Reload click does the checks and explains in the Data window, without a dialog.
+        // The hint points to a file that does not exist: opening the label runs the same checks as the Reload button, says the file
+        // was not found in the Data window, raises no dialog, and the Reload button stays available for a retry.
         var vm = new MainViewModel(_fake.Build());
         Assert.True(vm.LoadFile(CraftedLabel(@"C:\definitely\not\here\x.csv")));
         await vm.DataReload;
         Assert.Equal(@"C:\definitely\not\here\x.csv", vm.Data.SourcePath);
         Assert.True(vm.Data.CanReload);
-        Assert.True(vm.Data.ShowReloadHint);
         Assert.False(vm.Data.HasData);
-        Assert.Equal(string.Empty, vm.Data.ResultText);
-
-        await vm.Data.ReloadCommand.ExecuteAsync(null);
         Assert.Contains("was not found", vm.Data.ResultText);
         Assert.Empty(_fake.Errors);
     }

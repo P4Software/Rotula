@@ -38,12 +38,6 @@ public sealed class AppSettings
     /// <summary>Most recently used files, newest first.</summary>
     public List<string> RecentFiles { get; set; } = new();
 
-    /// <summary>
-    /// SHA-256 of the label files this PC trusts to reload their data by themselves when opened: a file the user saved here, or one whose data
-    /// the user reloaded on purpose. The hash covers the whole file, so a label whose query was edited elsewhere is no longer trusted.
-    /// </summary>
-    public List<string> TrustedLabels { get; set; } = new();
-
     /// <summary>Ids of the label stocks the user starred in the New label dialog.</summary>
     public List<string> StockFavorites { get; set; } = new();
 
