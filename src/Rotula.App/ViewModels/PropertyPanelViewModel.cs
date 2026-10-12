@@ -533,7 +533,10 @@ public sealed partial class PropertyPanelViewModel : ObservableObject
                     break;
                 }
             case BarcodeOption.ModuleWidth:
-                AddInt<BarcodeElement>(id, "Prop.ModuleWidth", e => e.ModuleWidth, (e, v) => e.ModuleWidth = v, 1, 10, "Barcode.ModuleWidth.Range");
+                // The module row carries a stepper and the printed size (mil, mm, symbol width, quiet zone), which follows every edit.
+                Rows.Add(new IntRow("Prop.ModuleWidth", () => El<BarcodeElement>(id).ModuleWidth, v => Edit<BarcodeElement>(id, "Prop.ModuleWidth", e => e.ModuleWidth = v!.Value), 1, 10,
+                    rangeIssueKey: "Barcode.ModuleWidth.Range")
+                { FullWidth = true, ShowStepper = true, DetailSource = () => ModuleWidthDetail(El<BarcodeElement>(id)) });
                 break;
             case BarcodeOption.WideBarRatio:
                 Rows.Add(new DoubleRow("Prop.WideBarRatio", () => El<BarcodeElement>(id).WideBarRatio,
@@ -584,9 +587,11 @@ public sealed partial class PropertyPanelViewModel : ObservableObject
                 if (sym == BarcodeSymbology.QrCode)
                     Rows.Add(new IntRow("Prop.ModuleSize", () => El<BarcodeElement>(id).ModuleSize, v => Edit<BarcodeElement>(id, "Prop.ModuleSize", e => e.ModuleSize = v!.Value), 1, 10,
                         rangeIssueKey: "Barcode.ModuleSize.Range")
-                    { FullWidth = true, DetailSource = () => ModuleSizeDetail(El<BarcodeElement>(id)) });
+                    { FullWidth = true, ShowStepper = true, DetailSource = () => ModuleSizeDetail(El<BarcodeElement>(id)) });
                 else
-                    AddInt<BarcodeElement>(id, "Prop.ModuleSize", e => e.ModuleSize, (e, v) => e.ModuleSize = v, 1, 10, "Barcode.ModuleSize.Range");
+                    Rows.Add(new IntRow("Prop.ModuleSize", () => El<BarcodeElement>(id).ModuleSize, v => Edit<BarcodeElement>(id, "Prop.ModuleSize", e => e.ModuleSize = v!.Value), 1, 10,
+                        rangeIssueKey: "Barcode.ModuleSize.Range")
+                    { FullWidth = true, ShowStepper = true, DetailSource = () => ModuleWidthDetail(El<BarcodeElement>(id)) });
                 break;
             case BarcodeOption.Columns:
                 if (sym == BarcodeSymbology.Codablock)
@@ -753,8 +758,15 @@ public sealed partial class PropertyPanelViewModel : ObservableObject
         var report = QrCapacityInfo.Describe(LongestPayload(b).Payload, b.QrErrorCorrection, b.QrModel);
         // Model 1 has no version table and an overflowing code has no symbol: the module is still worth describing.
         int version = report.Fit is { Fits: true, Version: > 0 } fit ? fit.Version : 0;
-        return QrCapacityInfo.ModuleSize(version, b.ModuleSize, (int)_session.Document.Dpi);
+        var qr = QrCapacityInfo.ModuleSize(version, b.ModuleSize, (int)_session.Document.Dpi);
+        // The QR text already says the printed size and the scan limit; add the module in mil and the quiet zone (4 modules) under it.
+        var sizing = BarcodeSizeInfo.Describe(b, LongestPayload(b).Payload, _session.Document, withSymbol: false);
+        return sizing is null ? qr : new RowDetail(qr.Text + Environment.NewLine + sizing.Text, qr.IsWarning || sizing.IsWarning);
     }
+
+    /// <summary>The "Module: 7.5 mil (0.19 mm) - symbol 48.3 mm wide" readout and the quiet zone note under a module setting.</summary>
+    private RowDetail? ModuleWidthDetail(BarcodeElement b) =>
+        BarcodeSizeInfo.Describe(b, LongestPayload(b).Payload, _session.Document);
 
     /// <summary>
     /// Opens the QR content builder for a barcode on the label and, when the user applies it, stores the structured definition and the
