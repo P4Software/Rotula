@@ -3,6 +3,7 @@ using System.Text;
 using Rotula.Core.Barcodes;
 using Rotula.Core.Elements;
 using Rotula.Core.Imaging;
+using Rotula.Core.Layout;
 using Rotula.Core.Model;
 using Rotula.Core.Text;
 using Rotula.Core.Validation;
@@ -119,13 +120,21 @@ public static class ZplGenerator
         if (resolution is not null)
             foreach (var (clockSet, offset) in resolution.ClockOffsets.OrderBy(kv => kv.Key)) Line(PrinterClock.OffsetCommand(clockSet, offset));
 
+        // Anchored objects get their absolute origin here, for this record: a text that is wider on one record moves its right-anchored
+        // neighbour on that record only. Labels without anchors skip the whole step, so their output is byte-for-byte as before.
+        AnchorLayout? layout = AnchorResolver.HasAnchors(doc) ? AnchorResolver.Resolve(doc, data, rasterizer) : null;
+        if (layout is not null) issues.AddRange(layout.Issues);
+
         foreach (var element in doc.Elements)
         {
             // An object that is switched off for this record is not emitted and not validated: a barcode that is only invalid on a record
             // where it is hidden must not stop that record from printing. The same data that fills the placeholders decides the condition.
             if (!ElementPrinting.IsPrinted(element, data, doc.Variables, issues)) continue;
+            // An object on a reference circle has no position (its error is already in the issues) and is left out like any other invalid field.
+            if (layout is not null && layout.IsOnCycle(element)) continue;
+            var at = layout?.OriginOf(element) ?? (element.X, element.Y);
             int before = issues.Count;
-            string? field = EmitElement(doc, element, data, resolution, issues, rasterizer);
+            string? field = EmitElement(doc, element, at, data, resolution, issues, rasterizer);
             bool failed = issues.Skip(before).Any(i => i.Severity == ValidationSeverity.Error);
             if (field is not null && !failed) Line(field);
         }
@@ -179,42 +188,44 @@ public static class ZplGenerator
         _ => 'T',
     };
 
-    private static void CheckPosition(LabelElement e, LabelDocument doc, int extentW, int extentH, List<ValidationIssue> issues)
+    /// <summary>Checks the absolute origin <paramref name="at"/> (the resolved position, which for an anchored object is not its X/Y).</summary>
+    private static void CheckPosition(LabelElement e, (int X, int Y) at, LabelDocument doc, int extentW, int extentH, List<ValidationIssue> issues)
     {
-        if (e.X < 0 || e.Y < 0 || e.X > 32000 || e.Y > 32000)
+        if (at.X < 0 || at.Y < 0 || at.X > 32000 || at.Y > 32000)
             issues.Add(new ValidationIssue(ValidationSeverity.Error, "Element.Position.Range", e.Id, "0", "32000"));
-        else if (e.X + extentW > doc.WidthDots || e.Y + extentH > doc.HeightDots)
+        else if (at.X + extentW > doc.WidthDots || at.Y + extentH > doc.HeightDots)
             // Only a warning: printers clip silently, and the extent of text/barcodes is unknown here.
             issues.Add(new ValidationIssue(ValidationSeverity.Warning, "Element.OutsideLabel", e.Id));
     }
 
     // ---- element emission ------------------------------------------------------------------
 
-    private static string? EmitElement(LabelDocument doc, LabelElement e, IReadOnlyDictionary<string, string>? data, VariableResolution? resolution, List<ValidationIssue> issues, ITextRasterizer? rasterizer)
+    private static string? EmitElement(LabelDocument doc, LabelElement e, (int X, int Y) at, IReadOnlyDictionary<string, string>? data, VariableResolution? resolution, List<ValidationIssue> issues, ITextRasterizer? rasterizer)
     {
         switch (e)
         {
-            case TextElement t: return EmitText(doc, t, data, resolution, issues, rasterizer);
-            case BarcodeElement b: return EmitBarcode(doc, b, data, issues);
-            case BoxElement box: return EmitBox(doc, box, issues);
-            case LineElement line: return EmitLine(doc, line, issues);
-            case CircleElement c: return EmitCircle(doc, c, issues);
-            case EllipseElement el: return EmitEllipse(doc, el, issues);
-            case DiagonalLineElement dl: return EmitDiagonal(doc, dl, issues);
-            case SymbolElement sy: return EmitSymbol(doc, sy, issues);
-            case ImageElement img: return EmitImage(doc, img, issues);
+            case TextElement t: return EmitText(doc, t, at, data, resolution, issues, rasterizer);
+            case BarcodeElement b: return EmitBarcode(doc, b, at, data, issues);
+            case BoxElement box: return EmitBox(doc, box, at, issues);
+            case LineElement line: return EmitLine(doc, line, at, issues);
+            case CircleElement c: return EmitCircle(doc, c, at, issues);
+            case EllipseElement el: return EmitEllipse(doc, el, at, issues);
+            case DiagonalLineElement dl: return EmitDiagonal(doc, dl, at, issues);
+            case SymbolElement sy: return EmitSymbol(doc, sy, at, issues);
+            case ImageElement img: return EmitImage(doc, img, at, issues);
             // Imported content the designer cannot model is written back unchanged.
             case RawZplElement raw: return raw.Zpl.Length == 0 ? null : raw.Zpl;
             case RecallPlaceholderElement recall:
-                return recall.Zpl.Length == 0 ? null : recall.EmitAsField ? Origin(recall) + recall.Zpl + "^FS" : recall.Zpl;
+                return recall.Zpl.Length == 0 ? null : recall.EmitAsField ? Origin(recall, at) + recall.Zpl + "^FS" : recall.Zpl;
             default:
                 issues.Add(new ValidationIssue(ValidationSeverity.Error, "Element.Unsupported", e.Id, e.GetType().Name));
                 return null;
         }
     }
 
-    internal static string Origin(LabelElement e) =>
-        Invariant($"^F{(e.OriginKind == FieldOriginKind.Typeset ? 'T' : 'O')}{e.X},{e.Y}") + (e.ReverseField ? "^FR" : string.Empty);
+    /// <summary>The field origin command for an element placed at the absolute point <paramref name="at"/>.</summary>
+    internal static string Origin(LabelElement e, (int X, int Y) at) =>
+        Invariant($"^F{(e.OriginKind == FieldOriginKind.Typeset ? 'T' : 'O')}{at.X},{at.Y}") + (e.ReverseField ? "^FR" : string.Empty);
 
     internal static string RotationChar(FieldRotation r) => r switch
     {
@@ -236,15 +247,15 @@ public static class ZplGenerator
 
     private static string YN(bool v) => v ? "Y" : "N";
 
-    private static string? EmitText(LabelDocument doc, TextElement t, IReadOnlyDictionary<string, string>? data, VariableResolution? resolution, List<ValidationIssue> issues, ITextRasterizer? rasterizer)
+    private static string? EmitText(LabelDocument doc, TextElement t, (int X, int Y) at, IReadOnlyDictionary<string, string>? data, VariableResolution? resolution, List<ValidationIssue> issues, ITextRasterizer? rasterizer)
     {
         // A Windows font cannot exist on the printer: the text is drawn to a picture and the label carries the picture.
         if (t.Font is { IsWindows: true } windowsFont)
-            return RasterTextEmitter.Emit(doc, t, windowsFont, data, resolution, issues, rasterizer);
+            return RasterTextEmitter.Emit(doc, t, at, windowsFont, data, resolution, issues, rasterizer);
 
-        CheckPosition(t, doc, 0, 0, issues);
+        CheckPosition(t, at, doc, 0, 0, issues);
         string resolved = ResolveTextWithClock(doc, t, data, resolution, issues, out FieldClockOptions? autoClock);
-        var sb = new StringBuilder(Origin(t));
+        var sb = new StringBuilder(Origin(t, at));
 
         // Text fit: decided here, for this record's own text, so every label of a data merge gets the size its content needs. The printer only
         // ever sees the computed ^A / ^FB values; the fit mode itself is Rotula metadata.
@@ -441,7 +452,7 @@ public static class ZplGenerator
         });
     }
 
-    private static string? EmitBarcode(LabelDocument doc, BarcodeElement b, IReadOnlyDictionary<string, string>? data, List<ValidationIssue> issues)
+    private static string? EmitBarcode(LabelDocument doc, BarcodeElement b, (int X, int Y) at, IReadOnlyDictionary<string, string>? data, List<ValidationIssue> issues)
     {
         // A QR Code made by the content builder is built from its structured definition per record, so escaping is applied to the values
         // after substitution; Data (the template) is only used when there is no definition.
@@ -449,11 +460,11 @@ public static class ZplGenerator
             ?? VariableResolver.Resolve(b.Data, data, doc.Variables, b.Id, issues);
         var found = BarcodeValidator.Validate(b, resolved);
         issues.AddRange(found);
-        CheckPosition(b, doc, 0, 0, issues);
+        CheckPosition(b, at, doc, 0, 0, issues);
         if (found.Any(i => i.Severity == ValidationSeverity.Error)) return null;
 
         string payload = BarcodeValidator.NormalizeForPrinter(b, resolved);
-        var sb = new StringBuilder(Origin(b));
+        var sb = new StringBuilder(Origin(b, at));
         sb.Append(ZplBarcodeEmitter.Command(b, RotationOrEmpty(b.Rotation), RotationChar(doc.DefaultRotation), out string fdPrefix));
         if (fdPrefix.Contains(ZplBarcodeEmitter.QrByteCountToken, StringComparison.Ordinal))
             // Manual byte input states how many bytes follow, counted in the label's encoding (UTF-8 under ^CI28).
@@ -463,36 +474,36 @@ public static class ZplGenerator
         return sb.ToString();
     }
 
-    private static string? EmitBox(LabelDocument doc, BoxElement b, List<ValidationIssue> issues)
+    private static string? EmitBox(LabelDocument doc, BoxElement b, (int X, int Y) at, List<ValidationIssue> issues)
     {
-        CheckPosition(b, doc, b.WidthDots, b.HeightDots, issues);
+        CheckPosition(b, at, doc, b.WidthDots, b.HeightDots, issues);
         if (b.WidthDots < 1 || b.HeightDots < 1 || b.WidthDots > 32000 || b.HeightDots > 32000 || b.ThicknessDots < 1 || b.ThicknessDots > 32000)
             issues.Add(new ValidationIssue(ValidationSeverity.Error, "Graphic.Size.Range", b.Id, "1", "32000"));
         if (b.CornerRounding < 0 || b.CornerRounding > 8)
             issues.Add(new ValidationIssue(ValidationSeverity.Error, "Graphic.Rounding.Range", b.Id, "0", "8"));
-        return Origin(b) + "^GB" + Params(b.WidthDots.ToString(CultureInfo.InvariantCulture), b.HeightDots.ToString(CultureInfo.InvariantCulture),
+        return Origin(b, at) + "^GB" + Params(b.WidthDots.ToString(CultureInfo.InvariantCulture), b.HeightDots.ToString(CultureInfo.InvariantCulture),
             b.ThicknessDots.ToString(CultureInfo.InvariantCulture), ColorChar(b.Color), b.CornerRounding.ToString(CultureInfo.InvariantCulture)) + "^FS";
     }
 
-    private static string? EmitLine(LabelDocument doc, LineElement l, List<ValidationIssue> issues)
+    private static string? EmitLine(LabelDocument doc, LineElement l, (int X, int Y) at, List<ValidationIssue> issues)
     {
         bool horizontal = l.Direction == LineDirection.Horizontal;
-        CheckPosition(l, doc, horizontal ? l.LengthDots : l.ThicknessDots, horizontal ? l.ThicknessDots : l.LengthDots, issues);
+        CheckPosition(l, at, doc, horizontal ? l.LengthDots : l.ThicknessDots, horizontal ? l.ThicknessDots : l.LengthDots, issues);
         if (l.LengthDots < 1 || l.ThicknessDots < 1 || l.LengthDots > 32000 || l.ThicknessDots > 32000)
             issues.Add(new ValidationIssue(ValidationSeverity.Error, "Graphic.Size.Range", l.Id, "1", "32000"));
         int w = horizontal ? l.LengthDots : l.ThicknessDots, h = horizontal ? l.ThicknessDots : l.LengthDots;
-        return Origin(l) + Invariant($"^GB{w},{h},{l.ThicknessDots},{ColorChar(l.Color)}^FS");
+        return Origin(l, at) + Invariant($"^GB{w},{h},{l.ThicknessDots},{ColorChar(l.Color)}^FS");
     }
 
-    private static string? EmitCircle(LabelDocument doc, CircleElement c, List<ValidationIssue> issues)
+    private static string? EmitCircle(LabelDocument doc, CircleElement c, (int X, int Y) at, List<ValidationIssue> issues)
     {
-        CheckPosition(c, doc, c.DiameterDots, c.DiameterDots, issues);
+        CheckPosition(c, at, doc, c.DiameterDots, c.DiameterDots, issues);
         if (c.DiameterDots < 3 || c.DiameterDots > 4095 || c.ThicknessDots < 1 || c.ThicknessDots > 4095)
             issues.Add(new ValidationIssue(ValidationSeverity.Error, "Graphic.Circle.Range", c.Id, "3", "4095"));
-        return Origin(c) + Invariant($"^GC{c.DiameterDots},{c.ThicknessDots},{ColorChar(c.Color)}^FS");
+        return Origin(c, at) + Invariant($"^GC{c.DiameterDots},{c.ThicknessDots},{ColorChar(c.Color)}^FS");
     }
 
-    private static string? EmitImage(LabelDocument doc, ImageElement img, List<ValidationIssue> issues)
+    private static string? EmitImage(LabelDocument doc, ImageElement img, (int X, int Y) at, List<ValidationIssue> issues)
     {
         if (img.Source is null)
         {
@@ -511,36 +522,36 @@ public static class ZplGenerator
             return null;
         }
         var mono = ImageProcessor.ToMonochrome(img);
-        CheckPosition(img, doc, mono.Width, mono.Height, issues);
+        CheckPosition(img, at, doc, mono.Width, mono.Height, issues);
         int total = mono.PackedRows.Length;
         // ^GF ignores ^FW and ^FO orientation, so rotation was already applied to the dots.
-        return Origin(img) + Invariant($"^GFA,{total},{total},{mono.BytesPerRow},{mono.ToHex()}^FS");
+        return Origin(img, at) + Invariant($"^GFA,{total},{total},{mono.BytesPerRow},{mono.ToHex()}^FS");
     }
 
-    private static string? EmitEllipse(LabelDocument doc, EllipseElement e, List<ValidationIssue> issues)
+    private static string? EmitEllipse(LabelDocument doc, EllipseElement e, (int X, int Y) at, List<ValidationIssue> issues)
     {
-        CheckPosition(e, doc, e.WidthDots, e.HeightDots, issues);
+        CheckPosition(e, at, doc, e.WidthDots, e.HeightDots, issues);
         if (e.WidthDots < 3 || e.WidthDots > 4095 || e.HeightDots < 3 || e.HeightDots > 4095 || e.ThicknessDots < 1 || e.ThicknessDots > 4095)
             issues.Add(new ValidationIssue(ValidationSeverity.Error, "Graphic.Ellipse.Range", e.Id, "3", "4095"));
-        return Origin(e) + Invariant($"^GE{e.WidthDots},{e.HeightDots},{e.ThicknessDots},{ColorChar(e.Color)}^FS");
+        return Origin(e, at) + Invariant($"^GE{e.WidthDots},{e.HeightDots},{e.ThicknessDots},{ColorChar(e.Color)}^FS");
     }
 
-    private static string? EmitDiagonal(LabelDocument doc, DiagonalLineElement d, List<ValidationIssue> issues)
+    private static string? EmitDiagonal(LabelDocument doc, DiagonalLineElement d, (int X, int Y) at, List<ValidationIssue> issues)
     {
-        CheckPosition(d, doc, d.WidthDots, d.HeightDots, issues);
+        CheckPosition(d, at, doc, d.WidthDots, d.HeightDots, issues);
         if (d.WidthDots < 3 || d.WidthDots > 32000 || d.HeightDots < 3 || d.HeightDots > 32000 || d.ThicknessDots < 1 || d.ThicknessDots > 32000)
             issues.Add(new ValidationIssue(ValidationSeverity.Error, "Graphic.Diagonal.Range", d.Id, "3", "32000"));
-        return Origin(d) + Invariant($"^GD{d.WidthDots},{d.HeightDots},{d.ThicknessDots},{ColorChar(d.Color)},{(d.Lean == DiagonalLean.Left ? 'L' : 'R')}^FS");
+        return Origin(d, at) + Invariant($"^GD{d.WidthDots},{d.HeightDots},{d.ThicknessDots},{ColorChar(d.Color)},{(d.Lean == DiagonalLean.Left ? 'L' : 'R')}^FS");
     }
 
-    private static string? EmitSymbol(LabelDocument doc, SymbolElement s, List<ValidationIssue> issues)
+    private static string? EmitSymbol(LabelDocument doc, SymbolElement s, (int X, int Y) at, List<ValidationIssue> issues)
     {
-        CheckPosition(s, doc, s.WidthDots, s.HeightDots, issues);
+        CheckPosition(s, at, doc, s.WidthDots, s.HeightDots, issues);
         if (s.HeightDots < 0 || s.HeightDots > 32000 || s.WidthDots < 0 || s.WidthDots > 32000)
             issues.Add(new ValidationIssue(ValidationSeverity.Error, "Graphic.Symbol.Range", s.Id, "0", "32000"));
         char letter = (char)('A' + (int)s.Symbol);
         // Height and width are always written: without them the printer would use whatever ^CF last set.
-        return Origin(s) + Invariant($"^GS{RotationOrEmpty(s.Rotation)},{s.HeightDots},{s.WidthDots}^FD{letter}^FS");
+        return Origin(s, at) + Invariant($"^GS{RotationOrEmpty(s.Rotation)},{s.HeightDots},{s.WidthDots}^FD{letter}^FS");
     }
 
     private static string ColorChar(GraphicColor c) => c == GraphicColor.White ? "W" : "B";

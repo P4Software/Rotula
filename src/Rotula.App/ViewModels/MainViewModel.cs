@@ -1175,6 +1175,14 @@ public sealed partial class MainViewModel : ObservableObject
         ReportLocked();
     }
 
+    /// <summary>Align the selection to the label itself, whatever its size (the parameter is an <see cref="AlignKind"/>).</summary>
+    [RelayCommand(CanExecute = nameof(HasSelection))]
+    private void AlignToLabel(AlignKind kind)
+    {
+        Commands.AlignToLabel(kind);
+        ReportLocked();
+    }
+
     /// <summary>Distribute the selection (the parameter is a <see cref="DistributeKind"/>).</summary>
     [RelayCommand(CanExecute = nameof(HasThree))]
     private void Distribute(DistributeKind kind)

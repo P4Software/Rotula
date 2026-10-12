@@ -7,6 +7,7 @@ using Rotula.App.Services;
 using Rotula.Core.Barcodes;
 using Rotula.Core.Barcodes.QrContent;
 using Rotula.Core.Elements;
+using Rotula.Core.Layout;
 using Rotula.Core.Model;
 using Rotula.Core.Text;
 using Rotula.Core.Validation;
@@ -109,7 +110,9 @@ public sealed partial class PropertyPanelViewModel : ObservableObject
             : e is DataFieldElement ? nameof(TextElement) : e?.GetType().Name ?? string.Empty; // a legacy data field is edited as the text it is
         // Whether the element has a printing rule, and whether that rule needs a value, decide which Printing rows exist.
         string rule = e?.PrintCondition is { } pc ? (pc.UsesValue ? "rule+value" : "rule") : "norule";
-        return sel[0] + ":" + barcodeLayout + ":" + (e is TextElement t && t.Block is not null) + ":" + rule;
+        // An anchor adds the "Relative to" row and turns the X/Y boxes into offsets (other labels, other range).
+        string anchored = e?.Anchor is null ? "abs" : "anchored";
+        return sel[0] + ":" + barcodeLayout + ":" + (e is TextElement t && t.Block is not null) + ":" + rule + ":" + anchored;
     }
 
     private void Rebuild(bool force = false)
@@ -206,8 +209,11 @@ public sealed partial class PropertyPanelViewModel : ObservableObject
         if (element is TextElement textElement) BuildTextRows(textElement);
 
         Rows.Add(new HeadingRow("Panel.Position"));
-        AddInt<LabelElement>(id, "Prop.X", e => e.X, (e, v) => e.X = v, 0, 32000);
-        AddInt<LabelElement>(id, "Prop.Y", e => e.Y, (e, v) => e.Y = v, 0, 32000);
+        BuildAnchorRows(element);
+        // With an anchor the numbers are an offset from the reference's anchor point, so they may be negative (left or up).
+        bool anchored = element.Anchor is not null;
+        AddInt<LabelElement>(id, anchored ? "Prop.X.Offset" : "Prop.X", e => e.X, (e, v) => e.X = v, anchored ? -32000 : 0, 32000, hintKey: anchored ? "Prop.Offset.Hint" : null);
+        AddInt<LabelElement>(id, anchored ? "Prop.Y.Offset" : "Prop.Y", e => e.Y, (e, v) => e.Y = v, anchored ? -32000 : 0, 32000, hintKey: anchored ? "Prop.Offset.Hint" : null);
         Rows.Add(new ChoiceRow("Prop.OriginKind", ChoiceRow.ForEnum<FieldOriginKind>(),
             () => El<LabelElement>(id).OriginKind, v => Edit<LabelElement>(id, "origin", e => e.OriginKind = (FieldOriginKind)v!), "Prop.OriginKind.Hint"));
         // A barcode whose ZPL command has no orientation parameter (MaxiCode) cannot be rotated, so the control is hidden. It stays
@@ -288,6 +294,73 @@ public sealed partial class PropertyPanelViewModel : ObservableObject
         }
 
         BuildPrintingRows(element);
+    }
+
+    /// <summary>
+    /// The anchor picker and, once the object has an anchor, the "Relative to" drop-down (the label, or any other object). Both change the
+    /// numbers so the object stays exactly where it is: choosing an anchor is a change of meaning, not a move. A reference that would close a
+    /// circle (the other object is already relative to this one) is refused with a sentence that says so.
+    /// </summary>
+    private void BuildAnchorRows(LabelElement element)
+    {
+        string id = element.Id;
+        Rows.Add(new AnchorRow("Prop.Anchor", () => El<LabelElement>(id).Anchor, anchor => SetAnchor(id, anchor), "Prop.Anchor.Hint") { RebuildOnChange = true });
+        if (element.Anchor is null) return;
+
+        var items = new List<ChoiceItem> { new(null, Loc.Get("Prop.Reference.Label")) };
+        foreach (var other in _session.Document.Elements)
+            if (other.Id != id) items.Add(new ChoiceItem(other.Id, UniqueDisplayName(other)));
+        // A reference the label no longer has (a file edited elsewhere) is listed so the box is not blank; the layout already treats it as the label.
+        if (element.RelativeTo == AnchorReference.Element && element.ReferenceElementId is { } missing && items.All(i => !Equals(i.Value, missing)))
+            items.Add(new ChoiceItem(missing, Loc.Get("Prop.Reference.Missing")));
+        Rows.Add(new ChoiceRow("Prop.Reference", items,
+            () => El<LabelElement>(id) is { RelativeTo: AnchorReference.Element } e ? e.ReferenceElementId : null,
+            v => SetReference(id, v as string), "Prop.Reference.Hint",
+            validate: v => v is string refId && AnchorResolver.WouldCreateCycle(_session.Document, id, refId)
+                ? Loc.Get("Anchor.Cycle", ElementDisplayName(El<LabelElement>(refId)))
+                : null));
+    }
+
+    /// <summary>The display name of an element, numbered when another element of the label shows the same name, so a list can tell them apart.</summary>
+    private string UniqueDisplayName(LabelElement e)
+    {
+        string name = ElementDisplayName(e);
+        var twins = _session.Document.Elements.Where(x => ElementDisplayName(x) == name).ToList();
+        return twins.Count <= 1 ? name : $"{name} #{twins.IndexOf(e) + 1}";
+    }
+
+    private void SetAnchor(string id, AnchorPoint? anchor)
+    {
+        var e = El<LabelElement>(id);
+        // Removing the anchor also forgets the reference; the numbers become the absolute origin the object already has.
+        var relativeTo = anchor is null ? AnchorReference.Label : e.RelativeTo;
+        string? reference = anchor is null ? null : e.ReferenceElementId;
+        var (x, y) = _session.Bounds.OffsetKeepingPosition(e, anchor, relativeTo, reference);
+        _session.Edit("Undo.Property", d =>
+        {
+            var target = d.Elements.First(el => el.Id == id);
+            target.Anchor = anchor;
+            target.RelativeTo = relativeTo;
+            target.ReferenceElementId = reference;
+            target.X = x;
+            target.Y = y;
+        });
+    }
+
+    private void SetReference(string id, string? referenceElementId)
+    {
+        var e = El<LabelElement>(id);
+        if (e.Anchor is not { } anchor) return;
+        var relativeTo = referenceElementId is null ? AnchorReference.Label : AnchorReference.Element;
+        var (x, y) = _session.Bounds.OffsetKeepingPosition(e, anchor, relativeTo, referenceElementId);
+        _session.Edit("Undo.Property", d =>
+        {
+            var target = d.Elements.First(el => el.Id == id);
+            target.RelativeTo = relativeTo;
+            target.ReferenceElementId = referenceElementId;
+            target.X = x;
+            target.Y = y;
+        });
     }
 
     /// <summary>
@@ -384,9 +457,11 @@ public sealed partial class PropertyPanelViewModel : ObservableObject
     /// <param name="text">The text element that gets the block.</param>
     public static TextBlockOptions DefaultBlockFor(LabelDocument doc, TextElement text)
     {
-        // Positions count from the label home (^LH, the left and top margins), so the room is what is left of the printable area.
-        int roomRight = doc.WidthDots - doc.Margins.Left.ToDots(doc.Dpi) - text.X - doc.Margins.Right.ToDots(doc.Dpi);
-        int roomBelow = doc.HeightDots - doc.Margins.Top.ToDots(doc.Dpi) - text.Y - doc.Margins.Bottom.ToDots(doc.Dpi);
+        // Positions count from the label home (^LH, the left and top margins), so the room is what is left of the printable area. An anchored
+        // text's X/Y are an offset, so its resolved origin is used instead.
+        var (ox, oy) = text.Anchor is null ? (text.X, text.Y) : AnchorResolver.Resolve(doc).OriginOf(text);
+        int roomRight = doc.WidthDots - doc.Margins.Left.ToDots(doc.Dpi) - ox - doc.Margins.Right.ToDots(doc.Dpi);
+        int roomBelow = doc.HeightDots - doc.Margins.Top.ToDots(doc.Dpi) - oy - doc.Margins.Bottom.ToDots(doc.Dpi);
         // A text turned a quarter runs down the label: its width comes from the room below and its lines stack across.
         var rotation = text.Rotation ?? doc.DefaultRotation;
         bool vertical = rotation is FieldRotation.Rotated90 or FieldRotation.Rotated270;

@@ -42,6 +42,41 @@ public enum MediaTracking
     Mark,
 }
 
+/// <summary>
+/// One of the nine points of a box (corners, edge midpoints and the centre) used by relative positioning: the same point is taken on
+/// the object and on its reference, and the object's X/Y are the distance between the two.
+/// </summary>
+public enum AnchorPoint
+{
+    /// <summary>Top-left corner.</summary>
+    TopLeft,
+    /// <summary>Middle of the top edge.</summary>
+    TopCenter,
+    /// <summary>Top-right corner.</summary>
+    TopRight,
+    /// <summary>Middle of the left edge.</summary>
+    MiddleLeft,
+    /// <summary>Centre of the box.</summary>
+    Center,
+    /// <summary>Middle of the right edge.</summary>
+    MiddleRight,
+    /// <summary>Bottom-left corner.</summary>
+    BottomLeft,
+    /// <summary>Middle of the bottom edge.</summary>
+    BottomCenter,
+    /// <summary>Bottom-right corner.</summary>
+    BottomRight,
+}
+
+/// <summary>What an anchored object is positioned relative to.</summary>
+public enum AnchorReference
+{
+    /// <summary>The label itself (its full size, so the object follows a label resize).</summary>
+    Label,
+    /// <summary>Another object of the label, named by <see cref="Elements.LabelElement.ReferenceElementId"/>.</summary>
+    Element,
+}
+
 /// <summary>Whether a field position is the top-left corner (^FO) or the typesetting origin (^FT).</summary>
 public enum FieldOriginKind
 {

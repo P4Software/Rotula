@@ -200,6 +200,73 @@
         <TextBlock Text="{Binding Detail}" Style="{StaticResource RowDetail}" AutomationProperties.LiveSetting="Polite" AutomationProperties.Name="{Binding Detail}">
           <TextBlock.Visibility><Binding Path="HasDetail" Converter="{StaticResource BoolToVisibility}" /></TextBlock.Visibility>
         </TextBlock>
+        <!-- A refused choice (for example a reference that would make two objects relative to each other) is explained here. -->
+        <TextBlock Text="{Binding Error}" Style="{StaticResource ErrorText}" AutomationProperties.LiveSetting="Polite">
+          <TextBlock.Visibility><Binding Path="HasError" Converter="{StaticResource BoolToVisibility}" /></TextBlock.Visibility>
+        </TextBlock>
+      </StackPanel>
+    </DataTemplate>
+
+    <!--
+      Anchor picker: a 3 x 3 grid that is a picture of the object's box (each cell shows its own corner, edge or centre as a dot), plus a "Free"
+      button for an absolute position. The chosen cell is filled with the accent colour; the others show a grey dot.
+    -->
+    <DataTemplate DataType="{x:Type vm:AnchorRow}">
+      <StackPanel ToolTip="{Binding Hint}" Margin="0,0,0,12">
+        <TextBlock Text="{Binding Label}" Style="{StaticResource RowLabel}" />
+        <StackPanel Orientation="Horizontal">
+          <Border BorderBrush="{StaticResource BorderBrushLight}" BorderThickness="1" CornerRadius="6" Background="{StaticResource SurfaceBrush}" Padding="3"
+                  AutomationProperties.Name="{Binding Label}" AutomationProperties.HelpText="{Binding SelectedText}">
+            <ItemsControl ItemsSource="{Binding Cells}" IsTabStop="False">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate><UniformGrid Columns="3" Rows="3" /></ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Button Command="{Binding Owner.PickCommand}" CommandParameter="{Binding Point}" ToolTip="{Binding Tip}" AutomationProperties.Name="{Binding Tip}"
+                          Width="26" Height="26" Margin="1" Cursor="Hand" FocusVisualStyle="{StaticResource FocusRing}">
+                    <Button.Template>
+                      <ControlTemplate TargetType="Button">
+                        <Border x:Name="Cell" Background="Transparent" CornerRadius="4" Padding="4">
+                          <Border x:Name="Dot" Width="7" Height="7" CornerRadius="1.5" Background="{StaticResource MutedBrush}"
+                                  HorizontalAlignment="{Binding Horizontal}" VerticalAlignment="{Binding Vertical}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                          <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Cell" Property="Background" Value="{StaticResource HoverBrush}" /></Trigger>
+                          <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                            <Setter TargetName="Cell" Property="Background" Value="{StaticResource AccentTintBrush}" />
+                            <Setter TargetName="Dot" Property="Background" Value="{StaticResource AccentBrush}" />
+                            <Setter TargetName="Dot" Property="Width" Value="9" />
+                            <Setter TargetName="Dot" Property="Height" Value="9" />
+                          </DataTrigger>
+                        </ControlTemplate.Triggers>
+                      </ControlTemplate>
+                    </Button.Template>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </Border>
+          <Button Command="{Binding PickCommand}" CommandParameter="{x:Null}" ToolTip="{Binding FreeTip}" AutomationProperties.Name="{Binding FreeCaption}"
+                  Margin="8,0,0,0" MinHeight="30" Padding="12,0" VerticalAlignment="Top" Cursor="Hand" FocusVisualStyle="{StaticResource FocusRing}">
+            <Button.Template>
+              <ControlTemplate TargetType="Button">
+                <Border x:Name="Chrome" Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderBrushLight}" BorderThickness="1" CornerRadius="6" Padding="{TemplateBinding Padding}" MinHeight="{TemplateBinding MinHeight}">
+                  <TextBlock x:Name="Caption" Text="{Binding FreeCaption}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center" />
+                </Border>
+                <ControlTemplate.Triggers>
+                  <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Chrome" Property="Background" Value="{StaticResource HoverBrush}" /></Trigger>
+                  <DataTrigger Binding="{Binding IsFree}" Value="True">
+                    <Setter TargetName="Chrome" Property="Background" Value="{StaticResource AccentTintBrush}" />
+                    <Setter TargetName="Chrome" Property="BorderBrush" Value="{StaticResource AccentTintStrongBrush}" />
+                    <Setter TargetName="Caption" Property="Foreground" Value="{StaticResource AccentBrush}" />
+                  </DataTrigger>
+                </ControlTemplate.Triggers>
+              </ControlTemplate>
+            </Button.Template>
+          </Button>
+        </StackPanel>
+        <TextBlock Text="{Binding SelectedText}" Style="{StaticResource RowDetail}" AutomationProperties.LiveSetting="Polite" />
       </StackPanel>
     </DataTemplate>
 
