@@ -179,7 +179,7 @@ Real labels, rendered by Rotula's own PNG export from the files in [`docs/showca
 <table>
 <tr>
 <td align="center" valign="top"><img src="docs/images/showcase/gs1-pallet-label.png" alt="GS1-128 pallet label with SSCC, GTIN, batch and best-before barcodes" width="440"><br><sub>GS1-128 pallet label: SSCC, GTIN, batch and best-before date.</sub></td>
-<td align="center" valign="top"><img src="docs/images/showcase/parcel-shipping-label.png" alt="Parcel shipping label with MaxiCode, PDF417, POSTNET bars and a Code 128 tracking number" width="440"><br><sub>Parcel label: MaxiCode, PDF417, POSTNET bars, Code 128.</sub></td>
+<td align="center" valign="top"><img src="docs/images/showcase/parcel-shipping-label.png" alt="Parcel shipping label with PDF417, Data Matrix, POSTNET bars and a Code 128 tracking number" width="440"><br><sub>Parcel label: PDF417, Data Matrix, POSTNET bars, Code 128.</sub></td>
 </tr>
 <tr>
 <td align="center" valign="top"><img src="docs/images/showcase/food-nutrition-label.png" alt="Food product label with a nutrition panel, allergen box and EAN-13" width="440"><br><sub>Food label: nutrition panel, allergen box and EAN-13.</sub></td>

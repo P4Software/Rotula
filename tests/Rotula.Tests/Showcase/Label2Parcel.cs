@@ -16,7 +16,7 @@ internal static partial class ShowcaseLabels
         string tracking = "7Q4882015366";
         string zip = "981045517";
         string carrierData = "ARCLINE|PRI2|98104-5517|US|7Q4882015366|1/2|4.2KG|20261012";
-        string dm = "001840981045517ARCLINE " + tracking;
+        string dm = "ARCLINE-" + tracking;
 
         // ---- header: the logo is two stacked chevrons (each one a "\" over a "/"), the service sits in a white tab
         b.Fill(m, m, inner, 140, round: 2);
@@ -63,10 +63,8 @@ internal static partial class ShowcaseLabels
 
         // ---- carrier data: PDF417 on the left, Data Matrix right-aligned, sharing one top edge
         int cy = dy + 316;
-        var pdf = b.Barcode(m, cy, BarcodeSymbology.Pdf417, carrierData, e => { e.ModuleWidth = 4; e.Height = 22; e.Columns = 5; e.Pdf417SecurityLevel = 3; });
-        // MaxiCode mode 2: class of service, country and postal code, then the secondary message. ZXing cannot read MaxiCode, so unlike the
-        // other symbols it is not decoded back; the encoder is a port of libzint's and has its own tests.
-        var mx = b.Barcode(0, cy, BarcodeSymbology.MaxiCode, dm, e => e.MaxiCodeMode = 2);
+        var pdf = b.Barcode(m, cy, BarcodeSymbology.Pdf417, carrierData, e => { e.ModuleWidth = 4; e.Height = 20; e.Columns = 5; e.Pdf417SecurityLevel = 3; });
+        var mx = b.Barcode(0, cy, BarcodeSymbology.DataMatrix, dm, e => e.ModuleSize = 10);
         var mxSize = LabelBuilder.BarsSize(mx);
         mx.X = m + inner - mxSize.Width;
         int rowEnd = cy + Math.Max(LabelBuilder.BarsSize(pdf).Height, mxSize.Height);

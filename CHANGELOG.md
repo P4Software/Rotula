@@ -12,7 +12,6 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Fixed
 - **Windows fonts that are named after a style now draw in that style.** "Arial Black", "Segoe UI Semibold", "Segoe UI Black", "Bahnschrift Condensed" and similar names used to be replaced by the default font in the preview, PNG/PDF export and print picture; they now resolve to their parent family at the weight and width the name says.
-- **MaxiCode is drawn in the preview and exports** instead of a "printer draws it" placeholder.
 
 ## [0.3.5] - 2026-10-12
 

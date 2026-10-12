@@ -261,7 +261,7 @@ public static class BarcodeCatalog
         E(BarcodeSymbology.MaxiCode, "MaxiCode", "^BD", BarcodeCategory.Matrix2D,
             new[] { BarcodeOption.MaxiCodeMode, BarcodeOption.MaxiCodeSymbolNumber, BarcodeOption.MaxiCodeSymbolTotal },
             "Modes 2 and 3: a structured carrier message (class of service, country, postal code, then the message); modes 4-6: any text", "Up to 93 characters", 1, 138, null, "001840123456789",
-            rotation: false),
+            preview: false, note: "The printer draws it; the designer shows a placeholder.", rotation: false),
         E(BarcodeSymbology.Tlc39, "TLC39", "^BT", BarcodeCategory.Stacked,
             new[] { W, R, H, BarcodeOption.Tlc39MicroModuleWidth, BarcodeOption.Tlc39MicroRowHeight },
             "A 6-digit ECI number, optionally followed by , and alphanumeric serial and additional data fields", "6 to 150 characters", 6, 150, null, "123456,ABCD12345678901234",

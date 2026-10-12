@@ -46,8 +46,7 @@ public sealed class McpBarcodeBreadthTests : IDisposable
     {
         var all = _env.Label.ListSymbologies().Symbologies.ToDictionary(s => s.Name);
         Assert.Equal("exact", all["Code128"].Preview);
-        Assert.Equal("exact", all["MaxiCode"].Preview);
-        Assert.Contains("placeholder", all["Tlc39"].Preview);
+        Assert.Contains("placeholder", all["MaxiCode"].Preview);
         Assert.False(all["MaxiCode"].SupportsRotation);
         Assert.True(all["Aztec"].SupportsRotation);
         Assert.Equal("postal", all["Postnet"].Kind);

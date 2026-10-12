@@ -182,7 +182,7 @@ Etiquetas reales, generadas con la exportación PNG de Rotula a partir de los ar
 <table>
 <tr>
 <td align="center" valign="top"><img src="docs/images/showcase/gs1-pallet-label.png" alt="Etiqueta de palé GS1-128 con códigos de SSCC, GTIN, lote y caducidad" width="440"><br><sub>Palé GS1-128: SSCC, GTIN, lote y fecha de caducidad.</sub></td>
-<td align="center" valign="top"><img src="docs/images/showcase/parcel-shipping-label.png" alt="Etiqueta de envío de paquete con MaxiCode, PDF417, barras POSTNET y un número de seguimiento Code 128" width="440"><br><sub>Paquete: MaxiCode, PDF417, barras POSTNET y Code 128.</sub></td>
+<td align="center" valign="top"><img src="docs/images/showcase/parcel-shipping-label.png" alt="Etiqueta de envío de paquete con PDF417, Data Matrix, barras POSTNET y un número de seguimiento Code 128" width="440"><br><sub>Paquete: PDF417, Data Matrix, barras POSTNET y Code 128.</sub></td>
 </tr>
 <tr>
 <td align="center" valign="top"><img src="docs/images/showcase/food-nutrition-label.png" alt="Etiqueta de producto alimentario con tabla nutricional, recuadro de alérgenos y EAN-13" width="440"><br><sub>Alimento: tabla nutricional, alérgenos y EAN-13.</sub></td>
