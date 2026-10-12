@@ -54,9 +54,11 @@ The Data window has a source switch: File (CSV / Excel) or Database. Database mo
 `DialogWindow` style). Both talk to `Rotula.Data` only through `IDatabaseServices` (the saved connections plus a factory), so view-models run with fakes.
 - **Same pipeline**: "Use this data" produces a `MergeTable` and goes through the same `SetTable` / `Rebind` path as a CSV, so mapping, counters, copies,
   the record navigator and batch print/export are unchanged. A table is read in full up to the row cap (the 100-row preview is only a preview).
-- **Never connects by itself**: opening a label that refers to a connection only shows `This label uses the saved connection "X"` with the query text
-  (read-only) and a "Connect and reload data" button. Even reading the list of saved connections waits until the Data window is shown. The query text from a
-  file is untrusted: the guard (`SqlGuard`) checks it live and again in the engine before anything is sent.
+- **Reconnects when the user opens the label** (changed 0.3.4; before, a button was needed): opening a label that refers to a connection looks the
+  NAME up in the user's own saved connections and runs the saved query, so the canvas shows real values at once. The checks are unchanged: the query text from a
+  file is untrusted and the guard (`SqlGuard`) checks it before anything is sent; no host, user or password is in the file; a missing connection or a failure shows
+  its plain-language reason in the Data window (no dialog) and "Connect and reload data" stays for a retry. A data file is reloaded the same way, through the
+  same local-drive check as the Reload button. Nothing connects before the user opens that label.
 - **The .rotula file holds only** the connection NAME, the query text, parameter defaults (name, value, type) and the row cap (format version 4, `merge.database`).
   The DTO has no member for host, user, password or connection string; a test asserts that, and that a hand-edited file cannot smuggle them back in. A table is
   saved as the quoted `SELECT * FROM ...` the engine built.

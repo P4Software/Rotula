@@ -751,6 +751,9 @@ public sealed partial class MainViewModel : ObservableObject
         LoadFile(item.Path);
     }
 
+    /// <summary>The work of bringing back the opened label's remembered data; completed when nothing needed loading. Tests await it.</summary>
+    public Task DataReload { get; private set; } = Task.CompletedTask;
+
     /// <summary>Opens a .rotula file (also used for files given on the command line or dropped on the window).</summary>
     public bool LoadFile(string path)
     {
@@ -758,6 +761,8 @@ public sealed partial class MainViewModel : ObservableObject
         {
             var content = RotulaFileSerializer.LoadFile(path);
             OpenDocument(content.Document, path, merge: content.Merge);
+            // The label remembers where its data came from; read it again now so the canvas shows real values, not empty fields.
+            DataReload = Data.ReloadRememberedDataAsync();
             AddRecent(path);
             StatusMessage = Loc.Get("Status.Opened", Path.GetFileName(path));
             return true;

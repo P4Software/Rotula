@@ -383,6 +383,33 @@ public sealed partial class DataMergeViewModel : OperationViewModel
         await LoadAsync(local);
     }
 
+    /// <summary>
+    /// Brings back the data a label was saved with, right after the user opened that label, so the fields and barcodes show real
+    /// values instead of empty boxes. It does exactly what the Reload / "Connect and reload data" buttons do, so every safety
+    /// check stays: a file must be on a local drive, a query goes through the read-only guard, and a database is reached only
+    /// through a connection the user already saved under that name (the label stores no host or password). A failure is
+    /// shown in the Data window as before and never raises a dialog; the buttons remain for a retry.
+    /// </summary>
+    public async Task ReloadRememberedDataAsync()
+    {
+        try
+        {
+            if (SourceMode == DataSourceMode.Database)
+            {
+                if (Database.IsReferencePending) await Database.ConnectReferenceAsync();
+            }
+            else if (HasSource && Table is null)
+            {
+                await ReloadAsync();
+            }
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // The label is open and usable; the reason is in the Data window's own message.
+            SetResult(ex.Message, true);
+        }
+    }
+
     /// <summary>Forgets the loaded data (the settings stay).</summary>
     [RelayCommand]
     private void ClearData()

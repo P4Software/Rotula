@@ -750,7 +750,7 @@ public class AppDataMergeTests : IDisposable
     }
 
     [Fact]
-    public async Task Reload_ReadsTheRememberedFile_OnlyWhenAsked()
+    public async Task OpeningALabel_ReadsTheRememberedFileByItself()
     {
         string csv = Csv("n\n1\n2\n");
         await Data.LoadAsync(csv);
@@ -758,8 +758,8 @@ public class AppDataMergeTests : IDisposable
         _main.SaveCommand.Execute(null);
         var again = new MainViewModel(_fake.Build());
         again.LoadFile(_fake.SavePath);
-        Assert.False(again.Data.HasData);
-        await again.Data.ReloadCommand.ExecuteAsync(null);
+        await again.DataReload;
+        Assert.True(again.Data.HasData);
         Assert.Equal(2, again.Data.RecordCount);
     }
 

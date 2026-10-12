@@ -5,6 +5,9 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Fixed
+- **A label saved with data now brings its data back when you open it**: a data file (CSV or Excel) or a saved database connection is read again by itself, so the fields and barcodes show real values instead of a red crossed box. If the file or connection is not available, the Data window says why and the Reload / Connect and reload data button is still there.
+
 ## [0.3.3] - 2026-10-11
 
 ### Fixed

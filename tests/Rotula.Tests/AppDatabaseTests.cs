@@ -353,40 +353,13 @@ public class AppDatabaseTests : IDisposable
     // ------------------------------------------------------------------------------------ opening a label never connects
 
     [Fact]
-    public void OpeningALabelThatRefersToAConnection_DoesNotConnectOrReadAnything()
+    public async Task OpeningALabelThatRefersToAConnection_ReconnectsByNameAndShowsTheDataWithoutAClick()
     {
-        string path = SaveLabel(WithQuery("Warehouse", "SELECT Name, Qty FROM Products WHERE Qty > @min", new QueryParameterSetting("min", "3", "number")));
+        string path = SaveLabel(WithQuery("warehouse", "SELECT Name, Qty FROM Products WHERE Qty > @min", new QueryParameterSetting("min", "3", "number")));
         Assert.True(_main.LoadFile(path));
+        await _main.DataReload;
 
-        Assert.Empty(_store.Opened);                       // no connection was opened
-        Assert.Equal(0, _store.Loads);                     // not even the list of saved connections was read
-        Assert.Empty(_source.Queries);
-        Assert.Equal(0, _source.Lists);
-        Assert.Empty(_fake.Database.Created);
-        Assert.False(Data.HasData);
-        Assert.True(Data.IsDatabaseMode);
-        Assert.True(Data.ShowDatabasePanel);
-        Assert.True(Db.IsReferencePending);
-        Assert.Equal("Warehouse", Db.ReferenceName);
-        Assert.Contains("SELECT Name, Qty FROM Products", Db.ReferenceQuery);   // shown to the user before the first run
-        Assert.Contains("This label uses the saved connection \"Warehouse\"", Db.ReferenceBanner);
-        Assert.Equal(string.Empty, Data.ResultText);
-        Assert.Equal("3", Db.Parameters.Single().Value);
-        Assert.Equal(500, int.Parse(Db.MaxRowsText));
-        // Saving the label again without reconnecting keeps the reference instead of dropping it.
-        Assert.Equal("Warehouse", Data.ToSettings().Database!.Reference.ConnectionName);
-    }
-
-    [Fact]
-    public async Task TheReloadButton_FindsTheConnectionByName_RunsTheQuery_AndFillsTheData()
-    {
-        _main.LoadFile(SaveLabel(WithQuery("warehouse", "SELECT Name, Qty FROM Products WHERE Qty > @min", new QueryParameterSetting("min", "3", "number"))));
-        await Db.RefreshConnectionsAsync();
-        Assert.False(Db.ReferenceMissing);
-        Assert.Empty(_store.Opened);                       // listing connections still opens nothing
-
-        await Db.ConnectReferenceAsync();
-
+        // The label stores only the connection NAME; it is found in the user's own saved list and the query ran through the guard.
         Assert.Equal("Warehouse", Assert.Single(_store.Opened));
         var q = Assert.Single(_source.Queries);
         Assert.Equal(3m, q.Parameters!["min"]);
@@ -394,6 +367,7 @@ public class AppDatabaseTests : IDisposable
         Assert.True(Data.HasData);
         Assert.False(Db.IsReferencePending);
         Assert.Equal(2, Data.RecordCount);
+        Assert.NotNull(Data.CurrentData);
     }
 
     [Fact]

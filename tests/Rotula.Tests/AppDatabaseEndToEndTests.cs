@@ -137,14 +137,10 @@ public class AppDatabaseEndToEndTests : IDisposable
         Assert.DoesNotContain(_db.Replace("\\", "\\\\"), json);
         Assert.DoesNotContain("stock.db", json);
 
-        // --- reopen in a fresh app: nothing is read until the button is clicked, then the same records come back
+        // --- reopen in a fresh app: the label brings its data back by itself (no button), the same records as before
         var again = NewMain(store);
         Assert.True(again.LoadFile(label));
-        Assert.False(again.Data.HasData);
-        Assert.True(again.Data.Database.IsReferencePending);
-        await again.Data.Database.RefreshConnectionsAsync();
-        Assert.False(again.Data.Database.ReferenceMissing);
-        await again.Data.Database.ConnectReferenceAsync();
+        await again.DataReload;
         Assert.True(again.Data.HasData, again.Data.Database.ResultText);
         Assert.Equal(3, again.Data.RecordCount);
         Assert.Equal("Tuerca", again.Data.CurrentData!["Name"]);
