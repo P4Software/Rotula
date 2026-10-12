@@ -17,7 +17,8 @@ public partial class PreviewWindow : DialogWindow
         InitializeComponent();
         Title = Loc.Get("Preview.TitleFor", title);
         // The preview is a snapshot: it shows the label as it is when the window opens.
-        var result = preview.GetBitmap(1.0, out string? errorKey);
+        // This window shows what the printer will draw, so objects that are switched off for the shown record are absent (the canvas only dims them).
+        using var result = preview.RenderPrinted(1.0, out string? errorKey);
         if (result is null)
         {
             Content = new System.Windows.Controls.TextBlock

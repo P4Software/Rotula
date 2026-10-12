@@ -26,8 +26,27 @@ namespace Rotula.App.ViewModels;
 /// <param name="FullText">The complete text or barcode data (the row shows <paramref name="Detail"/>, which is cut short); used for the tooltip.</param>
 /// <param name="IsBound">True when the element's content uses at least one data field (the list shows a small {} badge).</param>
 /// <param name="MissingText">Warning shown when a field has no matching column in the loaded data; empty when all is well.</param>
-public sealed record LayerItem(string Id, string Name, string TypeTag = "", string Detail = "", string FullText = "", bool IsBound = false, string MissingText = "")
+/// <param name="NotPrintable">True when the object is marked "do not print" (the row shows a small "No print" badge).</param>
+/// <param name="HiddenByCondition">True when the object's print condition is false for the record shown (the row shows a "Hidden" badge).</param>
+/// <param name="IsLocked">True when the object is locked against moving and deleting (the row shows a "Locked" badge).</param>
+public sealed record LayerItem(string Id, string Name, string TypeTag = "", string Detail = "", string FullText = "", bool IsBound = false, string MissingText = "",
+    bool NotPrintable = false, bool HiddenByCondition = false, bool IsLocked = false)
 {
+    /// <summary>True when the object is not part of the printed label for the shown record (either reason).</summary>
+    public bool IsNotPrinted => NotPrintable || HiddenByCondition;
+
+    /// <summary>Short text of the "not printed" badge: "No print" for the fixed setting, "Hidden" for a false condition.</summary>
+    public string NotPrintedText => NotPrintable ? Loc.Get("Badge.NotPrintable") : Loc.Get("Badge.HiddenByCondition");
+
+    /// <summary>Tooltip and screen-reader text of the "not printed" badge.</summary>
+    public string NotPrintedTip => NotPrintable ? Loc.Get("Badge.NotPrintable.Tip") : Loc.Get("Badge.HiddenByCondition.Tip");
+
+    /// <summary>Tooltip and screen-reader text of the "locked" badge.</summary>
+    public string LockedTip => Loc.Get("Badge.Locked.Tip");
+
+    /// <summary>Short text of the "locked" badge.</summary>
+    public string LockedText => Loc.Get("Badge.Locked");
+
     /// <summary>True when there is a missing-column warning to show.</summary>
     public bool HasMissing => MissingText.Length > 0;
 
@@ -399,7 +418,8 @@ public sealed partial class MainViewModel : ObservableObject
 
     private List<LayerItem> BuildLayers() =>
         Session.Document.Elements.AsEnumerable().Reverse()
-            .Select(e => new LayerItem(e.Id, PropertyPanelViewModel.ElementDisplayName(e), TypeTagOf(e), DetailOf(e), FullTextOf(e), FieldsViewModel.IsBound(e), Fields.MissingText(e)))
+            .Select(e => new LayerItem(e.Id, PropertyPanelViewModel.ElementDisplayName(e), TypeTagOf(e), DetailOf(e), FullTextOf(e), FieldsViewModel.IsBound(e), Fields.MissingText(e),
+                e.NotPrintable, Preview.IsHiddenByCondition(e), e.Locked))
             .ToList();
 
     /// <summary>
@@ -428,6 +448,8 @@ public sealed partial class MainViewModel : ObservableObject
         Session.Touch();
         Format.Refresh();
         RefreshZplView();
+        // Which objects a condition hides depends on the record shown, so the badges of the Objects list follow it.
+        RefreshLayers();
         RefreshCommandStates();
     }
 
@@ -1043,8 +1065,20 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(HasSelection))]
     private void Cut()
     {
+        // Cutting is "copy, then delete": with a locked object in the selection the delete would be refused after the copy was made, so nothing is done.
+        if (Session.SelectedElements.Any(e => e.Locked))
+        {
+            StatusMessage = Loc.Get("Status.LockedSkipped");
+            return;
+        }
         Copy();
         Commands.DeleteSelected();
+    }
+
+    /// <summary>Tells the user when the last editing command left locked objects alone (a silent no-op would look like a bug).</summary>
+    private void ReportLocked()
+    {
+        if (Commands.LockedSkipped > 0) StatusMessage = Loc.Get("Status.LockedSkipped");
     }
 
     /// <summary>Paste from the clipboard.</summary>
@@ -1061,7 +1095,11 @@ public sealed partial class MainViewModel : ObservableObject
 
     /// <summary>Delete the selection.</summary>
     [RelayCommand(CanExecute = nameof(HasSelection))]
-    private void Delete() => Commands.DeleteSelected();
+    private void Delete()
+    {
+        Commands.DeleteSelected();
+        ReportLocked();
+    }
 
     /// <summary>Select all.</summary>
     [RelayCommand]
@@ -1094,15 +1132,24 @@ public sealed partial class MainViewModel : ObservableObject
     {
         int step = large ? NudgeLarge : NudgeSmall;
         Commands.Nudge(dxSteps * step, dySteps * step);
+        ReportLocked();
     }
 
     /// <summary>Rotate clockwise.</summary>
     [RelayCommand(CanExecute = nameof(HasSelection))]
-    private void RotateClockwise() => Commands.Rotate90(true);
+    private void RotateClockwise()
+    {
+        Commands.Rotate90(true);
+        ReportLocked();
+    }
 
     /// <summary>Rotate counter-clockwise.</summary>
     [RelayCommand(CanExecute = nameof(HasSelection))]
-    private void RotateCounterClockwise() => Commands.Rotate90(false);
+    private void RotateCounterClockwise()
+    {
+        Commands.Rotate90(false);
+        ReportLocked();
+    }
 
     /// <summary>Bring to front.</summary>
     [RelayCommand(CanExecute = nameof(HasSelection))]
@@ -1122,11 +1169,19 @@ public sealed partial class MainViewModel : ObservableObject
 
     /// <summary>Align the selection (the parameter is an <see cref="AlignKind"/>).</summary>
     [RelayCommand(CanExecute = nameof(HasSelection))]
-    private void Align(AlignKind kind) => Commands.Align(kind);
+    private void Align(AlignKind kind)
+    {
+        Commands.Align(kind);
+        ReportLocked();
+    }
 
     /// <summary>Distribute the selection (the parameter is a <see cref="DistributeKind"/>).</summary>
     [RelayCommand(CanExecute = nameof(HasThree))]
-    private void Distribute(DistributeKind kind) => Commands.Distribute(kind);
+    private void Distribute(DistributeKind kind)
+    {
+        Commands.Distribute(kind);
+        ReportLocked();
+    }
 
     /// <summary>Adds an element from the toolbox.</summary>
     [RelayCommand]

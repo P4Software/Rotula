@@ -174,6 +174,7 @@ public sealed class DesignCanvas : FrameworkElement
         DrawPreview(dc, labelRect);
         if (_vm.GridVisible) DrawGrid(dc, labelRect);
         DrawPrintableArea(dc);
+        DrawBadges(dc);
         DrawSelection(dc);
         DrawGuides(dc, labelRect);
         if (_mode == Mode.Marquee && _dragStarted)
@@ -239,6 +240,40 @@ public sealed class DesignCanvas : FrameworkElement
         dc.DrawRectangle(null, MarginPen, new Rect(tl, br));
     }
 
+    private static readonly Brush BadgeLockBrush = new SolidColorBrush(Color.FromRgb(0x5B, 0x5B, 0x66));
+    private static readonly Brush BadgeHiddenBrush = new SolidColorBrush(Color.FromRgb(0xB4, 0x6A, 0x00));
+
+    /// <summary>
+    /// Small chips on the corner of objects that are not on the printed label for the shown record ("No print", "Hidden") or are locked.
+    /// They are drawn by the canvas, never into the label picture, so they cannot reach a print or an export.
+    /// </summary>
+    private void DrawBadges(DrawingContext dc)
+    {
+        var session = _vm!.Session;
+        double dpiScale = VisualTreeHelper.GetDpi(this).PixelsPerDip;
+        foreach (var e in session.Document.Elements)
+        {
+            var chips = new List<(string Text, Brush Color)>(2);
+            if (e.NotPrintable) chips.Add((Loc("Badge.NotPrintable"), BadgeHiddenBrush));
+            else if (_vm.Preview.IsHiddenByCondition(e)) chips.Add((Loc("Badge.HiddenByCondition"), BadgeHiddenBrush));
+            if (e.Locked) chips.Add((Loc("Badge.Locked"), BadgeLockBrush));
+            if (chips.Count == 0) continue;
+
+            var frame = ToPixelRect(session.Bounds.GetFrame(e));
+            double x = frame.X;
+            foreach (var (text, color) in chips)
+            {
+                var ft = new FormattedText(text, CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, new Typeface("Segoe UI Semibold"), 10, Brushes.White, dpiScale);
+                var chip = new Rect(x, frame.Y - ft.Height - 3, ft.Width + 8, ft.Height + 2);
+                // A chip that would leave the canvas on top is moved inside the frame so it stays readable.
+                if (chip.Y < 0) chip.Y = frame.Y + 1;
+                dc.DrawRoundedRectangle(color, null, chip, 3, 3);
+                dc.DrawText(ft, new Point(chip.X + 4, chip.Y + 1));
+                x += chip.Width + 3;
+            }
+        }
+    }
+
     private void DrawSelection(DrawingContext dc)
     {
         var selected = _vm!.Session.SelectedElements;
@@ -250,7 +285,8 @@ public sealed class DesignCanvas : FrameworkElement
         var union = RectD.UnionAll(selected.Select(_vm.Session.Bounds.GetFrame));
         if (selected.Count > 1) dc.DrawRectangle(null, new Pen(AccentBrush, 1), ToPixelRect(union));
 
-        if (selected.Count != 1) return;
+        // No handles on a locked object (the frame alone shows it is selected).
+        if (selected.Count != 1 || selected[0].Locked) return;
         var r = ToPixelRect(union);
         foreach (var h in Enum.GetValues<ResizeHandle>())
         {
@@ -285,6 +321,7 @@ public sealed class DesignCanvas : FrameworkElement
         _downPixel = pixel;
         _downDots = (x, y);
         _dragStarted = false;
+        _lockedHintShown = false;
         var session = _vm.Session;
         double tol = Snapping.ThresholdDots(4, Ppd);
         double handleTol = Snapping.ThresholdDots(HandleSize, Ppd);
@@ -292,7 +329,8 @@ public sealed class DesignCanvas : FrameworkElement
 
         // 1. A handle of the single selected element.
         var selected = session.SelectedElements;
-        if (selected.Count == 1)
+        // A locked object offers no handles: it can be selected to edit its properties, but not resized or turned by the mouse.
+        if (selected.Count == 1 && !selected[0].Locked)
         {
             var b = session.Bounds.GetFrame(selected[0]);
             if (HitTesting.HitRotateHandle(b, x, y, Snapping.ThresholdDots(HitTesting.RotateHandleOffsetPixels, Ppd), handleTol))
@@ -324,9 +362,10 @@ public sealed class DesignCanvas : FrameworkElement
             if (shift && !session.IsSelected(hit)) session.SetSelection(session.SelectedIds.Append(hit.Id));
             else if (!session.IsSelected(hit)) session.Select(hit);
             _mode = Mode.Move;
-            _gesture = session.BeginGesture();
-            _origins = session.SelectedElements.ToDictionary(el => el.Id, el => (el.X, el.Y));
-            _startBounds = session.Bounds.GetSelectionBounds(session.SelectedElements);
+            // Locked objects stay where they are even when they are part of a dragged selection; with only locked ones there is nothing to drag.
+            _origins = session.SelectedElements.Where(el => !el.Locked).ToDictionary(el => el.Id, el => (el.X, el.Y));
+            _gesture = _origins.Count > 0 ? session.BeginGesture() : null;
+            _startBounds = session.Bounds.GetSelectionBounds(session.SelectedElements.Where(el => !el.Locked).ToList());
             CaptureMouse();
             e.Handled = true;
             return;
@@ -365,7 +404,15 @@ public sealed class DesignCanvas : FrameworkElement
 
         switch (_mode)
         {
-            case Mode.Move: DoMove(x, y); break;
+            case Mode.Move:
+                if (_origins.Count > 0) DoMove(x, y);
+                else if (!_lockedHintShown)
+                {
+                    // The drag did nothing because every selected object is locked: say so once per drag.
+                    _lockedHintShown = true;
+                    _vm.StatusMessage = Localization.Loc.Get("Status.LockedSkipped");
+                }
+                break;
             case Mode.Resize: DoResize(x, y); break;
             case Mode.Marquee:
                 _marquee = new RectD(Math.Min(_downDots.X, x), Math.Min(_downDots.Y, y), Math.Abs(x - _downDots.X), Math.Abs(y - _downDots.Y));
@@ -457,6 +504,7 @@ public sealed class DesignCanvas : FrameworkElement
     }
 
     private bool _widthStatusShown;
+    private bool _lockedHintShown;
 
     /// <summary>True while the user is dragging or resizing (the formatting bar hides itself so it does not cover what is being moved).</summary>
     public bool IsInteracting => _mode != Mode.None && _dragStarted;
@@ -565,7 +613,12 @@ public sealed class DesignCanvas : FrameworkElement
         if (_vm is not null)
         {
             var sel = _vm.Session.SelectedElements;
-            if (sel.Count == 1)
+            if (sel.Count == 1 && sel[0].Locked)
+            {
+                // A locked object cannot be dragged, so the move cursor would promise something that does not happen.
+                cursor = Cursors.Arrow;
+            }
+            else if (sel.Count == 1)
             {
                 var b = _vm.Session.Bounds.GetFrame(sel[0]);
                 double handleTol = Snapping.ThresholdDots(HandleSize, Ppd);

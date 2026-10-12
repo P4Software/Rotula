@@ -107,7 +107,7 @@ public class VarFilesTests
         string json = RotulaFileSerializer.Serialize(FullVariableDocument());
         var root = JsonDocument.Parse(json).RootElement;
         Assert.True(root.GetProperty("formatVersion").GetInt32() > RotulaFileSerializer.ZplCatalogFormatVersion);
-        string future = json.Replace("\"formatVersion\": 7", "\"formatVersion\": 9");
+        string future = json.Replace("\"formatVersion\": 7", "\"formatVersion\": " + (RotulaFileSerializer.CurrentFormatVersion + 1));
         Assert.Equal("File.Error.NewerVersion", Assert.Throws<RotulaFileException>(() => RotulaFileSerializer.Deserialize(future)).MessageKey);
     }
 

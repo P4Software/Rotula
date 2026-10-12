@@ -329,6 +329,26 @@ public abstract class ElementDto
     public string? Rotation { get; set; }
     /// <summary>Reverse field.</summary>
     public bool ReverseField { get; set; }
+
+    // ---- format version 9: omitted from the file while they have their default value.
+
+    /// <summary>Print only when this rule holds for the record, or null to always print.</summary>
+    public PrintConditionDto? PrintCondition { get; set; }
+    /// <summary>True when the object is never printed or exported (kept as a note or guide).</summary>
+    public bool? NotPrintable { get; set; }
+    /// <summary>True when the object is locked against moving, resizing and deleting in the designer.</summary>
+    public bool? Locked { get; set; }
+}
+
+/// <summary>A per-record printing rule of an object. Format version 9.</summary>
+public sealed class PrintConditionDto
+{
+    /// <summary>Name of the data field or variable to look at.</summary>
+    public string Field { get; set; } = string.Empty;
+    /// <summary>Operator name: Equals, NotEquals, IsEmpty, IsNotEmpty or Contains.</summary>
+    public string Operator { get; set; } = "Equals";
+    /// <summary>Text to compare with (ignored by IsEmpty and IsNotEmpty).</summary>
+    public string Value { get; set; } = string.Empty;
 }
 
 /// <summary>Block of settings shared by text and barcodes (field numbers, embedding, clock, printer serialization). Format version 6.</summary>

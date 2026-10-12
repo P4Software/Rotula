@@ -546,6 +546,7 @@
                       <ColumnDefinition Width="Auto" MinWidth="64" SharedSizeGroup="LayerTag" />
                       <ColumnDefinition Width="*" />
                       <ColumnDefinition Width="Auto" />
+                      <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="{Binding TypeTag}" MaxWidth="104" Margin="0,0,12,0" FontFamily="{StaticResource MonoFont}" FontSize="11.5" Foreground="{StaticResource MutedBrush}"
                                VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
@@ -569,6 +570,28 @@
                       </Path>
                       <Border Background="{StaticResource AccentTintBrush}" CornerRadius="4" Padding="4,0" AutomationProperties.Name="{loc:T Fields.Badge}">
                         <TextBlock Text="{}{}" FontFamily="{StaticResource MonoFont}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}" />
+                      </Border>
+                    </StackPanel>
+                    <!-- Printing state: "No print" / "Hidden" (not on the printed label for this record) and "Locked" (cannot be moved). Each shows only when it applies. -->
+                    <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,0,0">
+                      <Border CornerRadius="4" Padding="5,0" Margin="0,0,4,0" Background="{StaticResource WarningTintBrush}" ToolTip="{Binding NotPrintedTip}"
+                              AutomationProperties.Name="{Binding NotPrintedTip}">
+                        <Border.Style>
+                          <Style TargetType="Border">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers><DataTrigger Binding="{Binding IsNotPrinted}" Value="True"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers>
+                          </Style>
+                        </Border.Style>
+                        <TextBlock Text="{Binding NotPrintedText}" FontSize="10.5" FontWeight="SemiBold" Foreground="{StaticResource WarningBrush}" />
+                      </Border>
+                      <Border CornerRadius="4" Padding="5,0" Background="{StaticResource AccentTintBrush}" ToolTip="{Binding LockedTip}" AutomationProperties.Name="{Binding LockedTip}">
+                        <Border.Style>
+                          <Style TargetType="Border">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers><DataTrigger Binding="{Binding IsLocked}" Value="True"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers>
+                          </Style>
+                        </Border.Style>
+                        <TextBlock Text="{Binding LockedText}" FontSize="10.5" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}" />
                       </Border>
                     </StackPanel>
                   </Grid>

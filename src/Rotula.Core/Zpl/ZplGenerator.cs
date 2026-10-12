@@ -121,6 +121,9 @@ public static class ZplGenerator
 
         foreach (var element in doc.Elements)
         {
+            // An object that is switched off for this record is not emitted and not validated: a barcode that is only invalid on a record
+            // where it is hidden must not stop that record from printing. The same data that fills the placeholders decides the condition.
+            if (!ElementPrinting.IsPrinted(element, data, doc.Variables, issues)) continue;
             int before = issues.Count;
             string? field = EmitElement(doc, element, data, resolution, issues, rasterizer);
             bool failed = issues.Skip(before).Any(i => i.Severity == ValidationSeverity.Error);

@@ -5690,4 +5690,112 @@ Las marcas y los nombres de producto pertenecen a sus dueños; Rotula no está a
   <data name="Preview.Unavailable" xml:space="preserve">
     <value>La vista previa no se puede dibujar ahora. Reduzca el zoom o haga la etiqueta más pequeña e inténtelo de nuevo; su etiqueta no se ve afectada.</value>
   </data>
+  <data name="Panel.Printing" xml:space="preserve">
+    <value>Impresión</value>
+  </data>
+  <data name="Prop.NotPrintable" xml:space="preserve">
+    <value>No imprimir este objeto</value>
+  </data>
+  <data name="Prop.NotPrintable.Hint" xml:space="preserve">
+    <value>El objeto permanece en la etiqueta dentro del diseñador, por ejemplo como nota o guía, pero nunca se imprime ni se exporta.</value>
+  </data>
+  <data name="Prop.Condition.Enable" xml:space="preserve">
+    <value>Imprimir solo cuando</value>
+  </data>
+  <data name="Prop.Condition.Enable.Hint" xml:space="preserve">
+    <value>Omite este objeto en las etiquetas donde la regla de abajo no se cumple, por ejemplo para imprimir un aviso solo en algunos registros.</value>
+  </data>
+  <data name="Prop.Condition.Field" xml:space="preserve">
+    <value>Campo a comprobar</value>
+  </data>
+  <data name="Prop.Condition.Field.Hint" xml:space="preserve">
+    <value>La columna de datos o variable cuyo valor decide si este objeto se imprime.</value>
+  </data>
+  <data name="Prop.Condition.PickField" xml:space="preserve">
+    <value>Elegir campo</value>
+  </data>
+  <data name="Prop.Condition.Operator" xml:space="preserve">
+    <value>Comparación</value>
+  </data>
+  <data name="Prop.Condition.Value" xml:space="preserve">
+    <value>Valor con el que comparar</value>
+  </data>
+  <data name="Prop.Condition.Value.Hint" xml:space="preserve">
+    <value>No importan las mayúsculas ni los espacios alrededor del texto: Sí, sí y " SÍ " son iguales.</value>
+  </data>
+  <data name="Prop.Condition.Summary" xml:space="preserve">
+    <value>Regla de impresión</value>
+  </data>
+  <data name="Prop.Locked" xml:space="preserve">
+    <value>Bloquear posición</value>
+  </data>
+  <data name="Prop.Locked.Hint" xml:space="preserve">
+    <value>Un objeto bloqueado no se puede mover, cambiar de tamaño ni borrar con el ratón o el teclado hasta que lo desbloquee. Puede seguir seleccionándolo y cambiar sus propiedades aquí. Bloquear no cambia lo que se imprime.</value>
+  </data>
+  <data name="Enum.ConditionOperator.Equals" xml:space="preserve">
+    <value>es igual a</value>
+  </data>
+  <data name="Enum.ConditionOperator.NotEquals" xml:space="preserve">
+    <value>no es igual a</value>
+  </data>
+  <data name="Enum.ConditionOperator.IsEmpty" xml:space="preserve">
+    <value>está vacío</value>
+  </data>
+  <data name="Enum.ConditionOperator.IsNotEmpty" xml:space="preserve">
+    <value>no está vacío</value>
+  </data>
+  <data name="Enum.ConditionOperator.Contains" xml:space="preserve">
+    <value>contiene</value>
+  </data>
+  <data name="Condition.Summary.Equals" xml:space="preserve">
+    <value>Se imprime solo cuando {0} es igual a "{1}".</value>
+  </data>
+  <data name="Condition.Summary.NotEquals" xml:space="preserve">
+    <value>Se imprime solo cuando {0} no es igual a "{1}".</value>
+  </data>
+  <data name="Condition.Summary.IsEmpty" xml:space="preserve">
+    <value>Se imprime solo cuando {0} está vacío.</value>
+  </data>
+  <data name="Condition.Summary.IsNotEmpty" xml:space="preserve">
+    <value>Se imprime solo cuando {0} no está vacío.</value>
+  </data>
+  <data name="Condition.Summary.Contains" xml:space="preserve">
+    <value>Se imprime solo cuando {0} contiene "{1}".</value>
+  </data>
+  <data name="Condition.Summary.NoField" xml:space="preserve">
+    <value>Elija el campo que se debe comprobar. Mientras tanto este objeto siempre se imprime.</value>
+  </data>
+  <data name="Condition.Summary.NotPrintable" xml:space="preserve">
+    <value>Este objeto nunca se imprime, diga lo que diga la regla.</value>
+  </data>
+  <data name="Condition.Field.Required" xml:space="preserve">
+    <value>Elija el campo que se debe comprobar.</value>
+  </data>
+  <data name="Condition.FieldMissing" xml:space="preserve">
+    <value>No hay ningún campo ni variable llamado "{0}" en los datos cargados ni en la etiqueta. Se trata como vacío, así que revise el nombre.</value>
+  </data>
+  <data name="Issue.Element.Condition.FieldMissing" xml:space="preserve">
+    <value>La regla de impresión de este objeto mira "{0}", pero ninguna columna de datos ni variable tiene ese nombre. Se trata como vacío, así que revise el nombre.</value>
+  </data>
+  <data name="Status.LockedSkipped" xml:space="preserve">
+    <value>Los objetos bloqueados no se tocaron. Desmarque "Bloquear posición" en las propiedades para cambiarlos.</value>
+  </data>
+  <data name="Badge.NotPrintable" xml:space="preserve">
+    <value>No imprime</value>
+  </data>
+  <data name="Badge.NotPrintable.Tip" xml:space="preserve">
+    <value>Marcado como "No imprimir": este objeto nunca se imprime ni se exporta.</value>
+  </data>
+  <data name="Badge.HiddenByCondition" xml:space="preserve">
+    <value>Oculto</value>
+  </data>
+  <data name="Badge.HiddenByCondition.Tip" xml:space="preserve">
+    <value>La regla de impresión de este objeto no se cumple para el registro mostrado, así que se omite en esta etiqueta.</value>
+  </data>
+  <data name="Badge.Locked" xml:space="preserve">
+    <value>Bloqueado</value>
+  </data>
+  <data name="Badge.Locked.Tip" xml:space="preserve">
+    <value>Bloqueado: este objeto no se puede mover, cambiar de tamaño ni borrar hasta que lo desbloquee.</value>
+  </data>
 </root>

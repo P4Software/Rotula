@@ -85,11 +85,19 @@ public static class LabelRenderer
     /// <returns>Elements that could not be drawn faithfully; empty when everything was fine.</returns>
     public static IReadOnlyList<RenderIssue> Draw(SKCanvas canvas, RenderLabel label)
     {
+        const byte DimmedAlpha = 70;
         var issues = new List<RenderIssue>();
         foreach (var element in label.Elements)
         {
             using var layout = Layout.Create(element, issues);
-            canvas.Save();
+            // A dimmed (not printed) element is painted into a translucent layer so that everything it is made of fades together.
+            // A layer is one save level, so the single Restore below closes either kind.
+            if (element.Dimmed)
+            {
+                using var fade = new SKPaint { Color = SKColors.White.WithAlpha(DimmedAlpha) };
+                canvas.SaveLayer(fade);
+            }
+            else canvas.Save();
             try
             {
                 canvas.Translate((float)element.X, (float)element.Y);

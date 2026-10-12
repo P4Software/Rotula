@@ -19,6 +19,34 @@ public abstract class LabelElement
     public FieldRotation? Rotation { get; set; }
     /// <summary>Print the field in reverse (^FR): inverts the pixels it overlaps.</summary>
     public bool ReverseField { get; set; }
+
+    /// <summary>
+    /// Print only when this rule holds for the record being printed, or null to always print. An element whose rule is false is left
+    /// out of that record's ZPL entirely (see <see cref="ElementPrinting.IsPrinted"/>).
+    /// </summary>
+    public PrintCondition? PrintCondition { get; set; }
+
+    /// <summary>
+    /// The object stays in the file and is shown in the designer (as a note or a guide) but is never written to ZPL and never drawn in
+    /// a print, PNG, JPEG or PDF.
+    /// </summary>
+    public bool NotPrintable { get; set; }
+
+    /// <summary>
+    /// Design-time only: a locked object cannot be moved, resized, rotated, aligned or deleted until it is unlocked. It can still be
+    /// selected and its properties edited, and it never changes the ZPL.
+    /// </summary>
+    public bool Locked { get; set; }
+
+    /// <summary>Copies the printing and locking settings (<see cref="PrintCondition"/>, <see cref="NotPrintable"/>, <see cref="Locked"/>) onto another element, so every copy path keeps them.</summary>
+    /// <param name="target">The element that receives the settings.</param>
+    public void CopyObjectSettingsTo(LabelElement target)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        target.PrintCondition = PrintCondition?.Clone();
+        target.NotPrintable = NotPrintable;
+        target.Locked = Locked;
+    }
 }
 
 /// <summary>Block (^FB) layout of a text element: wrapping, alignment and line limits.</summary>

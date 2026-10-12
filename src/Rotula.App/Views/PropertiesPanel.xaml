@@ -211,6 +211,26 @@
       </Border>
     </DataTemplate>
 
+    <!-- The field of a printing rule: a box for the name and the shared field picker (the chosen field replaces the box content). -->
+    <DataTemplate DataType="{x:Type vm:ConditionFieldRow}">
+      <StackPanel ToolTip="{Binding Hint}" Margin="0,0,0,12">
+        <TextBlock Text="{Binding Label}" Style="{StaticResource RowLabel}" />
+        <DockPanel>
+          <views:FieldPickerButton DockPanel.Dock="Right" Caption="{loc:T Prop.Condition.PickField}" Row="{Binding Field}" ReplaceAll="True" Margin="8,0,0,0" VerticalAlignment="Center" />
+          <TextBox Text="{Binding Field.Text, UpdateSourceTrigger=PropertyChanged}" IsUndoEnabled="False" ctl:FieldState.HasError="{Binding Field.HasError}"
+                   AutomationProperties.Name="{Binding Label}" AutomationProperties.HelpText="{Binding Hint}" />
+        </DockPanel>
+        <TextBlock Text="{Binding Field.Error}" Style="{StaticResource ErrorText}" AutomationProperties.LiveSetting="Polite">
+          <TextBlock.Visibility><Binding Path="Field.HasError" Converter="{StaticResource BoolToVisibility}" /></TextBlock.Visibility>
+        </TextBlock>
+        <StackPanel Orientation="Horizontal" Margin="0,8,0,0" Visibility="{Binding HasWarning, Converter={StaticResource BoolToVisibility}}" ToolTip="{Binding WarningText}"
+                    AutomationProperties.LiveSetting="Polite">
+          <Path Style="{StaticResource Icon}" Data="{StaticResource IconWarning}" Width="14" Height="14" TextElement.Foreground="{StaticResource WarningBrush}" VerticalAlignment="Top" Margin="0,1,6,0" />
+          <TextBlock Text="{Binding WarningText}" Foreground="{StaticResource WarningBrush}" FontSize="12" TextWrapping="Wrap" MaxWidth="290" AutomationProperties.Name="{Binding WarningText}" />
+        </StackPanel>
+      </StackPanel>
+    </DataTemplate>
+
     <DataTemplate DataType="{x:Type vm:ActionRow}">
       <Button Content="{Binding Label}" Command="{Binding RunCommand}" Margin="0,4,0,12" HorizontalAlignment="Left"
               AutomationProperties.Name="{Binding Label}" />

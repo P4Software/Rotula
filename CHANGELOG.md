@@ -5,6 +5,9 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+- **Print an object only when you want it**: in the new Printing section of the properties, mark an object "Do not print this object" (a note or guide that never reaches the printer or an export), set "Print only when" a field equals, does not equal, contains, is empty or is not empty a value (so a warning can appear on some labels only), and "Lock position" so nothing moves it by accident. The Objects list and the canvas show small No print, Hidden and Locked badges.
+
 ## [0.3.4] - 2026-10-12
 
 ### Fixed

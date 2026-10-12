@@ -131,6 +131,7 @@ public static class LabelDpiConverter
         to.OriginKind = from.OriginKind;
         to.Rotation = from.Rotation;
         to.ReverseField = from.ReverseField;
+        from.CopyObjectSettingsTo(to);
     }
 
     private static LabelElement ConvertElement(LabelElement e, Ctx c)
@@ -254,6 +255,7 @@ public static class LabelDpiConverter
         to.OriginKind = from.OriginKind;
         to.Rotation = from.Rotation;
         to.ReverseField = from.ReverseField;
+        from.CopyObjectSettingsTo(to);
         if (!c.Same)
             c.Issues.Add(new ValidationIssue(ValidationSeverity.Warning, "Dpi.Raw.NotScaled", from.Id, Label(from)));
     }

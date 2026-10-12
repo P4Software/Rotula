@@ -52,6 +52,58 @@ public sealed class PreviewCache : IDisposable
     }
 
     /// <summary>
+    /// The render input for the design canvas: the same as <see cref="GetLabel"/>, plus the objects that are not printed for the shown record,
+    /// drawn dimmed so they can still be seen and selected. When no object is switched off it is exactly <see cref="GetLabel"/>.
+    /// </summary>
+    public RenderLabel GetDesignLabel()
+    {
+        if (!Core.Elements.ElementPrinting.AnyConditional(_session.Document)) return GetLabel();
+        if (_designLabel is null || _designLabelRevision != _session.Revision)
+        {
+            _designLabel = LabelDocumentAdapter.ToRenderLabel(_session.Document, Data, includeNonPrinting: true);
+            _designLabelRevision = _session.Revision;
+        }
+        return _designLabel;
+    }
+
+    /// <summary>
+    /// Draws the label exactly as it prints (objects that are not printed for the shown record are left out). The caller owns and must dispose the
+    /// result. Returns null and sets <paramref name="errorKey"/> when the label cannot be drawn.
+    /// </summary>
+    public RenderResult? RenderPrinted(double scale, out string? errorKey)
+    {
+        errorKey = null;
+        var label = GetLabel();
+        if (label.WidthDots <= 0 || label.HeightDots <= 0) { errorKey = "Preview.InvalidSize"; return null; }
+        try { return LabelRenderer.RenderBitmap(label, new RenderOptions { Scale = scale }); }
+        catch (ArgumentOutOfRangeException) { errorKey = "Preview.TooLarge"; return null; }
+        catch (Exception) { errorKey = "Preview.Unavailable"; return null; }
+    }
+
+    /// <summary>
+    /// True when the element has a condition that is false for the record shown now (so it is left out of the print). Objects marked "do not print"
+    /// are a different state and report false here. Cached per revision and record, because the answer needs the variables resolved.
+    /// </summary>
+    public bool IsHiddenByCondition(Core.Elements.LabelElement element)
+    {
+        if (element.NotPrintable || element.PrintCondition is null) return false;
+        if (_notPrinted is null || _notPrintedRevision != _session.Revision || !ReferenceEquals(_notPrintedData, Data))
+        {
+            _notPrinted = LabelDocumentAdapter.FindNotPrinted(_session.Document, Data);
+            _notPrintedRevision = _session.Revision;
+            _notPrintedData = Data;
+        }
+        return _notPrinted.Contains(element.Id);
+    }
+
+    private HashSet<string>? _notPrinted;
+    private long _notPrintedRevision = -1;
+    private IReadOnlyDictionary<string, string>? _notPrintedData;
+
+    private RenderLabel? _designLabel;
+    private long _designLabelRevision = -1;
+
+    /// <summary>
     /// The rasterised label at <paramref name="scale"/> pixels per dot. The returned object is owned by the cache and stays
     /// valid until the next call that has to re-render. Returns null and sets <paramref name="errorKey"/> when the label
     /// cannot be drawn (zero size, or too large for the current zoom).
@@ -64,7 +116,7 @@ public sealed class PreviewCache : IDisposable
         if (_bitmap is not null && _bitmapRevision == _session.Revision && Math.Abs(_bitmapScale - scale) < 1e-9)
             return _bitmap;
 
-        var label = GetLabel();
+        var label = GetDesignLabel();
         _bitmap?.Dispose();
         _bitmap = null;
         if (label.WidthDots <= 0 || label.HeightDots <= 0)

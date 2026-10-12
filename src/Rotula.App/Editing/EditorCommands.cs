@@ -65,6 +65,23 @@ public sealed class EditorCommands
     /// <summary>Creates the command set for a session.</summary>
     public EditorCommands(EditorSession session) => _s = session;
 
+    /// <summary>
+    /// How many selected objects the last command left alone because they are locked (0 when none). The window uses it to tell the user why
+    /// nothing moved, instead of ignoring the key or drag in silence.
+    /// </summary>
+    public int LockedSkipped { get; private set; }
+
+    /// <summary>
+    /// The part of the selection a command that changes position, size or existence may touch: the locked objects are left out and counted
+    /// in <see cref="LockedSkipped"/>. Why here and not in the window: the rule must hold for every way in (keys, menus, mouse, panel).
+    /// </summary>
+    private List<LabelElement> Unlocked(IReadOnlyList<LabelElement> selection)
+    {
+        var free = selection.Where(e => !e.Locked).ToList();
+        LockedSkipped = selection.Count - free.Count;
+        return free;
+    }
+
     // ------------------------------------------------------------------------------- add / delete
 
     /// <summary>Adds an element on top of the others and selects it.</summary>
@@ -82,7 +99,7 @@ public sealed class EditorCommands
     /// <summary>Deletes the selected elements.</summary>
     public void DeleteSelected()
     {
-        var ids = _s.SelectedIds.ToHashSet();
+        var ids = Unlocked(_s.SelectedElements).Select(e => e.Id).ToHashSet();
         if (ids.Count == 0) return;
         _s.Edit("Undo.Delete", d => d.Elements.RemoveAll(e => ids.Contains(e.Id)), selectionAfter: () => Array.Empty<string>());
     }
@@ -199,16 +216,17 @@ public sealed class EditorCommands
     /// </summary>
     public void Nudge(int dx, int dy)
     {
-        var sel = _s.SelectedElements;
+        var sel = Unlocked(_s.SelectedElements);
         if (sel.Count == 0 || (dx == 0 && dy == 0)) return;
+        var movable = sel.Select(e => e.Id).ToHashSet();
         _s.Edit("Undo.Move", d =>
         {
-            foreach (var e in d.Elements.Where(e => _s.IsSelected(e)))
+            foreach (var e in d.Elements.Where(e => movable.Contains(e.Id)))
             {
                 e.X += dx;
                 e.Y += dy;
             }
-        }, mergeKey: "nudge:" + string.Join(',', _s.SelectedIds));
+        }, mergeKey: "nudge:" + string.Join(',', movable));
     }
 
     /// <summary>
@@ -217,7 +235,7 @@ public sealed class EditorCommands
     /// </summary>
     public void Rotate90(bool clockwise = true)
     {
-        var targets = _s.SelectedElements.Where(e => e is not (CircleElement or EllipseElement or DiagonalLineElement)).ToList();
+        var targets = Unlocked(_s.SelectedElements).Where(e => e is not (CircleElement or EllipseElement or DiagonalLineElement)).ToList();
         if (targets.Count == 0) return;
         _s.Edit("Undo.Rotate", d =>
         {
@@ -245,10 +263,13 @@ public sealed class EditorCommands
     {
         var sel = _s.SelectedElements;
         if (sel.Count == 0) return;
+        // A locked object still counts for the reference box (it is a fine anchor to line the others up with) but it is never moved.
         RectD reference = sel.Count == 1 ? LabelRect(_s.Document) : _s.Bounds.GetSelectionBounds(sel);
+        var movable = Unlocked(sel).Select(e => e.Id).ToHashSet();
+        if (movable.Count == 0) return;
         _s.Edit("Undo.Align", d =>
         {
-            foreach (var e in d.Elements.Where(e => _s.IsSelected(e)))
+            foreach (var e in d.Elements.Where(e => movable.Contains(e.Id)))
             {
                 var b = _s.Bounds.GetBounds(e);
                 double dx = 0, dy = 0;
@@ -281,11 +302,13 @@ public sealed class EditorCommands
         double gap = (last - first - total) / (ordered.Count - 1);
         var targets = new Dictionary<string, double>();
         double pos = first;
+        Unlocked(sel); // only to count the locked ones: they keep their place but still take part in the spacing
         foreach (var t in ordered)
         {
-            targets[t.Element.Id] = pos - (horizontal ? t.Bounds.X : t.Bounds.Y);
+            if (!t.Element.Locked) targets[t.Element.Id] = pos - (horizontal ? t.Bounds.X : t.Bounds.Y);
             pos += (horizontal ? t.Bounds.Width : t.Bounds.Height) + gap;
         }
+        if (targets.Count == 0) return;
         _s.Edit("Undo.Distribute", d =>
         {
             foreach (var e in d.Elements.Where(e => targets.ContainsKey(e.Id)))
@@ -318,6 +341,7 @@ public sealed class EditorCommands
     /// <param name="newHeight">New bounding-box height in dots.</param>
     public void ApplyResize(LabelElement element, RectD start, ResizeHandle handle, double newWidth, double newHeight)
     {
+        if (element.Locked) { LockedSkipped = 1; return; }
         bool affectsX = handle is not (ResizeHandle.Top or ResizeHandle.Bottom);
         bool affectsY = handle is not (ResizeHandle.Left or ResizeHandle.Right);
         double sx = affectsX && start.Width > 0 ? Math.Max(0.01, newWidth) / start.Width : 1;
