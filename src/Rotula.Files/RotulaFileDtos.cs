@@ -297,6 +297,23 @@ public sealed class TextBlockDto
     public string Alignment { get; set; } = "Left";
     /// <summary>Hanging indent.</summary>
     public int HangingIndent { get; set; }
+    /// <summary>Text fit (format version 9), or null for none.</summary>
+    public TextFitDto? Fit { get; set; }
+}
+
+/// <summary>Text fit of a wrapped text block: shrink the font or add lines to fit the content. Format version 9.</summary>
+public sealed class TextFitDto
+{
+    /// <summary>"None", "Shrink" or "Grow".</summary>
+    public string Mode { get; set; } = "None";
+    /// <summary>Smallest size in points (shrink).</summary>
+    public double MinSize { get; set; } = 6;
+    /// <summary>Largest size in points (shrink).</summary>
+    public double MaxSize { get; set; } = 24;
+    /// <summary>Most lines the block may grow to (grow).</summary>
+    public int MaxLinesCap { get; set; } = 20;
+    /// <summary>True to silence the overflow warning.</summary>
+    public bool IgnoreOverflowWarning { get; set; }
 }
 
 /// <summary>Base of all serialized elements. The <c>type</c> property selects the concrete class.</summary>

@@ -34,6 +34,11 @@ public sealed class TextBlockOptions
     public TextAlignment Alignment { get; set; } = TextAlignment.Left;
     /// <summary>Hanging indent of the second and following lines, in dots.</summary>
     public int HangingIndent { get; set; }
+    /// <summary>
+    /// How the block reacts to content longer than the box (shrink the font, or add lines), or null for the plain block. Rotula-only: the
+    /// ZPL carries the computed values, so this does not come back when ZPL is imported.
+    /// </summary>
+    public Rotula.Core.Text.TextFitOptions? Fit { get; set; }
 }
 
 /// <summary>Fixed-size text box (ZPL <c>^TB</c>): word-wrapped text that is cut off at the box height.</summary>

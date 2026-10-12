@@ -69,7 +69,14 @@ internal static class RasterTextEmitter
             issues.Add(new ValidationIssue(ValidationSeverity.Error, "Text.Box.Range", t.Id, "1", "32000"));
         if (issues.Any(i => i.ElementId == t.Id && i.Severity == ValidationSeverity.Error)) return null;
 
-        var request = new TextRasterRequest(text, font, (int)doc.Dpi, boxWidth, t.TextBox?.HeightDots ?? 0, t.Block?.MaxLines ?? 0,
+        // Text fit: the size or the line count this record's text needs, decided with the same layout the picture is drawn with.
+        var fitted = TextFitResolver.Resolve(doc, t, text, rasterizer);
+        if (fitted?.PointSize is { } fittedSize)
+        {
+            font = font.Clone();
+            font.PointSize = fittedSize;
+        }
+        var request = new TextRasterRequest(text, font, (int)doc.Dpi, boxWidth, t.TextBox?.HeightDots ?? 0, fitted?.MaxLines ?? t.Block?.MaxLines ?? 0,
             t.Block?.LineSpacing ?? 0, t.Block?.Alignment ?? TextAlignment.Left, t.Block?.HangingIndent ?? 0);
         TextRasterResult result;
         try { result = rasterizer.Rasterize(request); }
@@ -81,7 +88,7 @@ internal static class RasterTextEmitter
         }
         var m = result.Measurement;
         if (m.FontSubstituted) issues.Add(new ValidationIssue(ValidationSeverity.Warning, "Text.Font.Missing", t.Id, font.FamilyName, m.ActualFamily));
-        if (m.Overflows) issues.Add(new ValidationIssue(ValidationSeverity.Warning, "Text.Overflow", t.Id));
+        if (m.Overflows && t.Block?.Fit is not { IgnoreOverflowWarning: true }) issues.Add(new ValidationIssue(ValidationSeverity.Warning, "Text.Overflow", t.Id));
 
         var rotation = t.Rotation ?? doc.DefaultRotation;
         var bitmap = result.Bitmap.Rotate(rotation);

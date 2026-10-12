@@ -126,7 +126,7 @@ public static class ElementCloner
         target.Block = s.Block is null ? null : new TextBlockOptions
         {
             WidthDots = s.Block.WidthDots, MaxLines = s.Block.MaxLines, LineSpacing = s.Block.LineSpacing,
-            Alignment = s.Block.Alignment, HangingIndent = s.Block.HangingIndent,
+            Alignment = s.Block.Alignment, HangingIndent = s.Block.HangingIndent, Fit = s.Block.Fit?.Clone(),
         };
         return target;
     }

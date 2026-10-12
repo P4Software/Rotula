@@ -23,11 +23,17 @@ public static class TextFitEstimator
     /// <summary>
     /// Estimated width in dots of one character of the text's printer font, from the element's own sizes or the label default.
     /// </summary>
-    public static double CharacterWidth(TextElement element, FontSpec? labelDefault)
+    public static double CharacterWidth(TextElement element, FontSpec? labelDefault) => CharacterWidth(element, labelDefault, null, null);
+
+    /// <summary>
+    /// Same as <see cref="CharacterWidth(TextElement, FontSpec?)"/> for a candidate size: <paramref name="fontHeight"/> and <paramref name="fontWidth"/>
+    /// (dots) replace the element's own sizes when given. The text fit uses it to try sizes without copying the element.
+    /// </summary>
+    public static double CharacterWidth(TextElement element, FontSpec? labelDefault, int? fontHeight, int? fontWidth)
     {
         char id = element.FontId ?? labelDefault?.FontId ?? '0';
-        int height = element.FontHeight ?? labelDefault?.Height ?? 30;
-        int width = element.FontWidth ?? labelDefault?.Width ?? 30;
+        int height = fontHeight ?? element.FontHeight ?? labelDefault?.Height ?? 30;
+        int width = fontWidth ?? element.FontWidth ?? labelDefault?.Width ?? 30;
         if (Cells.TryGetValue(char.ToUpperInvariant(id), out var cell))
         {
             // The printer scales a bitmap font by whole multiples of its cell.
@@ -45,18 +51,50 @@ public static class TextFitEstimator
     /// <param name="element">The text with its block or box.</param>
     /// <param name="text">The final text (variables replaced).</param>
     /// <param name="labelDefault">The label's default font, for sizes the element does not set.</param>
-    public static TextOverflow Estimate(TextElement element, string text, FontSpec? labelDefault)
+    public static TextOverflow Estimate(TextElement element, string text, FontSpec? labelDefault) =>
+        Estimate(element, text, labelDefault, null, null, null);
+
+    /// <summary>
+    /// Same estimate for a candidate size: the font height and width (dots) and the line limit replace the element's own values when given. The text
+    /// fit (<see cref="TextFitResolver"/>) tries sizes this way, so it measures with exactly the estimate the overflow warning uses.
+    /// </summary>
+    public static TextOverflow Estimate(TextElement element, string text, FontSpec? labelDefault, int? fontHeight, int? fontWidth, int? maxLines)
     {
         ArgumentNullException.ThrowIfNull(element);
+        var flags = LayOut(element, text, labelDefault, fontHeight, fontWidth, out int lines);
+        if (lines == 0) return TextOverflow.None;
+        int height = fontHeight ?? element.FontHeight ?? labelDefault?.Height ?? 30;
+        if (element.Block is { } block && lines > (maxLines ?? block.MaxLines)) flags |= TextOverflow.Lines;
+        if (element.TextBox is { } box)
+        {
+            double lineHeight = height;
+            if (lines * lineHeight > box.HeightDots) flags |= TextOverflow.Height;
+        }
+        return flags;
+    }
+
+    /// <summary>
+    /// Estimates how many lines <paramref name="text"/> needs in the block of <paramref name="element"/> at a candidate size, whatever the block's
+    /// own line limit. Returns 0 for a text without a block or without content.
+    /// </summary>
+    public static int CountLines(TextElement element, string text, FontSpec? labelDefault, int? fontHeight, int? fontWidth)
+    {
+        ArgumentNullException.ThrowIfNull(element);
+        LayOut(element, text, labelDefault, fontHeight, fontWidth, out int lines);
+        return lines;
+    }
+
+    // The one wrapping routine behind both public questions, so "does it fit" and "how many lines" can never disagree.
+    private static TextOverflow LayOut(TextElement element, string text, FontSpec? labelDefault, int? fontHeight, int? fontWidth, out int lines)
+    {
+        lines = 0;
         int boxWidth = element.Block?.WidthDots ?? element.TextBox?.WidthDots ?? 0;
         if (boxWidth <= 0 || text.Length == 0) return TextOverflow.None;
 
-        double charWidth = Math.Max(1, CharacterWidth(element, labelDefault));
-        int height = element.FontHeight ?? labelDefault?.Height ?? 30;
+        double charWidth = Math.Max(1, CharacterWidth(element, labelDefault, fontHeight, fontWidth));
         int perLine = Math.Max(1, (int)Math.Floor(boxWidth / charWidth));
 
         var flags = TextOverflow.None;
-        int lines = 0;
         foreach (var paragraph in text.Replace("\r\n", "\n").Replace('\r', '\n').Replace("\\&", "\n").Split('\n'))
         {
             int used = 0;
@@ -72,13 +110,6 @@ public static class TextFitEstimator
                 lines += Math.Max(0, (word.Length - 1) / perLine);
                 used = word.Length % perLine == 0 ? perLine : word.Length % perLine;
             }
-        }
-
-        if (element.Block is { } block && lines > block.MaxLines) flags |= TextOverflow.Lines;
-        if (element.TextBox is { } box)
-        {
-            double lineHeight = height;
-            if (lines * lineHeight > box.HeightDots) flags |= TextOverflow.Height;
         }
         return flags;
     }

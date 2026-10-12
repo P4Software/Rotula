@@ -289,6 +289,8 @@ public static class LabelDpiConverter
                 LineSpacing = c.Dots(b.LineSpacing, int.MinValue),
                 Alignment = b.Alignment,
                 HangingIndent = c.Dots(b.HangingIndent, int.MinValue),
+                // Limits are in points, so they mean the same physical size at any resolution.
+                Fit = b.Fit?.Clone(),
             };
         }
     }

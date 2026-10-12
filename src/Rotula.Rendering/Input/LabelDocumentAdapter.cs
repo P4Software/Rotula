@@ -47,6 +47,9 @@ public static class LabelDocumentAdapter
         return new RenderLabel(doc.WidthDots, doc.HeightDots, dpi, elements);
     }
 
+    // Stateless and thread safe; shared so the preview does not build one per element.
+    private static readonly SkiaTextRasterizer FitRasterizer = new();
+
     private static RenderElement? Map(LabelDocument doc, LabelElement e, IReadOnlyDictionary<string, string>? data, List<ValidationIssue> issues)
     {
         var rotation = ToRotation(e.Rotation ?? doc.DefaultRotation);
@@ -61,13 +64,16 @@ public static class LabelDocumentAdapter
                 // Outside a ^FB block the printer prints one line, so line breaks are treated as spaces.
                 if (t.Block is null)
                     text = text.Replace("\r\n", " ").Replace('\n', ' ').Replace('\r', ' ');
+                // Text fit: the same decision the ZPL generator makes for this text, so the canvas shows the size that prints. The rasterizer is the
+                // one the preview itself draws with (Windows fonts are measured exactly; printer fonts use the estimate).
+                var fitted = Core.Text.TextFitResolver.Resolve(doc, t, text, FitRasterizer);
                 return new RenderText
                 {
                     Text = text,
                     // A ^TB box wraps at its width and shows only the lines that fit its height.
                     HeightDots = t.TextBox?.HeightDots ?? 0,
                     // A Windows font is drawn as the printed picture is: its own family at its point size, converted at the printer's resolution.
-                    FontHeightDots = t.Font is { IsWindows: true } wf ? Core.Text.FontChoice.PointsToDots(wf.PointSize, (int)doc.Dpi) : t.FontHeight ?? def.Height,
+                    FontHeightDots = t.Font is { IsWindows: true } wf ? Core.Text.FontChoice.PointsToDots(fitted?.PointSize ?? wf.PointSize, (int)doc.Dpi) : fitted?.FontHeight ?? t.FontHeight ?? def.Height,
                     FamilyName = t.Font is { IsWindows: true } wf2 ? wf2.FamilyName : null,
                     Bold = t.Font is { IsWindows: true, Bold: true },
                     Italic = t.Font is { IsWindows: true, Italic: true },
@@ -75,7 +81,7 @@ public static class LabelDocumentAdapter
                     HangingIndentDots = t.Block?.HangingIndent ?? 0,
                     Font = (t.FontId ?? def.FontId) == '0' ? RenderFontFamily.Sans : RenderFontFamily.Mono,
                     WidthDots = t.Block?.WidthDots ?? t.TextBox?.WidthDots ?? 0,
-                    MaxLines = t.Block?.MaxLines ?? 0,
+                    MaxLines = fitted?.MaxLines ?? t.Block?.MaxLines ?? 0,
                     LineSpacingDots = t.Block?.LineSpacing ?? 0,
                     Alignment = t.Block?.Alignment switch
                     {
