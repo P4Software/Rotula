@@ -771,7 +771,7 @@ public sealed partial class MainViewModel : ObservableObject
             // The label remembers where its data came from. Only a file this PC trusts (saved here, or reloaded on purpose before) reads it
             // again by itself; a file from elsewhere shows its saved query and waits for the Reload / Connect and reload data click, because
             // its query would otherwise run on the user's own database connection without them having seen it.
-            DataReload = _settings.TrustedLabels.Contains(hash) ? Data.ReloadRememberedDataAsync() : Task.CompletedTask;
+            DataReload = _settings.TrustedLabels.Contains(hash) ? ReloadRememberedDataQuietlyAsync(path) : Task.CompletedTask;
             AddRecent(path);
             StatusMessage = Loc.Get("Status.Opened", Path.GetFileName(path));
             return true;
@@ -834,6 +834,16 @@ public sealed partial class MainViewModel : ObservableObject
         AddRecent(path);
         StatusMessage = Loc.Get("Status.Saved", Path.GetFileName(path));
         return true;
+    }
+
+    /// <summary>
+    /// Brings back the opened label's data and keeps the label "clean": reading data again is not an edit, so the title must not show
+    /// the unsaved mark and closing must not ask to save. Skipped when the user already edited the label or opened another one.
+    /// </summary>
+    private async Task ReloadRememberedDataQuietlyAsync(string path)
+    {
+        await Data.ReloadRememberedDataAsync();
+        if (FilePath == path && !Session.Undo.CanUndo && Session.IsDirty) Session.MarkSaved();
     }
 
     private const int MaxTrusted = 500;

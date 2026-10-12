@@ -150,6 +150,7 @@ public class AppDataSelectionTests : IDisposable
         Assert.True(again.Data.HasData);
         Assert.Equal(3, again.Data.RecordCount);
         Assert.Equal("Name1", again.Data.CurrentData!["name"]);
+        Assert.False(again.Session.IsDirty, "Reading the data again is not an edit.");
     }
 
     // ------------------------------------------------------------------------------------ ticking
