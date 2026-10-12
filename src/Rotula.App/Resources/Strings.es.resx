@@ -5690,4 +5690,52 @@ Las marcas y los nombres de producto pertenecen a sus dueños; Rotula no está a
   <data name="Preview.Unavailable" xml:space="preserve">
     <value>La vista previa no se puede dibujar ahora. Reduzca el zoom o haga la etiqueta más pequeña e inténtelo de nuevo; su etiqueta no se ve afectada.</value>
   </data>
+  <data name="Panel.Format.Fit" xml:space="preserve">
+    <value>Ajuste del texto</value>
+  </data>
+  <data name="Panel.Format.Fit.Mode" xml:space="preserve">
+    <value>Cuando el texto es demasiado largo</value>
+  </data>
+  <data name="Panel.Format.Fit.Mode.None" xml:space="preserve">
+    <value>Dejar como está diseñado</value>
+  </data>
+  <data name="Panel.Format.Fit.Mode.Shrink" xml:space="preserve">
+    <value>Reducir para que quepa</value>
+  </data>
+  <data name="Panel.Format.Fit.Mode.Grow" xml:space="preserve">
+    <value>Aumentar el alto</value>
+  </data>
+  <data name="Panel.Format.Fit.Hint.None" xml:space="preserve">
+    <value>El cuadro se queda como lo diseñó. El texto que no cabe se corta al imprimir.</value>
+  </data>
+  <data name="Panel.Format.Fit.Hint.Shrink" xml:space="preserve">
+    <value>Cada etiqueta usa el tamaño más grande, entre el menor y el mayor de abajo, con el que todo el texto cabe en el cuadro. Con datos, cada registro tiene su propio tamaño.</value>
+  </data>
+  <data name="Panel.Format.Fit.Hint.Grow" xml:space="preserve">
+    <value>El tamaño no cambia y el cuadro tiene tantas líneas como el texto necesite, hasta el límite de abajo. Lo que esté debajo no se mueve.</value>
+  </data>
+  <data name="Panel.Format.Fit.Min" xml:space="preserve">
+    <value>Tamaño menor (pt)</value>
+  </data>
+  <data name="Panel.Format.Fit.Max" xml:space="preserve">
+    <value>Tamaño mayor (pt)</value>
+  </data>
+  <data name="Panel.Format.Fit.Cap" xml:space="preserve">
+    <value>Máximo de líneas</value>
+  </data>
+  <data name="Panel.Format.Fit.Ignore" xml:space="preserve">
+    <value>No avisar cuando el texto no cabe</value>
+  </data>
+  <data name="Panel.Format.Fit.Ignore.Tip" xml:space="preserve">
+    <value>Úselo cuando quiera que el texto se corte.</value>
+  </data>
+  <data name="Panel.Format.Fit.Error.Order" xml:space="preserve">
+    <value>El tamaño menor no puede ser mayor que el tamaño mayor.</value>
+  </data>
+  <data name="Undo.Format.Fit.Mode" xml:space="preserve">
+    <value>cambiar el ajuste del texto</value>
+  </data>
+  <data name="Undo.Format.Fit.Limit" xml:space="preserve">
+    <value>cambiar el límite del ajuste del texto</value>
+  </data>
 </root>

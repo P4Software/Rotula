@@ -123,6 +123,49 @@
       </UniformGrid>
     </Border>
 
+    <!--
+      Text fit: what the block does when its text is longer than the box. Only a wrapped block has a box to fit. The computed size is what the
+      canvas shows and what is written to the ZPL (and, with data, for each record), so the warning below always speaks about the result.
+    -->
+    <StackPanel Margin="0,14,0,0" Visibility="{Binding ShowFit, Converter={StaticResource BoolToVisibility}}">
+      <TextBlock Text="{loc:T Panel.Format.Fit}" FontWeight="SemiBold" FontSize="12" Margin="0,0,0,6" AutomationProperties.HeadingLevel="Level3" />
+      <TextBlock Text="{loc:T Panel.Format.Fit.Mode}" Style="{StaticResource FormatLabel}" />
+      <ComboBox x:Name="FitModeBox" ItemsSource="{Binding FitModes}" SelectedIndex="{Binding FitModeIndex, Mode=TwoWay}"
+                ToolTip="{Binding FitHint}" AutomationProperties.Name="{loc:T Panel.Format.Fit.Mode}" AutomationProperties.HelpText="{Binding FitHint}" />
+      <TextBlock Text="{Binding FitHint}" TextWrapping="Wrap" FontSize="11.5" Foreground="{StaticResource MutedBrush}" Margin="0,6,0,0" MaxWidth="280" HorizontalAlignment="Left" />
+
+      <Grid Margin="0,10,0,0" Visibility="{Binding FitIsShrink, Converter={StaticResource BoolToVisibility}}">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="10" />
+          <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <StackPanel Grid.Column="0">
+          <TextBlock Text="{loc:T Panel.Format.Fit.Min}" Style="{StaticResource FormatLabel}" />
+          <TextBox x:Name="FitMinBox" Text="{Binding FitMinText, UpdateSourceTrigger=PropertyChanged}"
+                   AutomationProperties.Name="{loc:T Panel.Format.Fit.Min}" AutomationProperties.HelpText="{Binding FitHint}" />
+        </StackPanel>
+        <StackPanel Grid.Column="2">
+          <TextBlock Text="{loc:T Panel.Format.Fit.Max}" Style="{StaticResource FormatLabel}" />
+          <TextBox x:Name="FitMaxBox" Text="{Binding FitMaxText, UpdateSourceTrigger=PropertyChanged}"
+                   AutomationProperties.Name="{loc:T Panel.Format.Fit.Max}" AutomationProperties.HelpText="{Binding FitHint}" />
+        </StackPanel>
+      </Grid>
+
+      <StackPanel Margin="0,10,0,0" Visibility="{Binding FitIsGrow, Converter={StaticResource BoolToVisibility}}">
+        <TextBlock Text="{loc:T Panel.Format.Fit.Cap}" Style="{StaticResource FormatLabel}" />
+        <TextBox x:Name="FitCapBox" Text="{Binding FitCapText, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Left" Width="96"
+                 AutomationProperties.Name="{loc:T Panel.Format.Fit.Cap}" AutomationProperties.HelpText="{Binding FitHint}" />
+      </StackPanel>
+
+      <TextBlock Text="{Binding FitError}" Style="{StaticResource ErrorText}" AutomationProperties.LiveSetting="Polite"
+                 Visibility="{Binding HasFitError, Converter={StaticResource BoolToVisibility}}" />
+
+      <CheckBox Content="{loc:T Panel.Format.Fit.Ignore}" IsChecked="{Binding FitIgnoreWarning, Mode=TwoWay}" Margin="0,10,0,0"
+                ToolTip="{loc:T Panel.Format.Fit.Ignore.Tip}" AutomationProperties.Name="{loc:T Panel.Format.Fit.Ignore}"
+                AutomationProperties.HelpText="{loc:T Panel.Format.Fit.Ignore.Tip}" />
+    </StackPanel>
+
     <!-- The font is not installed on this computer: another one is drawn instead. -->
     <Border Style="{StaticResource WarningBanner}" Margin="0,12,0,0" Visibility="{Binding HasMissingFont, Converter={StaticResource BoolToVisibility}}"
             AutomationProperties.LiveSetting="Polite">
