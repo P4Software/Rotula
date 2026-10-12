@@ -299,6 +299,10 @@ public sealed partial class DataMergeViewModel : OperationViewModel
     /// </summary>
     public bool CanReload => HasSource && !IsBusy;
 
+    /// <inheritdoc/>
+    /// <remarks>The source is applied while the load is still busy, so the Reload button is re-evaluated when the busy state ends.</remarks>
+    protected override void OnBusyChanged(bool busy) => OnPropertyChanged(nameof(CanReload));
+
     /// <summary>True when the .rotula file named a data path that was ignored for safety.</summary>
     [ObservableProperty]
     private bool _sourceHintIgnored;
@@ -433,68 +437,77 @@ public sealed partial class DataMergeViewModel : OperationViewModel
         char? detected = null;
         string? error = null;
 
-        bool finished = await RunAsync(Loc.Get("Data.Busy.Loading", fileName), ct => Task.Run(() =>
+        bool loaded = false;
+
+        bool finished = await RunAsync(Loc.Get("Data.Busy.Loading", fileName), async ct =>
         {
+            await Task.Run(() =>
+            {
+                try
+                {
+                    // FileShare.ReadWrite: Excel keeps a workbook open for reading; the file can still be read while it is.
+                    if (xlsx)
+                    {
+                        using (var names = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) sheets = XlsxReader.GetSheetNames(names);
+                        using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                        string? useSheet = sheet is not null && sheets.Contains(sheet) ? sheet : null;
+                        table = XlsxReader.Read(stream, new XlsxOptions { SheetName = useSheet, HasHeader = header });
+                        sheet = useSheet ?? sheets.FirstOrDefault();
+                    }
+                    else
+                    {
+                        string text = ReadText(path);
+                        detected = CsvReader.DetectDelimiter(text);
+                        table = CsvReader.Parse(text, new CsvOptions { Delimiter = delimiter, HasHeader = header });
+                    }
+                    ct.ThrowIfCancellationRequested();
+                }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    error = Loc.Get("Data.Error.Read", fileName);
+                }
+                catch (Exception ex) when (ex is not OutOfMemoryException)
+                {
+                    error = Loc.Get("Data.Error.Format", fileName);
+                }
+            }, ct);
+
+            // Applying the result is part of the operation: IsBusy stays true until the table, the records and the mapping are
+            // all in place. Otherwise anyone who waits for "not busy" (a test, a caller chaining a second load) can see the new
+            // columns with no records yet, because the data set is rebuilt a few statements after the table is replaced.
+            if (error is null && table is { Columns.Count: 0 }) error = Loc.Get("Data.Error.Empty", fileName);
+            if (error is not null)
+            {
+                SetResult(error, true);
+                return;
+            }
+
+            // Reloading the same file is not a change to the label; only a different file or sheet is.
+            bool settingsChanged = !string.Equals(SourcePath, path, StringComparison.OrdinalIgnoreCase) || (xlsx && SelectedSheet != sheet)
+                || _databaseSettings is not null;
+            _applying = true;
             try
             {
-                // FileShare.ReadWrite: Excel keeps a workbook open for reading; the file can still be read while it is.
-                if (xlsx)
-                {
-                    using (var names = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) sheets = XlsxReader.GetSheetNames(names);
-                    using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                    string? useSheet = sheet is not null && sheets.Contains(sheet) ? sheet : null;
-                    table = XlsxReader.Read(stream, new XlsxOptions { SheetName = useSheet, HasHeader = header });
-                    sheet = useSheet ?? sheets.FirstOrDefault();
-                }
-                else
-                {
-                    string text = ReadText(path);
-                    detected = CsvReader.DetectDelimiter(text);
-                    table = CsvReader.Parse(text, new CsvOptions { Delimiter = delimiter, HasHeader = header });
-                }
-                ct.ThrowIfCancellationRequested();
+                SourceHintIgnored = false;
+                SourcePath = path;
+                SelectedSheet = xlsx ? sheet : null;
+                // A file replaces a database source: the label must not keep pointing at a query it no longer uses.
+                _databaseSettings = null;
+                Database.DiscardReference();
+                SourceMode = DataSourceMode.File;
+                ShowDatabasePicker = false;
             }
-            catch (OperationCanceledException) { throw; }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-                error = Loc.Get("Data.Error.Read", fileName);
-            }
-            catch (Exception ex) when (ex is not OutOfMemoryException)
-            {
-                error = Loc.Get("Data.Error.Format", fileName);
-            }
-        }, ct));
-        if (!finished) return false;
-        if (error is null && table is { Columns.Count: 0 }) error = Loc.Get("Data.Error.Empty", fileName);
-        if (error is not null)
-        {
-            SetResult(error, true);
-            return false;
-        }
-
-        // Reloading the same file is not a change to the label; only a different file or sheet is.
-        bool settingsChanged = !string.Equals(SourcePath, path, StringComparison.OrdinalIgnoreCase) || (xlsx && SelectedSheet != sheet)
-            || _databaseSettings is not null;
-        _applying = true;
-        try
-        {
-            SourceHintIgnored = false;
-            SourcePath = path;
-            SelectedSheet = xlsx ? sheet : null;
-            // A file replaces a database source: the label must not keep pointing at a query it no longer uses.
-            _databaseSettings = null;
-            Database.DiscardReference();
-            SourceMode = DataSourceMode.File;
-            ShowDatabasePicker = false;
-        }
-        finally { _applying = false; }
-        SetTable(table, sheets, delimiter ?? detected);
-        CurrentIndex = 0;
-        SetResult(Loc.Get("Data.Loaded", fileName, table!.RowCount), false);
-        if (settingsChanged) RaiseSettingsEdited();
-        Rebind();
-        RaisePreviewChanged();
-        return true;
+            finally { _applying = false; }
+            SetTable(table, sheets, delimiter ?? detected);
+            CurrentIndex = 0;
+            SetResult(Loc.Get("Data.Loaded", fileName, table!.RowCount), false);
+            if (settingsChanged) RaiseSettingsEdited();
+            Rebind();
+            RaisePreviewChanged();
+            loaded = true;
+        });
+        return finished && loaded;
     }
 
     /// <summary>Reads a text file as UTF-8 (or UTF-16 with a byte order mark), falling back to Windows-1252, which is what Excel writes for "CSV".</summary>

@@ -91,6 +91,25 @@ public class AppDataMergeTests : IDisposable
     }
 
     [Fact]
+    public async Task ALoad_IsStillBusyUntilTheRecordsAreInPlace_AndReloadIsEnabledAfterwards()
+    {
+        string path = Csv("A1,5\nB2,7\n");
+        await Data.LoadAsync(path);
+        // The moment IsBusy turns false, the new records (and not just the new columns) must already be there: a caller that waits
+        // for "not busy" and then reads RecordCount used to see 0, because the data set was rebuilt after the busy flag cleared.
+        var whenNotBusy = new List<(int Records, bool CanReload)>();
+        Data.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(DataMergeViewModel.IsBusy) && !Data.IsBusy) whenNotBusy.Add((Data.RecordCount, Data.CanReload));
+        };
+        Data.HasHeader = false;
+        await Idle(Data);
+        Assert.Single(whenNotBusy);
+        Assert.Equal((2, true), whenNotBusy[0]);
+        Assert.True(Data.CanReload);
+    }
+
+    [Fact]
     public async Task AWindows1252Csv_IsReadWithItsAccents()
     {
         string path = Path.Combine(_dir, "ansi.csv");
