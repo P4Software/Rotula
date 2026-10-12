@@ -530,3 +530,23 @@ emitted or validated, so a barcode invalid only on a record where it is hidden d
 prints and PNG/JPEG/PDF; only the design canvas draws them dimmed (`includeNonPrinting`), and the Preview window shows the printed result. Lock is
 enforced in `EditorCommands` (move, nudge, resize, rotate, align, distribute, delete, cut) and never touches ZPL; property edits stay allowed.
 Condition fields are listed as merge placeholders so they can be mapped to columns. ZPL import never creates conditions or locks.
+
+## Barcode sizing (Rotula.Core/Barcodes/BarcodeSizing)
+
+### Dots stay the stored unit; mil and mm are derived
+The file keeps `moduleWidth` / `moduleSize` in dots (what ^BY and ^BQ take), so the format did not change. `BarcodeSizing` derives the X-dimension in
+mils and mm from the dots and the label dpi, and the panel shows it. The module is edited in dots, with a - / + stepper, because that is what the
+printer can do: a mil value that is not a whole number of dots would silently be rounded.
+
+### The symbol width is only claimed where the symbology's rules fix it
+Core measures Code 128 (automatic mode, no GS1 parentheses), Code 39/LOGMARS, Code 93, Interleaved 2 of 5, EAN/UPC and QR Code model 2 from their element
+counts (wide bar = narrow x ratio rounded to whole dots, as ZPL does). Core cannot call the preview encoders (they live in Rotula.Rendering), so for
+the other symbologies the panel passes the encoder's module count (`BarcodeSizeInfo`), and the generator's fit warning simply stays silent: it never
+guesses a width. The preview draws wide bars at a fixed 3:1, so the encoder count is used only when the element's ratio is 3.0.
+
+### Quiet zones follow the standards, not one number
+Values are per symbology (Code 128/39/93, I2of5, Codabar 10X; EAN-13 11X/7X; UPC-A 9X/9X; EAN-8 7X/7X; UPC-E 9X/7X; QR 4X; Data Matrix 1X;
+PDF417 2X; Aztec none) with the source named next to each in the code. A symbology without an entry gets a conservative family default, which is a
+safe margin and not a claim about a standard. The fit check (symbol plus quiet zones against the label width) runs only for upright fields; the canvas
+guide handles every rotation because it grows the real frame along the reading axis. All three new findings are warnings, never errors: the label still
+prints. Thresholds: a 1-dot module at 300 dpi or more; a linear narrow bar under 2 dots at 203 dpi.

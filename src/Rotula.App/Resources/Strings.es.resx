@@ -3043,6 +3043,36 @@
   <data name="Issue.Barcode.Logmars.TextAlways" xml:space="preserve">
     <value>La impresora siempre imprime el texto debajo de un código LOGMARS, así que desactivarlo no tiene efecto. Active el texto para que coincida con lo que se imprimirá.</value>
   </data>
+  <data name="Issue.Barcode.Size.OneDotModule" xml:space="preserve">
+    <value>La barra o módulo más estrecho mide 1 punto ({1} mil, {2} mm) a {3} dpi. Muchos lectores no pueden leer barras tan estrechas y un poco de tinta extendida cierra los espacios. Use un módulo de 2 puntos o más.</value>
+  </data>
+  <data name="Issue.Barcode.Size.ThinBar" xml:space="preserve">
+    <value>La barra más estrecha mide {0} punto ({1} mil, {2} mm) a {3} dpi. Las barras de menos de 2 puntos se imprimen de forma irregular en una impresora de 203 dpi, y el código se lee con poca fiabilidad. Use un módulo de 2 puntos o más.</value>
+  </data>
+  <data name="Issue.Barcode.Size.QuietZoneOutside" xml:space="preserve">
+    <value>El código de barras y sus zonas de silencio (el margen en blanco que necesita el lector) ocupan de {0} mm a {1} mm, pero la etiqueta mide {2} mm de ancho. Un margen cortado puede impedir la lectura. Mueva el código, use un módulo más estrecho o acorte los datos.</value>
+  </data>
+  <data name="Prop.Size.Readout" xml:space="preserve">
+    <value>Módulo: {0} mil ({1} mm) - símbolo de {2} mm de ancho</value>
+  </data>
+  <data name="Prop.Size.ReadoutNoSymbol" xml:space="preserve">
+    <value>Módulo: {0} mil ({1} mm)</value>
+  </data>
+  <data name="Prop.Size.QuietBoth" xml:space="preserve">
+    <value>Zona de silencio: {0} mm a cada lado ({1}X)</value>
+  </data>
+  <data name="Prop.Size.QuietLeftRight" xml:space="preserve">
+    <value>Zona de silencio: {0} mm antes y {1} mm después del símbolo ({2}X y {3}X)</value>
+  </data>
+  <data name="Prop.Size.QuietNone" xml:space="preserve">
+    <value>No se necesita zona de silencio.</value>
+  </data>
+  <data name="Prop.Size.Narrower" xml:space="preserve">
+    <value>Módulo más estrecho (1 punto menos)</value>
+  </data>
+  <data name="Prop.Size.Wider" xml:space="preserve">
+    <value>Módulo más ancho (1 punto más)</value>
+  </data>
   <data name="Issue.Barcode.Codabar.Charset" xml:space="preserve">
     <value>Codabar solo admite dígitos y - $ : / . + en los datos. Las letras de inicio y fin (A a D) se eligen en las opciones, no se escriben en los datos.</value>
   </data>

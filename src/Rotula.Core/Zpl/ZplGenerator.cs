@@ -451,6 +451,9 @@ public static class ZplGenerator
         issues.AddRange(found);
         CheckPosition(b, doc, 0, 0, issues);
         if (found.Any(i => i.Severity == ValidationSeverity.Error)) return null;
+        // Size advice (module too small for the printer, symbol plus quiet zone wider than the label). Only for data that is valid, so
+        // the symbol width is computed from something the printer can actually encode.
+        issues.AddRange(BarcodeSizing.Check(b, resolved, doc));
 
         string payload = BarcodeValidator.NormalizeForPrinter(b, resolved);
         var sb = new StringBuilder(Origin(b));

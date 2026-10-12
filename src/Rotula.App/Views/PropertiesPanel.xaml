@@ -37,8 +37,22 @@
     <DataTemplate DataType="{x:Type vm:IntRow}">
       <StackPanel ToolTip="{Binding Hint}" Margin="0,0,0,12" Visibility="{Binding IsVisible, Converter={StaticResource BoolToVisibility}}">
         <TextBlock Text="{Binding Label}" Style="{StaticResource RowLabel}" />
-        <TextBox Style="{StaticResource MonoTextBox}" Text="{Binding Text, UpdateSourceTrigger=LostFocus}" IsUndoEnabled="False"
-                 ctl:FieldState.HasError="{Binding HasError}" AutomationProperties.Name="{Binding Label}" AutomationProperties.HelpText="{Binding Hint}" />
+        <!-- A "-" / "+" pair (only for rows that ask for it, such as the barcode module width) sits right of the box and changes the value by one. -->
+        <DockPanel>
+          <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Margin="4,0,0,0">
+            <StackPanel.Visibility><Binding Path="ShowStepper" Converter="{StaticResource BoolToVisibility}" /></StackPanel.Visibility>
+            <Button Style="{StaticResource PanelIconButton}" Width="28" Height="28" Command="{Binding StepDownCommand}"
+                    ToolTip="{Binding StepDownHint}" AutomationProperties.Name="{Binding StepDownHint}">
+              <TextBlock Text="&#x2212;" FontSize="16" FontWeight="SemiBold" />
+            </Button>
+            <Button Style="{StaticResource PanelIconButton}" Width="28" Height="28" Command="{Binding StepUpCommand}"
+                    ToolTip="{Binding StepUpHint}" AutomationProperties.Name="{Binding StepUpHint}">
+              <TextBlock Text="+" FontSize="16" FontWeight="SemiBold" />
+            </Button>
+          </StackPanel>
+          <TextBox Style="{StaticResource MonoTextBox}" Text="{Binding Text, UpdateSourceTrigger=LostFocus}" IsUndoEnabled="False"
+                   ctl:FieldState.HasError="{Binding HasError}" AutomationProperties.Name="{Binding Label}" AutomationProperties.HelpText="{Binding Hint}" />
+        </DockPanel>
         <TextBlock Text="{Binding Detail}" Style="{StaticResource RowDetail}" AutomationProperties.LiveSetting="Polite" AutomationProperties.Name="{Binding Detail}">
           <TextBlock.Visibility><Binding Path="HasDetail" Converter="{StaticResource BoolToVisibility}" /></TextBlock.Visibility>
         </TextBlock>

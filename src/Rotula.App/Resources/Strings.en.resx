@@ -3043,6 +3043,36 @@
   <data name="Issue.Barcode.Logmars.TextAlways" xml:space="preserve">
     <value>The printer always prints the text under a LOGMARS barcode, so switching it off has no effect. Turn the text on to match what will print.</value>
   </data>
+  <data name="Issue.Barcode.Size.OneDotModule" xml:space="preserve">
+    <value>The narrowest bar or module is 1 dot ({1} mil, {2} mm) at {3} dpi. Many scanners cannot read bars this narrow, and a little ink spread closes the gaps. Use a module of 2 dots or more.</value>
+  </data>
+  <data name="Issue.Barcode.Size.ThinBar" xml:space="preserve">
+    <value>The narrowest bar is {0} dot ({1} mil, {2} mm) at {3} dpi. Bars thinner than 2 dots print unevenly on a 203 dpi printer, which makes the code unreliable to scan. Use a module of 2 dots or more.</value>
+  </data>
+  <data name="Issue.Barcode.Size.QuietZoneOutside" xml:space="preserve">
+    <value>The barcode and its quiet zones (the blank margin a scanner needs) span {0} mm to {1} mm, but the label is {2} mm wide. A cut-off margin can stop the code from scanning. Move the barcode, make the module narrower or shorten the data.</value>
+  </data>
+  <data name="Prop.Size.Readout" xml:space="preserve">
+    <value>Module: {0} mil ({1} mm) - symbol {2} mm wide</value>
+  </data>
+  <data name="Prop.Size.ReadoutNoSymbol" xml:space="preserve">
+    <value>Module: {0} mil ({1} mm)</value>
+  </data>
+  <data name="Prop.Size.QuietBoth" xml:space="preserve">
+    <value>Quiet zone: {0} mm on each side ({1}X)</value>
+  </data>
+  <data name="Prop.Size.QuietLeftRight" xml:space="preserve">
+    <value>Quiet zone: {0} mm before and {1} mm after the symbol ({2}X and {3}X)</value>
+  </data>
+  <data name="Prop.Size.QuietNone" xml:space="preserve">
+    <value>No quiet zone is needed.</value>
+  </data>
+  <data name="Prop.Size.Narrower" xml:space="preserve">
+    <value>Narrower module (1 dot less)</value>
+  </data>
+  <data name="Prop.Size.Wider" xml:space="preserve">
+    <value>Wider module (1 dot more)</value>
+  </data>
   <data name="Issue.Barcode.Codabar.Charset" xml:space="preserve">
     <value>Codabar allows only digits and - $ : / . + in the data. The start and stop letters A to D are chosen in the options, not typed in the data.</value>
   </data>

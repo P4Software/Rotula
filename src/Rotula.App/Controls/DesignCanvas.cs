@@ -36,6 +36,9 @@ public sealed class DesignCanvas : FrameworkElement
     private static readonly Brush GridDotBrush = new SolidColorBrush(Color.FromArgb(120, 110, 100, 90));
     private static readonly Pen MarginPen = CreatePen(Color.FromArgb(150, 200, 120, 0), 1, new DashStyle(new double[] { 3, 3 }, 0));
 
+    // Subtle blue dots: quieter than the orange selection frame, readable on white paper and on a dark barcode edge.
+    private static readonly Pen QuietZonePen = CreatePen(Color.FromArgb(230, 40, 120, 190), 1, new DashStyle(new double[] { 2, 3 }, 0));
+
     private MainViewModel? _vm;
     private WriteableBitmap? _bitmap;
     private long _bitmapRevision = -1;
@@ -281,6 +284,11 @@ public sealed class DesignCanvas : FrameworkElement
         var pen = new Pen(AccentBrush, 1);
         foreach (var e in selected)
             dc.DrawRectangle(null, pen, ToPixelRect(_vm.Session.Bounds.GetFrame(e)));
+
+        // The blank margin a scanner needs around a selected barcode, as a dotted guide; it is drawn only while that one barcode is selected,
+        // so it never clutters the label or reaches a print or export (this canvas is the only place that draws it).
+        if (selected is [BarcodeElement single] && BarcodeSizeInfo.QuietZoneFrame(_vm.Session.Bounds.GetFrame(single), single, Doc.DefaultRotation) is { } quiet)
+            dc.DrawRectangle(null, QuietZonePen, ToPixelRect(quiet));
 
         var union = RectD.UnionAll(selected.Select(_vm.Session.Bounds.GetFrame));
         if (selected.Count > 1) dc.DrawRectangle(null, new Pen(AccentBrush, 1), ToPixelRect(union));

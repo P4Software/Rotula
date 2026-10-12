@@ -389,7 +389,7 @@ public class AppDataMergeTests : IDisposable
 
     // ------------------------------------------------------------------------------------ checking
 
-    private void AddEanLabel() => _main.Session.Edit("Undo.Property", d => d.Elements.Add(new BarcodeElement { Symbology = BarcodeSymbology.Ean13, Data = "{{code}}" }));
+    private void AddEanLabel() => _main.Session.Edit("Undo.Property", d => d.Elements.Add(new BarcodeElement { Symbology = BarcodeSymbology.Ean13, Data = "{{code}}", X = 100 }));
 
     [Fact]
     public async Task CheckAll_ListsPerRecordProblems_InReadableSentences()

@@ -118,6 +118,15 @@ public sealed partial class IntRow : PropertyRow
     /// <summary>True to give the row a whole line instead of sharing it with the next number (used when it carries a longer second line).</summary>
     public bool FullWidth { get; init; }
 
+    /// <summary>True to show a compact "-" / "+" pair next to the box that changes the value by one (the module width of a barcode).</summary>
+    public bool ShowStepper { get; init; }
+
+    /// <summary>Translated tool tip of the "-" button.</summary>
+    public string StepDownHint => Loc.Get("Prop.Size.Narrower");
+
+    /// <summary>Translated tool tip of the "+" button.</summary>
+    public string StepUpHint => Loc.Get("Prop.Size.Wider");
+
     /// <summary>The text in the box.</summary>
     [ObservableProperty]
     private string _text;
@@ -127,6 +136,35 @@ public sealed partial class IntRow : PropertyRow
         if (_applying) return;
         Commit(value);
     }
+
+    /// <summary>
+    /// Changes the value by <paramref name="delta"/>, stopping at the limits. It starts from the value in the document, not from the box,
+    /// so a half-typed number does not steer the step; the box then shows the new value and the edit goes through the normal commit
+    /// (one undo step per click, merged with the typing of the same property).
+    /// </summary>
+    private void Step(int delta)
+    {
+        int current = _get() ?? _min;
+        int next = Math.Clamp(current + delta, _min, _max);
+        // Clear an old complaint: the stepped value is always valid.
+        Error = string.Empty;
+        string text = Format(next);
+        if (Text == text)
+        {
+            // Same text but the document may differ (the box showed a typed value that was rejected): write the value through.
+            if (_get() != next) _set(next);
+            return;
+        }
+        Text = text;
+    }
+
+    /// <summary>Makes the value one smaller.</summary>
+    [RelayCommand]
+    private void StepDown() => Step(-1);
+
+    /// <summary>Makes the value one larger.</summary>
+    [RelayCommand]
+    private void StepUp() => Step(1);
 
     private bool _applying;
 
