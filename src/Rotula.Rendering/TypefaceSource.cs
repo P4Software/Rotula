@@ -43,6 +43,52 @@ internal static class TypefaceSource
         if (face is null)
             return new ResolvedTypeface(RenderFonts.Get(RenderFontFamily.Sans, bold), "Liberation Sans", true, italic ? SyntheticItalic : 0f);
         bool same = string.Equals(face.FamilyName, family, StringComparison.OrdinalIgnoreCase);
+        if (!same && TryFindStyleVariant(family, bold, italic) is { } variant) return new ResolvedTypeface(variant, variant.FamilyName, false, 0f);
         return new ResolvedTypeface(face, face.FamilyName, !same, 0f);
+    }
+
+    /// <summary>
+    /// Weight and width words that Windows puts at the end of a family name for a face that is really a style of a bigger family. The font
+    /// manager only lists the parent family ("Arial", "Segoe UI", "Bahnschrift"), so a request for "Arial Black" or "Segoe UI Semibold" found nothing
+    /// and fell back to another font. Longer words come first so "SemiBold" is not read as "Bold".
+    /// </summary>
+    private static readonly (string Word, int Weight, int Width)[] StyleWords =
+    {
+        ("ExtraCondensed", 0, (int)SKFontStyleWidth.ExtraCondensed), ("SemiCondensed", 0, (int)SKFontStyleWidth.SemiCondensed),
+        ("Condensed", 0, (int)SKFontStyleWidth.Condensed), ("Narrow", 0, (int)SKFontStyleWidth.Condensed),
+        ("ExtraLight", 200, 0), ("SemiLight", 350, 0), ("SemiBold", 600, 0), ("DemiBold", 600, 0), ("ExtraBold", 800, 0),
+        ("Thin", 100, 0), ("Light", 300, 0), ("Medium", 500, 0), ("Bold", 700, 0), ("Black", 900, 0), ("Heavy", 900, 0),
+    };
+
+    /// <summary>
+    /// Reads trailing style words off <paramref name="family"/> ("Segoe UI Semibold" is "Segoe UI" at weight 600) and asks for the parent family at
+    /// that weight and width. Returns null when no word applies or the parent family is not installed either, so the caller reports a substitution.
+    /// </summary>
+    private static SKTypeface? TryFindStyleVariant(string family, bool bold, bool italic)
+    {
+        string baseName = family.Trim();
+        int weight = 0, width = (int)SKFontStyleWidth.Normal;
+        bool stripped = true;
+        while (stripped)
+        {
+            stripped = false;
+            foreach (var (word, w, wd) in StyleWords)
+            {
+                if (baseName.Length <= word.Length + 1 || !baseName.EndsWith(" " + word, StringComparison.OrdinalIgnoreCase)) continue;
+                baseName = baseName[..^(word.Length + 1)].TrimEnd();
+                if (w != 0 && weight == 0) weight = w;
+                if (wd != 0) width = wd;
+                stripped = true;
+                break;
+            }
+        }
+        if (weight == 0 && width == (int)SKFontStyleWidth.Normal) return null;
+
+        // An explicit "Bold" on top of an already heavy variant must not lighten it; only raise the weight.
+        int finalWeight = weight == 0 ? (bold ? 700 : 400) : bold ? Math.Max(weight, 700) : weight;
+        var style = new SKFontStyle(finalWeight, width, italic ? SKFontStyleSlant.Italic : SKFontStyleSlant.Upright);
+        var face = SKTypeface.FromFamilyName(baseName, style);
+        // Accept only the parent family itself: anything else is the operating system's default, i.e. still a substitution.
+        return face is not null && string.Equals(face.FamilyName, baseName, StringComparison.OrdinalIgnoreCase) ? face : null;
     }
 }
