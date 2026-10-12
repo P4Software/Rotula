@@ -61,9 +61,9 @@ Diséñala, previsualízala, combina tus datos e imprímela. Sin cuenta, sin nub
 
 <div align="center">
 
-### [Descargar el instalador de Rotula para Windows (firmado)](https://github.com/P4Software/Rotula/releases/download/v0.3.4/Rotula-0.3.4-win-x64-setup.exe)
+### [Descargar el instalador de Rotula para Windows (firmado)](https://github.com/P4Software/Rotula/releases/download/v0.3.5/Rotula-0.3.5-win-x64-setup.exe)
 
-`Rotula-0.3.4-win-x64-setup.exe` · 105 MB · se instala solo para tu usuario, sin permisos de administrador
+`Rotula-0.3.5-win-x64-setup.exe` · 105 MB · se instala solo para tu usuario, sin permisos de administrador
 
 Siempre la versión más reciente: [github.com/P4Software/Rotula/releases/latest](https://github.com/P4Software/Rotula/releases/latest)
 
@@ -83,7 +83,7 @@ Cada versión incluye además un archivo `SHA256SUMS.txt`.
 **1. Revisa la suma SHA-256.** En PowerShell, dentro de la carpeta donde guardaste el archivo:
 
 ```powershell
-Get-FileHash .\Rotula-0.3.4-win-x64-setup.exe -Algorithm SHA256
+Get-FileHash .\Rotula-0.3.5-win-x64-setup.exe -Algorithm SHA256
 ```
 
 El valor debe coincidir con la línea de ese archivo en `SHA256SUMS.txt`, en la página de la versión.
@@ -92,7 +92,7 @@ El valor debe coincidir con la línea de ese archivo en `SHA256SUMS.txt`, en la 
 digitales**, selecciona la firma y pulsa **Detalles**; o usa PowerShell:
 
 ```powershell
-Get-AuthenticodeSignature .\Rotula-0.3.4-win-x64-setup.exe | Format-List Status, SignerCertificate, TimeStamperCertificate
+Get-AuthenticodeSignature .\Rotula-0.3.5-win-x64-setup.exe | Format-List Status, SignerCertificate, TimeStamperCertificate
 ```
 
 `Status` debe ser `Valid` y el firmante debe ser **Barrdega Sistemas NA LLC**, con un certificado de sello de tiempo
