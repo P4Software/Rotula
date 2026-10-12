@@ -97,6 +97,25 @@ written as "one field" turns it into an ordinary text element with the same id a
 Memento command: each edit stores the whole document before/after (documents are small; image pixels are shared). Unlimited.
 Arrow nudges and typing in one property merge into one step within one second. Drags are gestures: one undo step per drag.
 
+### Editable ZPL panel (`ZplSourceViewModel`)
+The panel under the canvas is a plain `TextBox` bound two-way to `ZplSource.Text`; the view only reports the caret. Typing starts a 300 ms
+quiet period (`IDebouncer`, a `DispatcherTimer` in the app, fired by hand in tests); when it elapses the text goes through `ZplParser` (the
+same importer as File > Import ZPL) and the session is edited once (`Undo.ZplSource`), so every pause is one undo step. Source of truth is an
+explicit state: *Generated* (the text mirrors the design), *Pending* (typing) or *Edited* (the design was rebuilt from the text, which stays as
+typed). Two guards break the loop between the two directions: while the panel applies its own text the regenerated text is ignored, and while an
+edit is pending nothing overwrites what is being typed; any other change of the design (canvas, undo, language) regenerates the text and the
+state goes back to *Generated*. "Revert to design" cancels a pending edit and regenerates. The editor's own undo is switched off so Ctrl+Z
+reaches the label's undo stack. Syntax colouring was left out on purpose: a highlighting editor package would need its own two-way text
+binding, dark-theme styling, accessibility checks and a licence entry for a cosmetic gain.
+- **ZPL cannot say everything the design knows**, so `DesignCarryOver` pairs each previous element with the re-imported one of the same kind
+  (same place and content first, then same content anywhere, then same place) and copies ids, names, print conditions, locks and text fit; a text
+  or barcode whose content equals the shown value of a `{{field}}` gets the field back; objects marked "do not print" (never written to ZPL)
+  are put back. The resolution, the label id, the stock and the declared variable definitions are restored too; an empty text changes nothing.
+- **Nothing is dropped silently**: the status line counts the commands kept as raw ZPL (`ZplImportWarning.KeptAsRaw`) and names the first
+  three; the other notices are counted and listed in the tooltip, like the Import ZPL dialog.
+- **Command hints** come from `ZplCommandReference` (Core, C# data: the parameters of every supported command and the usual kept-verbatim
+  ones, in Rotula's own words) merged with the name and summary of `commands.json`; a test fails when a supported command has no signature.
+
 ### Preview
 `PreviewCache` keeps the `RenderLabel` per document revision and the bitmap per (revision, scale). Selection, handles, grid and
 guides are drawn by WPF on top, so pointer movement never re-renders the label. A visible notice says the text preview is
@@ -490,6 +509,17 @@ which means "used when generated", the safe side; a caller that wants "used when
 `Complete(lastSentRecordNumber)` itself. Store failures that are not I/O (settings changed between look and reserve, position exhausted) are
 `CounterStoreException`s with message keys, never bare `InvalidOperationException`s. A read-only look (previews, the MCP server) creates no folder
 and no lock when `counters.json` does not exist.
+
+### Numbered fields are placeholders; stored formats are a generator mode, not a document property
+A `^FN` field on import becomes `{{name}}` (the prompt made into a valid name, or `Field` plus the number) with the field's data as the
+variable's sample value, so the printed output is unchanged and the field can be merged; the number and prompt stay on the element so the
+ZPL written back is byte-identical. Fields that share a number share the variable (they share their data on the printer); a prompt already used by
+another number gets a suffix. `^SN` fields are left alone (their data is a start value). `^DF` stays out of the label model: a stored format is
+written on request (`GenerateStoredFormat`, `^DF` first, every pure `{{placeholder}}` as `^FN n"prompt"` without data, no `^PQ`) and its recall
+(`GenerateFormatRecall`, `^XF`, `^CI`, one `^FN n^FD value` per number, `^PQ`) reuses the same numbering (element numbers first, then the lowest
+free numbers in label order, one number per name). A field that mixes fixed text and placeholders, a Windows-font text and a QR code with a
+data header cannot be numbered: they are written with their current value and reported (`Format.Field.Mixed`, `Format.Field.Picture`). The
+catalogue keeps `^DF` and `^XF` as *Planned*: opening such a file still keeps the commands verbatim with a notice.
 
 ### The printer-clock codes and ^SO parameter order are not confirmed on a printer
 The `^FC` code table and the `^SO` order (clock set, months, days, years, hours, minutes, seconds) come from the ZPL II Programming Guide as

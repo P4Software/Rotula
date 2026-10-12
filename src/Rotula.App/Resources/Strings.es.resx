@@ -887,7 +887,7 @@
     <value>Variables</value>
   </data>
   <data name="Panel.Zpl" xml:space="preserve">
-    <value>Código ZPL (solo lectura)</value>
+    <value>Código ZPL (editable: la etiqueta sigue lo que escribe)</value>
   </data>
   <data name="Preset.100x150mm" xml:space="preserve">
     <value>100 x 150 mm</value>
@@ -2051,7 +2051,7 @@
     <value>Tipo del objeto seleccionado</value>
   </data>
   <data name="Zpl.Output" xml:space="preserve">
-    <value>SALIDA ZPL</value>
+    <value>CÓDIGO ZPL</value>
   </data>
   <data name="Zpl.ExportButton" xml:space="preserve">
     <value>Exportar .zpl</value>
@@ -5845,5 +5845,80 @@ Las marcas y los nombres de producto pertenecen a sus dueños; Rotula no está a
   </data>
   <data name="Badge.Locked.Tip" xml:space="preserve">
     <value>Bloqueado: este objeto no se puede mover, cambiar de tamaño ni borrar hasta que lo desbloquee.</value>
+  </data>
+  <data name="Zpl.Revert" xml:space="preserve">
+    <value>Volver al diseño</value>
+  </data>
+  <data name="Zpl.Revert.Tip" xml:space="preserve">
+    <value>Descarta el texto escrito y muestra de nuevo el ZPL generado a partir del diseño.</value>
+  </data>
+  <data name="Zpl.State.Generated" xml:space="preserve">
+    <value>Generado</value>
+  </data>
+  <data name="Zpl.State.Pending" xml:space="preserve">
+    <value>Editando...</value>
+  </data>
+  <data name="Zpl.State.Edited" xml:space="preserve">
+    <value>Editado a mano - reimportado</value>
+  </data>
+  <data name="Zpl.Status.Generated" xml:space="preserve">
+    <value>Generado a partir del diseño. Escriba o pegue ZPL aquí; la etiqueta se actualiza tras una breve pausa.</value>
+  </data>
+  <data name="Zpl.Status.Pending" xml:space="preserve">
+    <value>Esperando una pausa en la escritura antes de reimportar...</value>
+  </data>
+  <data name="Zpl.Status.Empty" xml:space="preserve">
+    <value>Nada que importar: el texto está vacío. La etiqueta se dejó como estaba.</value>
+  </data>
+  <data name="Zpl.Status.Clean" xml:space="preserve">
+    <value>Reimportado. Se entendieron todos los comandos.</value>
+  </data>
+  <data name="Zpl.Status.Kept.One" xml:space="preserve">
+    <value>Reimportado. 1 comando no es compatible y se conservó como ZPL sin procesar: {0}</value>
+  </data>
+  <data name="Zpl.Status.Kept.Many" xml:space="preserve">
+    <value>Reimportado. {0} comandos no son compatibles y se conservaron como ZPL sin procesar: {1}</value>
+  </data>
+  <data name="Zpl.Status.More" xml:space="preserve">
+    <value>{0} más</value>
+  </data>
+  <data name="Zpl.Status.Notices.One" xml:space="preserve">
+    <value>1 aviso más (pase el ratón para ver los detalles)</value>
+  </data>
+  <data name="Zpl.Status.Notices.Many" xml:space="preserve">
+    <value>{0} avisos más (pase el ratón para ver los detalles)</value>
+  </data>
+  <data name="Zpl.Status.MultipleLabels" xml:space="preserve">
+    <value>El texto contiene {0} etiquetas; se usa la primera</value>
+  </data>
+  <data name="Zpl.Status.Rebound" xml:space="preserve">
+    <value>{0} campo(s) de datos vinculados de nuevo</value>
+  </data>
+  <data name="Zpl.Hint.Idle" xml:space="preserve">
+    <value>Coloque el cursor sobre un comando (^XX o ~XX) para ver qué hace y qué significan sus parámetros.</value>
+  </data>
+  <data name="Zpl.Hint.Unknown" xml:space="preserve">
+    <value>{0} no es un comando ZPL que Rotula conozca. Se conservará como ZPL sin procesar.</value>
+  </data>
+  <data name="Zpl.Hint.Kept" xml:space="preserve">
+    <value>el diseñador no lo modela: se conserva como ZPL sin procesar</value>
+  </data>
+  <data name="Zpl.Hint.Name" xml:space="preserve">
+    <value>Referencia de comandos ZPL</value>
+  </data>
+  <data name="Zpl.Status.Name" xml:space="preserve">
+    <value>Resultado de la última reimportación</value>
+  </data>
+  <data name="Undo.ZplSource" xml:space="preserve">
+    <value>edición del texto ZPL</value>
+  </data>
+  <data name="Issue.Format.Path.Invalid" xml:space="preserve">
+    <value>El nombre de formato almacenado {0} no es válido. Use una letra de unidad, hasta 16 letras o dígitos y la extensión .ZPL, por ejemplo R:SHIP.ZPL.</value>
+  </data>
+  <data name="Issue.Format.Field.Mixed" xml:space="preserve">
+    <value>Este campo mezcla texto fijo con campos de datos, así que el formato almacenado no puede rellenarlo al imprimir. Se escribió con su valor actual.</value>
+  </data>
+  <data name="Issue.Format.Field.Picture" xml:space="preserve">
+    <value>Este texto usa una fuente de Windows y se imprime como imagen, así que el formato almacenado no puede rellenar sus campos de datos al imprimir.</value>
   </data>
 </root>
