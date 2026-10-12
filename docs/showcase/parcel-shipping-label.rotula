@@ -1,0 +1,771 @@
+{
+  "formatVersion": 8,
+  "generator": "Rotula",
+  "label": {
+    "width": {
+      "value": 4,
+      "unit": "Inches"
+    },
+    "height": {
+      "value": 6,
+      "unit": "Inches"
+    },
+    "dpi": 300,
+    "orientation": "Normal",
+    "margins": {
+      "left": {
+        "value": 0,
+        "unit": "Dots"
+      },
+      "top": {
+        "value": 0,
+        "unit": "Dots"
+      },
+      "right": {
+        "value": 0,
+        "unit": "Dots"
+      },
+      "bottom": {
+        "value": 0,
+        "unit": "Dots"
+      }
+    },
+    "mediaType": "ThermalTransfer",
+    "mediaTracking": "Web",
+    "defaultRotation": "Normal",
+    "defaultFont": {
+      "fontId": "0",
+      "height": 30,
+      "width": 30
+    },
+    "encoding": {
+      "ciCode": 28
+    },
+    "print": {
+      "quantity": 1,
+      "pauseEvery": 0,
+      "replicates": 1,
+      "overridePause": false
+    },
+    "variables": [],
+    "id": "00000000000000000000000000000002"
+  },
+  "elements": [
+    {
+      "type": "box",
+      "widthDots": 1080,
+      "heightDots": 140,
+      "thicknessDots": 1080,
+      "color": "Black",
+      "cornerRounding": 2,
+      "id": "00000000000000000000000000000001",
+      "x": 60,
+      "y": 60,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "diagonalLine",
+      "widthDots": 38,
+      "heightDots": 38,
+      "thicknessDots": 13,
+      "color": "White",
+      "lean": "Left",
+      "id": "00000000000000000000000000000002",
+      "x": 94,
+      "y": 92,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "diagonalLine",
+      "widthDots": 38,
+      "heightDots": 38,
+      "thicknessDots": 13,
+      "color": "White",
+      "lean": "Right",
+      "id": "00000000000000000000000000000003",
+      "x": 94,
+      "y": 130,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "diagonalLine",
+      "widthDots": 38,
+      "heightDots": 38,
+      "thicknessDots": 13,
+      "color": "White",
+      "lean": "Left",
+      "id": "00000000000000000000000000000004",
+      "x": 138,
+      "y": 92,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "diagonalLine",
+      "widthDots": 38,
+      "heightDots": 38,
+      "thicknessDots": 13,
+      "color": "White",
+      "lean": "Right",
+      "id": "00000000000000000000000000000005",
+      "x": 138,
+      "y": 130,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Bahnschrift",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 19
+      },
+      "text": "ARCLINE",
+      "id": "00000000000000000000000000000006",
+      "x": 210,
+      "y": 83,
+      "originKind": "Origin",
+      "reverseField": true
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 7.5
+      },
+      "text": "EXPRESS PARCEL",
+      "id": "00000000000000000000000000000007",
+      "x": 210,
+      "y": 148,
+      "originKind": "Origin",
+      "reverseField": true
+    },
+    {
+      "type": "box",
+      "widthDots": 330,
+      "heightDots": 96,
+      "thicknessDots": 330,
+      "color": "White",
+      "cornerRounding": 3,
+      "id": "00000000000000000000000000000008",
+      "x": 786,
+      "y": 82,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Bahnschrift",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 14
+      },
+      "text": "PRIORITY",
+      "id": "00000000000000000000000000000009",
+      "x": 832,
+      "y": 93,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 6.5
+      },
+      "text": "2-DAY DELIVERY",
+      "id": "0000000000000000000000000000000a",
+      "x": 845,
+      "y": 136,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 6.5
+      },
+      "text": "FROM",
+      "id": "0000000000000000000000000000000b",
+      "x": 60,
+      "y": 230,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 10.5
+      },
+      "text": "Cobalt \u0026 Cedar Supply Co.",
+      "id": "0000000000000000000000000000000c",
+      "x": 60,
+      "y": 263,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "pointSize": 9
+      },
+      "text": "4410 Foundry Way\nPortland, OR 97209",
+      "block": {
+        "widthDots": 600,
+        "maxLines": 2,
+        "lineSpacing": 2,
+        "alignment": "Left",
+        "hangingIndent": 0
+      },
+      "id": "0000000000000000000000000000000d",
+      "x": 60,
+      "y": 322,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "box",
+      "widthDots": 440,
+      "heightDots": 190,
+      "thicknessDots": 4,
+      "color": "Black",
+      "cornerRounding": 2,
+      "id": "0000000000000000000000000000000e",
+      "x": 700,
+      "y": 230,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 6.5
+      },
+      "text": "WEIGHT",
+      "id": "0000000000000000000000000000000f",
+      "x": 720,
+      "y": 246,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Bahnschrift",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 10.5
+      },
+      "text": "4.2 kg",
+      "id": "00000000000000000000000000000010",
+      "x": 1003,
+      "y": 244,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "line",
+      "lengthDots": 400,
+      "thicknessDots": 2,
+      "direction": "Horizontal",
+      "color": "Black",
+      "id": "00000000000000000000000000000011",
+      "x": 720,
+      "y": 294,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 6.5
+      },
+      "text": "PIECE",
+      "id": "00000000000000000000000000000012",
+      "x": 720,
+      "y": 300,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Bahnschrift",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 10.5
+      },
+      "text": "1 of 2",
+      "id": "00000000000000000000000000000013",
+      "x": 1021,
+      "y": 298,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "line",
+      "lengthDots": 400,
+      "thicknessDots": 2,
+      "direction": "Horizontal",
+      "color": "Black",
+      "id": "00000000000000000000000000000014",
+      "x": 720,
+      "y": 348,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 6.5
+      },
+      "text": "SHIP DATE",
+      "id": "00000000000000000000000000000015",
+      "x": 720,
+      "y": 354,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Bahnschrift",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 10.5
+      },
+      "text": "12 OCT 2026",
+      "id": "00000000000000000000000000000016",
+      "x": 889,
+      "y": 352,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "line",
+      "lengthDots": 1080,
+      "thicknessDots": 8,
+      "direction": "Horizontal",
+      "color": "Black",
+      "id": "00000000000000000000000000000017",
+      "x": 60,
+      "y": 455,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 6.5
+      },
+      "text": "SHIP TO",
+      "id": "00000000000000000000000000000018",
+      "x": 60,
+      "y": 492,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 15
+      },
+      "text": "Harlow Outfitters",
+      "id": "00000000000000000000000000000019",
+      "x": 60,
+      "y": 519,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "pointSize": 10.5
+      },
+      "text": "Attn: Receiving Dock\n2180 Pine Ridge Road, Suite 400",
+      "block": {
+        "widthDots": 820,
+        "maxLines": 2,
+        "lineSpacing": 4,
+        "alignment": "Left",
+        "hangingIndent": 0
+      },
+      "id": "0000000000000000000000000000001a",
+      "x": 60,
+      "y": 597,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Bahnschrift",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 13
+      },
+      "text": "BELLEVUE WA 98004-5517",
+      "id": "0000000000000000000000000000001b",
+      "x": 60,
+      "y": 723,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "box",
+      "widthDots": 240,
+      "heightDots": 250,
+      "thicknessDots": 250,
+      "color": "Black",
+      "cornerRounding": 2,
+      "id": "0000000000000000000000000000001c",
+      "x": 900,
+      "y": 502,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 6.5
+      },
+      "text": "ROUTE",
+      "id": "0000000000000000000000000000001d",
+      "x": 976,
+      "y": 516,
+      "originKind": "Origin",
+      "reverseField": true
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Impact",
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "pointSize": 34
+      },
+      "text": "4B",
+      "id": "0000000000000000000000000000001e",
+      "x": 945,
+      "y": 537,
+      "originKind": "Origin",
+      "reverseField": true
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Bahnschrift",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 8.5
+      },
+      "text": "SEA-117",
+      "id": "0000000000000000000000000000001f",
+      "x": 959,
+      "y": 695,
+      "originKind": "Origin",
+      "reverseField": true
+    },
+    {
+      "type": "barcode",
+      "symbology": "Pdf417",
+      "data": "ARCLINE|PRI2|98104-5517|US|7Q4882015366|1/2|4.2KG|20261012",
+      "height": 24,
+      "moduleWidth": 5,
+      "wideBarRatio": 3,
+      "humanReadable": true,
+      "humanReadablePosition": "Below",
+      "checkDigit": false,
+      "code128Mode": "Automatic",
+      "qrErrorCorrection": "Quartile",
+      "qrModel": 2,
+      "moduleSize": 4,
+      "columns": 5,
+      "rows": 0,
+      "pdf417SecurityLevel": 3,
+      "pdf417Truncate": false,
+      "id": "00000000000000000000000000000020",
+      "x": 60,
+      "y": 818,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "barcode",
+      "symbology": "DataMatrix",
+      "data": "ARCLINE-7Q4882015366",
+      "height": 100,
+      "moduleWidth": 2,
+      "wideBarRatio": 3,
+      "humanReadable": true,
+      "humanReadablePosition": "Below",
+      "checkDigit": false,
+      "code128Mode": "Automatic",
+      "qrErrorCorrection": "Quartile",
+      "qrModel": 2,
+      "moduleSize": 10,
+      "columns": 0,
+      "rows": 0,
+      "pdf417SecurityLevel": 2,
+      "pdf417Truncate": false,
+      "id": "00000000000000000000000000000021",
+      "x": 960,
+      "y": 818,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 6.5
+      },
+      "text": "ROUTING BARS",
+      "id": "00000000000000000000000000000022",
+      "x": 60,
+      "y": 1074,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "barcode",
+      "symbology": "Postnet",
+      "data": "981045517",
+      "height": 50,
+      "moduleWidth": 5,
+      "wideBarRatio": 3,
+      "humanReadable": false,
+      "humanReadablePosition": "Below",
+      "checkDigit": false,
+      "code128Mode": "Automatic",
+      "qrErrorCorrection": "Quartile",
+      "qrModel": 2,
+      "moduleSize": 4,
+      "columns": 0,
+      "rows": 0,
+      "pdf417SecurityLevel": 2,
+      "pdf417Truncate": false,
+      "id": "00000000000000000000000000000023",
+      "x": 60,
+      "y": 1120,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "line",
+      "lengthDots": 1080,
+      "thicknessDots": 3,
+      "direction": "Horizontal",
+      "color": "Black",
+      "id": "00000000000000000000000000000024",
+      "x": 60,
+      "y": 1214,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 6.5
+      },
+      "text": "TRACKING NO.",
+      "id": "00000000000000000000000000000025",
+      "x": 60,
+      "y": 1234,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Bahnschrift",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 10.5
+      },
+      "text": "7Q4 8820 1536 6",
+      "id": "00000000000000000000000000000026",
+      "x": 824,
+      "y": 1236,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "barcode",
+      "symbology": "Code128",
+      "data": "7Q4882015366",
+      "height": 274,
+      "moduleWidth": 8,
+      "wideBarRatio": 3,
+      "humanReadable": true,
+      "humanReadablePosition": "Below",
+      "checkDigit": false,
+      "code128Mode": "Automatic",
+      "qrErrorCorrection": "Quartile",
+      "qrModel": 2,
+      "moduleSize": 8,
+      "columns": 0,
+      "rows": 0,
+      "pdf417SecurityLevel": 2,
+      "pdf417Truncate": false,
+      "id": "00000000000000000000000000000027",
+      "x": 108,
+      "y": 1294,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "line",
+      "lengthDots": 1080,
+      "thicknessDots": 3,
+      "direction": "Horizontal",
+      "color": "Black",
+      "id": "00000000000000000000000000000028",
+      "x": 60,
+      "y": 1680,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 6.5
+      },
+      "text": "REF ORD-2026-118842",
+      "id": "00000000000000000000000000000029",
+      "x": 60,
+      "y": 1706,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 6.5
+      },
+      "text": "DECLARED 148.00 USD",
+      "id": "0000000000000000000000000000002a",
+      "x": 455,
+      "y": 1706,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 6.5
+      },
+      "text": "NO SIGNATURE REQUIRED",
+      "id": "0000000000000000000000000000002b",
+      "x": 800,
+      "y": 1706,
+      "originKind": "Origin",
+      "reverseField": false
+    }
+  ]
+}

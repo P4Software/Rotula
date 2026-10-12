@@ -1,0 +1,515 @@
+{
+  "formatVersion": 10,
+  "generator": "Rotula",
+  "label": {
+    "width": {
+      "value": 3,
+      "unit": "Inches"
+    },
+    "height": {
+      "value": 2,
+      "unit": "Inches"
+    },
+    "dpi": 300,
+    "orientation": "Normal",
+    "margins": {
+      "left": {
+        "value": 0,
+        "unit": "Dots"
+      },
+      "top": {
+        "value": 0,
+        "unit": "Dots"
+      },
+      "right": {
+        "value": 0,
+        "unit": "Dots"
+      },
+      "bottom": {
+        "value": 0,
+        "unit": "Dots"
+      }
+    },
+    "mediaType": "ThermalTransfer",
+    "mediaTracking": "Web",
+    "defaultRotation": "Normal",
+    "defaultFont": {
+      "fontId": "0",
+      "height": 30,
+      "width": 30
+    },
+    "encoding": {
+      "ciCode": 28
+    },
+    "print": {
+      "quantity": 1,
+      "pauseEvery": 0,
+      "replicates": 1,
+      "overridePause": false
+    },
+    "variables": [
+      {
+        "name": "Brand",
+        "sampleValue": "CASA VERDE"
+      },
+      {
+        "name": "Name",
+        "sampleValue": "Cold-Pressed Olive Oil"
+      },
+      {
+        "name": "Detail",
+        "sampleValue": "Extra virgin  \u00B7  500 ml bottle"
+      },
+      {
+        "name": "WasPrice",
+        "sampleValue": "6.49"
+      },
+      {
+        "name": "Whole",
+        "sampleValue": "4"
+      },
+      {
+        "name": "Cents",
+        "sampleValue": "99"
+      },
+      {
+        "name": "Save",
+        "sampleValue": "1.50"
+      },
+      {
+        "name": "UnitPrice",
+        "sampleValue": "$0.99 per 100 ml"
+      },
+      {
+        "name": "Sku",
+        "sampleValue": "PN-204817"
+      },
+      {
+        "name": "Ean",
+        "sampleValue": "501234567890"
+      },
+      {
+        "name": "Aisle",
+        "sampleValue": "PANTRY  \u00B7  AISLE 4"
+      }
+    ],
+    "id": "00000000000000000000000000000006"
+  },
+  "elements": [
+    {
+      "type": "box",
+      "widthDots": 844,
+      "heightDots": 76,
+      "thicknessDots": 844,
+      "color": "Black",
+      "cornerRounding": 2,
+      "id": "00000000000000000000000000000001",
+      "x": 28,
+      "y": 28,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "circle",
+      "diameterDots": 36,
+      "thicknessDots": 36,
+      "color": "White",
+      "id": "00000000000000000000000000000002",
+      "x": 50,
+      "y": 48,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "circle",
+      "diameterDots": 52,
+      "thicknessDots": 5,
+      "color": "White",
+      "id": "00000000000000000000000000000003",
+      "x": 42,
+      "y": 40,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Bahnschrift",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 10
+      },
+      "text": "FRESHFIELD MARKET",
+      "id": "00000000000000000000000000000004",
+      "x": 118,
+      "y": 40,
+      "originKind": "Origin",
+      "reverseField": true
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 6.5
+      },
+      "text": "{{Aisle}}",
+      "block": {
+        "widthDots": 300,
+        "maxLines": 1,
+        "lineSpacing": 0,
+        "alignment": "Right",
+        "hangingIndent": 0
+      },
+      "id": "00000000000000000000000000000005",
+      "x": 548,
+      "y": 44,
+      "originKind": "Origin",
+      "reverseField": true
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 6.5
+      },
+      "text": "{{Brand}}",
+      "id": "00000000000000000000000000000006",
+      "x": 40,
+      "y": 122,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 11.5
+      },
+      "text": "{{Name}}",
+      "block": {
+        "widthDots": 400,
+        "maxLines": 1,
+        "lineSpacing": 0,
+        "alignment": "Left",
+        "hangingIndent": 0,
+        "fit": {
+          "mode": "Shrink",
+          "minSize": 8,
+          "maxSize": 11.5,
+          "maxLinesCap": 20,
+          "ignoreOverflowWarning": false
+        }
+      },
+      "id": "00000000000000000000000000000007",
+      "x": 40,
+      "y": 158,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "pointSize": 8
+      },
+      "text": "{{Detail}}",
+      "id": "00000000000000000000000000000008",
+      "x": 40,
+      "y": 223,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "line",
+      "lengthDots": 410,
+      "thicknessDots": 3,
+      "direction": "Horizontal",
+      "color": "Black",
+      "id": "00000000000000000000000000000009",
+      "x": 40,
+      "y": 286,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "barcode",
+      "symbology": "Ean13",
+      "data": "{{Ean}}",
+      "height": 96,
+      "moduleWidth": 3,
+      "wideBarRatio": 3,
+      "humanReadable": true,
+      "humanReadablePosition": "Below",
+      "checkDigit": false,
+      "code128Mode": "Automatic",
+      "qrErrorCorrection": "Quartile",
+      "qrModel": 2,
+      "moduleSize": 4,
+      "columns": 0,
+      "rows": 0,
+      "pdf417SecurityLevel": 2,
+      "pdf417Truncate": false,
+      "id": "0000000000000000000000000000000a",
+      "x": 40,
+      "y": 318,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 6.5
+      },
+      "text": "SKU  {{Sku}}",
+      "id": "0000000000000000000000000000000b",
+      "x": 40,
+      "y": 468,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "pointSize": 5.5
+      },
+      "text": "PRICE VALID 12 \u2013 25 OCT 2026",
+      "id": "0000000000000000000000000000000c",
+      "x": 40,
+      "y": 511,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 8
+      },
+      "text": "WAS ${{WasPrice}}",
+      "block": {
+        "widthDots": 330,
+        "maxLines": 1,
+        "lineSpacing": 0,
+        "alignment": "Right",
+        "hangingIndent": 0
+      },
+      "id": "0000000000000000000000000000000d",
+      "x": 518,
+      "y": 107,
+      "originKind": "Origin",
+      "reverseField": false,
+      "printCondition": {
+        "field": "WasPrice",
+        "operator": "IsNotEmpty",
+        "value": ""
+      }
+    },
+    {
+      "type": "line",
+      "lengthDots": 183,
+      "thicknessDots": 4,
+      "direction": "Horizontal",
+      "color": "Black",
+      "id": "0000000000000000000000000000000e",
+      "x": 672,
+      "y": 136,
+      "originKind": "Origin",
+      "reverseField": false,
+      "printCondition": {
+        "field": "WasPrice",
+        "operator": "IsNotEmpty",
+        "value": ""
+      }
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Bahnschrift",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 22
+      },
+      "text": "$",
+      "id": "0000000000000000000000000000000f",
+      "x": 470,
+      "y": 176,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Bahnschrift",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 48
+      },
+      "text": "{{Whole}}",
+      "block": {
+        "widthDots": 230,
+        "maxLines": 1,
+        "lineSpacing": 0,
+        "alignment": "Right",
+        "hangingIndent": 0
+      },
+      "id": "00000000000000000000000000000010",
+      "x": 500,
+      "y": 167,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Bahnschrift",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 24
+      },
+      "text": "{{Cents}}",
+      "id": "00000000000000000000000000000011",
+      "x": 742,
+      "y": 176,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "pointSize": 6.5
+      },
+      "text": "{{UnitPrice}}",
+      "block": {
+        "widthDots": 330,
+        "maxLines": 1,
+        "lineSpacing": 0,
+        "alignment": "Right",
+        "hangingIndent": 0
+      },
+      "id": "00000000000000000000000000000012",
+      "x": 518,
+      "y": 346,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "box",
+      "widthDots": 392,
+      "heightDots": 132,
+      "thicknessDots": 392,
+      "color": "Black",
+      "cornerRounding": 2,
+      "id": "00000000000000000000000000000013",
+      "x": 480,
+      "y": 412,
+      "originKind": "Origin",
+      "reverseField": false,
+      "printCondition": {
+        "field": "WasPrice",
+        "operator": "IsNotEmpty",
+        "value": ""
+      }
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Bahnschrift",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 20
+      },
+      "text": "SALE",
+      "block": {
+        "widthDots": 392,
+        "maxLines": 1,
+        "lineSpacing": 0,
+        "alignment": "Center",
+        "hangingIndent": 0
+      },
+      "id": "00000000000000000000000000000014",
+      "x": 480,
+      "y": 427,
+      "originKind": "Origin",
+      "reverseField": true,
+      "printCondition": {
+        "field": "WasPrice",
+        "operator": "IsNotEmpty",
+        "value": ""
+      }
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 7
+      },
+      "text": "SAVE ${{Save}}",
+      "block": {
+        "widthDots": 392,
+        "maxLines": 1,
+        "lineSpacing": 0,
+        "alignment": "Center",
+        "hangingIndent": 0
+      },
+      "id": "00000000000000000000000000000015",
+      "x": 480,
+      "y": 495,
+      "originKind": "Origin",
+      "reverseField": true,
+      "printCondition": {
+        "field": "WasPrice",
+        "operator": "IsNotEmpty",
+        "value": ""
+      }
+    }
+  ]
+}

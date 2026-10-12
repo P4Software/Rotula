@@ -1,0 +1,565 @@
+{
+  "formatVersion": 8,
+  "generator": "Rotula",
+  "label": {
+    "width": {
+      "value": 3.5,
+      "unit": "Inches"
+    },
+    "height": {
+      "value": 4.5,
+      "unit": "Inches"
+    },
+    "dpi": 300,
+    "orientation": "Normal",
+    "margins": {
+      "left": {
+        "value": 0,
+        "unit": "Dots"
+      },
+      "top": {
+        "value": 0,
+        "unit": "Dots"
+      },
+      "right": {
+        "value": 0,
+        "unit": "Dots"
+      },
+      "bottom": {
+        "value": 0,
+        "unit": "Dots"
+      }
+    },
+    "mediaType": "ThermalTransfer",
+    "mediaTracking": "Web",
+    "defaultRotation": "Normal",
+    "defaultFont": {
+      "fontId": "0",
+      "height": 30,
+      "width": 30
+    },
+    "encoding": {
+      "ciCode": 28
+    },
+    "print": {
+      "quantity": 1,
+      "pauseEvery": 0,
+      "replicates": 1,
+      "overridePause": false
+    },
+    "variables": [],
+    "id": "00000000000000000000000000000007"
+  },
+  "elements": [
+    {
+      "type": "box",
+      "widthDots": 998,
+      "heightDots": 1298,
+      "thicknessDots": 7,
+      "color": "Black",
+      "cornerRounding": 0,
+      "id": "00000000000000000000000000000001",
+      "x": 26,
+      "y": 26,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "box",
+      "widthDots": 958,
+      "heightDots": 1258,
+      "thicknessDots": 3,
+      "color": "Black",
+      "cornerRounding": 0,
+      "id": "00000000000000000000000000000002",
+      "x": 46,
+      "y": 46,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "circle",
+      "diameterDots": 20,
+      "thicknessDots": 20,
+      "color": "Black",
+      "id": "00000000000000000000000000000003",
+      "x": 26,
+      "y": 26,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "circle",
+      "diameterDots": 20,
+      "thicknessDots": 20,
+      "color": "Black",
+      "id": "00000000000000000000000000000004",
+      "x": 26,
+      "y": 1304,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "circle",
+      "diameterDots": 20,
+      "thicknessDots": 20,
+      "color": "Black",
+      "id": "00000000000000000000000000000005",
+      "x": 1004,
+      "y": 26,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "circle",
+      "diameterDots": 20,
+      "thicknessDots": 20,
+      "color": "Black",
+      "id": "00000000000000000000000000000006",
+      "x": 1004,
+      "y": 1304,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Georgia",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 7
+      },
+      "text": "E S T A T E   B O T T L E D",
+      "id": "00000000000000000000000000000007",
+      "x": 337,
+      "y": 90,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "line",
+      "lengthDots": 164,
+      "thicknessDots": 3,
+      "direction": "Horizontal",
+      "color": "Black",
+      "id": "00000000000000000000000000000008",
+      "x": 335,
+      "y": 160,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "line",
+      "lengthDots": 164,
+      "thicknessDots": 3,
+      "direction": "Horizontal",
+      "color": "Black",
+      "id": "00000000000000000000000000000009",
+      "x": 551,
+      "y": 160,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "circle",
+      "diameterDots": 16,
+      "thicknessDots": 16,
+      "color": "Black",
+      "id": "0000000000000000000000000000000a",
+      "x": 517,
+      "y": 154,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "circle",
+      "diameterDots": 36,
+      "thicknessDots": 3,
+      "color": "Black",
+      "id": "0000000000000000000000000000000b",
+      "x": 507,
+      "y": 144,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "circle",
+      "diameterDots": 270,
+      "thicknessDots": 9,
+      "color": "Black",
+      "id": "0000000000000000000000000000000c",
+      "x": 390,
+      "y": 205,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "circle",
+      "diameterDots": 222,
+      "thicknessDots": 3,
+      "color": "Black",
+      "id": "0000000000000000000000000000000d",
+      "x": 414,
+      "y": 229,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Georgia",
+        "bold": true,
+        "italic": true,
+        "underline": false,
+        "pointSize": 64
+      },
+      "text": "V",
+      "id": "0000000000000000000000000000000e",
+      "x": 423,
+      "y": 209,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "line",
+      "lengthDots": 130,
+      "thicknessDots": 5,
+      "direction": "Horizontal",
+      "color": "Black",
+      "id": "0000000000000000000000000000000f",
+      "x": 236,
+      "y": 300,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "line",
+      "lengthDots": 130,
+      "thicknessDots": 5,
+      "direction": "Horizontal",
+      "color": "Black",
+      "id": "00000000000000000000000000000010",
+      "x": 684,
+      "y": 300,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "line",
+      "lengthDots": 94,
+      "thicknessDots": 5,
+      "direction": "Horizontal",
+      "color": "Black",
+      "id": "00000000000000000000000000000011",
+      "x": 272,
+      "y": 334,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "line",
+      "lengthDots": 94,
+      "thicknessDots": 5,
+      "direction": "Horizontal",
+      "color": "Black",
+      "id": "00000000000000000000000000000012",
+      "x": 684,
+      "y": 334,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "line",
+      "lengthDots": 58,
+      "thicknessDots": 5,
+      "direction": "Horizontal",
+      "color": "Black",
+      "id": "00000000000000000000000000000013",
+      "x": 308,
+      "y": 368,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "line",
+      "lengthDots": 58,
+      "thicknessDots": 5,
+      "direction": "Horizontal",
+      "color": "Black",
+      "id": "00000000000000000000000000000014",
+      "x": 684,
+      "y": 368,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Georgia",
+        "bold": false,
+        "italic": true,
+        "underline": false,
+        "pointSize": 10
+      },
+      "text": "D O M A I N E",
+      "id": "00000000000000000000000000000015",
+      "x": 392,
+      "y": 531,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Palatino Linotype",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 29.5
+      },
+      "text": "VALMORAL",
+      "id": "00000000000000000000000000000016",
+      "x": 150,
+      "y": 569,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "line",
+      "lengthDots": 300,
+      "thicknessDots": 4,
+      "direction": "Horizontal",
+      "color": "Black",
+      "id": "00000000000000000000000000000017",
+      "x": 375,
+      "y": 730,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "line",
+      "lengthDots": 300,
+      "thicknessDots": 2,
+      "direction": "Horizontal",
+      "color": "Black",
+      "id": "00000000000000000000000000000018",
+      "x": 375,
+      "y": 742,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Georgia",
+        "bold": false,
+        "italic": true,
+        "underline": false,
+        "pointSize": 27
+      },
+      "text": "R\u00E9serve Syrah",
+      "id": "00000000000000000000000000000019",
+      "x": 161,
+      "y": 765,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "line",
+      "lengthDots": 150,
+      "thicknessDots": 3,
+      "direction": "Horizontal",
+      "color": "Black",
+      "id": "0000000000000000000000000000001a",
+      "x": 275,
+      "y": 962,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Palatino Linotype",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 24
+      },
+      "text": "2021",
+      "id": "0000000000000000000000000000001b",
+      "x": 425,
+      "y": 892,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "line",
+      "lengthDots": 150,
+      "thicknessDots": 3,
+      "direction": "Horizontal",
+      "color": "Black",
+      "id": "0000000000000000000000000000001c",
+      "x": 625,
+      "y": 962,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Georgia",
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "pointSize": 12
+      },
+      "text": "Vall\u00E9e du Lys",
+      "id": "0000000000000000000000000000001d",
+      "x": 378,
+      "y": 1024,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Georgia",
+        "bold": false,
+        "italic": true,
+        "underline": false,
+        "pointSize": 8.5
+      },
+      "text": "Appellation Contr\u00F4l\u00E9e",
+      "id": "0000000000000000000000000000001e",
+      "x": 354,
+      "y": 1087,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "line",
+      "lengthDots": 124,
+      "thicknessDots": 3,
+      "direction": "Horizontal",
+      "color": "Black",
+      "id": "0000000000000000000000000000001f",
+      "x": 375,
+      "y": 1170,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "line",
+      "lengthDots": 124,
+      "thicknessDots": 3,
+      "direction": "Horizontal",
+      "color": "Black",
+      "id": "00000000000000000000000000000020",
+      "x": 551,
+      "y": 1170,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "circle",
+      "diameterDots": 16,
+      "thicknessDots": 16,
+      "color": "Black",
+      "id": "00000000000000000000000000000021",
+      "x": 517,
+      "y": 1164,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "circle",
+      "diameterDots": 36,
+      "thicknessDots": 3,
+      "color": "Black",
+      "id": "00000000000000000000000000000022",
+      "x": 507,
+      "y": 1154,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Georgia",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 8
+      },
+      "text": "RED WINE   \u00B7   750 ml   \u00B7   13.5% vol.",
+      "id": "00000000000000000000000000000023",
+      "x": 228,
+      "y": 1201,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Segoe UI",
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "pointSize": 6
+      },
+      "text": "Contains sulphites. Please drink responsibly.",
+      "id": "00000000000000000000000000000024",
+      "x": 283,
+      "y": 1253,
+      "originKind": "Origin",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Georgia",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 7.5
+      },
+      "text": "PRODUIT DE FRANCE",
+      "id": "00000000000000000000000000000025",
+      "x": 76,
+      "y": 494,
+      "originKind": "Origin",
+      "rotation": "Rotated270",
+      "reverseField": false
+    },
+    {
+      "type": "text",
+      "font": {
+        "source": "Windows",
+        "familyName": "Georgia",
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "pointSize": 7.5
+      },
+      "text": "MIS EN BOUTEILLE AU DOMAINE",
+      "id": "00000000000000000000000000000026",
+      "x": 936,
+      "y": 395,
+      "originKind": "Origin",
+      "rotation": "Rotated90",
+      "reverseField": false
+    }
+  ]
+}
