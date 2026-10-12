@@ -113,6 +113,8 @@ public sealed partial class MainViewModel : ObservableObject
         Data = new DataMergeViewModel(services.Printing, Printer, () => Session.Document, () => DocumentName, services.Files, services.Messages, services.Database, services.Dialogs, Variables);
         Data.SettingsEdited += (_, _) => Session.MarkDirty();
         Data.PreviewDataChanged += (_, _) => OnPreviewDataChanged();
+        // Reloading a label's remembered data on purpose is the user vouching for that file.
+        Data.RememberedDataReloaded += (_, _) => TrustFile(FilePath);
         Fields = new FieldsViewModel(Session, Commands, Data, services.Messages, text => StatusMessage = text, () => services.Dialogs.ShowDataWindow(Data));
         Data.Fields = Fields;
         Properties.AttachFields(Fields);
@@ -761,8 +763,10 @@ public sealed partial class MainViewModel : ObservableObject
         {
             var content = RotulaFileSerializer.LoadFile(path);
             OpenDocument(content.Document, path, merge: content.Merge);
-            // The label remembers where its data came from; read it again now so the canvas shows real values, not empty fields.
-            DataReload = Data.ReloadRememberedDataAsync();
+            // The label remembers where its data came from. Only a file this PC trusts (saved here, or reloaded on purpose before) reads it
+            // again by itself; a file from elsewhere shows its saved query and waits for the Reload / Connect and reload data click, because
+            // its query would otherwise run on the user's own database connection without them having seen it.
+            DataReload = IsTrusted(path) ? Data.ReloadRememberedDataAsync() : Task.CompletedTask;
             AddRecent(path);
             StatusMessage = Loc.Get("Status.Opened", Path.GetFileName(path));
             return true;
@@ -819,9 +823,30 @@ public sealed partial class MainViewModel : ObservableObject
         }
         FilePath = path;
         Session.MarkSaved();
+        TrustFile(path);   // the user just made this file here
         AddRecent(path);
         StatusMessage = Loc.Get("Status.Saved", Path.GetFileName(path));
         return true;
+    }
+
+    private const int MaxTrusted = 500;
+
+    /// <summary>SHA-256 of the whole file as hex, or null when it cannot be read.</summary>
+    private static string? HashOf(string? path)
+    {
+        if (string.IsNullOrEmpty(path)) return null;
+        try { return Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(path))); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return null; }
+    }
+
+    private bool IsTrusted(string path) => HashOf(path) is { } h && _settings.TrustedLabels.Contains(h);
+
+    private void TrustFile(string? path)
+    {
+        if (HashOf(path) is not { } h || _settings.TrustedLabels.Contains(h)) return;
+        _settings.TrustedLabels.Add(h);
+        while (_settings.TrustedLabels.Count > MaxTrusted) _settings.TrustedLabels.RemoveAt(0);
+        SaveSettings();
     }
 
     private void AddRecent(string path)

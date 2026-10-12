@@ -54,8 +54,9 @@ The Data window has a source switch: File (CSV / Excel) or Database. Database mo
 `DialogWindow` style). Both talk to `Rotula.Data` only through `IDatabaseServices` (the saved connections plus a factory), so view-models run with fakes.
 - **Same pipeline**: "Use this data" produces a `MergeTable` and goes through the same `SetTable` / `Rebind` path as a CSV, so mapping, counters, copies,
   the record navigator and batch print/export are unchanged. A table is read in full up to the row cap (the 100-row preview is only a preview).
-- **Reconnects when the user opens the label** (changed 0.3.4; before, a button was needed): opening a label that refers to a connection looks the
-  NAME up in the user's own saved connections and runs the saved query, so the canvas shows real values at once. The checks are unchanged: the query text from a
+- **Reconnects when the user opens a label this PC trusts** (changed 0.3.4; before, a button was needed): a label is trusted when the user saved it here or reloaded its
+  data on purpose; the SHA-256 of the whole file is kept in the settings (`TrustedLabels`), so an edited query loses trust. Any other label shows its query and waits for a click,
+  because it could be anyone's and its query would run on the user's own connection. For a trusted label, opening looks the NAME up in the user's saved connections and runs the saved query, so the canvas shows real values at once. The checks are unchanged: the query text from a
   file is untrusted and the guard (`SqlGuard`) checks it before anything is sent; no host, user or password is in the file; a missing connection or a failure shows
   its plain-language reason in the Data window (no dialog) and "Connect and reload data" stays for a retry. A data file is reloaded the same way, through the
   same local-drive check as the Reload button. Nothing connects before the user opens that label.

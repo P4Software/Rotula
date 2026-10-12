@@ -97,6 +97,9 @@ public sealed partial class DatabaseSourceViewModel : ObservableObject
     /// <summary>Raised when the grid contents (<see cref="GridColumns"/> / <see cref="GridRows"/>) changed, so the view rebuilds its columns.</summary>
     public event EventHandler? GridChanged;
 
+    /// <summary>Raised when the user's own click of "Connect and reload data" loaded the label's remembered query.</summary>
+    public event EventHandler? ReferenceReloaded;
+
     // ----------------------------------------------------------------------------------- connections
 
     /// <summary>The saved connections.</summary>
@@ -671,6 +674,7 @@ public sealed partial class DatabaseSourceViewModel : ObservableObject
         QueryText = reference.Reference.Query;
         ModeIndex = 1;
         await UseDataAsync();
+        if (!IsReferencePending) ReferenceReloaded?.Invoke(this, EventArgs.Empty);
     }
 
     // ----------------------------------------------------------------------------------- running work

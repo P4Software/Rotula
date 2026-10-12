@@ -140,7 +140,8 @@ public class AppDataSelectionTests : IDisposable
         await Load(3);
         string label = Path.Combine(_dir, "withdata.rotula");
         Assert.True(_main.Data.HasData);
-        RotulaFileSerializer.Save(_main.Session.Document, label, Data.ToSettings());
+        _fake.SavePath = label;          // saving here is what makes this PC trust the file
+        _main.SaveCommand.Execute(null);
 
         var again = Build();
         Assert.True(again.LoadFile(label));
