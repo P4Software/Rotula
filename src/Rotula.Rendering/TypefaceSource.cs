@@ -44,6 +44,7 @@ internal static class TypefaceSource
             return new ResolvedTypeface(RenderFonts.Get(RenderFontFamily.Sans, bold), "Liberation Sans", true, italic ? SyntheticItalic : 0f);
         bool same = string.Equals(face.FamilyName, family, StringComparison.OrdinalIgnoreCase);
         if (!same && TryFindStyleVariant(family, bold, italic) is { } variant) return new ResolvedTypeface(variant, variant.FamilyName, false, 0f);
+        if (!same && TryLoadInstalledFile(family, bold, italic) is { } installed) return new ResolvedTypeface(installed, installed.FamilyName, false, 0f);
         return new ResolvedTypeface(face, face.FamilyName, !same, 0f);
     }
 
@@ -90,5 +91,59 @@ internal static class TypefaceSource
         var face = SKTypeface.FromFamilyName(baseName, style);
         // Accept only the parent family itself: anything else is the operating system's default, i.e. still a substitution.
         return face is not null && string.Equals(face.FamilyName, baseName, StringComparison.OrdinalIgnoreCase) ? face : null;
+    }
+
+    /// <summary>
+    /// Last resort for a family the font manager does not list but Windows has installed (Arial Narrow, Franklin Gothic Medium and other families
+    /// that only exist under their own name): reads the list of installed font files from the registry and loads the matching file directly.
+    /// Returns null when the family is not installed, so the caller still reports a substitution.
+    /// </summary>
+    private static SKTypeface? TryLoadInstalledFile(string family, bool bold, bool italic)
+    {
+        try
+        {
+            if (!OperatingSystem.IsWindows()) return null;
+            string wanted = family.Trim() + (bold ? " Bold" : string.Empty) + (italic ? " Italic" : string.Empty);
+            string regular = family.Trim() + (italic ? " Italic" : string.Empty);
+            // Machine fonts first, then the ones a user installed just for themselves (those are stored with absolute paths).
+            foreach (var (hive, keyPath) in new[]
+                     {
+                         (Microsoft.Win32.Registry.LocalMachine, @"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts"),
+                         (Microsoft.Win32.Registry.CurrentUser, @"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts"),
+                     })
+            {
+                using var key = hive.OpenSubKey(keyPath);
+                if (key is null) continue;
+                // Prefer the exact weight and slant; fall back to the plain face of the family, which is better than another family.
+                foreach (string target in bold ? new[] { wanted, regular } : new[] { wanted })
+                    foreach (string valueName in key.GetValueNames())
+                    {
+                        if (!RegistryNameMatches(valueName, target)) continue;
+                        if (key.GetValue(valueName) is not string file || file.Length == 0) continue;
+                        string path = Path.IsPathRooted(file) ? file : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Fonts), file);
+                        if (!File.Exists(path)) continue;
+                        var face = SKTypeface.FromFile(path);
+                        if (face is not null) return face;
+                    }
+            }
+        }
+        catch (Exception ex) when (ex is System.Security.SecurityException or IOException or UnauthorizedAccessException or PlatformNotSupportedException)
+        {
+            // No access to the registry or the file: the caller reports the substitution as before.
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// True when a registry value name such as "Arial Narrow Bold (TrueType)" names <paramref name="target"/>. A font collection lists several faces
+    /// in one name ("Face A &amp; Face B (TrueType)"), so each part is compared on its own.
+    /// </summary>
+    private static bool RegistryNameMatches(string valueName, string target)
+    {
+        int paren = valueName.LastIndexOf(" (", StringComparison.Ordinal);
+        string names = paren > 0 ? valueName[..paren] : valueName;
+        foreach (string part in names.Split(" & ", StringSplitOptions.TrimEntries))
+            if (string.Equals(part, target, StringComparison.OrdinalIgnoreCase)) return true;
+        return false;
     }
 }
