@@ -16,7 +16,8 @@ read from the project files and the license metadata in each package's `.nuspec`
 | ModelContextProtocol.Core (via ModelContextProtocol) | 2.2.0 | Apache-2.0 | Rotula.Mcp | https://github.com/modelcontextprotocol/csharp-sdk |
 | Microsoft.Extensions.Hosting and the Microsoft.Extensions.* packages it pulls in (Configuration, Configuration.*, DependencyInjection, DependencyInjection.Abstractions, Diagnostics, Diagnostics.Abstractions, FileProviders.Abstractions, FileProviders.Physical, FileSystemGlobbing, Hosting.Abstractions, Logging, Logging.Abstractions, Logging.Configuration, Logging.Console, Logging.Debug, Logging.EventLog, Logging.EventSource, Options, Options.ConfigurationExtensions, Primitives, Caching.Abstractions) | 10.0.10 | MIT | Rotula.Mcp | https://github.com/dotnet/runtime |
 | Microsoft.Extensions.AI.Abstractions (via ModelContextProtocol.Core) | 10.8.3 | MIT | Rotula.Mcp | https://github.com/dotnet/extensions |
-| System.Configuration.ConfigurationManager, System.Security.Cryptography.Pkcs (via the Microsoft.Extensions.* packages) | 9.0.18 | MIT | Rotula.Mcp | https://github.com/dotnet/runtime |
+| System.Configuration.ConfigurationManager (via the Microsoft.Extensions.* packages) | 9.0.18 | MIT | Rotula.Mcp | https://github.com/dotnet/runtime |
+| System.Security.Cryptography.Pkcs (pinned to the patched version in Rotula.Data) | 10.0.13 | MIT | Rotula.Mcp | https://github.com/dotnet/runtime |
 | System.Diagnostics.EventLog (via Microsoft.Extensions.Logging.EventLog) | 10.0.10 | MIT | Rotula.Mcp | https://github.com/dotnet/runtime |
 | Liberation Sans Regular / Bold and Liberation Mono Regular (embedded stand-in fonts) | 2.x | SIL Open Font License 1.1 | Rotula.Rendering | https://github.com/liberationfonts/liberation-fonts |
 
@@ -46,7 +47,8 @@ each package's `.nuspec` in the NuGet cache.
 | Microsoft.Extensions.DependencyInjection.Abstractions, Logging.Abstractions | 10.0.0 | MIT | SqlClient dependencies. |
 | Microsoft.IdentityModel.Abstractions, JsonWebTokens, Logging, Protocols, Protocols.OpenIdConnect, Tokens | 8.16.0 | MIT | SqlClient dependencies (token handling inside the driver). |
 | System.IdentityModel.Tokens.Jwt | 8.16.0 | MIT | SqlClient dependency. |
-| System.Configuration.ConfigurationManager, System.Diagnostics.EventLog, System.Security.Cryptography.Pkcs, System.Threading.RateLimiting | 9.0.18 | MIT | SqlClient dependencies. |
+| System.Configuration.ConfigurationManager, System.Diagnostics.EventLog, System.Threading.RateLimiting | 9.0.18 | MIT | SqlClient dependencies. |
+| System.Security.Cryptography.Pkcs | 10.0.13 | MIT | SqlClient dependency, pinned to the patched version in Rotula.Data. |
 | Microsoft.Data.Sqlite, Microsoft.Data.Sqlite.Core | 10.0.12 | MIT | SQLite files. https://github.com/dotnet/efcore |
 | SQLitePCLRaw.bundle_e_sqlite3, .core, .provider.e_sqlite3, .lib.e_sqlite3 (native `e_sqlite3` library) | 2.1.12 | Apache-2.0 (the bundled SQLite engine itself is in the public domain) | SQLite files. https://github.com/ericsink/SQLitePCL.raw |
 | MySqlConnector | 2.6.2 | MIT | MySQL and MariaDB. https://github.com/mysql-net/MySqlConnector |
@@ -67,7 +69,7 @@ rows are completed when those packs are built. The decisions and conditions are 
 
 | Pack | Component | License | Status |
 |---|---|---|---|
-| Oracle | Oracle.ManagedDataAccess.Core 23.26.301 (`Oracle.ManagedDataAccess.dll`), plus the MIT libraries it needs: System.Configuration.ConfigurationManager, System.Diagnostics.EventLog and System.Diagnostics.PerformanceCounter 8.0.0, System.DirectoryServices.Protocols 8.0.2, System.Security.Cryptography.Pkcs 8.0.1, System.Security.Cryptography.ProtectedData 10.0.12 | Oracle Free Distribution, Hosting, and Use Terms and Conditions (not MIT; copyright Oracle) | Accepted 2026-10-10, as an optional pack only. Built by `scripts\build-packs.ps1` (`src\Rotula.Data.Pack.Oracle`); the full licence is in the pack's `NOTICES.txt`; shipped unmodified. |
+| Oracle | Oracle.ManagedDataAccess.Core 23.26.301 (`Oracle.ManagedDataAccess.dll`), plus the MIT libraries it needs: System.Configuration.ConfigurationManager, System.Diagnostics.EventLog and System.Diagnostics.PerformanceCounter 8.0.0, System.DirectoryServices.Protocols 8.0.2, System.Security.Cryptography.Pkcs 10.0.13, System.Security.Cryptography.ProtectedData 10.0.12 | Oracle Free Distribution, Hosting, and Use Terms and Conditions (not MIT; copyright Oracle) | Accepted 2026-10-10, as an optional pack only. Built by `scripts\build-packs.ps1` (`src\Rotula.Data.Pack.Oracle`); the full licence is in the pack's `NOTICES.txt`; shipped unmodified. |
 | Firebird | FirebirdSql.Data.FirebirdClient 10.3.4 | Initial Developer's Public License 1.0 (file-level copyleft; source https://github.com/FirebirdSQL/NETProvider) | Accepted 2026-10-10. Built by `scripts\build-packs.ps1` (`src\Rotula.Data.Pack.Firebird`); shipped unmodified; licence in the pack's `NOTICES.txt`. |
 | DuckDB | DuckDB.NET.Data.Full and DuckDB.NET.Bindings.Full 1.5.6 (with the native `duckdb.dll`, DuckDB 1.5.6), Apache.Arrow and Apache.Arrow.Scalars 23.0.0 | MIT (DuckDB.NET, DuckDB), Apache-2.0 (Apache Arrow) | Built by `scripts\build-packs.ps1` (`src\Rotula.Data.Pack.DuckDb`); licences in the pack's `NOTICES.txt`. |
 | ClickHouse | ClickHouse.Driver 1.5.0 (MIT, with vendored K4os.Compression.LZ4, K4os.Hash.xxHash and ZstdSharp), NodaTime 3.2.3 (Apache-2.0), Microsoft.IO.RecyclableMemoryStream 3.0.1 (MIT), Microsoft.Extensions.* 10.0.8 (MIT) | MIT, Apache-2.0 | Built by `scripts\build-packs.ps1` (`src\Rotula.Data.Pack.ClickHouse`); licences and the driver's own third-party notices in the pack's `NOTICES.txt`. |
