@@ -21,6 +21,10 @@
     <!-- Oracle pulls System.Security.Cryptography.ProtectedData 8.0.0 (through its configuration dependency) while Rotula.Data is built against 10.x;
          naming the newer MIT package here settles the version conflict (MSB3277) instead of hiding the warning. -->
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.12" />
+    <!-- Oracle also pulls System.Security.Cryptography.Pkcs 8.0.1, which has published advisories (GHSA-846f-f764-76mx high,
+         GHSA-2fmv-rv2c-59x7 moderate) that NuGet audit turns into build errors. The patched MIT package is named here; the Oracle
+         library itself stays unmodified. -->
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
   </ItemGroup>
 
   <ItemGroup>
