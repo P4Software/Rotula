@@ -157,6 +157,11 @@ function Invoke-Tool([string]$Exe, [string[]]$Arguments, [string]$WorkDir, [stri
     } finally { Remove-Item -LiteralPath $out, $err -Force -ErrorAction SilentlyContinue }
 }
 
+# The last lines of a server log, for error messages: in CI the log is deleted by Stop-TestServers before anyone can read it.
+function Get-LogTail([string]$LogFile) {
+    return (@(Get-Content -LiteralPath $LogFile -Tail 20 -ErrorAction SilentlyContinue) -join "`n")
+}
+
 # Quotes each argument for the Windows command line.
 function Join-CommandLine([string[]]$Arguments) {
     return (($Arguments | ForEach-Object { if ($_ -match '[\s"]') { '"' + ($_ -replace '"', '\"') + '"' } else { $_ } }) -join ' ')
@@ -189,7 +194,7 @@ function Start-ServerDetached([string]$Exe, [string[]]$Arguments, [string]$WorkD
     for ($i = 0; $i -lt 100; $i++) {
         $child = Get-CimInstance Win32_Process -Filter ("ParentProcessId = {0} AND Name = '{1}'" -f $cmd.Id, $ProcessName) -ErrorAction SilentlyContinue | Select-Object -First 1
         if ($child) { return [int]$child.ProcessId }
-        if ($cmd.HasExited) { throw "The server stopped right after starting. See $LogFile" }
+        if ($cmd.HasExited) { throw "The server stopped right after starting. See $LogFile`n$(Get-LogTail $LogFile)" }
         Start-Sleep -Milliseconds 100
     }
     throw "The server process did not appear. See $LogFile"
