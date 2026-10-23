@@ -98,14 +98,23 @@ try {
 
         Write-Info "Starting PostgreSQL on 127.0.0.1:$port ..."
         $logFile = Join-Path $pgRoot 'server.log'
-        $serverPid = Start-ServerDetached (Join-Path $bin 'postgres.exe') @('-D', $data) $pgRoot $logFile 'postgres.exe'
+        # postgres.exe refuses to run under an account with administrative rights (a CI runner, an elevated prompt) and exits at
+        # once; pg_ctl starts it with those rights removed. pg_ctl itself goes through ShellExecute (no redirection), so the server
+        # it leaves running inherits none of this script's handles (see Start-ServerDetached). WaitForExit, not -Wait: -Wait would
+        # also wait for the server, which never exits.
+        $pgCtl = Start-Process -FilePath (Join-Path $bin 'pg_ctl.exe') -ArgumentList (Join-CommandLine @('start', '-D', $data, '-l', $logFile, '-w', '-t', '60')) `
+            -WorkingDirectory $pgRoot -WindowStyle Hidden -PassThru
+        $null = $pgCtl.Handle # keeps the exit code readable after the process ends
+        if (-not $pgCtl.WaitForExit(90000)) { throw "PostgreSQL did not start in time. See $logFile`n$(Get-LogTail $logFile)" }
+        if ($pgCtl.ExitCode -ne 0) { throw "PostgreSQL did not start (pg_ctl exit code $($pgCtl.ExitCode)). See $logFile`n$(Get-LogTail $logFile)" }
+        $serverPid = [int](Get-Content -LiteralPath (Join-Path $data 'postmaster.pid') -TotalCount 1)
         $ready = $false
         for ($i = 0; $i -lt 120; $i++) {
-            if (-not (Get-Process -Id $serverPid -ErrorAction SilentlyContinue)) { throw "PostgreSQL stopped right after starting. See $logFile" }
+            if (-not (Get-Process -Id $serverPid -ErrorAction SilentlyContinue)) { throw "PostgreSQL stopped right after starting. See $logFile`n$(Get-LogTail $logFile)" }
             if (Test-PortOpen $port) { $ready = $true; break }
             Start-Sleep -Milliseconds 500
         }
-        if (-not $ready) { throw "PostgreSQL did not open port $port in time. See $logFile" }
+        if (-not $ready) { throw "PostgreSQL did not open port $port in time. See $logFile`n$(Get-LogTail $logFile)" }
         # The port opens before the server accepts logins; wait for it to say it is ready.
         for ($i = 0; $i -lt 60; $i++) {
             & (Join-Path $bin 'pg_isready.exe') -h 127.0.0.1 -p $port -q
@@ -156,11 +165,11 @@ try {
         $serverPid = Start-ServerDetached (Join-Path $bin 'mariadbd.exe') $serverArgs $mdRoot $logFile 'mariadbd.exe'
         $ready = $false
         for ($i = 0; $i -lt 120; $i++) {
-            if (-not (Get-Process -Id $serverPid -ErrorAction SilentlyContinue)) { throw "MariaDB stopped right after starting. See $logFile" }
+            if (-not (Get-Process -Id $serverPid -ErrorAction SilentlyContinue)) { throw "MariaDB stopped right after starting. See $logFile`n$(Get-LogTail $logFile)" }
             if (Test-PortOpen $port) { $ready = $true; break }
             Start-Sleep -Milliseconds 500
         }
-        if (-not $ready) { throw "MariaDB did not open port $port in time. See $logFile" }
+        if (-not $ready) { throw "MariaDB did not open port $port in time. See $logFile`n$(Get-LogTail $logFile)" }
         Write-Good "MariaDB $($entry.version) is running."
 
         $state['mariadb'] = [ordered]@{
