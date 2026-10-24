@@ -125,7 +125,7 @@ internal static class AppTestSupport
 /// <summary>Scriptable fakes for every service of the main view-model.</summary>
 internal sealed class FakeServices
 {
-    public string? OpenPath, SavePath, ExportPath, ZplPath, ImagePath, DataPath, DbFilePath;
+    public string? OpenPath, SavePath, ExportPath, ZplPath, ImagePath, DataPath, DbFilePath, FolderPath;
     public readonly FakeDatabaseServices Database = new();
     public bool ConfirmAnswer = true;
     public readonly List<string> Confirms = new();
@@ -155,6 +155,7 @@ internal sealed class FakeServices
         public string? PickOpenImage() => f.ImagePath;
         public string? PickOpenData() => f.DataPath;
         public string? PickOpenDatabaseFile() => f.DbFilePath;
+        public string? PickFolder(string title) => f.FolderPath;
     }
 
     private sealed class Messages(FakeServices f) : IMessageService
@@ -207,6 +208,11 @@ internal sealed class FakeToolDialogs : IToolDialogService
         Managers.Add(viewModel);
         OnManager?.Invoke(viewModel).GetAwaiter().GetResult();
     }
+    /// <summary>The print stations and PIN tools that were opened (never shown).</summary>
+    public readonly List<Rotula.App.ViewModels.StationViewModel> Stations = new();
+    public readonly List<Rotula.App.ViewModels.StationPinViewModel> PinTools = new();
+    public void ShowPrintStation(Rotula.App.ViewModels.StationViewModel viewModel) => Stations.Add(viewModel);
+    public void ShowStationPinTool(Rotula.App.ViewModels.StationPinViewModel viewModel) => PinTools.Add(viewModel);
     public int Previews;
     public void ShowPreviewDialog(Rotula.App.Editing.PreviewCache preview, string title) => Previews++;
     /// <summary>What the "user" does inside the QR content builder; the fake dialog returns whether the builder was applied.</summary>
