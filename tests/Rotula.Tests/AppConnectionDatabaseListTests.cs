@@ -493,15 +493,18 @@ public class AppConnectionDatabaseListTests : IDisposable
     [InlineData("Conn.Dsn.Hint")]
     [InlineData("Conn.Dsn.None")]
     [InlineData("Conn.Lookup.SystemTag")]
-    public void EveryListText_ExistsInBothLanguages_AndDiffers(string key)
+    public void EveryListText_ExistsInEveryLanguage_AndDiffers(string key)
     {
         Loc.Instance.SetLanguage("en");
         string en = Loc.Get(key, "x");
-        Loc.Instance.SetLanguage("es");
-        string es = Loc.Get(key, "x");
         Assert.False(string.IsNullOrWhiteSpace(en));
-        Assert.False(string.IsNullOrWhiteSpace(es));
-        Assert.NotEqual(en, es);
+        foreach (var lang in UiStrings.Translations)
+        {
+            Loc.Instance.SetLanguage(lang);
+            string other = Loc.Get(key, "x");
+            Assert.False(string.IsNullOrWhiteSpace(other), lang);
+            Assert.NotEqual(en, other);
+        }
         Assert.True(Loc.Instance.HasKey(key));
     }
 }

@@ -221,9 +221,9 @@ public class AppPrintTests : IDisposable
     [InlineData(PrintErrorKind.EncodingFailed)]
     [InlineData(PrintErrorKind.Unsupported)]
     [InlineData(PrintErrorKind.Unknown)]
-    public async Task EveryPrintError_BecomesAPlainSentence_InBothLanguages(PrintErrorKind kind)
+    public async Task EveryPrintError_BecomesAPlainSentence_InEveryLanguage(PrintErrorKind kind)
     {
-        foreach (var lang in new[] { "en", "es" })
+        foreach (var lang in Loc.SupportedLanguages)
         {
             Loc.Instance.SetLanguage(lang);
             _fake.Printer.Result = _ => PrintResult.Fail(PrintError.Create(kind, "Z", "9100", "detail"));

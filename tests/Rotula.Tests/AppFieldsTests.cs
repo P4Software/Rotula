@@ -413,6 +413,22 @@ public class AppFieldsTests : IDisposable
         Assert.Equal(Loc.Get("Fields.Selected.None"), Fields.SelectionText);
     }
 
+    [Theory]
+    [InlineData("fr-CA", "en")]
+    [InlineData("pt-BR", "fr-CA")]
+    [InlineData("en", "pt-BR")]
+    public async Task UseHere_ReplacesTheSampleText_OfALabelDesignedInAnotherLanguage(string designedIn, string shownIn)
+    {
+        // The sample text "Texte" of a label made in French is still sample text after switching to English.
+        await LoadCsv(Parts);
+        Loc.Instance.SetLanguage(designedIn);
+        string sampleText = Loc.Get("Element.DefaultText");
+        Loc.Instance.SetLanguage(shownIn);
+        var sample = AddAndSelectText(sampleText);
+        Fields.UseHereCommand.Execute(Fields.Find("Sku"));
+        Assert.Equal("{{Sku}}", ((TextElement)_main.Session.Document.Elements.Single(e => e.Id == sample.Id)).Text);
+    }
+
     // ------------------------------------------------------------------------------------ missing columns, disabled state
 
     [Fact]
@@ -490,23 +506,24 @@ public class AppFieldsTests : IDisposable
     // ------------------------------------------------------------------------------------ strings
 
     [Fact]
-    public void EveryFieldsString_ExistsInBothLanguages_AndIsTranslated()
+    public void EveryFieldsString_ExistsInEveryLanguage_AndIsTranslated()
     {
-        var root = new DirectoryInfo(AppContext.BaseDirectory);
-        while (root is not null && !File.Exists(Path.Combine(root.FullName, "Rotula.sln"))) root = root.Parent;
-        Dictionary<string, string> Read(string lang) => XDocument.Load(Path.Combine(root!.FullName, "src", "Rotula.App", "Resources", $"Strings.{lang}.resx")).Root!
-            .Elements("data").ToDictionary(d => d.Attribute("name")!.Value, d => d.Element("value")!.Value);
-        var en = Read("en");
-        var es = Read("es");
+        var en = UiStrings.Read("en");
         var keys = en.Keys.Where(k => k.StartsWith("Fields.") || k is "Undo.InsertField" or "Undo.AddFields" or "Undo.UnbindField").ToList();
         Assert.True(keys.Count > 40);
-        foreach (var k in keys)
+        foreach (var lang in UiStrings.Translations)
         {
-            Assert.True(es.ContainsKey(k), k);
-            Assert.False(string.IsNullOrWhiteSpace(es[k]), k);
+            var other = UiStrings.Read(lang);
+            foreach (var k in keys)
+            {
+                Assert.True(other.ContainsKey(k), lang + ": " + k);
+                Assert.False(string.IsNullOrWhiteSpace(other[k]), lang + ": " + k);
+            }
         }
         Assert.Equal("Add as barcode", en["Fields.AddAsBarcode"]);
-        Assert.Equal("Añadir como código QR", es["Fields.AddAsQr"]);
+        Assert.Equal("Añadir como código QR", UiStrings.Read("es")["Fields.AddAsQr"]);
+        Assert.Equal("Adicionar como código QR", UiStrings.Read("pt-BR")["Fields.AddAsQr"]);
+        Assert.Equal("Ajouter comme code QR", UiStrings.Read("fr-CA")["Fields.AddAsQr"]);
     }
 
     // ------------------------------------------------------------------------------------ the real SQLite path

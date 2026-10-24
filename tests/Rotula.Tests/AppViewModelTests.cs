@@ -479,6 +479,42 @@ public class AppViewModelTests : IDisposable
     }
 
     [Fact]
+    public void Language_PortugueseAndFrench_AreSavedByTheirFullName_AndCheckTheirMenuEntry()
+    {
+        var vm = Create();
+        vm.SetLanguageCommand.Execute("pt-BR");
+        Assert.Equal("pt-BR", Loc.Instance.LanguageCode);
+        Assert.Equal("pt-BR", _fake.Settings.Current.Language);
+        Assert.StartsWith("Sem título", vm.Title);
+        Assert.True(vm.IsLanguagePtBr);
+        Assert.False(vm.IsLanguageEs || vm.IsLanguageEn || vm.IsLanguageFrCa || vm.IsLanguageAuto);
+
+        vm.SetLanguageCommand.Execute("fr-CA");
+        Assert.Equal("fr-CA", _fake.Settings.Current.Language);
+        Assert.StartsWith("Sans titre", vm.Title);
+        Assert.Equal("Texte", vm.Toolbox[0].Name);
+        Assert.True(vm.IsLanguageFrCa);
+        Assert.False(vm.IsLanguagePtBr);
+
+        // Anything that is not a shipped language means "follow Windows", as before.
+        vm.SetLanguageCommand.Execute("pt");
+        Assert.Equal("auto", _fake.Settings.Current.Language);
+        Assert.True(vm.IsLanguageAuto);
+        vm.SetLanguageCommand.Execute("en");
+    }
+
+    [Theory]
+    [InlineData("pt-BR", "Sem título")]
+    [InlineData("fr-CA", "Sans titre")]
+    public void Language_SavedAsPortugueseOrFrench_IsUsedAtStart(string saved, string untitled)
+    {
+        _fake.Settings.Current.Language = saved;
+        var vm = Create();
+        Assert.Equal(saved, Loc.Instance.LanguageCode);
+        Assert.StartsWith(untitled, vm.Title);
+    }
+
+    [Fact]
     public void ApproximatePreviewNotice_IsAlwaysAvailable()
     {
         var vm = Create();

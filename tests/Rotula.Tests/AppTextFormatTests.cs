@@ -722,9 +722,9 @@ public class AppTextFormatTests
     }
 
     [Fact]
-    public void EveryControlOfThePanelAndTheBar_HasAnAccessibleName_InBothLanguages()
+    public void EveryControlOfThePanelAndTheBar_HasAnAccessibleName_InEveryLanguage()
     {
-        foreach (var lang in new[] { "en", "es" })
+        foreach (var lang in Loc.SupportedLanguages)
         {
             Loc.Instance.SetLanguage(lang);
             var problems = WpfTestHost.Run(() =>

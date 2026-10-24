@@ -3,7 +3,7 @@ using Rotula.Core.Variables;
 
 namespace Rotula.Tests;
 
-/// <summary>The message keys of the variable engine: well formed, unique, and translated in both languages.</summary>
+/// <summary>The message keys of the variable engine: well formed, unique, and translated in every language.</summary>
 public class VarKeysTests
 {
     private static string RepoRoot()
@@ -13,9 +13,7 @@ public class VarKeysTests
         return dir?.FullName ?? throw new DirectoryNotFoundException("Repository root not found.");
     }
 
-    private static HashSet<string> ResxKeys(string lang) =>
-        XDocument.Load(Path.Combine(RepoRoot(), "src", "Rotula.App", "Resources", $"Strings.{lang}.resx"))
-            .Descendants("data").Select(d => (string)d.Attribute("name")!).ToHashSet();
+    private static HashSet<string> ResxKeys(string lang) => UiStrings.Keys(lang);
 
     [Fact]
     public void KeysAreUniqueAndShapedLikeTheOthers()
@@ -39,12 +37,11 @@ public class VarKeysTests
     }
 
     /// <summary>
-    /// Expected to FAIL until the UI work adds the texts: each key needs <c>Issue.&lt;key&gt;</c> in Strings.en.resx and Strings.es.resx.
+    /// Expected to FAIL until the UI work adds the texts: each key needs <c>Issue.&lt;key&gt;</c> in every Strings.&lt;language&gt;.resx.
     /// The failure message lists exactly what is missing.
     /// </summary>
     [Theory]
-    [InlineData("en")]
-    [InlineData("es")]
+    [MemberData(nameof(UiStrings.LanguageData), MemberType = typeof(UiStrings))]
     public void EveryKeyHasTextInTheAppResources(string lang)
     {
         var have = ResxKeys(lang);
