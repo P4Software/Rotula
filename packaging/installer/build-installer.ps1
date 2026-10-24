@@ -2,8 +2,9 @@
   Builds the signed Rotula release. Double-click build-installer.cmd (it runs this script).
 
   Steps: read the version, publish the app and the MCP server, write the combined licence text,
-  sign both programs, build the installer, sign the installer, verify all three signatures, build
-  the portable zip from the SIGNED programs, write the winget manifests and the checksums. Everything lands in the git-ignored "artifacts" folder.
+  sign both programs, build the per-user installer (Inno Setup) and the machine-wide MSI (WiX Toolset) from the SIGNED
+  programs, sign both, verify all four signatures, build the portable zip from the SIGNED programs, write the winget
+  manifests and the checksums. Everything lands in the git-ignored "artifacts" folder.
 
   Signing uses Azure Artifact Signing (account p4software) through your Azure login (az login).
   If signing is not possible the files are still built and clearly marked UNSIGNED, and they are
@@ -223,6 +224,9 @@ try {
     (Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'),
     (Join-Path $env:ProgramFiles 'Inno Setup 6\ISCC.exe')) | Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Select-Object -First 1
   if (-not $iscc) { throw "Inno Setup is not installed. Install it with: winget install JRSoftware.InnoSetup --scope user  (then double-click build-installer.cmd again)" }
+  # The MSI is built with the WiX Toolset SDK, which dotnet restores from NuGet on the first build (nothing to install by hand).
+  $msiProject = Join-Path $repo 'packaging\msi\Rotula.Msi.wixproj'
+  if (-not (Test-Path -LiteralPath $msiProject)) { throw "The MSI project was not found at $msiProject." }
 
   # --- Version ------------------------------------------------------------------------------
   if ($cfg.versionOverride) { $version = [string]$cfg.versionOverride }
@@ -232,6 +236,8 @@ try {
   }
   $version = $version.Trim().TrimStart('v')
   if ($version -notmatch '^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$') { throw "The version '$version' is not major.minor.patch (optionally with a -suffix). Fix <Version> in Directory.Build.props." }
+  # Windows Installer only knows numeric versions: 0.4.0-rc1 becomes 0.4.0 inside the MSI (the file name keeps the full text).
+  $versionNumeric = $version.Split('-')[0]
   Write-Host "Building Rotula $version" -ForegroundColor Cyan
 
   # --- Signing availability -----------------------------------------------------------------
@@ -281,24 +287,35 @@ try {
   if ($canSign) { $signed = ((SignFile $exe) -and (SignFile $mcpExe)) } else { Write-Host '  Skipped (see the note above).' }
   if ($canSign -and -not $signed) { Write-Host '  Signing failed; the output will be UNSIGNED.' -ForegroundColor Yellow }
 
-  # --- 3. Installer -------------------------------------------------------------------------
-  Write-Host '3/6 Building the installer...'
+  # --- 3. Installers ------------------------------------------------------------------------
+  Write-Host '3/6 Building the installers...'
   & $iscc "/DAppVersion=$version" "/DSourceDir=$stage" "/DOutputDir=$artifacts" (Join-Path $PSScriptRoot 'Rotula.iss')
   if ($LASTEXITCODE -ne 0) { throw 'The installer could not be built. Read the messages above.' }
   $setup = Join-Path $artifacts "Rotula-$version-win-x64-setup.exe"
   if (-not (Test-Path -LiteralPath $setup)) { throw "The installer was not found at $setup after the build." }
 
-  # --- 4. Sign the installer ----------------------------------------------------------------
-  Write-Host '4/6 Signing the installer...'
+  # The MSI packs the same stage folder, so it carries the SIGNED programs too. Its build output stays in publish\ (git-ignored).
+  $msiOut = Join-Path $repo 'publish\msi'
+  if (Test-Path -LiteralPath $msiOut) { Remove-Item -LiteralPath $msiOut -Recurse -Force }
+  & dotnet build $msiProject -c Release "-p:ProductVersion=$versionNumeric" "-p:StageDir=$stage" -o $msiOut
+  if ($LASTEXITCODE -ne 0) { throw 'The MSI could not be built. Read the messages above.' }
+  $builtMsi = Get-ChildItem -LiteralPath $msiOut -Recurse -Filter 'Rotula.msi' | Select-Object -First 1
+  if (-not $builtMsi) { throw "The MSI was not found in $msiOut after the build." }
+  $msi = Join-Path $artifacts "Rotula-$version-win-x64.msi"
+  Copy-Item -LiteralPath $builtMsi.FullName -Destination $msi
+
+  # --- 4. Sign the installers ---------------------------------------------------------------
+  Write-Host '4/6 Signing the installers...'
   $setupSigned = $false
-  if ($signed) { $setupSigned = SignFile $setup } else { Write-Host '  Skipped.' }
+  if ($signed) { $setupSigned = ((SignFile $setup) -and (SignFile $msi)) } else { Write-Host '  Skipped.' }
 
   # --- 5. Verify ----------------------------------------------------------------------------
   Write-Host '5/6 Checking the signatures...'
   Show-Signature $exe
   Show-Signature $mcpExe
   Show-Signature $setup
-  $allSigned = ((Test-Signed $exe) -and (Test-Signed $mcpExe) -and (Test-Signed $setup))
+  Show-Signature $msi
+  $allSigned = ((Test-Signed $exe) -and (Test-Signed $mcpExe) -and (Test-Signed $setup) -and (Test-Signed $msi))
 
   # --- 6. Zip, manifests, checksums ---------------------------------------------------------
   Write-Host '6/6 Packaging the portable zip, winget manifests and checksums...'
@@ -312,13 +329,16 @@ try {
 
   if ($allSigned) {
     $wingetOut = Join-Path $artifacts 'winget'
-    & (Join-Path $repo 'scripts\New-WingetManifest.ps1') -Version $version -InstallerPath $setup -OutputDir $wingetOut -Repository $cfg.githubRepository
+    & (Join-Path $repo 'scripts\New-WingetManifest.ps1') -Version $version -InstallerPath $setup -MsiPath $msi -OutputDir $wingetOut -Repository $cfg.githubRepository
     New-ZipFromFolder $wingetOut (Join-Path $artifacts "Rotula-$version-winget-manifests.zip")
   } else {
     # Rename so an unsigned installer can never be mistaken for the release file; no winget files for it.
     $unsignedSetup = Join-Path $artifacts "Rotula-$version-win-x64-setup-UNSIGNED.exe"
     Move-Item -LiteralPath $setup -Destination $unsignedSetup
     $setup = $unsignedSetup
+    $unsignedMsi = Join-Path $artifacts "Rotula-$version-win-x64-UNSIGNED.msi"
+    Move-Item -LiteralPath $msi -Destination $unsignedMsi
+    $msi = $unsignedMsi
     Set-Content -LiteralPath (Join-Path $artifacts 'UNSIGNED-DO-NOT-PUBLISH.txt') -Encoding ASCII -Value @(
       'These files are NOT signed. Do not publish them.',
       "Run 'az login', then double-click build-installer.cmd again to get signed files.")
@@ -339,7 +359,7 @@ try {
     if ($cfg.publishToGitHub) { Write-Host 'publishToGitHub is true, but nothing was published because the files are not signed.' -ForegroundColor Yellow }
   } else {
     Write-Host ''
-    Write-Host "Done. All programs and the installer are signed by '$expectedSigner'. Output: $artifacts" -ForegroundColor Green
+    Write-Host "Done. All programs and both installers are signed by '$expectedSigner'. Output: $artifacts" -ForegroundColor Green
 
     # --- Optional publish -------------------------------------------------------------------
     if (-not $cfg.publishToGitHub) {
@@ -352,7 +372,7 @@ try {
       $null = & gh api "repos/$repoName/git/ref/tags/$tag" 2>$null
       if ($LASTEXITCODE -ne 0) { throw "The tag $tag does not exist on GitHub yet. Tag the commit you built and push the tag, then build again." }
 
-      $assets = @($setup, $zip, $licenseAsset, (Join-Path $artifacts 'SHA256SUMS.txt'), (Join-Path $artifacts "Rotula-$version-winget-manifests.zip"))
+      $assets = @($setup, $msi, $zip, $licenseAsset, (Join-Path $artifacts 'SHA256SUMS.txt'), (Join-Path $artifacts "Rotula-$version-winget-manifests.zip"))
       $notes = Join-Path $artifacts 'release-notes.md'
       $haveNotes = Get-ReleaseNotes $version $notes
       $null = & gh release view $tag --repo $repoName 2>$null
