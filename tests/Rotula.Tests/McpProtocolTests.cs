@@ -16,7 +16,7 @@ public class McpProtocolTests : IDisposable
         "create_label", "open_label", "save_label", "get_label", "add_text", "add_barcode", "add_qr", "add_box", "add_line", "add_circle",
         "add_image", "add_data_field", "update_element", "move_element", "delete_element", "duplicate_element", "reorder_element",
         "set_label_settings", "list_symbologies", "validate_label", "generate_zpl", "import_zpl", "convert_dpi", "render_preview",
-        "merge_preview", "list_printers", "get_printer_info", "print_label", "run_query", "undo_last",
+        "merge_preview", "list_printers", "get_printer_info", "get_printer_status", "print_label", "run_query", "undo_last",
     ];
 
     private readonly string _root = Path.Combine(Path.GetTempPath(), "rotula-mcp-tests", Guid.NewGuid().ToString("N"));

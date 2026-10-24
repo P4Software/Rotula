@@ -86,6 +86,22 @@ public sealed record PrinterListResult(IReadOnlyList<PrinterEntry> Printers, boo
 public sealed record PrinterInfoResult(
     string Name, string? Driver, int? DriverDpi, int? SupportedDpi, double? PaperWidthMm, double? PaperHeightMm, string Source, string Note);
 
+/// <summary>Result of get_printer_status.</summary>
+/// <param name="Name">The Windows printer.</param>
+/// <param name="StatusAvailable">False when the printer or its driver did not answer (common with USB drivers).</param>
+/// <param name="Ready">True when nothing stops printing; null when the status is unavailable.</param>
+/// <param name="Blocking">What stops printing, in plain words (out of labels, printhead open, paused...).</param>
+/// <param name="Warnings">What the printer reports that does not stop printing (printhead too cold, a label waiting to be taken...).</param>
+/// <param name="LabelsRemaining">Labels the printer still has to print in the current batch.</param>
+/// <param name="FormatsInBuffer">Jobs received but not printed yet.</param>
+/// <param name="PrintMode">TearOff, PeelOff, Cutter, Rewind...</param>
+/// <param name="ThermalTransfer">True with a ribbon, false for direct thermal.</param>
+/// <param name="Complete">False when only part of the reply arrived.</param>
+/// <param name="Message">A plain-language summary.</param>
+public sealed record PrinterStatusResult(
+    string Name, bool StatusAvailable, bool? Ready, IReadOnlyList<string> Blocking, IReadOnlyList<string> Warnings, long? LabelsRemaining,
+    int? FormatsInBuffer, string? PrintMode, bool? ThermalTransfer, bool Complete, string Message);
+
 /// <summary>Result of merge_preview.</summary>
 public sealed record MergePreviewResult(
     string Source, int RecordIndex, int RecordCount, IReadOnlyList<string> Columns, IReadOnlyDictionary<string, string> Record,

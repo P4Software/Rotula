@@ -15,7 +15,7 @@ using Rotula.Printing;
 
 namespace Rotula.Mcp.Tools;
 
-/// <summary>Printer discovery (read-only) and the guarded print tool.</summary>
+/// <summary>Printer discovery (read-only), the printer status query and the guarded print tool.</summary>
 [McpServerToolType]
 public sealed class PrinterTools
 {
@@ -54,6 +54,41 @@ public sealed class PrinterTools
             caps.PaperWidth is { } w ? Math.Round(Units.Express(w, "mm", PrinterDpi.Dpi203), 1) : null,
             caps.PaperHeight is { } h ? Math.Round(Units.Express(h, "mm", PrinterDpi.Dpi203), 1) : null,
             caps.DpiSource.ToString(), note);
+    }
+
+    /// <summary>Asks an allowed printer for its status (ZPL ~HS).</summary>
+    [McpServerTool(Name = "get_printer_status", ReadOnly = false, Destructive = false, OpenWorld = true, UseStructuredContent = true)]
+    [Description("Asks a printer whether it can print right now (out of labels, printhead open, ribbon out, paused, too hot...) and how many labels it still has to print. It sends the small ZPL status command ~HS through the Windows queue; a ZPL compatible printer prints nothing. Because it sends something to the printer, it needs the same permission as printing (allowPrinting and the printer in allowedPrinters), but no confirmation. Many USB drivers cannot pass the answer back; the result then says the status is unavailable, which does not mean the printer is broken.")]
+    public async Task<PrinterStatusResult> GetPrinterStatus(
+        [Description("Exact Windows printer name from list_printers; it must be on the allowed list.")] string printer,
+        CancellationToken cancellationToken = default)
+    {
+        // Same rules as printing, checked before anything else so a disabled server never touches a printer.
+        var policy = _ctx.Gate.CheckPolicy(printer, 1);
+        if (policy is not null) throw new McpException(policy.Message!);
+        string name = await RequireInstalledAsync(printer, cancellationToken).ConfigureAwait(false);
+        var status = await _ctx.Print.GetStatusAsync(PrinterTarget.Spooler(name), cancellationToken).ConfigureAwait(false);
+        return Describe(name, status);
+    }
+
+    /// <summary>Turns a decoded status into the tool result, with the condition names in the app's own English words.</summary>
+    internal static PrinterStatusResult Describe(string name, PrinterStatus status)
+    {
+        static string Phrase(PrinterCondition c) => Messages.Lookup("Enum.PrinterCondition." + c) ?? c.ToString();
+        if (!status.IsAvailable)
+        {
+            string reason = Messages.Lookup("Print.Status.Reason." + status.Reason) ?? status.Reason.ToString()!;
+            return new PrinterStatusResult(name, false, null, [], [], null, null, null, null, false,
+                $"The status of \"{name}\" could not be read: {reason}. Printing is still possible; ask the person at the printer if in doubt.");
+        }
+        var blocking = status.Blocking.Select(Phrase).ToList();
+        var warnings = status.Warnings.Select(Phrase).ToList();
+        string message = blocking.Count > 0
+            ? $"\"{name}\" cannot print right now: {string.Join(", ", blocking)}. Someone has to fix that at the printer before printing."
+            : $"\"{name}\" is ready to print." + (warnings.Count > 0 ? $" It also reports: {string.Join(", ", warnings)}." : "");
+        if (!status.IsComplete) message += " Only part of the status was received, so some problems may not be listed.";
+        return new PrinterStatusResult(name, true, blocking.Count == 0, blocking, warnings, status.LabelsRemaining, status.FormatsInBuffer,
+            status.PrintMode?.ToString(), status.ThermalTransfer, status.IsComplete, message);
     }
 
     /// <summary>Prints the label after a dry run and a confirmation.</summary>

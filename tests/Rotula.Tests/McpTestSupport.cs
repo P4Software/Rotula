@@ -7,9 +7,19 @@ using Rotula.Printing;
 
 namespace Rotula.Tests;
 
-/// <summary>Records every job; never touches a real printer. Reports a fixed printer list and resolution.</summary>
-internal sealed class McpFakePrinter : IRawPrinter, INetworkPrinter, IPrinterDiscovery
+/// <summary>Records every job; never touches a real printer. Reports a fixed printer list, resolution and status.</summary>
+internal sealed class McpFakePrinter : IRawPrinter, INetworkPrinter, IPrinterDiscovery, IPrinterStatusReader
 {
+    /// <summary>The answer to a status query, and the printers that were asked.</summary>
+    public PrinterStatus Status { get; set; } = PrinterStatus.Unavailable(StatusUnavailableReason.NotSupported);
+    public List<string> StatusQueries { get; } = new();
+
+    public Task<PrinterStatus> ReadStatusAsync(PrinterTarget target, TimeSpan timeout, CancellationToken cancellationToken = default)
+    {
+        StatusQueries.Add(target.PrinterName);
+        return Task.FromResult(Status);
+    }
+
     public List<(string Printer, byte[] Data)> Jobs { get; } = new();
     public int NetworkJobs { get; private set; }
     public PrinterDpi? Dpi { get; set; } = PrinterDpi.Dpi203;
@@ -47,7 +57,7 @@ internal sealed class McpTestEnv : IDisposable
         if (configure is not null) settings = configure(settings);
         Settings = settings;
         Printer = new McpFakePrinter();
-        Context = new McpContext(settings, new PrintService(Printer, Printer, Printer), connections, clock);
+        Context = new McpContext(settings, new PrintService(Printer, Printer, Printer, Printer), connections, clock);
         Label = new LabelTools(Context);
         Elements = new ElementTools(Context);
         Preview = new PreviewTools(Context);

@@ -1100,6 +1100,11 @@ public sealed partial class DataMergeViewModel : OperationViewModel
         // Raw ZPL imported from bytes must reach the printer byte for byte; collected once, not per record.
         var rawBlocks = ByteExactBlocks.From(doc);
         var progressReporter = new Progress<double>(progress);
+        // Every job is checked before it goes out (paper running out halfway stops the batch cleanly); the printer is asked whether it
+        // finished only once, after the last job, instead of waiting for each job to come out.
+        var batchTarget = target!;
+        var jobTarget = batchTarget.WithStatus(batchTarget.Status with { VerifyAfterPrinting = false });
+        var verification = new List<ValidationIssue>();
         bool ok = await run(Loc.Get("Data.Busy.Printing"), async ct =>
         {
             int inFlight = 0; // last record of the job being sent right now
@@ -1111,7 +1116,9 @@ public sealed partial class DataMergeViewModel : OperationViewModel
                     {
                         ct.ThrowIfCancellationRequested();
                         inFlight = job.ItemsThrough;
-                        var result = await _service.PrintZplAsync(target!, jobs == 0 ? setup + job.Zpl : job.Zpl, doc.Encoding, rawBlocks, ct);
+                        var result = await _service.PrintZplAsync(jobTarget, jobs == 0 ? setup + job.Zpl : job.Zpl, doc.Encoding, rawBlocks, ct);
+                        foreach (var note in result.Notices)
+                            if (!verification.Any(v => v.MessageKey == note.MessageKey)) verification.Add(note);
                         if (!result.Succeeded)
                         {
                             failure = result.Error;
@@ -1137,10 +1144,13 @@ public sealed partial class DataMergeViewModel : OperationViewModel
                 // Always confirms (also when the run failed or was cancelled), so a reservation is never left hanging.
                 if (serials is not null) closing.AddRange(serials.Complete(confirmedThrough));
             }
+            // After the numbers are confirmed: a fault reported now leaves them used, because the labels may have printed.
+            if (failure is null && !cancelled && jobs > 0 && batchTarget.Status.VerifyAfterPrinting)
+                verification.AddRange(await _service.VerifyPrintedAsync(batchTarget, ct));
         });
         if (!ok) return null;
         ShowReport(report);
-        string notes = string.Join(" ", closing.Select(Loc.FormatIssue));
+        string notes = string.Join(" ", closing.Select(Loc.FormatIssue).Concat(verification.Select(PrintMessages.DescribeNotice)));
         if (failure is not null)
         {
             return new BatchOutcome(PrintMessages.Describe(failure) + " " + Loc.Get("Data.Batch.Partial", jobs) + (notes.Length > 0 ? " " + notes : string.Empty),
@@ -1149,7 +1159,8 @@ public sealed partial class DataMergeViewModel : OperationViewModel
         if (cancelled)
             return new BatchOutcome(Loc.Get("Data.Batch.CancelledPartial", jobs) + (notes.Length > 0 ? " " + notes : string.Empty), false);
         Printer.Persist();
-        return new BatchOutcome(BatchSummary("Data.PrintAll.Done", report, jobs) + (notes.Length > 0 ? " " + notes : string.Empty), report.HasErrors || report.Emitted == 0);
+        return new BatchOutcome(BatchSummary("Data.PrintAll.Done", report, jobs) + (notes.Length > 0 ? " " + notes : string.Empty),
+            report.HasErrors || report.Emitted == 0 || verification.Any(v => v.MessageKey == PrinterStatusKeys.FaultAfterJob));
     }
 
     /// <summary>The result line of a batch print or export, and whether it reports a problem.</summary>

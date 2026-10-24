@@ -166,7 +166,7 @@ deterministic and plain ASCII, so you can version it, diff it or send it with an
 | **Database sources** | SQL Server, PostgreSQL, MySQL/MariaDB, SQLite and ODBC, plus presets for common cloud services ([details](#database-sources)) |
 | **ZPL coverage** | 222 ZPL commands tracked one by one on a [generated coverage page](docs/zpl-coverage.md) |
 | **MCP server** | A separate program that lets MCP-capable clients design and check labels ([details](#mcp-server)) |
-| **Printing** | Windows spooler (RAW, including USB) and TCP port 9100, DPI and paper detection, printer profiles, test label |
+| **Printing** | Windows spooler (RAW, including USB) and TCP port 9100, DPI and paper detection, printer profiles, test label, printer status check before and after a job |
 | **Resolution** | Convert a label between 203, 300 and 600 dpi while keeping its physical size |
 | **Languages** | English and Spanish, switchable live |
 
@@ -371,6 +371,11 @@ Rotula sends ZPL as RAW data, so the driver passes it through untouched.
   open design to the printer's resolution and undo it with `Ctrl+Z`.
 - **Printer profiles.** Resolution, media tracking, darkness (0 to 30) and speed (1 to 14) are remembered with the printer.
 - **Test label.** A small sample label checks the connection, the width and accented characters.
+- **Printer status.** Before a job Rotula can ask the printer for its status (the ZPL `~HS` command) and hold the job back
+  while the printer is out of labels, open, out of ribbon, paused or too hot. Afterwards it waits until the printer reports it
+  finished and says "printed and verified", names the fault, or says it could not confirm. On by default for network printers;
+  for a Windows printer switch it on in the Print dialog (many USB drivers cannot answer, and printing then goes ahead without
+  the check). "Check printer status" shows the answer at any time.
 - **Plain-language failures.** Offline, refused connection, unreachable host, timeout or a character the character set
   cannot print: each says what happened and what to do. Rotula bundles no printer drivers.
 

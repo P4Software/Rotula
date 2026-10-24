@@ -2529,7 +2529,7 @@
       "name": "Host status",
       "group": "Host/status",
       "status": "OutOfScope",
-      "reason": "A query that makes the printer answer the host; a label file has no use for the reply.",
+      "reason": "A query that makes the printer answer the host; a label file has no use for the reply. Rotula's printing sends it on its own to check the printer before a job and to verify the job afterwards (see docs/printing.md).",
       "generator": false,
       "parser": false,
       "preview": "NotPreviewed",

@@ -210,6 +210,15 @@ that export, does not add the printer set-up commands. The copies typed in the d
 sets copies per record (fixed or from a column); the dialog says so then. With records but nothing ticked, Print is disabled and the reason is shown.
 With no data loaded the dialog is the single-label dialog it always was. The dialog subscribes to the data view-model and unsubscribes when it closes.
 
+### Printer status (~HS) around a job
+Approved by the owner (assessment item 4). The `~HS` reply is decoded in Rotula.Printing (`HostStatusParser`), not Core: it is about the printer,
+not the label, and Core's catalogue keeps `~HS` out of scope for label files. The check is opt-in per `PrinterTarget` so library callers and
+the MCP `print_label` path send exactly what they did before; the app turns it on per transport (on for TCP, off for Windows queues, because
+many USB drivers cannot read back and a non-ZPL queue would print the query). An unknown status never blocks. A blocking condition is a
+`PrintError` kind of its own (`HeadOpen`, `PaperOut`, ...) with 0 bytes sent, so `LabelPrintRun` gives the numbers back; the verification after
+the job runs after the numbers were confirmed and is a notice, so a fault after the job never gives a number back. Batches check every job and
+verify once after the last one.
+
 ### Data merge
 `DataMergeViewModel` (window opened with Ctrl+M, not modal so the canvas can be watched) wraps Core.Merge: CSV (delimiter auto
 detected and shown; UTF-8 with fallback to Windows-1252 as Excel writes it) or .xlsx (sheet picker), read off the UI thread with

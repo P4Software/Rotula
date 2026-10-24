@@ -2,6 +2,7 @@ using ModelContextProtocol;
 using Rotula.Mcp.Security;
 using Rotula.Mcp.Settings;
 using Rotula.Mcp.Tools;
+using Rotula.Printing;
 
 namespace Rotula.Tests;
 
@@ -299,6 +300,46 @@ public class McpPrintToolTests : IDisposable
         Assert.Equal(203, info.SupportedDpi);
         await Assert.ThrowsAsync<McpException>(() => _env.Printing.GetPrinterInfo("Not Installed"));
         Assert.Empty(_env.Printer.Jobs);
+    }
+
+    [Fact]
+    public async Task PrinterStatus_IsDecodedInPlainWords_AndPrintsNothing()
+    {
+        _env.Printer.Status = HostStatusParser.Parse(HsSamples.S1(paperOut: 1, pause: 1) + HsSamples.S2(remaining: 3));
+        var r = await _env.Printing.GetPrinterStatus("zebra zd420");
+        Assert.Equal("Zebra ZD420", r.Name);
+        Assert.True(r.StatusAvailable);
+        Assert.False(r.Ready);
+        Assert.Equal(["out of labels", "paused"], r.Blocking);
+        Assert.Equal(3, r.LabelsRemaining);
+        Assert.Contains("cannot print right now", r.Message);
+        Assert.Equal(["Zebra ZD420"], _env.Printer.StatusQueries);
+        Assert.Empty(_env.Printer.Jobs);
+
+        _env.Printer.Status = HostStatusParser.Parse(HsSamples.Ready);
+        var ready = await _env.Printing.GetPrinterStatus("Zebra ZD420");
+        Assert.True(ready.Ready);
+        Assert.Contains("is ready to print", ready.Message);
+    }
+
+    [Fact]
+    public async Task PrinterStatus_Unavailable_SaysSoWithoutFailing()
+    {
+        var r = await _env.Printing.GetPrinterStatus("Zebra ZD420");
+        Assert.False(r.StatusAvailable);
+        Assert.Null(r.Ready);
+        Assert.Contains("does not answer status requests", r.Message);
+    }
+
+    [Fact]
+    public async Task PrinterStatus_NeedsThePrintingPermission()
+    {
+        await Assert.ThrowsAsync<McpException>(() => _env.Printing.GetPrinterStatus("Office Laser"));
+        using var off = new McpTestEnv();
+        var ex = await Assert.ThrowsAsync<McpException>(() => off.Printing.GetPrinterStatus("Zebra ZD420"));
+        Assert.Contains("switched off", ex.Message);
+        Assert.Empty(off.Printer.StatusQueries);
+        Assert.Empty(_env.Printer.StatusQueries);
     }
 
     private static Rotula.Core.Model.PrinterDpi PrinterDpiOf(int dpi) => (Rotula.Core.Model.PrinterDpi)dpi;

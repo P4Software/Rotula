@@ -107,6 +107,7 @@ and what to do.
 |---|---|
 | `list_printers` | Printers installed in Windows. Read-only. |
 | `get_printer_info` | Resolution and paper size from the Windows driver. Read-only; no job is created. |
+| `get_printer_status` | Asks the printer whether it can print now (out of labels, printhead open, ribbon out, paused, too hot) and how many labels it still has to print, with the ZPL `~HS` command. It sends that command through the Windows queue, so it needs the same permission as printing (`allowPrinting` and the printer in `allowedPrinters`) but no confirmation; a ZPL compatible printer prints nothing. Many USB drivers cannot pass the answer back; the result then says the status is unavailable. |
 | `print_label` | See "Printing" below. |
 | `list_database_connections` | Names of connections saved in the Rotula app (never hosts, users or passwords). Needs `allowDatabase`. |
 | `run_query` | One read-only `SELECT` on a saved connection. Needs `allowDatabase`. |

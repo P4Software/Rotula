@@ -93,6 +93,9 @@ public sealed class WinspoolRawPrinter : IRawPrinter, IPrinterDiscovery
         }
     }
 
+    /// <summary>True when Windows reports the open queue as offline; false when it is online or the state cannot be read.</summary>
+    internal static bool IsQueueOffline(IntPtr handle) => TryGetState(handle, out _, out _, out bool offline) && offline;
+
     /// <summary>Reads status/attributes of an open printer. Returns false when the query itself fails (state unknown).</summary>
     private static bool TryGetState(IntPtr handle, out uint status, out uint attributes, out bool offline)
     {
@@ -244,6 +247,10 @@ internal static class NativeMethods
     [DllImport("winspool.drv", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static extern bool WritePrinter(IntPtr hPrinter, IntPtr pBuf, int cbBuf, out int pcWritten);
+
+    [DllImport("winspool.drv", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool ReadPrinter(IntPtr hPrinter, IntPtr pBuf, int cbBuf, out int pNoBytesRead);
 
     [DllImport("winspool.drv", EntryPoint = "GetPrinterW", SetLastError = true, CharSet = CharSet.Unicode)]
     [return: MarshalAs(UnmanagedType.Bool)]

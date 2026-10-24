@@ -70,6 +70,20 @@
       </StackPanel>
     </Grid>
 
+    <!-- ============================== printer status (~HS) -->
+    <CheckBox Content="{loc:T Print.Status.Option}" IsChecked="{Binding CheckStatus}" Margin="0,12,0,0" ToolTip="{loc:T Print.Status.Option.Tip}"
+              AutomationProperties.Name="{loc:T Print.Status.Option}" AutomationProperties.HelpText="{loc:T Print.Status.Option.Tip}" />
+    <Button Content="{loc:T Print.Status.Check}" Command="{Binding CheckPrinterStatusCommand}" HorizontalAlignment="Left" Margin="0,10,0,0"
+            Style="{StaticResource ToolButton}" ToolTip="{loc:T Print.Status.Check.Tip}" AutomationProperties.Name="{loc:T Print.Status.Check}" />
+    <ProgressBar IsIndeterminate="True" Margin="0,6,0,0" Visibility="{Binding IsCheckingStatus, Converter={StaticResource B2V}}"
+                 AutomationProperties.Name="{loc:T Print.Status.Checking}" />
+    <Border Style="{StaticResource SuccessBanner}" Margin="0,8,0,0" Visibility="{Binding HasStatusOk, Converter={StaticResource B2V}}" AutomationProperties.LiveSetting="Polite">
+      <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap" Foreground="{StaticResource SuccessBrush}" />
+    </Border>
+    <Border Style="{StaticResource WarningBanner}" Margin="0,8,0,0" Visibility="{Binding HasStatusProblem, Converter={StaticResource B2V}}" AutomationProperties.LiveSetting="Polite">
+      <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap" Foreground="{StaticResource WarningBrush}" />
+    </Border>
+
     <!-- ============================== printer profile -->
     <TextBlock Text="{loc:T Print.Section.Setup}" Style="{StaticResource SectionHeading}" Margin="0,20,0,8" AutomationProperties.HeadingLevel="Level2" />
     <Grid>
