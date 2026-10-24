@@ -16,7 +16,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <!-- No coverlet.collector on purpose: the build workflow takes the FIRST cobertura report it finds for the Rotula.Core
+         coverage gate, and this project loads Rotula.Core with almost no coverage. With a collector here the gate passed or
+         failed depending on which report's folder name sorted first. -->
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
