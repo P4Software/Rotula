@@ -35,9 +35,11 @@ public sealed class PrinterStatusReader : IPrinterStatusReader
         cts.CancelAfter(timeout);
         using var client = new TcpClient { NoDelay = true };
         var received = new MemoryStream();
+        bool connected = false;
         try
         {
             await client.ConnectAsync(host, port, cts.Token).ConfigureAwait(false);
+            connected = true;
             var stream = client.GetStream();
             await stream.WriteAsync(Query, cts.Token).ConfigureAwait(false);
             await stream.FlushAsync(cts.Token).ConfigureAwait(false);
@@ -51,7 +53,10 @@ public sealed class PrinterStatusReader : IPrinterStatusReader
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
-            // Timed out: a reply that already holds strings 1 and 2 is still worth decoding.
+            // Timed out while connecting: nobody answered at that address. Windows retries a refused connection for
+            // about two seconds before failing, so a closed port often ends here rather than in a SocketException.
+            if (!connected) return PrinterStatus.Unavailable(StatusUnavailableReason.Unreachable);
+            // Timed out after connecting: a reply that already holds strings 1 and 2 is still worth decoding.
             return Decode(received, StatusUnavailableReason.NoReply);
         }
         catch (SocketException)
