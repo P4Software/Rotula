@@ -62,6 +62,10 @@
       <Component Id="RotulaMcpExe">
         <File Id="RotulaMcpExe" Source="$(var.StageDir)\Rotula.Mcp.exe" KeyPath="yes" />
       </Component>
+      <!-- The print engine (command line and REST API) for scripts and warehouse systems: no shortcut. docs\print-engine.md. -->
+      <Component Id="RotulaEngineExe">
+        <File Id="RotulaEngineExe" Source="$(var.StageDir)\rotula.exe" KeyPath="yes" />
+      </Component>
       <Component Id="LicenseFile">
         <File Id="LicenseFile" Source="$(var.StageDir)\LICENSE" KeyPath="yes" />
       </Component>
@@ -76,6 +80,9 @@
       </Component>
       <Component Id="McpDoc" Directory="DocsFolder">
         <File Id="McpDoc" Source="$(var.StageDir)\docs\mcp.md" KeyPath="yes" />
+      </Component>
+      <Component Id="PrintEngineDoc" Directory="DocsFolder">
+        <File Id="PrintEngineDoc" Source="$(var.StageDir)\docs\print-engine.md" KeyPath="yes" />
       </Component>
       <!-- Add-ons placed in "packs" beside the exe are trusted (installed by an administrator; docs/data-providers.md). -->
       <Component Id="PacksReadme" Directory="PacksFolder">

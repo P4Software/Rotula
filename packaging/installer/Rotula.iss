@@ -77,9 +77,12 @@ Name: "associate"; Description: "Open .rotula label files with Rotula"; GroupDes
 Source: "{#SourceDir}\Rotula.App.exe"; DestDir: "{app}"; Flags: ignoreversion
 ; The MCP server: a console program for AI clients, started by them, so it gets no Start menu entry. docs\mcp.md says how to connect it.
 Source: "{#SourceDir}\Rotula.Mcp.exe"; DestDir: "{app}"; Flags: ignoreversion
+; The print engine (command line and REST API) for scripts and warehouse systems: no Start menu entry. docs\print-engine.md.
+Source: "{#SourceDir}\rotula.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceDir}\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceDir}\LICENSE-THIRD-PARTY.txt"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceDir}\docs\mcp.md"; DestDir: "{app}\docs"; Flags: ignoreversion
+Source: "{#SourceDir}\docs\print-engine.md"; DestDir: "{app}\docs"; Flags: ignoreversion
 Source: "{#SourceDir}\packs\README.txt"; DestDir: "{app}\packs"; Flags: ignoreversion
 Source: "{#SourceDir}\THIRD-PARTY-NOTICES.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceDir}\README.md"; DestDir: "{app}"; Flags: ignoreversion
