@@ -539,3 +539,21 @@ emitted or validated, so a barcode invalid only on a record where it is hidden d
 prints and PNG/JPEG/PDF; only the design canvas draws them dimmed (`includeNonPrinting`), and the Preview window shows the printed result. Lock is
 enforced in `EditorCommands` (move, nudge, resize, rotate, align, distribute, delete, cut) and never touches ZPL; property edits stay allowed.
 Condition fields are listed as merge placeholders so they can be mapped to columns. ZPL import never creates conditions or locks.
+
+## Print station (Rotula.Files/Station, StationViewModel)
+
+### One print path, a locked screen on top
+The station is a separate window over the same services as the designer: it builds the printer target and profile through
+`PrinterSettingsViewModel`, asks the label's questions through `PromptSet`, and prints through `IPrintService` with the status check on. So a
+label prints the same from the station as from the Print dialog, and nothing in the print path knows about stations.
+
+### The configuration is strict and the PIN is only a hash
+`station.json` refuses unknown settings (`UnmappedMemberHandling.Disallow`), so a misspelt `maxCopies` is an error with its line, not a silently
+unlimited station. The exit PIN is stored as `pbkdf2-sha256$<iterations>$<salt>$<hash>` (600,000 iterations, 16-byte salt) and checked with
+`CryptographicOperations.FixedTimeEquals`, from the framework only. Five wrong PINs lock the box for 30 seconds. The PIN keeps an operator from
+leaving by accident; it is not a security boundary, because anyone who can edit `station.json` can remove it, and Windows keys cannot be blocked.
+
+### Scanners are read by their terminator
+Keyboard-wedge scanners end a code with Enter or Tab, which `ScanSequencer` turns into "stay", "next field", "focus Print" or "print". Timing
+heuristics (telling a scan from typing by speed) were left out: they misfire on slow PCs and remote sessions, and the terminator already works for
+both people and scanners.

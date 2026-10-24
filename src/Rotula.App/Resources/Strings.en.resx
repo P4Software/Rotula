@@ -6023,4 +6023,214 @@ Brand and product names belong to their owners; Rotula is not affiliated with th
   <data name="Print.Status.Option.Tip" xml:space="preserve">
     <value>Before each job Rotula asks the printer for its status and does not send while it is out of labels, open, paused or out of ribbon. After the job it waits until the printer reports it finished. For ZPL compatible printers; many USB drivers cannot answer, and then printing goes ahead without the check.</value>
   </data>
+  <data name="Menu.PrintStation" xml:space="preserve">
+    <value>Open print station...</value>
+  </data>
+  <data name="Menu.StationPin" xml:space="preserve">
+    <value>Create print station PIN...</value>
+  </data>
+  <data name="Station.Title" xml:space="preserve">
+    <value>Print station</value>
+  </data>
+  <data name="Station.PickFolder" xml:space="preserve">
+    <value>Choose the folder of the print station (with its station.json, or with the labels to offer)</value>
+  </data>
+  <data name="Station.Open.Failed" xml:space="preserve">
+    <value>The print station cannot open.</value>
+  </data>
+  <data name="Station.Exit" xml:space="preserve">
+    <value>Exit</value>
+  </data>
+  <data name="Station.Back" xml:space="preserve">
+    <value>All labels</value>
+  </data>
+  <data name="Station.Search" xml:space="preserve">
+    <value>Search or scan a label</value>
+  </data>
+  <data name="Station.Search.Hint" xml:space="preserve">
+    <value>Type a name or scan the label's code, then press Enter. Or tap a label below.</value>
+  </data>
+  <data name="Station.NoMatch" xml:space="preserve">
+    <value>No label matches the search.</value>
+  </data>
+  <data name="Station.UnknownCode" xml:space="preserve">
+    <value>No label has the code "{0}". Scan it again or choose a label from the list.</value>
+  </data>
+  <data name="Station.Warnings" xml:space="preserve">
+    <value>Some labels are not available:</value>
+  </data>
+  <data name="Station.Label.LoadFailed" xml:space="preserve">
+    <value>The label "{0}" cannot be used: {1}</value>
+  </data>
+  <data name="Station.Printer" xml:space="preserve">
+    <value>Printer: {0}</value>
+  </data>
+  <data name="Station.Printer.None" xml:space="preserve">
+    <value>No printer is set up for this label. Ask the person who set up the station to add one to station.json.</value>
+  </data>
+  <data name="Station.Copies" xml:space="preserve">
+    <value>Quantity</value>
+  </data>
+  <data name="Station.Copies.Hint" xml:space="preserve">
+    <value>1 to {0} labels</value>
+  </data>
+  <data name="Station.Copies.Invalid" xml:space="preserve">
+    <value>Enter a quantity from 1 to {0}, then press Print again.</value>
+  </data>
+  <data name="Station.Print" xml:space="preserve">
+    <value>Print</value>
+  </data>
+  <data name="Station.PrintRecords" xml:space="preserve">
+    <value>Print all records</value>
+  </data>
+  <data name="Station.Records" xml:space="preserve">
+    <value>{0} records from the label's data are ready to print.</value>
+  </data>
+  <data name="Station.Records.NotLoaded" xml:space="preserve">
+    <value>The label's data could not be read: {0}</value>
+  </data>
+  <data name="Station.Records.None" xml:space="preserve">
+    <value>the data has no records.</value>
+  </data>
+  <data name="Station.Fields.None" xml:space="preserve">
+    <value>This label asks no questions. Set the quantity and press Print.</value>
+  </data>
+  <data name="Station.Fields.Fix" xml:space="preserve">
+    <value>Some answers are not accepted. Correct the fields marked in red, then print again.</value>
+  </data>
+  <data name="Station.Preview" xml:space="preserve">
+    <value>Preview</value>
+  </data>
+  <data name="Station.Status.Checking" xml:space="preserve">
+    <value>Checking the printer...</value>
+  </data>
+  <data name="Station.Status.Ready" xml:space="preserve">
+    <value>Printer ready</value>
+  </data>
+  <data name="Station.Status.Unknown" xml:space="preserve">
+    <value>Printer status unknown</value>
+  </data>
+  <data name="Station.Status.NeedsAttention" xml:space="preserve">
+    <value>The printer needs attention</value>
+  </data>
+  <data name="Station.Status.Printing" xml:space="preserve">
+    <value>Printing...</value>
+  </data>
+  <data name="Station.Status.Printing.Checked" xml:space="preserve">
+    <value>Rotula checks the printer before sending and waits until it reports that it finished.</value>
+  </data>
+  <data name="Station.Status.HeldBack" xml:space="preserve">
+    <value>Not printed: the printer needs attention</value>
+  </data>
+  <data name="Station.Status.Printed" xml:space="preserve">
+    <value>Sent to the printer</value>
+  </data>
+  <data name="Station.Status.Verified" xml:space="preserve">
+    <value>Printed and verified</value>
+  </data>
+  <data name="Station.Status.NotVerified" xml:space="preserve">
+    <value>Sent, but not confirmed</value>
+  </data>
+  <data name="Station.Status.Fault" xml:space="preserve">
+    <value>Sent, but the printer reports a problem</value>
+  </data>
+  <data name="Station.Status.Problem" xml:space="preserve">
+    <value>Not printed</value>
+  </data>
+  <data name="Station.Pin.Title" xml:space="preserve">
+    <value>Enter the PIN to leave the print station</value>
+  </data>
+  <data name="Station.Pin.Field" xml:space="preserve">
+    <value>PIN</value>
+  </data>
+  <data name="Station.Pin.Ok" xml:space="preserve">
+    <value>Leave the station</value>
+  </data>
+  <data name="Station.Pin.Wrong" xml:space="preserve">
+    <value>That PIN is not right. Try again.</value>
+  </data>
+  <data name="Station.Pin.Locked" xml:space="preserve">
+    <value>Too many wrong PINs. Wait {0} seconds, then try again.</value>
+  </data>
+  <data name="Station.NewPin.Title" xml:space="preserve">
+    <value>Create a print station PIN</value>
+  </data>
+  <data name="Station.NewPin.Intro" xml:space="preserve">
+    <value>The PIN is needed to leave the print station. Rotula keeps only a protected code made from it, never the PIN itself. Copy the line into the station's station.json.</value>
+  </data>
+  <data name="Station.NewPin.Pin" xml:space="preserve">
+    <value>New PIN</value>
+  </data>
+  <data name="Station.NewPin.Confirm" xml:space="preserve">
+    <value>Type the PIN again</value>
+  </data>
+  <data name="Station.NewPin.Create" xml:space="preserve">
+    <value>Create</value>
+  </data>
+  <data name="Station.NewPin.Result" xml:space="preserve">
+    <value>Line for station.json</value>
+  </data>
+  <data name="Station.NewPin.Copy" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="Station.NewPin.Copied" xml:space="preserve">
+    <value>Copied. Paste it into station.json, next to the other settings.</value>
+  </data>
+  <data name="Station.NewPin.Invalid" xml:space="preserve">
+    <value>A PIN needs {0} to {1} characters.</value>
+  </data>
+  <data name="Station.NewPin.Mismatch" xml:space="preserve">
+    <value>The two PINs are not the same. Type them again.</value>
+  </data>
+  <data name="Issue.StationConfig.NotFound" xml:space="preserve">
+    <value>"{0}" was not found. Check the path given to the print station.</value>
+  </data>
+  <data name="Issue.StationConfig.ReadFailed" xml:space="preserve">
+    <value>"{0}" could not be read. Check that the file is not locked and that this user may read it.</value>
+  </data>
+  <data name="Issue.StationConfig.InvalidJson" xml:space="preserve">
+    <value>"{0}" has a mistake near line {1} ({2}): a setting is misspelt, has a value of the wrong kind, or a comma or quote is missing.</value>
+  </data>
+  <data name="Issue.StationConfig.NewerVersion" xml:space="preserve">
+    <value>The station settings were written for a newer version of Rotula (format {0}). Update Rotula on this PC.</value>
+  </data>
+  <data name="Issue.StationConfig.NoLabels" xml:space="preserve">
+    <value>There is no label to offer. Put .rotula files in the station's folder or list them under "labels" in station.json.</value>
+  </data>
+  <data name="Issue.StationConfig.LabelMissing" xml:space="preserve">
+    <value>The label "{0}" listed in station.json was not found and is left out.</value>
+  </data>
+  <data name="Issue.StationConfig.LabelNotRotula" xml:space="preserve">
+    <value>"{0}" is not a Rotula label (.rotula file). Correct it in station.json.</value>
+  </data>
+  <data name="Issue.StationConfig.LabelNoFile" xml:space="preserve">
+    <value>Label entry {0} in station.json has no "file". Add the label's file name.</value>
+  </data>
+  <data name="Issue.StationConfig.DuplicateKey" xml:space="preserve">
+    <value>Two labels use the code "{0}". Give every label its own code, so a scan opens the right one.</value>
+  </data>
+  <data name="Issue.StationConfig.UnknownPrinter" xml:space="preserve">
+    <value>The printer "{0}" is not defined under "printers" in station.json.</value>
+  </data>
+  <data name="Issue.StationConfig.PrinterTarget" xml:space="preserve">
+    <value>The printer "{0}" needs either "windowsPrinter" (an installed printer) or "host" (a network address), not both.</value>
+  </data>
+  <data name="Issue.StationConfig.PrinterPort" xml:space="preserve">
+    <value>The port of the printer "{0}" must be from 1 to 65535 (usually 9100).</value>
+  </data>
+  <data name="Issue.StationConfig.PrinterDpi" xml:space="preserve">
+    <value>The resolution of the printer "{0}" must be 203, 300 or 600.</value>
+  </data>
+  <data name="Issue.StationConfig.PrinterProfile" xml:space="preserve">
+    <value>The printer "{0}" has a darkness outside 0 to 30 or a speed outside 1 to 14.</value>
+  </data>
+  <data name="Issue.StationConfig.Copies" xml:space="preserve">
+    <value>The station's copies settings are not valid: "maxCopies" must be from 1 to 99999999 and "defaultCopies" from 1 to "maxCopies".</value>
+  </data>
+  <data name="Issue.StationConfig.LabelCopies" xml:space="preserve">
+    <value>The copies settings of the label "{0}" are not valid: "maxCopies" must be from 1 to 99999999 and "defaultCopies" from 1 to "maxCopies".</value>
+  </data>
+  <data name="Issue.StationConfig.PinHash" xml:space="preserve">
+    <value>"exitPinHash" is not a PIN code made by Rotula. Create it with File &gt; Create print station PIN (a PIN is never stored as plain text).</value>
+  </data>
 </root>

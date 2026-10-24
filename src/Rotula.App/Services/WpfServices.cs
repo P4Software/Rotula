@@ -229,6 +229,21 @@ public sealed class WpfToolDialogService : IToolDialogService
     }
 
     /// <inheritdoc />
+    public void ShowPrintStation(Rotula.App.ViewModels.StationViewModel viewModel)
+    {
+        // Modal over the designer: the operator works only in the station until it is left (with the PIN when one is set).
+        var window = new StationWindow(viewModel) { Owner = Application.Current?.MainWindow, ShowInTaskbar = false };
+        window.ShowDialog();
+    }
+
+    /// <inheritdoc />
+    public void ShowStationPinTool(Rotula.App.ViewModels.StationPinViewModel viewModel)
+    {
+        var window = new StationPinWindow(viewModel) { Owner = Application.Current?.MainWindow };
+        window.ShowDialog();
+    }
+
+    /// <inheritdoc />
     public void ShowDataWindow(Rotula.App.ViewModels.DataMergeViewModel viewModel)
     {
         if (_dataWindow is { IsLoaded: true })
