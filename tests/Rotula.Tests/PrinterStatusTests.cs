@@ -438,7 +438,8 @@ public class PrinterStatusServiceTests
         // Ready before, then still printing twice, then idle.
         var reader = new ScriptedStatusReader(HsSamples.Ready, HsSamples.S1(formats: 1) + HsSamples.S2(remaining: 3), HsSamples.S1() + HsSamples.S2(remaining: 1), HsSamples.Ready);
         var (svc, printer) = Make(reader);
-        var r = await svc.PrintAsync(Tcp, Doc());
+        // A long verification limit: this test counts polls, and a busy CI runner can take longer than Fast's 300 ms for three of them.
+        var r = await svc.PrintAsync(Tcp.WithStatus(Fast with { VerifyTimeout = TimeSpan.FromSeconds(30) }), Doc());
         Assert.True(r.Succeeded);
         Assert.Single(printer.Sent);
         Assert.Equal(4, reader.Calls);
@@ -597,7 +598,7 @@ public class PrinterStatusServiceTests
     {
         var reader = new ScriptedStatusReader(HsSamples.S1(formats: 3) + HsSamples.S2(remaining: 2), HsSamples.Ready);
         var (svc, _) = Make(reader);
-        var notes = await svc.VerifyPrintedAsync(Tcp);
+        var notes = await svc.VerifyPrintedAsync(Tcp.WithStatus(Fast with { VerifyTimeout = TimeSpan.FromSeconds(30) }));
         Assert.Equal(PrinterStatusKeys.Verified, Assert.Single(notes).MessageKey);
     }
 
