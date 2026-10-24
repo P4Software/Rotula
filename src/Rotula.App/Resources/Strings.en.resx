@@ -1325,7 +1325,7 @@
     <value>The printer at {0}:{1} did not answer in time. Check that it is switched on and on the same network, then try again.</value>
   </data>
   <data name="Print.Error.ConnectionRefused" xml:space="preserve">
-    <value>The device at {0}:{1} refused the connection. Check the port (Zebra printers use 9100) and that the printer's network port is enabled.</value>
+    <value>The device at {0}:{1} refused the connection. Check the port (most label printers use 9100) and that the printer's network port is enabled.</value>
   </data>
   <data name="Print.Error.HostUnreachable" xml:space="preserve">
     <value>Cannot reach {0}:{1}. Check the address, the network cable or Wi-Fi, and that the printer is switched on.</value>
@@ -1484,7 +1484,7 @@
     <value>Enter the host name or IP address of the network printer, for example 192.168.1.50.</value>
   </data>
   <data name="Print.Field.Port" xml:space="preserve">
-    <value>The port must be a whole number from 1 to 65535 (Zebra printers use 9100).</value>
+    <value>The port must be a whole number from 1 to 65535 (most label printers use 9100).</value>
   </data>
   <data name="Print.Field.Number" xml:space="preserve">
     <value>{0} must be a number. Enter digits only, for example 12.</value>
@@ -2249,7 +2249,7 @@
     <value>Welcome to Rotula</value>
   </data>
   <data name="Start.Subtitle" xml:space="preserve">
-    <value>Design a label, check it on screen and print it on your Zebra printer.</value>
+    <value>Design a label, check it on screen and print it on your ZPL-compatible printer.</value>
   </data>
   <data name="Start.New" xml:space="preserve">
     <value>New label</value>

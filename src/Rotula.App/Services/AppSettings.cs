@@ -82,7 +82,7 @@ public sealed class PrintSettings
     /// <summary>Host name or IP address of a network printer.</summary>
     public string Host { get; set; } = string.Empty;
 
-    /// <summary>TCP port of a network printer (9100 for Zebra).</summary>
+    /// <summary>TCP port of a network printer (9100 on most label printers).</summary>
     public int Port { get; set; } = 9100;
 
     /// <summary>Printhead resolution: "Dpi203", "Dpi300" or "Dpi600".</summary>
