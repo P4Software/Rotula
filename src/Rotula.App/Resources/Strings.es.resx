@@ -1325,7 +1325,7 @@
     <value>La impresora en {0}:{1} no respondió a tiempo. Compruebe que esté encendida y en la misma red; luego inténtelo de nuevo.</value>
   </data>
   <data name="Print.Error.ConnectionRefused" xml:space="preserve">
-    <value>El dispositivo en {0}:{1} rechazó la conexión. Compruebe el puerto (las Zebra usan 9100) y que el puerto de red de la impresora esté activado.</value>
+    <value>El dispositivo en {0}:{1} rechazó la conexión. Compruebe el puerto (la mayoría de las impresoras de etiquetas usan el 9100) y que el puerto de red de la impresora esté activado.</value>
   </data>
   <data name="Print.Error.HostUnreachable" xml:space="preserve">
     <value>No se puede llegar a {0}:{1}. Revise la dirección, el cable de red o el Wi-Fi, y que la impresora esté encendida.</value>
@@ -1484,7 +1484,7 @@
     <value>Indique el nombre de host o la dirección IP de la impresora de red, por ejemplo 192.168.1.50.</value>
   </data>
   <data name="Print.Field.Port" xml:space="preserve">
-    <value>El puerto debe ser un número entero de 1 a 65535 (las Zebra usan 9100).</value>
+    <value>El puerto debe ser un número entero de 1 a 65535 (la mayoría de las impresoras de etiquetas usan el 9100).</value>
   </data>
   <data name="Print.Field.Number" xml:space="preserve">
     <value>{0} debe ser un número. Escriba solo dígitos, por ejemplo 12.</value>
@@ -2249,7 +2249,7 @@
     <value>Bienvenido a Rotula</value>
   </data>
   <data name="Start.Subtitle" xml:space="preserve">
-    <value>Diseñe una etiqueta, revísela en pantalla e imprímala en su impresora Zebra.</value>
+    <value>Diseñe una etiqueta, revísela en pantalla e imprímala en su impresora compatible con ZPL.</value>
   </data>
   <data name="Start.New" xml:space="preserve">
     <value>Nueva etiqueta</value>
