@@ -75,7 +75,11 @@ Siempre la versión más reciente: [github.com/P4Software/Rotula/releases/latest
 |---|---|---|
 | **Instalador** | `Rotula-<versión>-win-x64-setup.exe` | Instalación por usuario, acceso en el menú Inicio e icono de escritorio opcional. Firmado digitalmente |
 | **Portátil** | `Rotula-<versión>-win-x64-portable.zip` | Descomprime en cualquier carpeta y haz doble clic en `Rotula.App.exe`. No instala nada. No necesita .NET |
+| **MSI (para TI)** | `Rotula-<versión>-win-x64.msi` | Instalación para todo el equipo en Archivos de programa, para todos los usuarios, con Intune, directiva de grupo o Configuration Manager. Firmado. Consulta la [instalación en empresas](docs/deployment.md) (en inglés) |
 | **winget** | `winget install P4Software.Rotula` | Próximamente. El manifiesto del paquete está preparado, pero aún no fue aceptado en el catálogo de winget |
+
+Para instalar Rotula en toda una organización (instalación silenciosa, el MSI, Intune, configuración por directiva de grupo):
+[docs/deployment.md](docs/deployment.md) (en inglés).
 
 Cada versión incluye además un archivo `SHA256SUMS.txt`.
 
@@ -212,8 +216,9 @@ El software de etiquetas ha significado casi siempre una licencia de pago, una c
 es un único programa de escritorio que hace el trabajo y no estorba.
 
 - **Gratis y con licencia MIT.** Úsalo en casa, en la oficina, en un almacén o dentro de un producto. Sin puestos ni planes.
-- **Sin conexión por diseño.** Sin analítica, sin búsqueda de actualizaciones, sin sincronización en la nube. El único tráfico
-  de red que Rotula puede generar es la etiqueta que envías a la dirección de impresora que escribiste.
+- **Sin conexión por diseño.** Sin analítica, sin telemetría, sin sincronización en la nube. El único tráfico de red que
+  Rotula puede generar es la etiqueta que envías a la dirección de impresora que escribiste, las bases de datos que conectas
+  y, solo si la activas, una búsqueda de actualizaciones anónima al día.
 - **ZPL honesto.** La misma etiqueta con los mismos datos siempre da ZPL idéntico byte a byte, en ASCII puro.
 - **Errores que puedes resolver.** Un dígito verificador EAN-13 inválido o un carácter que no existe en Code 39 se reporta en
   lenguaje sencillo, con lo que debes hacer a continuación.
@@ -452,9 +457,12 @@ puedes cambiarlo en cualquier momento desde **Ver > Idioma**, sin reiniciar. El 
 
 ## Privacidad
 
-Rotula funciona totalmente sin conexión. No tiene telemetría, ni analítica, ni búsqueda de actualizaciones, ni cuentas, y no
-hace llamadas de red. El único tráfico de red que puede generar es la etiqueta que envías a la dirección de impresora de red
-que indicaste. Tus preferencias (idioma, unidades, archivos recientes, última impresora) son un pequeño archivo JSON en
+Rotula funciona totalmente sin conexión. No tiene telemetría, ni analítica, ni cuentas, y no hace llamadas de red por su
+cuenta. El único tráfico de red que puede generar es la etiqueta que envías a la dirección de impresora de red que indicaste
+y las bases de datos a las que te conectas. **Ayuda > Buscar actualizaciones una vez al día** está desactivado hasta que lo
+activas: entonces Rotula pregunta a GitHub una vez al día cuál es la versión más reciente (una sola solicitud anónima, no se
+envía nada sobre ti ni sobre tu PC) y muestra un enlace cuando hay una más nueva. Nunca descarga ni instala nada. Un
+administrador puede activarla o desactivarla para todos ([instalación en empresas](docs/deployment.md), en inglés). Tus preferencias (idioma, unidades, archivos recientes, última impresora) son un pequeño archivo JSON en
 `%AppData%\Rotula`. Si el programa falla, escribe un registro en `%AppData%\Rotula\rotula.log` en tu PC y no lo envía a ningún lado.
 
 ---
@@ -525,7 +533,7 @@ flowchart LR
 | `src/Rotula.Mcp` | El servidor MCP (un ejecutable aparte) |
 | `src/Rotula.App` | La aplicación WPF |
 | `tests/` | Pruebas xUnit y los archivos ZPL de referencia |
-| `packaging/` | Script del instalador y plantillas del manifiesto de winget |
+| `packaging/` | Script del instalador, proyecto del MSI, plantillas de directiva de grupo y plantillas del manifiesto de winget |
 | `docs/` | [Cobertura ZPL](docs/zpl-coverage.md), [catálogo de medios](docs/stock-catalog.md), [proveedores de datos](docs/data-providers.md), [servidor MCP](docs/mcp.md), [impresión](docs/printing.md), [publicación de versiones](docs/releasing.md), [decisiones de diseño](docs/decisions.md) (en inglés) |
 
 ---
