@@ -303,4 +303,24 @@ internal sealed class FakePrintService : IPrintService
         TestLabels.Add((target, profile));
         return Respond(cancellationToken);
     }
+
+    /// <summary>The targets "Check printer status" asked.</summary>
+    public readonly List<PrinterTarget> StatusQueries = new();
+    /// <summary>The answer to a status query; unavailable by default (like most USB drivers).</summary>
+    public PrinterStatus Status = PrinterStatus.Unavailable(StatusUnavailableReason.NotSupported);
+    /// <summary>The targets a verification was asked for, and the notes it returns.</summary>
+    public readonly List<PrinterTarget> Verifications = new();
+    public IReadOnlyList<Rotula.Core.Validation.ValidationIssue> VerifyNotes = Array.Empty<Rotula.Core.Validation.ValidationIssue>();
+
+    public Task<PrinterStatus> GetStatusAsync(PrinterTarget target, CancellationToken ct = default)
+    {
+        StatusQueries.Add(target);
+        return Task.FromResult(Status);
+    }
+
+    public Task<IReadOnlyList<Rotula.Core.Validation.ValidationIssue>> VerifyPrintedAsync(PrinterTarget target, CancellationToken ct = default)
+    {
+        Verifications.Add(target);
+        return Task.FromResult(VerifyNotes);
+    }
 }

@@ -92,6 +92,8 @@ public sealed partial class PrinterSettingsViewModel : ObservableObject
     partial void OnUseNetworkChanged(bool value)
     {
         OnPropertyChanged(nameof(UseWindowsPrinter));
+        OnPropertyChanged(nameof(CheckStatus));
+        ClearStatus();
         NotifyToolbar();
         RefreshDpiMismatch();
     }
@@ -102,11 +104,13 @@ public sealed partial class PrinterSettingsViewModel : ObservableObject
     partial void OnSelectedPrinterNameChanged(string? value)
     {
         NotifyToolbar();
+        ClearStatus();
         _ = DetectAsync();
     }
     partial void OnHostChanged(string value)
     {
         NotifyToolbar();
+        ClearStatus();
         RefreshDpiMismatch();
     }
     partial void OnPortTextChanged(string value) => NotifyToolbar();
@@ -180,6 +184,94 @@ public sealed partial class PrinterSettingsViewModel : ObservableObject
     /// <summary>Note about the printer list (none installed, last printer missing).</summary>
     [ObservableProperty]
     private string _printersNote = string.Empty;
+
+    // ------------------------------------------------------------------------------- printer status (~HS)
+
+    private bool _statusCheckNetwork = true;
+    private bool _statusCheckWindows;
+    private CancellationTokenSource? _statusCts;
+
+    /// <summary>
+    /// True to ask the printer for its status before and after printing. Kept separately for network and Windows printers: on by default
+    /// for a network printer, off for a Windows printer (many USB drivers cannot answer).
+    /// </summary>
+    public bool CheckStatus
+    {
+        get => UseNetwork ? _statusCheckNetwork : _statusCheckWindows;
+        set
+        {
+            if (CheckStatus == value) return;
+            if (UseNetwork) _statusCheckNetwork = value; else _statusCheckWindows = value;
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>True while "Check printer status" waits for the answer.</summary>
+    [ObservableProperty]
+    private bool _isCheckingStatus;
+
+    /// <summary>The decoded status in plain language, or empty before the first check.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasStatusText), nameof(HasStatusOk), nameof(HasStatusProblem))]
+    private string _statusText = string.Empty;
+
+    /// <summary>True when <see cref="StatusText"/> reports a problem (the printer cannot print, or its status is unknown).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasStatusOk), nameof(HasStatusProblem))]
+    private bool _statusIsProblem;
+
+    /// <summary>True when there is a status result to show.</summary>
+    public bool HasStatusText => StatusText.Length > 0;
+
+    /// <summary>True when the status result is good news (drives the green note).</summary>
+    public bool HasStatusOk => HasStatusText && !StatusIsProblem;
+
+    /// <summary>True when the status result is a problem (drives the amber note).</summary>
+    public bool HasStatusProblem => HasStatusText && StatusIsProblem;
+
+    /// <summary>Asks the chosen printer for its status (<c>~HS</c>) and shows the answer. A second click while waiting starts over.</summary>
+    [RelayCommand]
+    private async Task CheckPrinterStatusAsync()
+    {
+        string? error = TryBuildTarget(out var target);
+        if (error is not null)
+        {
+            StatusIsProblem = true;
+            StatusText = error;
+            return;
+        }
+        var previous = _statusCts;
+        previous?.Cancel();
+        var cts = _statusCts = new CancellationTokenSource();
+        IsCheckingStatus = true;
+        StatusText = string.Empty;
+        try
+        {
+            var status = await _service.GetStatusAsync(target!, cts.Token);
+            if (cts.IsCancellationRequested) return;
+            (string text, bool problem) = PrintMessages.DescribeStatus(status);
+            StatusIsProblem = problem;
+            StatusText = text;
+        }
+        catch (OperationCanceledException) { }
+        finally
+        {
+            if (ReferenceEquals(_statusCts, cts))
+            {
+                _statusCts = null;
+                IsCheckingStatus = false;
+            }
+            cts.Dispose();
+        }
+    }
+
+    /// <summary>Forgets a shown status when another printer is chosen, so an old answer is never read as the new printer's.</summary>
+    private void ClearStatus()
+    {
+        _statusCts?.Cancel();
+        StatusText = string.Empty;
+        StatusIsProblem = false;
+    }
 
     // ------------------------------------------------------------------------------- driver detection
 
@@ -383,6 +475,7 @@ public sealed partial class PrinterSettingsViewModel : ObservableObject
             WidthText = FormatMm(ToMm(doc.Width, doc.Dpi));
             HeightText = FormatMm(ToMm(doc.Height, doc.Dpi));
             SelectedMedia = doc.MediaTracking;
+            LoadStatusChoice();
             return;
         }
         UseNetwork = string.Equals(s.Transport, "Tcp", StringComparison.OrdinalIgnoreCase);
@@ -395,6 +488,14 @@ public sealed partial class PrinterSettingsViewModel : ObservableObject
         SelectedMedia = Enum.TryParse<MediaTracking>(s.MediaTracking, out var m) ? m : MediaTracking.Web;
         DarknessText = s.Darkness?.ToString(CultureInfo.InvariantCulture) ?? string.Empty;
         SpeedText = s.SpeedIps?.ToString(CultureInfo.InvariantCulture) ?? string.Empty;
+        LoadStatusChoice();
+    }
+
+    private void LoadStatusChoice()
+    {
+        _statusCheckNetwork = _settings.StatusCheckNetwork;
+        _statusCheckWindows = _settings.StatusCheckWindows;
+        OnPropertyChanged(nameof(CheckStatus));
     }
 
     private static double ToMm(Measure m, PrinterDpi dpi) => UnitConverter.Convert(m.Value, m.Unit, LengthUnit.Millimeters, (int)dpi);
@@ -463,13 +564,15 @@ public sealed partial class PrinterSettingsViewModel : ObservableObject
             if (string.IsNullOrWhiteSpace(Host)) return Loc.Get("Print.Field.NoHost");
             if (!int.TryParse(PortText.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out int port) || port is < 1 or > 65535)
                 return Loc.Get("Print.Field.Port");
-            target = PrinterTarget.TcpIp(Host.Trim(), port);
+            target = PrinterTarget.TcpIp(Host.Trim(), port).WithStatus(StatusOptions);
             return null;
         }
         if (string.IsNullOrWhiteSpace(SelectedPrinterName)) return Loc.Get("Print.Field.NoPrinter");
-        target = PrinterTarget.Spooler(SelectedPrinterName);
+        target = PrinterTarget.Spooler(SelectedPrinterName).WithStatus(StatusOptions);
         return null;
     }
+
+    private PrinterStatusOptions StatusOptions => CheckStatus ? PrinterStatusOptions.Default : PrinterStatusOptions.Off;
 
     /// <summary>Builds and validates the printer profile from the fields.</summary>
     /// <param name="profile">The profile when valid.</param>
@@ -523,6 +626,8 @@ public sealed partial class PrinterSettingsViewModel : ObservableObject
         _settings.MediaTracking = SelectedMedia.ToString();
         _settings.Darkness = int.TryParse(DarknessText.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out int d) ? d : null;
         _settings.SpeedIps = int.TryParse(SpeedText.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out int sp) ? sp : null;
+        _settings.StatusCheckNetwork = _statusCheckNetwork;
+        _settings.StatusCheckWindows = _statusCheckWindows;
         _save();
     }
 }

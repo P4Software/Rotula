@@ -229,8 +229,9 @@ public sealed partial class PrintViewModel : OperationViewModel
         string notes = PrintMessages.DescribeNotices(result);
         if (result.Succeeded)
         {
-            // Notes (for example skipped serial numbers) are shown with the success line so the operator reads them.
-            SetResult(notes.Length == 0 ? successText : successText + Environment.NewLine + notes, false);
+            // Notes (for example skipped serial numbers, or the printer's answer after the job) are shown with the success line so the
+            // operator reads them. A fault the printer reported after the job turns the line into a problem: labels may be missing.
+            SetResult(notes.Length == 0 ? successText : successText + Environment.NewLine + notes, PrintMessages.HasFaultAfterJob(result));
             Printer.Persist();
         }
         else
