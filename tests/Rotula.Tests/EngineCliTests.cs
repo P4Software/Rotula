@@ -341,6 +341,15 @@ public class EngineServerTests
     }
 
     [Fact]
+    public void LogValues_CannotForgeLogLines()
+    {
+        Assert.Equal("WAVE-1 Job FAKE: printed", EngineServer.LogValue("WAVE-1\nJob FAKE: printed"));
+        Assert.Equal("a  b", EngineServer.LogValue("a\r\nb"));
+        Assert.Equal("-", EngineServer.LogValue(null));
+        Assert.Equal(203, EngineServer.LogValue(new string('x', 500)).Length);
+    }
+
+    [Fact]
     public void Outcomes_MapToHttpStatusCodes()
     {
         Assert.Equal(200, EngineServer.StatusFor(PrintOutcome.Printed));

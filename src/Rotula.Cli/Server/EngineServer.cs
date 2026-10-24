@@ -97,7 +97,7 @@ internal static class EngineServer
             if (string.IsNullOrEmpty(key) && auth.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)) key = auth[7..].Trim();
             if (!ApiKeys.Matches(key, settings.ApiKeyHashes))
             {
-                log.LogWarning("Refused a call to {Path} from {Remote}: no valid API key.", http.Request.Path, http.Connection.RemoteIpAddress);
+                log.LogWarning("Refused a call to {Path} from {Remote}: no valid API key.", LogValue(http.Request.Path.Value), http.Connection.RemoteIpAddress);
                 return Error(Text(http, settings), StatusCodes.Status401Unauthorized, "Engine.Error.ApiKey");
             }
             // A short, non-reversible id of the key for the log: enough to tell callers apart, useless to call the server.
@@ -143,7 +143,7 @@ internal static class EngineServer
             var result = await engine.PrintAsync(label!, request, null, text, settings.Limits, http.RequestAborted).ConfigureAwait(false);
             // The audit line: who (key id, address), what (reference, printer, labels) and how it ended. Never the label data.
             log.LogInformation("Job {Reference} key {KeyId} from {Remote}: {Outcome} on {Printer}, {Labels} label(s) in {Jobs} job(s){Error}.",
-                request.Reference ?? "-", http.Items["keyId"], http.Connection.RemoteIpAddress, result.Outcome, result.Printer, result.Labels, result.Jobs,
+                LogValue(request.Reference), http.Items["keyId"], http.Connection.RemoteIpAddress, result.Outcome, LogValue(result.Printer), result.Labels, result.Jobs,
                 result.ErrorCode is null ? string.Empty : " (" + result.ErrorCode + ")");
             return Results.Json(result, EngineJson.Options, statusCode: StatusFor(result.Outcome));
         }).WithName("Print").WithSummary("Prints a label, once or for every record, on an allowed printer.")
@@ -242,6 +242,19 @@ internal static class EngineServer
     }
 
     /// <summary>The caller's language: <c>?lang=</c>, then <c>Accept-Language</c>, then the server's setting.</summary>
+    /// <summary>A caller's text made safe for one log line: control characters (CR, LF...) become spaces, so a request cannot forge
+    /// log entries, and long values are cut.</summary>
+    internal static string LogValue(string? value)
+    {
+        if (string.IsNullOrEmpty(value)) return "-";
+        if (value.Length > 200) value = value[..200] + "...";
+        value = value.Replace("\r", " ", StringComparison.Ordinal).Replace("\n", " ", StringComparison.Ordinal);
+        return string.Create(value.Length, value, static (span, v) =>
+        {
+            for (int i = 0; i < v.Length; i++) span[i] = char.IsControl(v[i]) ? ' ' : v[i];
+        });
+    }
+
     private static EngineText Text(HttpContext http, EngineSettings settings) =>
         EngineText.For(http.Request.Query["lang"].FirstOrDefault() ?? http.Request.Headers.AcceptLanguage.FirstOrDefault() ?? settings.Language);
 
