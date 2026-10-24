@@ -636,3 +636,30 @@ The design canvas stays upright because editing an upside-down label (handles, r
 "Prints upside down" / "Prints mirrored" instead. PNG, JPEG and PDF exports and the MCP preview stay as designed: they are artwork for documents,
 proofs and screens, not a picture of the media leaving the printer, and there is no "as printed" export option to honour. The two flips commute
 (inverted and mirrored together is a top-to-bottom flip), so their order is not a question.
+
+## Print engine (Rotula.Engine, Rotula.Cli)
+
+### A library and a thin executable, on the app's print path
+`Rotula.Engine` (net10.0, no UI) turns a request into a print through `IPrintService`, `LabelPrintRun` / `VariableJob`, `PromptSet`,
+`LabelDpiConverter` and `PrinterSetup`, the same pieces the Print dialog and the data merge use, so a label prints byte for byte the same from
+the designer, the station and the engine. `Rotula.Cli` (`rotula.exe`) is only argument parsing, the REST host and the console. Results are values
+(`PrintJobResult` with an outcome, an error code and localized notices), never exceptions, so the command line and the API answer the same thing.
+Messages come from the app's own `.resx` files, embedded in the engine, so the engine needs no WPF and every string exists in all four languages.
+
+### Questions take their default, never the sample value
+An unattended job cannot ask. An unanswered question takes the default set in the designer; a required question with no default stops the job
+with every question listed. The sample value is design-time data and printing it on a real carton would be silent, wrong output.
+
+### One job at a time per printer, status before every job
+Requests for the same printer (a queue name, or host:port) wait on one `SemaphoreSlim`, so two callers never interleave labels on one roll. The
+`~HS` check runs before each job and verification once after the last, as in the app's data merge. Counters are reserved before and confirmed
+only for the labels sent, so a held-back or failed job gives its serial numbers back unless part of it may have printed.
+
+### The REST server is opt-in and allow-listed
+Offline-first stays true: the server listens only when started, on `127.0.0.1` unless configured, and calls out only to printers. Every route but
+health and the OpenAPI document needs a key; keys are 32 random bytes shown once and stored as SHA-256 hashes, compared with `FixedTimeEquals`
+(a slow hash is not needed for 256-bit random keys). Labels are named relative to configured folders (no rooted paths, `..`, drives, UNC or
+wildcards), printers must be listed, inline label content is off by default, and request bodies and label files have size limits. The settings
+file and request bodies refuse unknown names, so a typo never widens what is allowed. The audit log carries an 8-character key id from the hash,
+never the key or label data. `PrintEngine = 0` (policy) switches it all off. Kestrel and ASP.NET Core come with .NET; the only packages added are
+Microsoft's OpenAPI and Windows service hosting (MIT).

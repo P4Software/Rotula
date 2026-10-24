@@ -43,6 +43,7 @@ Design it, preview it, merge your data, print it. No account, no cloud, no telem
 - [Printing](#printing)
 - [Print station](#print-station)
 - [MCP server](#mcp-server)
+- [Print engine (command line and REST API)](#print-engine-command-line-and-rest-api)
 - [Barcode support](#barcode-support)
 - [Languages](#languages)
 - [Privacy](#privacy)
@@ -452,6 +453,27 @@ on in `rotula-mcp.settings.json`. Printing needs a two-step confirmation. The in
 
 ---
 
+## Print engine (command line and REST API)
+
+`rotula.exe` prints Rotula labels with no window, for scripts, scheduled tasks and warehouse systems (WMS, ERP, shipping software).
+It uses the designer's own print path: resolution conversion, darkness and speed, variables and questions, data merge, and serial
+numbers that are reserved before a job and used up only for labels that reached the printer. Before every job it asks the printer
+for its status (ZPL `~HS`) and holds the job back while the printer is out of labels, open, paused or out of ribbon; after the last
+job it waits until the printer reports it finished. Results come back as exit codes or JSON.
+
+```bat
+rotula print carton.rotula --printer "Dock 1" --data wave-1207.csv --reference WAVE-1207 --json
+rotula status --host 10.20.0.31
+```
+
+`rotula serve` exposes the same engine as a REST API (`POST /api/v1/jobs`, printer lists and status, an OpenAPI description) that
+can run as a Windows service. It is off until you start it, listens on `127.0.0.1` unless you configure otherwise, needs an API
+key on every call, and prints only labels from the folders and to the printers its settings file lists. Messages follow the
+caller's language (English, Spanish, Portuguese (Brazil) or French (Canada)). Commands, API, settings and exit codes:
+[docs/print-engine.md](docs/print-engine.md). The installer does not include `rotula.exe` yet; build it from `src/Rotula.Cli`.
+
+---
+
 ## Languages
 
 The interface is available in **English**, **Spanish**, **Portuguese (Brazil)** and **French (Canada)**. By default Rotula
@@ -471,6 +493,8 @@ one. It never downloads or installs anything. An administrator can switch the ch
 ([deployment](docs/deployment.md)). Your settings
 (language, units, recent files, last printer) are a small JSON file in `%AppData%\Rotula`. If the program ever fails, it
 writes a log to `%AppData%\Rotula\rotula.log` on your PC and sends it nowhere.
+The print engine's REST server (`rotula serve`) listens
+for calls only when you start it, only on the addresses in its settings file, and makes no outgoing calls except to printers.
 
 ---
 
@@ -538,6 +562,8 @@ flowchart LR
 | `src/Rotula.Printing` | Windows spooler and TCP 9100 printing, printer detection |
 | `src/Rotula.Data` | Database providers, presets, the read-only query guard and the connection store |
 | `src/Rotula.Mcp` | The MCP server (a separate executable) |
+| `src/Rotula.Engine` | The headless print engine: print requests, printer status, settings and API keys. No UI |
+| `src/Rotula.Cli` | `rotula.exe`: the print engine's command line and REST server |
 | `src/Rotula.App` | The WPF application |
 | `tests/` | xUnit tests and the golden ZPL fixtures |
 | `packaging/` | Installer script, MSI project, Group Policy templates and winget manifest templates |

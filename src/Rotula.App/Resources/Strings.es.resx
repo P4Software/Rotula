@@ -6498,4 +6498,190 @@ Las marcas y los nombres de producto pertenecen a sus dueños; Rotula no está a
   <data name="Issue.Sheet.Label.Smaller" xml:space="preserve">
     <value>El diseño de la etiqueta mide {0} x {1} mm, menos que las etiquetas de {2} x {3} mm de esta hoja. Se imprime a su propio tamaño, centrado en cada etiqueta.</value>
   </data>
+  <data name="Engine.Cli.BadPair" xml:space="preserve">
+    <value>{0} necesita NOMBRE=VALOR, pero recibió "{1}".</value>
+  </data>
+  <data name="Engine.Cli.BadValue" xml:space="preserve">
+    <value>"{1}" no es un valor válido para {0}.</value>
+  </data>
+  <data name="Engine.Cli.Help" xml:space="preserve">
+    <value>rotula {0}: imprime etiquetas de Rotula sin el diseñador, para scripts, programadores de tareas y sistemas de almacén.
+
+Comandos:
+  rotula print ETIQUETA.rotula --printer NOMBRE | --host DIRECCIÓN [opciones]
+      Imprime una etiqueta. Opciones:
+        --port N              puerto TCP de --host (predeterminado 9100)
+        --copies N            copias de la etiqueta, o de cada registro
+        --data ARCHIVO        registros de un archivo .csv, .txt, .xlsx o .json (una etiqueta por registro)
+        --sheet NOMBRE        la hoja de Excel que se lee
+        --set NOMBRE=VALOR    el valor de un campo (repítalo para más campos)
+        --answer NOMBRE=VALOR la respuesta a una pregunta que la etiqueta hace al imprimir
+        --dpi 203|300|600     resolución del cabezal (predeterminado: la que indica el controlador de Windows)
+        --darkness 0-30       oscuridad enviada antes de las etiquetas
+        --speed 1-14          velocidad enviada antes de las etiquetas
+        --no-status           no pregunta el estado a la impresora antes de cada trabajo
+        --no-verify           no espera a que la impresora indique que terminó
+        --dry-run             muestra el ZPL sin imprimir (--output ARCHIVO lo guarda en un archivo)
+        --reference TEXTO     su propia referencia, repetida en el resultado
+        --counter-file ARCHIVO dónde se recuerdan los números de serie (predeterminado: el mismo archivo que la aplicación)
+  rotula status --printer NOMBRE | --host DIRECCIÓN [--port N]
+      Pregunta a la impresora si puede imprimir ahora.
+  rotula printers
+      Lista las impresoras de Windows.
+  rotula serve [--settings ARCHIVO] [--urls URL]
+      Ejecuta la API REST. "rotula serve --init [--label-folder CARPETA]" crea un archivo de configuración inicial con una clave nueva.
+  rotula new-key
+      Crea una clave de API nueva y el hash que va en el archivo de configuración.
+
+Todos los comandos aceptan --json (salida para programas) y --lang en|es|pt-BR|fr-CA.
+Códigos de salida: 0 hecho, 1 falló la impresión, 2 línea de comandos incorrecta, 3 errores en la etiqueta, 4 impresora no lista, 5 bloqueado por directiva, 6 cancelado.</value>
+  </data>
+  <data name="Engine.Cli.InitDone" xml:space="preserve">
+    <value>Se creó el archivo de configuración {0}. Agregue sus impresoras en allowedPrinters y ejecute "rotula serve".</value>
+  </data>
+  <data name="Engine.Cli.InitExists" xml:space="preserve">
+    <value>El archivo de configuración {0} ya existe; no se modificó.</value>
+  </data>
+  <data name="Engine.Cli.MissingValue" xml:space="preserve">
+    <value>La opción {0} necesita un valor.</value>
+  </data>
+  <data name="Engine.Cli.NewKey" xml:space="preserve">
+    <value>Clave de API nueva (solo se muestra ahora; entréguela al sistema que llama al servidor): {0}
+Hash que debe agregar a apiKeyHashes en el archivo de configuración: {1}</value>
+  </data>
+  <data name="Engine.Cli.PrintNeedsLabel" xml:space="preserve">
+    <value>Indique exactamente un archivo de etiqueta, por ejemplo: rotula print envio.rotula --printer "Muelle 1"</value>
+  </data>
+  <data name="Engine.Cli.RecordPrefix" xml:space="preserve">
+    <value>Registro {0}:</value>
+  </data>
+  <data name="Engine.Cli.SeeHelp" xml:space="preserve">
+    <value>Ejecute "rotula help" para ver los comandos y las opciones.</value>
+  </data>
+  <data name="Engine.Cli.UnknownCommand" xml:space="preserve">
+    <value>Comando desconocido "{0}".</value>
+  </data>
+  <data name="Engine.Cli.UnknownOption" xml:space="preserve">
+    <value>Opción desconocida {0}.</value>
+  </data>
+  <data name="Engine.Cli.WarningPrefix" xml:space="preserve">
+    <value>Advertencia:</value>
+  </data>
+  <data name="Engine.Error.Answers" xml:space="preserve">
+    <value>Faltan respuestas a las preguntas de la etiqueta o alguna no es válida. La etiqueta pregunta: {0}. Las preguntas marcadas con * son obligatorias; las demás toman su valor predeterminado.</value>
+  </data>
+  <data name="Engine.Error.ApiKey" xml:space="preserve">
+    <value>Se necesita una clave de API válida. Envíela en el encabezado X-Api-Key.</value>
+  </data>
+  <data name="Engine.Error.BadRequest" xml:space="preserve">
+    <value>No se pudo leer la solicitud: {0}</value>
+  </data>
+  <data name="Engine.Error.Copies" xml:space="preserve">
+    <value>Las copias deben ser un número entero de 1 a {0}.</value>
+  </data>
+  <data name="Engine.Error.DataFile" xml:space="preserve">
+    <value>No se pudo leer el archivo de datos {0}: {1}</value>
+  </data>
+  <data name="Engine.Error.DataMissing" xml:space="preserve">
+    <value>El archivo de datos {0} no existe.{1}</value>
+  </data>
+  <data name="Engine.Error.DataShape" xml:space="preserve">
+    <value>Los datos de {0} deben ser una lista de registros (objetos con nombres de campo y valores) o un solo registro. {1}</value>
+  </data>
+  <data name="Engine.Error.Dpi" xml:space="preserve">
+    <value>La resolución debe ser 203, 300 o 600 DPI.</value>
+  </data>
+  <data name="Engine.Error.InlineLabelsOff" xml:space="preserve">
+    <value>Este servidor no acepta etiquetas enviadas como contenido (allowInlineLabels está desactivado). Indique un archivo de etiqueta de una de sus carpetas de etiquetas.</value>
+  </data>
+  <data name="Engine.Error.LabelBoth" xml:space="preserve">
+    <value>Envíe el nombre de un archivo de etiqueta (label) o el contenido de la etiqueta (labelContent), no ambos.</value>
+  </data>
+  <data name="Engine.Error.LabelNotFound" xml:space="preserve">
+    <value>No se encontró la etiqueta {0}.</value>
+  </data>
+  <data name="Engine.Error.LabelOutsideFolders" xml:space="preserve">
+    <value>La etiqueta {0} no es un archivo .rotula dentro de una de las carpetas de etiquetas de este servidor. Indíquela relativa a una carpeta de etiquetas, sin letra de unidad ni "..".</value>
+  </data>
+  <data name="Engine.Error.LabelRequired" xml:space="preserve">
+    <value>Indique un archivo de etiqueta (label) o envíe el contenido de la etiqueta (labelContent).</value>
+  </data>
+  <data name="Engine.Error.LabelTooLarge" xml:space="preserve">
+    <value>La etiqueta {0} supera el límite de {1} KB.</value>
+  </data>
+  <data name="Engine.Error.NoRecords" xml:space="preserve">
+    <value>Los datos no tienen registros, así que no se imprimió nada.</value>
+  </data>
+  <data name="Engine.Error.NothingPrinted" xml:space="preserve">
+    <value>Ningún registro produjo una etiqueta, así que no se envió nada. Vea los problemas indicados en el resultado.</value>
+  </data>
+  <data name="Engine.Error.OutputFile" xml:space="preserve">
+    <value>No se pudo escribir el archivo {0}: {1}</value>
+  </data>
+  <data name="Engine.Error.PrinterBoth" xml:space="preserve">
+    <value>Indique una impresora de Windows o la dirección de una impresora de red, no ambas.</value>
+  </data>
+  <data name="Engine.Error.PrinterNotAllowed" xml:space="preserve">
+    <value>La impresora {0} no está en la lista de impresoras permitidas de este servidor (allowedPrinters). No se envió nada.</value>
+  </data>
+  <data name="Engine.Error.PrinterRequired" xml:space="preserve">
+    <value>Indique una impresora: una impresora de Windows (printer) o la dirección de una impresora de red (host).</value>
+  </data>
+  <data name="Engine.Error.PrintingBlocked" xml:space="preserve">
+    <value>La impresión con el motor de impresión está desactivada por la directiva de su organización para este equipo. Consulte a su departamento de TI.</value>
+  </data>
+  <data name="Engine.Error.Records" xml:space="preserve">
+    <value>Una solicitud puede tener como máximo {0} registros.</value>
+  </data>
+  <data name="Engine.Error.ValuesAndRecords" xml:space="preserve">
+    <value>Envíe los valores de una etiqueta o una lista de registros, no ambos.</value>
+  </data>
+  <data name="Engine.Printers.Default" xml:space="preserve">
+    <value>[predeterminada]</value>
+  </data>
+  <data name="Engine.Printers.None" xml:space="preserve">
+    <value>No hay impresoras instaladas en Windows.</value>
+  </data>
+  <data name="Engine.Printers.Offline" xml:space="preserve">
+    <value>[sin conexión]</value>
+  </data>
+  <data name="Engine.Result.DryRun" xml:space="preserve">
+    <value>No se imprimió nada (prueba). Este es el ZPL que se enviaría a {0}.</value>
+  </data>
+  <data name="Engine.Result.Printed" xml:space="preserve">
+    <value>Se enviaron {0} etiqueta(s) a {1}.</value>
+  </data>
+  <data name="Engine.Result.PrintedRecords" xml:space="preserve">
+    <value>Se enviaron {0} registro(s), {1} etiqueta(s), a {2} en {3} trabajo(s).</value>
+  </data>
+  <data name="Engine.Server.CannotListen" xml:space="preserve">
+    <value>El servidor no pudo escuchar en {0}: {1}</value>
+  </data>
+  <data name="Engine.Server.Listening" xml:space="preserve">
+    <value>Motor de impresión de Rotula escuchando en {0}. Configuración: {1}. Pulse Ctrl+C para detenerlo.</value>
+  </data>
+  <data name="Engine.Settings.BadHash" xml:space="preserve">
+    <value>"{0}" en apiKeyHashes no es un hash de clave (64 caracteres hexadecimales). Cree uno con "rotula new-key".</value>
+  </data>
+  <data name="Engine.Settings.FolderMissing" xml:space="preserve">
+    <value>La carpeta de etiquetas {0} no existe.</value>
+  </data>
+  <data name="Engine.Settings.Invalid" xml:space="preserve">
+    <value>No se puede usar el archivo de configuración {0}: {1}</value>
+  </data>
+  <data name="Engine.Settings.Missing" xml:space="preserve">
+    <value>El archivo de configuración {0} no existe. Cree uno con "rotula serve --init".</value>
+  </data>
+  <data name="Engine.Settings.NoFolders" xml:space="preserve">
+    <value>No hay carpetas de etiquetas (labelFolders) y las etiquetas enviadas como contenido están desactivadas, así que no se puede imprimir ninguna etiqueta.</value>
+  </data>
+  <data name="Engine.Settings.NoKeys" xml:space="preserve">
+    <value>El archivo de configuración {0} no tiene ninguna clave de API (apiKeyHashes). Cree una con "rotula new-key".</value>
+  </data>
+  <data name="Engine.Settings.NoPrinters" xml:space="preserve">
+    <value>Todavía no hay impresoras permitidas (allowedPrinters), así que se rechazará toda solicitud de impresión.</value>
+  </data>
+  <data name="Engine.Settings.PlainHttp" xml:space="preserve">
+    <value>El servidor acepta llamadas de otros equipos por http sin cifrar: las claves de API y los datos de las etiquetas viajan por la red sin cifrado. Use https.</value>
+  </data>
 </root>

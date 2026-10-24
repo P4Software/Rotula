@@ -6498,4 +6498,190 @@ Brand and product names belong to their owners; Rotula is not affiliated with th
   <data name="Issue.Sheet.Label.Smaller" xml:space="preserve">
     <value>The label design is {0} x {1} mm, smaller than the {2} x {3} mm labels of this sheet. It is printed at its own size, centred on each label.</value>
   </data>
+  <data name="Engine.Cli.BadPair" xml:space="preserve">
+    <value>{0} needs NAME=VALUE, but got "{1}".</value>
+  </data>
+  <data name="Engine.Cli.BadValue" xml:space="preserve">
+    <value>"{1}" is not a valid value for {0}.</value>
+  </data>
+  <data name="Engine.Cli.Help" xml:space="preserve">
+    <value>rotula {0}: prints Rotula labels without the designer, for scripts, schedulers and warehouse systems.
+
+Commands:
+  rotula print LABEL.rotula --printer NAME | --host ADDRESS [options]
+      Prints a label. Options:
+        --port N              TCP port of --host (default 9100)
+        --copies N            copies of the label, or of every record
+        --data FILE           records from a .csv, .txt, .xlsx or .json file (one label per record)
+        --sheet NAME          the Excel sheet to read
+        --set NAME=VALUE      a field value (repeat for more fields)
+        --answer NAME=VALUE   an answer to a question the label asks at print time
+        --dpi 203|300|600     printhead resolution (default: what the Windows driver reports)
+        --darkness 0-30       darkness sent before the labels
+        --speed 1-14          print speed sent before the labels
+        --no-status           do not ask the printer for its status before every job
+        --no-verify           do not wait for the printer to report that it finished
+        --dry-run             show the ZPL without printing (--output FILE writes it to a file)
+        --reference TEXT      your own reference, repeated in the result
+        --counter-file FILE   where serial numbers are remembered (default: the same file as the app)
+  rotula status --printer NAME | --host ADDRESS [--port N]
+      Asks the printer whether it can print right now.
+  rotula printers
+      Lists the Windows printers.
+  rotula serve [--settings FILE] [--urls URL]
+      Runs the REST API. "rotula serve --init [--label-folder FOLDER]" writes a starter settings file with a new key.
+  rotula new-key
+      Makes a new API key and the hash to put in the settings file.
+
+Every command takes --json (output for programs) and --lang en|es|pt-BR|fr-CA.
+Exit codes: 0 done, 1 printing failed, 2 wrong command line, 3 label errors, 4 printer not ready, 5 blocked by policy, 6 cancelled.</value>
+  </data>
+  <data name="Engine.Cli.InitDone" xml:space="preserve">
+    <value>Created the settings file {0}. Add your printers to allowedPrinters, then run "rotula serve".</value>
+  </data>
+  <data name="Engine.Cli.InitExists" xml:space="preserve">
+    <value>The settings file {0} already exists; it was not changed.</value>
+  </data>
+  <data name="Engine.Cli.MissingValue" xml:space="preserve">
+    <value>The option {0} needs a value.</value>
+  </data>
+  <data name="Engine.Cli.NewKey" xml:space="preserve">
+    <value>New API key (shown only now; give it to the system that calls the server): {0}
+Hash to add to apiKeyHashes in the settings file: {1}</value>
+  </data>
+  <data name="Engine.Cli.PrintNeedsLabel" xml:space="preserve">
+    <value>Name exactly one label file, for example: rotula print shipping.rotula --printer "Dock 1"</value>
+  </data>
+  <data name="Engine.Cli.RecordPrefix" xml:space="preserve">
+    <value>Record {0}:</value>
+  </data>
+  <data name="Engine.Cli.SeeHelp" xml:space="preserve">
+    <value>Run "rotula help" for the commands and options.</value>
+  </data>
+  <data name="Engine.Cli.UnknownCommand" xml:space="preserve">
+    <value>Unknown command "{0}".</value>
+  </data>
+  <data name="Engine.Cli.UnknownOption" xml:space="preserve">
+    <value>Unknown option {0}.</value>
+  </data>
+  <data name="Engine.Cli.WarningPrefix" xml:space="preserve">
+    <value>Warning:</value>
+  </data>
+  <data name="Engine.Error.Answers" xml:space="preserve">
+    <value>Some answers to the label's questions are missing or not valid. The label asks: {0}. Questions marked * must be answered; the others take their default.</value>
+  </data>
+  <data name="Engine.Error.ApiKey" xml:space="preserve">
+    <value>A valid API key is required. Send it in the X-Api-Key header.</value>
+  </data>
+  <data name="Engine.Error.BadRequest" xml:space="preserve">
+    <value>The request could not be read: {0}</value>
+  </data>
+  <data name="Engine.Error.Copies" xml:space="preserve">
+    <value>Copies must be a whole number from 1 to {0}.</value>
+  </data>
+  <data name="Engine.Error.DataFile" xml:space="preserve">
+    <value>The data file {0} could not be read: {1}</value>
+  </data>
+  <data name="Engine.Error.DataMissing" xml:space="preserve">
+    <value>The data file {0} does not exist.{1}</value>
+  </data>
+  <data name="Engine.Error.DataShape" xml:space="preserve">
+    <value>The data in {0} must be a list of records (objects of field names and values) or one record. {1}</value>
+  </data>
+  <data name="Engine.Error.Dpi" xml:space="preserve">
+    <value>The resolution must be 203, 300 or 600 DPI.</value>
+  </data>
+  <data name="Engine.Error.InlineLabelsOff" xml:space="preserve">
+    <value>This server does not accept labels sent as content (allowInlineLabels is off). Name a label file in one of its label folders.</value>
+  </data>
+  <data name="Engine.Error.LabelBoth" xml:space="preserve">
+    <value>Send either a label file name (label) or the label content (labelContent), not both.</value>
+  </data>
+  <data name="Engine.Error.LabelNotFound" xml:space="preserve">
+    <value>The label {0} was not found.</value>
+  </data>
+  <data name="Engine.Error.LabelOutsideFolders" xml:space="preserve">
+    <value>The label {0} is not a .rotula file inside one of this server's label folders. Name it relative to a label folder, without a drive letter or "..".</value>
+  </data>
+  <data name="Engine.Error.LabelRequired" xml:space="preserve">
+    <value>Name a label file (label) or send the label content (labelContent).</value>
+  </data>
+  <data name="Engine.Error.LabelTooLarge" xml:space="preserve">
+    <value>The label {0} is larger than the limit of {1} KB.</value>
+  </data>
+  <data name="Engine.Error.NoRecords" xml:space="preserve">
+    <value>The data has no records, so nothing was printed.</value>
+  </data>
+  <data name="Engine.Error.NothingPrinted" xml:space="preserve">
+    <value>No record produced a label, so nothing was sent. See the problems listed with the result.</value>
+  </data>
+  <data name="Engine.Error.OutputFile" xml:space="preserve">
+    <value>The file {0} could not be written: {1}</value>
+  </data>
+  <data name="Engine.Error.PrinterBoth" xml:space="preserve">
+    <value>Name either a Windows printer or the address of a network printer, not both.</value>
+  </data>
+  <data name="Engine.Error.PrinterNotAllowed" xml:space="preserve">
+    <value>The printer {0} is not on this server's list of allowed printers (allowedPrinters). Nothing was sent.</value>
+  </data>
+  <data name="Engine.Error.PrinterRequired" xml:space="preserve">
+    <value>Name a printer: a Windows printer (printer) or the address of a network printer (host).</value>
+  </data>
+  <data name="Engine.Error.PrintingBlocked" xml:space="preserve">
+    <value>Printing with the print engine is switched off by your organization's policy for this computer. Ask your IT department.</value>
+  </data>
+  <data name="Engine.Error.Records" xml:space="preserve">
+    <value>A request may have at most {0} records.</value>
+  </data>
+  <data name="Engine.Error.ValuesAndRecords" xml:space="preserve">
+    <value>Send either the values of one label or a list of records, not both.</value>
+  </data>
+  <data name="Engine.Printers.Default" xml:space="preserve">
+    <value>[default]</value>
+  </data>
+  <data name="Engine.Printers.None" xml:space="preserve">
+    <value>No printers are installed in Windows.</value>
+  </data>
+  <data name="Engine.Printers.Offline" xml:space="preserve">
+    <value>[offline]</value>
+  </data>
+  <data name="Engine.Result.DryRun" xml:space="preserve">
+    <value>Nothing was printed (dry run). This is the ZPL that would be sent to {0}.</value>
+  </data>
+  <data name="Engine.Result.Printed" xml:space="preserve">
+    <value>Sent {0} label(s) to {1}.</value>
+  </data>
+  <data name="Engine.Result.PrintedRecords" xml:space="preserve">
+    <value>Sent {0} record(s), {1} label(s), to {2} in {3} job(s).</value>
+  </data>
+  <data name="Engine.Server.CannotListen" xml:space="preserve">
+    <value>The server could not listen on {0}: {1}</value>
+  </data>
+  <data name="Engine.Server.Listening" xml:space="preserve">
+    <value>Rotula print engine listening on {0}. Settings: {1}. Press Ctrl+C to stop.</value>
+  </data>
+  <data name="Engine.Settings.BadHash" xml:space="preserve">
+    <value>"{0}" in apiKeyHashes is not a key hash (64 hexadecimal characters). Make one with "rotula new-key".</value>
+  </data>
+  <data name="Engine.Settings.FolderMissing" xml:space="preserve">
+    <value>The label folder {0} does not exist.</value>
+  </data>
+  <data name="Engine.Settings.Invalid" xml:space="preserve">
+    <value>The settings file {0} cannot be used: {1}</value>
+  </data>
+  <data name="Engine.Settings.Missing" xml:space="preserve">
+    <value>The settings file {0} does not exist. Create one with "rotula serve --init".</value>
+  </data>
+  <data name="Engine.Settings.NoFolders" xml:space="preserve">
+    <value>No label folders are listed (labelFolders), and labels sent as content are switched off, so no label can be printed.</value>
+  </data>
+  <data name="Engine.Settings.NoKeys" xml:space="preserve">
+    <value>The settings file {0} lists no API key (apiKeyHashes). Make one with "rotula new-key".</value>
+  </data>
+  <data name="Engine.Settings.NoPrinters" xml:space="preserve">
+    <value>No printers are allowed yet (allowedPrinters), so every print request will be refused.</value>
+  </data>
+  <data name="Engine.Settings.PlainHttp" xml:space="preserve">
+    <value>The server accepts calls from other computers over plain http: API keys and label data cross the network unencrypted. Use https.</value>
+  </data>
 </root>
