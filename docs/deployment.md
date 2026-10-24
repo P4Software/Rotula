@@ -98,7 +98,7 @@ Other switches:
 | `/DIR="D:\Apps\Rotula"` | Install folder |
 | `/TASKS="associate"` | Choose the tasks; leave `associate` out to skip the `.rotula` association |
 | `/MERGETASKS="desktopicon"` | Also add a desktop icon (off by default) |
-| `/LANG=spanish` | Language of the installer itself (`english` or `spanish`) |
+| `/LANG=spanish` | Language of the installer itself (`english`, `spanish`, `brazilianportuguese` or `french`) |
 | `/CURRENTUSER` | Force a per-user install even when run elevated |
 
 The licence page is accepted automatically by `/VERYSILENT`, so the same note about the licence terms applies as for the MSI.
@@ -209,14 +209,14 @@ choice is kept in `settings.json` for the day the policy is removed. The MCP ser
 
 | Policy (template name) | Registry value | Type | Values | Effect |
 |---|---|---|---|---|
-| Language of Rotula | `Language` | REG_SZ | `auto`, `en`, `es` | Sets the language and disables **View > Language**. `auto` follows the Windows display language |
+| Language of Rotula | `Language` | REG_SZ | `auto`, `en`, `es`, `pt-BR`, `fr-CA` | Sets the language and disables **View > Language**. `auto` follows the Windows display language (any Portuguese gets `pt-BR`, any French `fr-CA`). Case does not matter |
 | Check for updates | `UpdateCheck` | REG_DWORD | `1` on, `0` off | Switches the daily update check on or off and disables **Help > Check for updates once a day**. Not set: each user decides (off until they switch it on) |
 | Default printer | `DefaultPrinter` | REG_SZ | A Windows printer name | Preselected in the Print dialog until the user picks a printer. Not locked; ignored quietly if the printer is not installed |
 | Allow data source add-ons from the user's folder | `UserAddOns` | REG_DWORD | `0` blocks | Add-ons in `%AppData%\Rotula\packs` are neither loaded nor offered for approval; the installed `packs` folder still works ([data-providers.md](data-providers.md)) |
 | Allow the MCP server to print | `McpPrinting` | REG_DWORD | `0` blocks | The MCP server refuses every print request, whatever its settings file says |
 | Allow the MCP server to read databases | `McpDatabase` | REG_DWORD | `0` blocks | The MCP server refuses every database query |
 
-A value that Rotula does not understand (a language other than the three above, a number other than 0 or 1) is ignored, so
+A value that Rotula does not understand (a language other than the five values above, a number other than 0 or 1) is ignored, so
 a typo never forces a wrong setting on users. The MCP policies can only take something away: setting them to `1` does not
 switch printing or database access on; the MCP server's own settings file still has to allow it ([mcp.md](mcp.md)).
 

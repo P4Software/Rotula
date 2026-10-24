@@ -392,7 +392,10 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Grid configuration for the canvas.</summary>
     public GridSettings Grid => new(LengthUnit.Millimeters, _settings.GridSpacingMm, GridVisible, SnapToGrid);
 
-    /// <summary>The language setting in use: "auto", "en" or "es" (the organization's choice when a policy sets one).</summary>
+    /// <summary>
+    /// The language setting in use: "auto" or one of <see cref="Loc.SupportedLanguages"/> ("en", "es", "pt-BR", "fr-CA"); the
+    /// organization's choice when a policy sets one.
+    /// </summary>
     public string LanguageSetting => _settings.LanguageIn(_policy);
 
     /// <summary>True when the organization fixed the language; the menu entries are then disabled with a note.</summary>
@@ -459,6 +462,10 @@ public sealed partial class MainViewModel : ObservableObject
     public bool IsLanguageEn => LanguageSetting == "en";
     /// <summary>Menu check state for Spanish.</summary>
     public bool IsLanguageEs => LanguageSetting == "es";
+    /// <summary>Menu check state for Portuguese (Brazil).</summary>
+    public bool IsLanguagePtBr => LanguageSetting == "pt-BR";
+    /// <summary>Menu check state for French (Canada).</summary>
+    public bool IsLanguageFrCa => LanguageSetting == "fr-CA";
 
     /// <summary>Raised when the view should zoom so the whole label fits.</summary>
     public event EventHandler? ZoomToFitRequested;
@@ -745,6 +752,8 @@ public sealed partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(IsLanguageAuto));
         OnPropertyChanged(nameof(IsLanguageEn));
         OnPropertyChanged(nameof(IsLanguageEs));
+        OnPropertyChanged(nameof(IsLanguagePtBr));
+        OnPropertyChanged(nameof(IsLanguageFrCa));
     }
 
     /// <summary>The label name used in titles and prompts.</summary>
@@ -1353,12 +1362,15 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void ToggleGrid() => GridVisible = !GridVisible;
 
-    /// <summary>Switch the language: "auto", "en" or "es". The change is live; no restart is needed. Disabled when a policy fixes the language.</summary>
+    /// <summary>
+    /// Switch the language: "auto" or one of <see cref="Loc.SupportedLanguages"/>; anything else means "auto". The change is
+    /// live; no restart is needed. Disabled when a policy fixes the language.
+    /// </summary>
     [RelayCommand(CanExecute = nameof(CanChooseLanguage))]
     private void SetLanguage(string code)
     {
         if (IsLanguageManaged) return;
-        _settings.Language = code is "en" or "es" ? code : "auto";
+        _settings.Language = Loc.SupportedLanguages.FirstOrDefault(l => string.Equals(l, code, StringComparison.OrdinalIgnoreCase)) ?? "auto";
         Loc.Instance.SetLanguage(_settings.Language);
         // SetLanguage does nothing when the resolved language is unchanged (auto -> en on an English PC), but the menu
         // check marks still have to move.

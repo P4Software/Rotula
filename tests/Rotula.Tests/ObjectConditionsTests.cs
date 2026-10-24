@@ -573,14 +573,19 @@ public class ObjectConditionsTests : IDisposable
     }
 
     [Fact]
-    public void EveryNewTextIsInBothLanguages()
+    public void EveryNewTextIsInEveryLanguage()
     {
-        foreach (var lang in new[] { "en", "es" })
+        foreach (var lang in Loc.SupportedLanguages)
         {
             Loc.Instance.SetLanguage(lang);
+            // HasKey only looks at English, so the language's own file is checked as well.
+            var own = UiStrings.Keys(lang);
             foreach (var key in new[] { "Panel.Printing", "Prop.NotPrintable", "Prop.Condition.Enable", "Prop.Locked", "Status.LockedSkipped", "Badge.Locked", "Badge.HiddenByCondition", "Badge.NotPrintable",
                          "Condition.FieldMissing", "Issue.Element.Condition.FieldMissing" })
+            {
                 Assert.True(Loc.Instance.HasKey(key), key + " / " + lang);
+                Assert.Contains(key, own);
+            }
             foreach (var op in Enum.GetValues<ConditionOperator>())
             {
                 Assert.True(Loc.Instance.HasKey("Enum.ConditionOperator." + op), op + " / " + lang);

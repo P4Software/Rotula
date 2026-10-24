@@ -429,9 +429,9 @@ public sealed partial class FieldsViewModel : ObservableObject
 
     private static string DefaultTextIn(string language)
     {
-        var current = Loc.Instance.Culture.TwoLetterISOLanguageName;
-        if (current == language) return Loc.Get("Element.DefaultText");
-        // The label may have been designed in the other language: compare with that language's default text too.
+        // Full culture names ("pt-BR"), as in Loc.SupportedLanguages: a two-letter name would never match them.
+        if (Loc.Instance.LanguageCode == language) return Loc.Get("Element.DefaultText");
+        // The label may have been designed in another language: compare with that language's default text too.
         var rm = new System.Resources.ResourceManager("Rotula.App.Resources.Strings", typeof(Loc).Assembly);
         try { return rm.GetString("Element.DefaultText", CultureInfo.GetCultureInfo(language)) ?? string.Empty; }
         catch (System.Resources.MissingManifestResourceException) { return string.Empty; }

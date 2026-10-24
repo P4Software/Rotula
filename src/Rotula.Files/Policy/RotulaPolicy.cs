@@ -9,7 +9,7 @@ public static class PolicyNames
     /// <summary>Key under HKLM (computer) and HKCU (user). The computer value wins.</summary>
     public const string KeyPath = @"SOFTWARE\Policies\P4Software\Rotula";
 
-    /// <summary>Text: "auto", "en" or "es". Sets the language and locks the menu.</summary>
+    /// <summary>Text: "auto", "en", "es", "pt-BR" or "fr-CA". Sets the language and locks the menu.</summary>
     public const string Language = "Language";
 
     /// <summary>Number: 1 turns the update check on, 0 turns it off; either way the user cannot change it.</summary>
@@ -41,7 +41,13 @@ public sealed record RotulaPolicy
     /// <summary>No policy at all.</summary>
     public static readonly RotulaPolicy None = new();
 
-    /// <summary>"auto", "en" or "es" when the language is managed; null otherwise.</summary>
+    /// <summary>
+    /// The values the Language policy accepts: "auto" and the culture names of the shipped languages, in their canonical
+    /// spelling. They must match the app's Loc.SupportedLanguages and the ADMX enum (tests compare them).
+    /// </summary>
+    public static readonly IReadOnlyList<string> Languages = new[] { "auto", "en", "es", "pt-BR", "fr-CA" };
+
+    /// <summary>One of <see cref="Languages"/> when the language is managed; null otherwise.</summary>
     public string? Language { get; init; }
 
     /// <summary>True or false when the update check is managed; null when the user decides.</summary>
@@ -72,11 +78,12 @@ public sealed record RotulaPolicy
     public static RotulaPolicy Read(IPolicySource source)
     {
         ArgumentNullException.ThrowIfNull(source);
-        string? language = source.GetString(PolicyNames.Language)?.Trim().ToLowerInvariant();
+        string? language = source.GetString(PolicyNames.Language)?.Trim();
         string? printer = source.GetString(PolicyNames.DefaultPrinter)?.Trim();
         return new RotulaPolicy
         {
-            Language = language is "auto" or "en" or "es" ? language : null,
+            // Case does not matter in the registry ("PT-br" works), but the value handed on is the canonical name.
+            Language = Languages.FirstOrDefault(l => string.Equals(l, language, StringComparison.OrdinalIgnoreCase)),
             UpdateCheck = source.GetInt(PolicyNames.UpdateCheck) switch { 0 => false, 1 => true, _ => null },
             // Windows printer names are at most 220 characters; anything longer is not a printer name.
             DefaultPrinter = string.IsNullOrEmpty(printer) || printer.Length > 220 ? null : printer,

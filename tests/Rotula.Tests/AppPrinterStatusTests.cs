@@ -193,8 +193,7 @@ public class AppPrinterStatusTests : IDisposable
     }
 
     [Theory]
-    [InlineData("en")]
-    [InlineData("es")]
+    [MemberData(nameof(UiStrings.LanguageData), MemberType = typeof(UiStrings))]
     public void EveryReasonAndEveryHeldBackKind_HasText(string lang)
     {
         Loc.Instance.SetLanguage(lang);
@@ -209,7 +208,8 @@ public class AppPrinterStatusTests : IDisposable
         {
             var error = PrintError.Create(Enum.Parse<PrintErrorKind>(condition.ToString()), "P", condition.ToString(), "Paused");
             string text = PrintMessages.Describe(error);
-            Assert.Contains("\"P\"", text);
+            // The printer name is quoted in the language's own style: "P" in English, « P » in Canadian French.
+            Assert.Matches("(\"P\"|«\u00A0P\u00A0»)", text);
             Assert.DoesNotContain("{", text);
         }
     }

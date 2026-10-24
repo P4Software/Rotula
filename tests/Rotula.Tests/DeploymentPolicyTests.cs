@@ -57,7 +57,31 @@ public class DeploymentPolicyTests
     }
 
     [Theory]
+    [InlineData("pt-BR", "pt-BR")]
+    [InlineData("fr-CA", "fr-CA")]
+    [InlineData(" PT-br ", "pt-BR")] // case and spaces in the registry do not matter; the canonical name is handed on
+    [InlineData("FR-CA", "fr-CA")]
+    [InlineData("Auto", "auto")]
+    [InlineData("EN", "en")]
+    public void EveryShippedLanguage_IsAccepted_UnderItsCanonicalName(string value, string expected)
+    {
+        var p = RotulaPolicy.Read(new FakePolicySource().Set(PolicyNames.Language, value));
+        Assert.Equal(expected, p.Language);
+        Assert.True(p.IsLanguageManaged);
+    }
+
+    [Fact]
+    public void PolicyLanguages_AreAutoPlusTheLanguagesTheAppShips()
+    {
+        // Rotula.Files cannot see the app's Loc, so the list is repeated there; this keeps the two in step.
+        Assert.Equal(new[] { "auto" }.Concat(Rotula.App.Localization.Loc.SupportedLanguages), RotulaPolicy.Languages);
+    }
+
+    [Theory]
     [InlineData("fr")]
+    [InlineData("pt")]
+    [InlineData("fr-FR")]
+    [InlineData("pt-PT")]
     [InlineData("")]
     [InlineData("english")]
     public void AnUnknownLanguage_IsIgnored(string value) =>
@@ -187,7 +211,7 @@ public class DeploymentPolicyTests
     {
         var values = Admx().Descendants(Gp + "enum").Single(e => (string?)e.Attribute("valueName") == PolicyNames.Language)
             .Descendants(Gp + "string").Select(s => s.Value).ToList();
-        Assert.Equal(new[] { "auto", "en", "es" }, values);
+        Assert.Equal(RotulaPolicy.Languages, values);
         Assert.All(values, v => Assert.Equal(v, RotulaPolicy.Read(new FakePolicySource().Set(PolicyNames.Language, v)).Language));
     }
 
