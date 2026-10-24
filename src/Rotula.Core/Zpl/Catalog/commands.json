@@ -162,10 +162,10 @@
       "reason": null,
       "generator": true,
       "parser": true,
-      "preview": "NotPreviewed",
+      "preview": "Exact",
       "summary": "Prints the whole label as a mirror image, left to right.",
       "example": "^PMY",
-      "notes": "The on-screen preview does not mirror."
+      "notes": "The Preview window shows it mirrored (\"As printed\"); the canvas and the image and PDF exports stay as designed."
     },
     {
       "id": "^PO",
@@ -177,10 +177,10 @@
       "reason": null,
       "generator": true,
       "parser": true,
-      "preview": "NotPreviewed",
+      "preview": "Exact",
       "summary": "Prints the whole label rotated by 180 degrees.",
       "example": "^POI",
-      "notes": "The on-screen preview always shows the normal orientation."
+      "notes": "The Preview window shows it upside down (\"As printed\", with a switch to \"As designed\"); the canvas and the image and PDF exports stay upright."
     },
     {
       "id": "^PQ",

@@ -139,7 +139,10 @@ QR, cuadros, líneas, círculos e imágenes monocromáticas (con umbral o tramad
 
 ### Vista previa e impresión
 
-La vista previa muestra la etiqueta más grande, tal como se dibujará, y dice con claridad que es aproximada. El cuadro de
+La vista previa muestra la etiqueta más grande, tal como se dibujará, y dice con claridad que es aproximada. Una etiqueta
+configurada para imprimirse al revés (`^POI`) o en espejo (`^PMY`) se muestra "Como se imprime", con una frase que explica
+por qué; cambia a "Como se diseñó" para verla derecha. El lienzo siempre queda derecho para editar, y la barra de estado
+indica "Se imprime al revés". El cuadro de
 impresión lee la resolución y el tamaño de papel desde el controlador de la impresora, puede enviar una etiqueta de prueba
 e imprime en una impresora de Windows o en una impresora de red.
 
@@ -577,8 +580,9 @@ Léelas antes de depender de Rotula para etiquetas de producción, e **imprime s
   impresa. La aplicación lo avisa.
 - **Fuentes de mapa de bits y `FontWidth`.** Las fuentes de mapa de bits integradas de la impresora no se reproducen; el
   escalado de ancho solo se aproxima en la vista previa.
-- **`^PO` (orientación de impresión) no se previsualiza.** Se escribe en el ZPL, pero la vista previa siempre muestra la
-  orientación normal.
+- **La orientación de impresión (`^PO`) y el espejo (`^PM`) solo se muestran en la ventana Vista previa.** El lienzo y las
+  exportaciones PNG, JPEG y PDF muestran la etiqueta como se diseñó (derecha); las exportaciones son el diseño, no una imagen
+  de lo que sale de la impresora.
 - **Las variables no sobreviven a un viaje de ida y vuelta por ZPL.** ZPL no puede expresar `{{nombre}}`, así que el ZPL
   importado es texto simple hasta que lo edites.
 - **El ZPL sin procesar no se escala al convertir el DPI.** Los comandos desconocidos conservados como ZPL sin procesar

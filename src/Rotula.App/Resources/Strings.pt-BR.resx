@@ -6258,4 +6258,46 @@ Os nomes de marcas e produtos pertencem aos seus proprietários; o Rotula não t
   <data name="Update.OpenFailed" xml:space="preserve">
     <value>Não foi possível abrir o navegador. A página da versão é {0}</value>
   </data>
+  <data name="Preview.Mode.Name" xml:space="preserve">
+    <value>Mostrar a etiqueta como é impressa ou como foi criada</value>
+  </data>
+  <data name="Preview.AsPrinted" xml:space="preserve">
+    <value>Como é impressa</value>
+  </data>
+  <data name="Preview.AsPrinted.Tip" xml:space="preserve">
+    <value>Mostra a etiqueta do jeito que ela sai da impressora, girada ou espelhada de acordo com as configurações de impressão da etiqueta.</value>
+  </data>
+  <data name="Preview.AsDesigned" xml:space="preserve">
+    <value>Como foi criada</value>
+  </data>
+  <data name="Preview.AsDesigned.Tip" xml:space="preserve">
+    <value>Mostra a etiqueta na posição normal, do jeito que você a edita na área de design.</value>
+  </data>
+  <data name="Preview.Note.PrintedInverted" xml:space="preserve">
+    <value>Exibida como é impressa: a orientação de impressão desta etiqueta está invertida, por isso a impressora a imprime de cabeça para baixo.</value>
+  </data>
+  <data name="Preview.Note.PrintedMirrored" xml:space="preserve">
+    <value>Exibida como é impressa: esta etiqueta está configurada para imprimir espelhada, por isso a esquerda e a direita ficam trocadas.</value>
+  </data>
+  <data name="Preview.Note.PrintedBoth" xml:space="preserve">
+    <value>Exibida como é impressa: esta etiqueta está configurada para imprimir de cabeça para baixo e espelhada.</value>
+  </data>
+  <data name="Preview.Note.Designed" xml:space="preserve">
+    <value>Exibida como foi criada, do jeito que você a edita. Escolha "Como é impressa" para ver como ela sai da impressora.</value>
+  </data>
+  <data name="Status.PrintsInverted" xml:space="preserve">
+    <value>Imprime de cabeça para baixo</value>
+  </data>
+  <data name="Status.PrintsMirrored" xml:space="preserve">
+    <value>Imprime espelhada</value>
+  </data>
+  <data name="Status.PrintsInvertedMirrored" xml:space="preserve">
+    <value>Imprime de cabeça para baixo e espelhada</value>
+  </data>
+  <data name="Status.PrintOrientation.Name" xml:space="preserve">
+    <value>Orientação de impressão</value>
+  </data>
+  <data name="Status.PrintOrientation.Tip" xml:space="preserve">
+    <value>A área de design mostra a etiqueta na posição normal para que você possa editá-la. Abra a visualização para vê-la como é impressa. Altere isso nas propriedades da etiqueta.</value>
+  </data>
 </root>
