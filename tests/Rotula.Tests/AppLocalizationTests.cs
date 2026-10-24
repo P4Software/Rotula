@@ -231,6 +231,7 @@ public class AppLocalizationTests : IDisposable
         Check<Rotula.Core.Merge.CopiesMode>(); Check<Rotula.Core.Merge.InvalidRecordPolicy>(); Check<Rotula.Core.Merge.CounterKind>();
         Check<Rotula.Core.Merge.CounterOverflow>(); Check<Rotula.Printing.PrinterTransport>();
         Check<Rotula.Printing.PrinterCondition>(); Check<Rotula.Printing.PrinterPrintMode>();
+        Check<Rotula.Core.Sheets.SheetPageKind>(); Check<Rotula.Core.Sheets.SheetOrder>(); Check<Rotula.Core.Sheets.SheetGuides>();
         Assert.Empty(UiStrings.MissingInAnyLanguage(keys));
     }
 
