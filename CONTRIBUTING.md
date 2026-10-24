@@ -10,8 +10,11 @@ in [SECURITY.md](SECURITY.md), not a public issue.
 
 These are product rules; changes that break them will not be merged.
 
-- **Offline-first**: no network calls, no telemetry, no update checks, no analytics. Printing to the printer address the user
-  entered is the only network traffic.
+- **Offline-first**: no telemetry, no analytics, and no network traffic unless the user asks for it: printing to the printer
+  address the user entered and the databases the user connects. The one exception is the **opt-in update check**: it sends
+  nothing unless the user (Help menu) or an administrator (policy) explicitly switches it on, and then it is at most one
+  anonymous `GET` of the public GitHub "latest release" API a day, with nothing about the user or the computer in it. It never
+  downloads or installs anything. Do not add other network calls, and do not add anything to that request.
 - **Light theme only.**
 - **Spanish and English** through `.resx` resources (`src/Rotula.App/Resources/Strings.en.resx` and `Strings.es.resx`). Every new
   user-visible string needs both. Core returns message keys, not text.

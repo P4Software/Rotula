@@ -75,7 +75,10 @@ Always the newest version: [github.com/P4Software/Rotula/releases/latest](https:
 |---|---|---|
 | **Installer** | `Rotula-<version>-win-x64-setup.exe` | Per-user install, Start menu entry, optional desktop icon. Code-signed |
 | **Portable** | `Rotula-<version>-win-x64-portable.zip` | Unzip anywhere and double-click `Rotula.App.exe`. Nothing is installed. No .NET needed |
+| **MSI (for IT)** | `Rotula-<version>-win-x64.msi` | Machine-wide install to Program Files for every user, for Intune, Group Policy or Configuration Manager. Code-signed. See [deployment](docs/deployment.md) |
 | **winget** | `winget install P4Software.Rotula` | Coming soon. The package manifest is prepared but not yet accepted into the winget catalog |
+
+Installing Rotula for a whole organization (silent install, the MSI, Intune, Group Policy settings): [docs/deployment.md](docs/deployment.md).
 
 Every release also carries a `SHA256SUMS.txt` file.
 
@@ -209,8 +212,9 @@ Label software has long meant a paid license, an account, a subscription or a se
 does the job and stays out of the way.
 
 - **Free and MIT licensed.** Use it at home, at work, in a warehouse or inside a product. No seats, no tiers.
-- **Offline by design.** No analytics, no update checks, no cloud sync. The only network traffic Rotula can produce is the
-  label you send to the printer address you typed.
+- **Offline by design.** No analytics, no telemetry, no cloud sync. The only network traffic Rotula can produce is the
+  label you send to the printer address you typed, the databases you connect, and, only if you switch it on, one anonymous
+  daily update check.
 - **Honest ZPL.** The same label and data always give byte-identical ZPL, in plain ASCII.
 - **Errors you can act on.** An invalid EAN-13 check digit or a Code 39 character that does not exist is reported in plain
   language, with what to do next.
@@ -441,8 +445,12 @@ switch at any time from **View > Language**, with no restart. The installer is a
 
 ## Privacy
 
-Rotula works fully offline. It has no telemetry, no analytics, no update checks, no account and makes no network calls. The
-only network traffic it can produce is the label you send to the network printer address you entered. Your settings
+Rotula works fully offline. It has no telemetry, no analytics, no account and makes no network calls of its own. The
+only network traffic it can produce is the label you send to the network printer address you entered and the databases you
+connect to. **Help > Check for updates once a day** is off until you switch it on: then Rotula asks GitHub once a day which
+version is the newest (one anonymous request, nothing about you or your PC is sent) and shows a link when there is a newer
+one. It never downloads or installs anything. An administrator can switch the check on or off for everyone
+([deployment](docs/deployment.md)). Your settings
 (language, units, recent files, last printer) are a small JSON file in `%AppData%\Rotula`. If the program ever fails, it
 writes a log to `%AppData%\Rotula\rotula.log` on your PC and sends it nowhere.
 
@@ -514,7 +522,7 @@ flowchart LR
 | `src/Rotula.Mcp` | The MCP server (a separate executable) |
 | `src/Rotula.App` | The WPF application |
 | `tests/` | xUnit tests and the golden ZPL fixtures |
-| `packaging/` | Installer script and winget manifest templates |
+| `packaging/` | Installer script, MSI project, Group Policy templates and winget manifest templates |
 | `docs/` | [ZPL coverage](docs/zpl-coverage.md), [stock catalogue](docs/stock-catalog.md), [database providers](docs/data-providers.md), [MCP server](docs/mcp.md), [printing](docs/printing.md), [releasing](docs/releasing.md), [design decisions](docs/decisions.md) |
 
 ---
