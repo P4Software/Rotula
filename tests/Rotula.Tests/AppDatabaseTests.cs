@@ -336,7 +336,7 @@ public class AppDatabaseTests : IDisposable
         var keys = typeof(DataKeys).GetFields(BindingFlags.Public | BindingFlags.Static).Where(f => f.FieldType == typeof(string))
             .Select(f => (string)f.GetRawConstantValue()!).Where(k => k.StartsWith("Data.Error.") || k.StartsWith("Data.Store.")).ToList();
         Assert.True(keys.Count >= 18);
-        foreach (string lang in new[] { "en", "es" })
+        foreach (string lang in Loc.SupportedLanguages)
         {
             Loc.Instance.SetLanguage(lang);
             foreach (string key in keys)
@@ -648,7 +648,7 @@ public class AppDatabaseTests : IDisposable
         m.Provider = DatabaseProvider.Sqlite;                                  // not applicable to a file
         Assert.False(m.ShowEncryptWarning);
         Assert.False(m.ShowTrustWarning);
-        foreach (string lang in new[] { "en", "es" })
+        foreach (string lang in Loc.SupportedLanguages)
         {
             Loc.Instance.SetLanguage(lang);
             Assert.False(Loc.Get("Conn.Encrypt.Warning").StartsWith('!'));

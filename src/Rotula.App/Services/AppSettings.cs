@@ -6,7 +6,7 @@ namespace Rotula.App.Services;
 /// <summary>User preferences stored in %AppData%\Rotula\settings.json.</summary>
 public sealed class AppSettings
 {
-    /// <summary>"auto" (follow Windows), "en" or "es".</summary>
+    /// <summary>"auto" (follow Windows), "en", "es", "pt-BR" or "fr-CA".</summary>
     public string Language { get; set; } = "auto";
 
     /// <summary>Ruler unit: "Millimeters", "Inches" or "Dots".</summary>
