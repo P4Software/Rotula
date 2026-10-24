@@ -6233,4 +6233,29 @@ Las marcas y los nombres de producto pertenecen a sus dueños; Rotula no está a
   <data name="Issue.StationConfig.PinHash" xml:space="preserve">
     <value>"exitPinHash" no es un código de PIN creado por Rotula. Créelo con Archivo &gt; Crear PIN del puesto de impresión (el PIN nunca se guarda como texto).</value>
   </data>
+  <!-- Enterprise deployment: organization policies and the opt-in update check. -->
+  <data name="Policy.Managed" xml:space="preserve">
+    <value>Administrado por tu organización</value>
+  </data>
+  <data name="Update.Menu" xml:space="preserve">
+    <value>Buscar actualizaciones una vez al día</value>
+  </data>
+  <data name="Update.Menu.Tip" xml:space="preserve">
+    <value>Si está activado, Rotula pregunta una vez al día a la página del proyecto en GitHub si hay una versión más reciente. No se envía nada sobre ti ni sobre este equipo, y no se descarga ni se instala nada.</value>
+  </data>
+  <data name="Update.Notice" xml:space="preserve">
+    <value>Rotula {0} está disponible. Puedes descargarlo desde la página de la versión.</value>
+  </data>
+  <data name="Update.Notice.Name" xml:space="preserve">
+    <value>Actualización disponible</value>
+  </data>
+  <data name="Update.Notice.Open" xml:space="preserve">
+    <value>Ver la versión</value>
+  </data>
+  <data name="Update.Notice.Dismiss" xml:space="preserve">
+    <value>Cerrar este aviso</value>
+  </data>
+  <data name="Update.OpenFailed" xml:space="preserve">
+    <value>No se pudo abrir el navegador. La página de la versión es {0}</value>
+  </data>
 </root>

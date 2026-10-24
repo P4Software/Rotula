@@ -215,6 +215,9 @@
           <MenuItem Header="{loc:T Menu.LanguageAuto}" Command="{Binding SetLanguageCommand}" CommandParameter="auto" IsChecked="{Binding IsLanguageAuto, Mode=OneWay}" />
           <MenuItem Header="English" Command="{Binding SetLanguageCommand}" CommandParameter="en" IsChecked="{Binding IsLanguageEn, Mode=OneWay}" />
           <MenuItem Header="Espa&#241;ol" Command="{Binding SetLanguageCommand}" CommandParameter="es" IsChecked="{Binding IsLanguageEs, Mode=OneWay}" />
+          <!-- A Group Policy / Intune setting fixes the language: the entries above are disabled and this note says why. -->
+          <Separator Visibility="{Binding IsLanguageManaged, Converter={StaticResource B2V}}" />
+          <MenuItem Header="{loc:T Policy.Managed}" IsEnabled="False" Visibility="{Binding IsLanguageManaged, Converter={StaticResource B2V}}" />
         </MenuItem>
       </MenuItem>
 
@@ -252,6 +255,11 @@
       </MenuItem>
 
       <MenuItem Header="{loc:T Menu.Help}">
+        <!-- Opt-in: off until the user ticks it (or a policy decides; the entry is then disabled with a note). -->
+        <MenuItem Header="{loc:T Update.Menu}" IsCheckable="True" IsChecked="{Binding UpdateCheckEnabled, Mode=TwoWay}" IsEnabled="{Binding CanChangeUpdateCheck}"
+                  ToolTip="{loc:T Update.Menu.Tip}" ToolTipService.ShowOnDisabled="True" />
+        <MenuItem Header="{loc:T Policy.Managed}" IsEnabled="False" Visibility="{Binding IsUpdateCheckManaged, Converter={StaticResource B2V}}" />
+        <Separator />
         <MenuItem Header="{loc:T Menu.About}" Click="OnAbout" />
       </MenuItem>
     </Menu>
@@ -346,8 +354,25 @@
       </DockPanel>
     </Border>
 
-    <!-- ================================ add-on notice (non-modal, only when something needs attention) ================================ -->
-    <Border Grid.Row="3" DataContext="{Binding PackNotice}" Visibility="{Binding IsVisible, Converter={StaticResource B2V}, FallbackValue=Collapsed}"
+    <!-- ================================ notices (non-modal, only when something needs attention) ================================ -->
+    <StackPanel Grid.Row="3">
+    <!-- A newer version exists (only when the user or a policy switched the update check on). It links to the release page; nothing is downloaded. -->
+    <Border DataContext="{Binding UpdateNotice}" Visibility="{Binding IsVisible, Converter={StaticResource B2V}, FallbackValue=Collapsed}"
+            Background="{StaticResource AccentTintBrush}" BorderBrush="{StaticResource BorderBrushLight}" BorderThickness="0,1" Padding="16,6"
+            AutomationProperties.Name="{loc:T Update.Notice.Name}" AutomationProperties.LiveSetting="Polite">
+      <DockPanel>
+        <Button DockPanel.Dock="Right" Style="{StaticResource PanelIconButton}" Command="{Binding DismissCommand}" AutomationProperties.Name="{loc:T Update.Notice.Dismiss}"
+                ToolTip="{loc:T Update.Notice.Dismiss}" Content="&#x2715;" FontSize="12" />
+        <Path DockPanel.Dock="Left" Style="{StaticResource Icon}" Data="{StaticResource IconInfo}" Width="14" Height="14" TextElement.Foreground="{StaticResource AccentBrush}" Margin="0,0,8,0" />
+        <TextBlock DockPanel.Dock="Left" Text="{Binding NoticeText}" VerticalAlignment="Center" Foreground="{StaticResource TextBrush}" TextTrimming="CharacterEllipsis" />
+        <Button Style="{StaticResource LinkButton}" Command="{Binding OpenReleaseCommand}" Margin="12,0,0,0" VerticalAlignment="Center" AutomationProperties.Name="{loc:T Update.Notice.Open}">
+          <TextBlock Text="{loc:T Update.Notice.Open}" />
+        </Button>
+      </DockPanel>
+    </Border>
+
+    <!-- Data source add-ons that could not be loaded. -->
+    <Border DataContext="{Binding PackNotice}" Visibility="{Binding IsVisible, Converter={StaticResource B2V}, FallbackValue=Collapsed}"
             Background="{StaticResource WarningTintBrush}" BorderBrush="{StaticResource WarningBrush}" BorderThickness="0,1" Padding="16,6"
             AutomationProperties.Name="{loc:T Pack.Details.Title}" AutomationProperties.LiveSetting="Polite">
       <DockPanel>
@@ -360,6 +385,7 @@
         </Button>
       </DockPanel>
     </Border>
+    </StackPanel>
 
     <!-- ================================ workspace ================================ -->
     <Grid Grid.Row="4">

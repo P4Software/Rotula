@@ -36,6 +36,7 @@ public sealed partial class PrinterSettingsViewModel : ObservableObject
     /// <summary>The resolution the driver of the selected printer reported, or null when nothing was read (not asked yet, failed, or a network printer).</summary>
     public PrinterDpi? DetectedDpi => _detected.Dpi;
     private IReadOnlyList<PrinterInfo> _printers = Array.Empty<PrinterInfo>();
+    private readonly string? _defaultPrinter;
 
     /// <summary>Creates the view-model.</summary>
     /// <param name="service">Printing service (used to list printers).</param>
@@ -44,9 +45,14 @@ public sealed partial class PrinterSettingsViewModel : ObservableObject
     /// <param name="document">The open label; its size and resolution seed the profile the first time.</param>
     /// <param name="detect">Reads the driver resolution and paper size of a printer; null uses <see cref="PrinterDetector"/> (tests pass a fake).</param>
     /// <param name="applyLabelDpi">Switches the open label to a resolution (one undo step); null disables the "Switch label" action.</param>
+    /// <param name="defaultPrinter">
+    /// A Windows printer chosen by the organization's policy, preselected until the user has picked a printer once; null for none.
+    /// </param>
     public PrinterSettingsViewModel(IPrintService service, PrintSettings settings, Action save, Func<LabelDocument> document,
-        Func<string, CancellationToken, Task<PrinterDetection>>? detect = null, Action<PrinterDpi>? applyLabelDpi = null)
+        Func<string, CancellationToken, Task<PrinterDetection>>? detect = null, Action<PrinterDpi>? applyLabelDpi = null,
+        string? defaultPrinter = null)
     {
+        _defaultPrinter = string.IsNullOrWhiteSpace(defaultPrinter) ? null : defaultPrinter.Trim();
         _detect = detect ?? ((name, ct) => PrinterDetector.DetectAsync(service, name, ct));
         _applyLabelDpi = applyLabelDpi;
         _service = service;
@@ -476,6 +482,7 @@ public sealed partial class PrinterSettingsViewModel : ObservableObject
             HeightText = FormatMm(ToMm(doc.Height, doc.Dpi));
             SelectedMedia = doc.MediaTracking;
             LoadStatusChoice();
+            if (_defaultPrinter is not null) SelectedPrinterName = _defaultPrinter;
             return;
         }
         UseNetwork = string.Equals(s.Transport, "Tcp", StringComparison.OrdinalIgnoreCase);
@@ -525,7 +532,8 @@ public sealed partial class PrinterSettingsViewModel : ObservableObject
             }
             if (SelectedPrinterName is { } saved && !found.Any(p => p.Name == saved))
             {
-                PrintersNote = Loc.Get("Print.Printers.Missing", saved);
+                // The organization's default printer is only a suggestion: when this computer does not have it, fall back quietly.
+                if (!(saved == _defaultPrinter && !_settings.Configured)) PrintersNote = Loc.Get("Print.Printers.Missing", saved);
                 SelectedPrinterName = null;
             }
             if (SelectedPrinterName is null && !UseNetwork)

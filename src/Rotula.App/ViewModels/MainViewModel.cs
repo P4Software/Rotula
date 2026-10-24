@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Rotula.App.Editing;
 using Rotula.Files;
+using Rotula.Files.Policy;
 using Rotula.App.Localization;
 using Rotula.App.Services;
 using Rotula.Core.Elements;
@@ -79,6 +80,11 @@ public sealed record ToolboxItem(ToolboxKind Kind, string NameKey, string Glyph)
 }
 
 /// <summary>The services the main view-model depends on.</summary>
+/// <remarks>
+/// <see cref="Policy"/> is what the organization fixed through Group Policy or Intune (null: nothing managed);
+/// <see cref="Updates"/> is the opt-in update check (null: no update check at all, as in tests that do not ask for one);
+/// <see cref="Links"/> opens the release page; <see cref="Clock"/> is the time source of the daily check (null: the system clock).
+/// </remarks>
 public sealed record MainServices(
     IFileDialogService Files,
     IMessageService Messages,
@@ -90,7 +96,11 @@ public sealed record MainServices(
     ISettingsStore Settings,
     IToolDialogService Dialogs,
     IDatabaseServices? Database = null,
-    IVariableServices? Variables = null);
+    IVariableServices? Variables = null,
+    RotulaPolicy? Policy = null,
+    UpdateChecker? Updates = null,
+    IUrlLauncher? Links = null,
+    TimeProvider? Clock = null);
 
 /// <summary>
 /// View-model of the main window: the open label, its files, editing commands, view settings (zoom, unit, grid),
@@ -109,6 +119,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     private readonly MainServices _svc;
     private readonly AppSettings _settings;
+    private readonly RotulaPolicy _policy;
     private readonly List<IRelayCommand> _allCommands = new();
     private bool _syncingSelection;
 
@@ -117,7 +128,8 @@ public sealed partial class MainViewModel : ObservableObject
     {
         _svc = services;
         _settings = services.Settings.Load();
-        Loc.Instance.SetLanguage(_settings.Language);
+        _policy = services.Policy ?? RotulaPolicy.None;
+        Loc.Instance.SetLanguage(_settings.LanguageIn(_policy));
         Session = session ?? new EditorSession();
         Commands = new EditorCommands(Session);
         // Without a counter store (tests, headless use) a counter that remembers its value refuses to print instead of repeating numbers.
@@ -128,7 +140,8 @@ public sealed partial class MainViewModel : ObservableObject
         ConnectFormatting();
         // Handles and selection frames are measured with the record shown on the canvas, not only the sample values.
         Session.Bounds.DataProvider = () => Preview.Data;
-        Printer = new PrinterSettingsViewModel(services.Printing, _settings.Print, SaveSettings, () => Session.Document, applyLabelDpi: SetLabelDpi);
+        Printer = new PrinterSettingsViewModel(services.Printing, _settings.Print, SaveSettings, () => Session.Document, applyLabelDpi: SetLabelDpi,
+            defaultPrinter: _policy.DefaultPrinter);
         Data = new DataMergeViewModel(services.Printing, Printer, () => Session.Document, () => DocumentName, services.Files, services.Messages, services.Database, services.Dialogs, Variables);
         Data.SettingsEdited += (_, _) => Session.MarkDirty();
         Data.PreviewDataChanged += (_, _) => OnPreviewDataChanged();
@@ -379,8 +392,66 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Grid configuration for the canvas.</summary>
     public GridSettings Grid => new(LengthUnit.Millimeters, _settings.GridSpacingMm, GridVisible, SnapToGrid);
 
-    /// <summary>The language setting: "auto", "en" or "es".</summary>
-    public string LanguageSetting => _settings.Language;
+    /// <summary>The language setting in use: "auto", "en" or "es" (the organization's choice when a policy sets one).</summary>
+    public string LanguageSetting => _settings.LanguageIn(_policy);
+
+    /// <summary>True when the organization fixed the language; the menu entries are then disabled with a note.</summary>
+    public bool IsLanguageManaged => _policy.IsLanguageManaged;
+
+    /// <summary>True when the user may choose the language.</summary>
+    public bool CanChooseLanguage => !IsLanguageManaged;
+
+    /// <summary>
+    /// The daily update check (Help menu). Off by default; switching it on starts the first check at once. When a policy
+    /// switches it on or off the menu entry is disabled and shows the policy's value.
+    /// </summary>
+    public bool UpdateCheckEnabled
+    {
+        get => _settings.UpdateCheckIn(_policy);
+        set
+        {
+            if (IsUpdateCheckManaged || value == _settings.UpdateCheckEnabled) return;
+            _settings.UpdateCheckEnabled = value;
+            SaveSettings();
+            OnPropertyChanged();
+            if (value) _ = CheckForUpdatesAsync();
+            else UpdateNotice = null;
+        }
+    }
+
+    /// <summary>True when the organization decides about the update check.</summary>
+    public bool IsUpdateCheckManaged => _policy.IsUpdateCheckManaged;
+
+    /// <summary>True when the user may switch the update check on or off.</summary>
+    public bool CanChangeUpdateCheck => _svc.Updates is not null && !IsUpdateCheckManaged;
+
+    /// <summary>The "newer version available" notice; null while there is nothing to say.</summary>
+    [ObservableProperty]
+    private UpdateNoticeViewModel? _updateNotice;
+
+    /// <summary>
+    /// Runs the update check when it is switched on and the last one is a day old or more. The time is recorded before asking,
+    /// so a computer without internet access tries once a day, not at every start. Failures stay silent. The notice is not shown
+    /// again for a version whose notice the user closed.
+    /// </summary>
+    public async Task CheckForUpdatesAsync(CancellationToken cancellationToken = default)
+    {
+        if (_svc.Updates is not { } checker) return;
+        var now = (_svc.Clock ?? TimeProvider.System).GetUtcNow();
+        bool enabled = _settings.UpdateCheckIn(_policy);
+        if (!enabled || !UpdateSchedule.IsDue(_settings.LastUpdateCheckUtc, now)) return;
+        _settings.LastUpdateCheckUtc = now;
+        SaveSettings();
+        // Due-ness was decided above (before the time was recorded), so the checker is told there was no earlier check.
+        var result = await checker.CheckAsync(enabled, lastCheckUtc: null, now, cancellationToken);
+        if (result is not { Status: UpdateCheckStatus.Available, Release: { } release }) return;
+        // Switched off while the answer was on its way: say nothing.
+        if (!_settings.UpdateCheckIn(_policy)) return;
+        if (string.Equals(_settings.UpdateDismissedVersion, release.Version.ToString(), StringComparison.OrdinalIgnoreCase)) return;
+        UpdateNotice = new UpdateNoticeViewModel(release, url => _svc.Links?.Open(url) ?? false,
+            version => { _settings.UpdateDismissedVersion = version; SaveSettings(); },
+            text => StatusMessage = text);
+    }
 
     /// <summary>Menu check state for the language entries.</summary>
     public bool IsLanguageAuto => LanguageSetting == "auto";
@@ -1282,10 +1353,11 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void ToggleGrid() => GridVisible = !GridVisible;
 
-    /// <summary>Switch the language: "auto", "en" or "es". The change is live; no restart is needed.</summary>
-    [RelayCommand]
+    /// <summary>Switch the language: "auto", "en" or "es". The change is live; no restart is needed. Disabled when a policy fixes the language.</summary>
+    [RelayCommand(CanExecute = nameof(CanChooseLanguage))]
     private void SetLanguage(string code)
     {
+        if (IsLanguageManaged) return;
         _settings.Language = code is "en" or "es" ? code : "auto";
         Loc.Instance.SetLanguage(_settings.Language);
         // SetLanguage does nothing when the resolved language is unchanged (auto -> en on an English PC), but the menu

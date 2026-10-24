@@ -171,3 +171,10 @@ public interface IToolDialogService
     /// <summary>Shows the tool that makes the exit PIN line for station.json. The default shows nothing.</summary>
     void ShowStationPinTool(Rotula.App.ViewModels.StationPinViewModel viewModel) { }
 }
+
+/// <summary>Opens a web address in the user's browser (the update notice's "View release" link).</summary>
+public interface IUrlLauncher
+{
+    /// <summary>Opens <paramref name="url"/>; returns false when no browser could be started.</summary>
+    bool Open(string url);
+}
