@@ -41,6 +41,7 @@ Design it, preview it, merge your data, print it. No account, no cloud, no telem
 - [Label stocks](#label-stocks)
 - [Database sources](#database-sources)
 - [Printing](#printing)
+- [Print station](#print-station)
 - [MCP server](#mcp-server)
 - [Barcode support](#barcode-support)
 - [Languages](#languages)
@@ -167,6 +168,7 @@ deterministic and plain ASCII, so you can version it, diff it or send it with an
 | **ZPL coverage** | 222 ZPL commands tracked one by one on a [generated coverage page](docs/zpl-coverage.md) |
 | **MCP server** | A separate program that lets MCP-capable clients design and check labels ([details](#mcp-server)) |
 | **Printing** | Windows spooler (RAW, including USB) and TCP port 9100, DPI and paper detection, printer profiles, test label, printer status check before and after a job |
+| **Print station** | A locked, print-only screen for the warehouse floor: pick or scan a label, answer its questions with a barcode scanner, print, and read the printer's answer in large plain words ([details](#print-station)) |
 | **Resolution** | Convert a label between 203, 300 and 600 dpi while keeping its physical size |
 | **Languages** | English and Spanish, switchable live |
 
@@ -380,6 +382,24 @@ Rotula sends ZPL as RAW data, so the driver passes it through untouched.
   cannot print: each says what happened and what to do. Rotula bundles no printer drivers.
 
 More in [docs/printing.md](docs/printing.md).
+
+---
+
+## Print station
+
+A print-only screen for operators, started with `Rotula.exe --station <folder>` (or **File > Open print station**). It shows
+the labels of one folder as large tiles, with no menus and no design tools.
+
+- **Pick or scan.** Tap a tile, type part of its name, or scan the code the station gives the label.
+- **Scanner friendly.** The label's questions are large fields; a keyboard-wedge scanner fills one and its Enter or Tab moves to
+  the next. With "print on last scan" the last scan prints at once. The label's own rules (required, length, pattern) are
+  checked first, and a refused scan stays in its field.
+- **Clear result.** Ready, held back (for example "the printhead is open"), printed and verified, or could not confirm, in
+  large plain words. The questions then reset for the next item; chosen answers can be kept.
+- **Locked.** Leaving needs a PIN when one is set (stored only as a salted hash). Printers, copy limits, data printing and the
+  PIN come from a `station.json` next to the labels or in `%ProgramData%\Rotula`, so the station can be set up by policy.
+
+More in [docs/print-station.md](docs/print-station.md).
 
 ---
 
