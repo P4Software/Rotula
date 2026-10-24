@@ -27,6 +27,20 @@ public enum PrintErrorKind
     Unsupported,
     /// <summary>Any other failure; the arguments carry the technical detail.</summary>
     Unknown,
+    /// <summary>The status check found the printhead open; nothing was sent. Arguments: printer, then every reported condition name.</summary>
+    HeadOpen,
+    /// <summary>The status check found the printer out of labels; nothing was sent. Arguments as for <see cref="HeadOpen"/>.</summary>
+    PaperOut,
+    /// <summary>The status check found the ribbon out; nothing was sent. Arguments as for <see cref="HeadOpen"/>.</summary>
+    RibbonOut,
+    /// <summary>The status check found the printhead too hot; nothing was sent. Arguments as for <see cref="HeadOpen"/>.</summary>
+    HeadTooHot,
+    /// <summary>The status check found communications diagnostics mode on (the job would print as a data dump); nothing was sent.</summary>
+    DiagnosticMode,
+    /// <summary>The status check found the printer's receive buffer full; nothing was sent. Arguments as for <see cref="HeadOpen"/>.</summary>
+    BufferFull,
+    /// <summary>The status check found the printer paused; nothing was sent. Arguments as for <see cref="HeadOpen"/>.</summary>
+    Paused,
 }
 
 /// <summary>
@@ -40,6 +54,28 @@ public sealed record PrintError(PrintErrorKind Kind, string Key, IReadOnlyList<s
 {
     /// <summary>Creates an error whose key is derived from <paramref name="kind"/>.</summary>
     public static PrintError Create(PrintErrorKind kind, params string[] args) => new(kind, "Print.Error." + kind, args);
+
+    /// <summary>
+    /// The error for a printer whose status blocks printing: the kind of its most serious condition, then the printer name and the names of
+    /// every reported condition as arguments, so the UI can mention the others too. Null when nothing blocks.
+    /// </summary>
+    public static PrintError? FromStatus(PrinterStatus status, string printer)
+    {
+        ArgumentNullException.ThrowIfNull(status);
+        var blocking = status.Blocking;
+        if (blocking.Count == 0) return null;
+        var kind = blocking[0] switch
+        {
+            PrinterCondition.HeadOpen => PrintErrorKind.HeadOpen,
+            PrinterCondition.PaperOut => PrintErrorKind.PaperOut,
+            PrinterCondition.RibbonOut => PrintErrorKind.RibbonOut,
+            PrinterCondition.HeadTooHot => PrintErrorKind.HeadTooHot,
+            PrinterCondition.DiagnosticMode => PrintErrorKind.DiagnosticMode,
+            PrinterCondition.BufferFull => PrintErrorKind.BufferFull,
+            _ => PrintErrorKind.Paused,
+        };
+        return Create(kind, [printer ?? string.Empty, .. status.Conditions.Select(c => c.ToString())]);
+    }
 }
 
 /// <summary>Outcome of a print operation. Failures are values, never exceptions, so callers need no try/catch.</summary>
