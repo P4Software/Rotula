@@ -10,6 +10,7 @@ using Rotula.App.Localization;
 using Rotula.App.Services;
 using Rotula.Core.Elements;
 using Rotula.Core.Model;
+using Rotula.Core.Sheets;
 using Rotula.Core.Validation;
 using Rotula.Core.Zpl;
 using Rotula.Printing;
@@ -294,7 +295,7 @@ public sealed partial class MainViewModel : ObservableObject
     /// A cancelled dialog or a file that fails to load leaves it in place.
     /// </summary>
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(ShowDataCommand), nameof(OpenDataFileCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ShowDataCommand), nameof(OpenDataFileCommand), nameof(ShowSheetsCommand))]
     private bool _showStartScreen = true;
 
     /// <summary>
@@ -878,7 +879,7 @@ public sealed partial class MainViewModel : ObservableObject
         try
         {
             var content = RotulaFileSerializer.LoadFile(path);
-            OpenDocument(content.Document, path, merge: content.Merge);
+            OpenDocument(content.Document, path, merge: content.Merge, sheet: content.Sheet);
             // The label remembers where its data came from; read it again now so the canvas shows real values, not empty fields. The
             // same checks as the Reload buttons apply (local drive, read-only guard, saved connection by name).
             DataReload = ReloadRememberedDataQuietlyAsync(path);
@@ -898,8 +899,10 @@ public sealed partial class MainViewModel : ObservableObject
         return false;
     }
 
-    private void OpenDocument(LabelDocument doc, string? path, bool markDirty = false, DataMergeSettings? merge = null)
+    private void OpenDocument(LabelDocument doc, string? path, bool markDirty = false, DataMergeSettings? merge = null, SheetSettings? sheet = null)
     {
+        // The sheet layout belongs to the label, like its data settings.
+        LabelSheet = sheet;
         // Data settings are replaced first: the loaded data belonged to the previous label, and only the settings are kept per file.
         Data.Apply(merge);
         Session.Load(doc, markDirty);
@@ -929,7 +932,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         try
         {
-            RotulaFileSerializer.Save(Session.Document, path, Data.ToSettings());
+            RotulaFileSerializer.Save(Session.Document, path, Data.ToSettings(), LabelSheet);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -1113,8 +1116,49 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void Print()
     {
-        var vm = new PrintViewModel(_svc.Printing, Printer, () => Session.Document, () => Data.CurrentData, _svc.Files, DocumentName, Variables, Data);
+        var vm = new PrintViewModel(_svc.Printing, Printer, () => Session.Document, () => Data.CurrentData, _svc.Files, DocumentName, Variables, Data,
+            ShowSheets);
         _svc.Dialogs.ShowPrintDialog(vm);
+    }
+
+    /// <summary>
+    /// The sheet layout saved with the label for the "Label sheets" export, or null when none was chosen yet. Changing it marks the label as changed,
+    /// so the choice is saved with it; it is not an undo step (it changes nothing on the label itself).
+    /// </summary>
+    public SheetSettings? LabelSheet { get; private set; }
+
+    /// <summary>Opens the "Label sheets" dialog: the label (or the ticked records) on sheets for an office printer, saved as a PDF.</summary>
+    [RelayCommand(CanExecute = nameof(HasLabel))]
+    private void ShowSheets()
+    {
+        var vm = new SheetLayoutViewModel(() => Session.Document, () => Data.CurrentData, _svc.Files, Variables, LabelSheet ?? SuggestSheet(Session.Document),
+            DocumentName, Data, RememberSheet);
+        _svc.Dialogs.ShowSheetDialog(vm);
+    }
+
+    private void RememberSheet(SheetSettings settings)
+    {
+        if (settings == LabelSheet) return;
+        LabelSheet = settings;
+        Session.MarkDirty();
+    }
+
+    /// <summary>
+    /// The layout to start from when the label has none: the template of the label's sheet stock, else a template with the label's size, else
+    /// the first template. The stock library is only read here, never required.
+    /// </summary>
+    internal static SheetSettings SuggestSheet(LabelDocument doc)
+    {
+        SheetTemplate? template = null;
+        if (doc.StockId is { Length: > 0 } id)
+        {
+            try { template = SheetTemplates.FindForStock(StockLibrary.Current.Catalog.Find(id)); }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException) { /* no library: fall back to the size */ }
+        }
+        double mm(int dots) => dots * SheetLayout.MmPerInch / (int)doc.Dpi;
+        template ??= SheetTemplates.FindForLabelSize(mm(doc.WidthDots), mm(doc.HeightDots));
+        template ??= SheetTemplates.All[0];
+        return new SheetSettings { TemplateId = template.Id, Layout = template.Layout };
     }
 
     /// <summary>Opens the Data merge window.</summary>

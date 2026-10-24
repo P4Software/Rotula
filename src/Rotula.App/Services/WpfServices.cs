@@ -244,6 +244,15 @@ public sealed class WpfToolDialogService : IToolDialogService
     }
 
     /// <inheritdoc />
+    public void ShowSheetDialog(Rotula.App.ViewModels.SheetLayoutViewModel viewModel)
+    {
+        // Opened from the main window or from the Print dialog: the active window owns it, so it stays on top of the one it came from.
+        var owner = Application.Current?.Windows.OfType<Window>().FirstOrDefault(w => w.IsActive && w.IsLoaded) ?? Application.Current?.MainWindow;
+        var window = new SheetLayoutWindow(viewModel) { Owner = owner };
+        window.ShowDialog();
+    }
+
+    /// <inheritdoc />
     public void ShowDataWindow(Rotula.App.ViewModels.DataMergeViewModel viewModel)
     {
         if (_dataWindow is { IsLoaded: true })

@@ -1,0 +1,233 @@
+<views:DialogWindow x:Class="Rotula.App.Views.SheetLayoutWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:Rotula.App.Localization"
+        xmlns:views="clr-namespace:Rotula.App.Views"
+        Title="{loc:T Print.Sheet.Title}" Width="900" Height="820" MinWidth="640" MinHeight="520"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        AutomationProperties.Name="{loc:T Print.Sheet.Title}">
+  <Window.Resources>
+    <BooleanToVisibilityConverter x:Key="B2V" />
+    <!-- One label position of the preview: a flat button, so a click (or Enter) makes it the start position. -->
+    <Style x:Key="SlotButton" TargetType="Button">
+      <Setter Property="Focusable" Value="True" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="Box" Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderStrongBrush}" BorderThickness="1" CornerRadius="2">
+              <TextBlock x:Name="Caption" Text="{Binding Caption}" FontSize="10" HorizontalAlignment="Center" VerticalAlignment="Center"
+                         Foreground="{StaticResource TextBrush}" TextTrimming="CharacterEllipsis" />
+            </Border>
+            <ControlTemplate.Triggers>
+              <DataTrigger Binding="{Binding IsFilled}" Value="True">
+                <Setter TargetName="Box" Property="Background" Value="{StaticResource AccentTintStrongBrush}" />
+                <Setter TargetName="Box" Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+              </DataTrigger>
+              <DataTrigger Binding="{Binding IsUsed}" Value="True">
+                <Setter TargetName="Box" Property="Background" Value="{StaticResource PressedBrush}" />
+                <Setter TargetName="Box" Property="BorderBrush" Value="{StaticResource BorderBrushLight}" />
+              </DataTrigger>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="Box" Property="BorderBrush" Value="{StaticResource AccentHoverBrush}" />
+                <Setter TargetName="Box" Property="BorderThickness" Value="2" />
+              </Trigger>
+              <Trigger Property="IsKeyboardFocused" Value="True">
+                <Setter TargetName="Box" Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+                <Setter TargetName="Box" Property="BorderThickness" Value="2" />
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+  </Window.Resources>
+  <DockPanel>
+    <!-- ============================== footer -->
+    <Border DockPanel.Dock="Bottom" Background="{StaticResource ToolbarBrush}" BorderBrush="{StaticResource BorderBrushLight}" BorderThickness="0,1,0,0" Padding="24,14">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+          <Button Content="{loc:T Common.Close}" IsCancel="True" MinWidth="88" Margin="0,0,8,0" Command="{Binding CloseCommand}"
+                  AutomationProperties.Name="{loc:T Common.Close}" />
+          <Button Content="{loc:T Print.Sheet.Export}" IsDefault="True" Style="{StaticResource PrimaryButton}" MinWidth="130" Command="{Binding ExportPdfCommand}"
+                  IsEnabled="{Binding CanExport}" AutomationProperties.Name="{loc:T Print.Sheet.Export}" />
+        </StackPanel>
+        <TextBlock Text="{Binding SummaryText}" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,12,0" AutomationProperties.LiveSetting="Polite" />
+      </DockPanel>
+    </Border>
+
+    <!-- ============================== busy + result -->
+    <StackPanel DockPanel.Dock="Bottom" Margin="24,0,24,16">
+      <Border Style="{StaticResource Card}" Padding="12,10" Margin="0,0,0,8" Visibility="{Binding IsBusy, Converter={StaticResource B2V}}">
+        <DockPanel>
+          <Button DockPanel.Dock="Right" Content="{loc:T Common.StopOperation}" Command="{Binding CancelOperationCommand}" MinHeight="30" Margin="12,0,0,0"
+                  AutomationProperties.Name="{loc:T Common.StopOperation}" />
+          <StackPanel>
+            <TextBlock Text="{Binding BusyText}" Margin="0,0,0,6" />
+            <ProgressBar IsIndeterminate="{Binding IsProgressUnknown}" Value="{Binding Progress, Mode=OneWay}" Maximum="100" AutomationProperties.Name="{Binding BusyText}" />
+          </StackPanel>
+        </DockPanel>
+      </Border>
+      <Border Style="{StaticResource ErrorBanner}" Visibility="{Binding HasError, Converter={StaticResource B2V}}" AutomationProperties.LiveSetting="Assertive">
+        <TextBlock Text="{Binding ResultText}" TextWrapping="Wrap" Foreground="{StaticResource ErrorBrush}" />
+      </Border>
+      <Border Style="{StaticResource SuccessBanner}" Visibility="{Binding HasSuccess, Converter={StaticResource B2V}}" AutomationProperties.LiveSetting="Polite">
+        <TextBlock Text="{Binding ResultText}" TextWrapping="Wrap" Foreground="{StaticResource SuccessBrush}" />
+      </Border>
+    </StackPanel>
+
+    <!-- ============================== content -->
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+      <Grid Margin="24,20,24,16" IsEnabled="{Binding IsIdle}">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*" MinWidth="300" />
+          <ColumnDefinition Width="24" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.ColumnSpan="3" Margin="0,0,0,16">
+          <TextBlock Text="{loc:T Print.Sheet.Title}" FontSize="20" FontWeight="SemiBold" AutomationProperties.HeadingLevel="Level1" />
+          <TextBlock Text="{loc:T Print.Sheet.Subtitle}" Style="{StaticResource MutedText}" TextWrapping="Wrap" Margin="0,2,0,0" />
+          <Border Style="{StaticResource InfoBanner}" Margin="0,12,0,0" Visibility="{Binding UsesRecords, Converter={StaticResource B2V}}">
+            <TextBlock Text="{loc:T Print.Sheet.UsesRecords}" TextWrapping="Wrap" />
+          </Border>
+        </StackPanel>
+
+        <!-- ============================== the sheet -->
+        <StackPanel Grid.Row="1">
+          <Border Style="{StaticResource Card}">
+            <StackPanel>
+              <TextBlock Text="{loc:T Print.Sheet.Template}" Style="{StaticResource FieldLabel}" />
+              <ComboBox ItemsSource="{Binding Templates}" SelectedItem="{Binding SelectedTemplate}" DisplayMemberPath="Name"
+                        AutomationProperties.Name="{loc:T Print.Sheet.Template}" />
+              <TextBlock Text="{loc:T Print.Sheet.Template.Hint}" Style="{StaticResource MutedText}" TextWrapping="Wrap" Margin="0,6,0,0" />
+
+              <Grid Margin="0,14,0,0">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="12" />
+                  <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                  <TextBlock Text="{loc:T Print.Sheet.Page}" Style="{StaticResource FieldLabel}" />
+                  <ComboBox ItemsSource="{Binding PageKinds}" SelectedItem="{Binding SelectedPage}" DisplayMemberPath="Name"
+                            AutomationProperties.Name="{loc:T Print.Sheet.Page}" />
+                </StackPanel>
+                <CheckBox Grid.Column="2" Content="{loc:T Print.Sheet.Inches}" IsChecked="{Binding UseInches}" VerticalAlignment="Bottom" Margin="0,0,0,10"
+                          AutomationProperties.Name="{loc:T Print.Sheet.Inches}" />
+              </Grid>
+
+              <TextBlock Text="{Binding UnitText}" Style="{StaticResource MutedText}" Margin="0,12,0,0" />
+              <!-- Two boxes per row; every box names its unit through the line above, which follows the inches switch. -->
+              <UniformGrid Columns="2" Margin="0,2,0,0">
+                <StackPanel Margin="0,0,6,8" IsEnabled="{Binding IsCustomPage}">
+                  <TextBlock Text="{loc:T Print.Sheet.PageWidth}" Style="{StaticResource FieldLabel}" />
+                  <TextBox Style="{StaticResource MonoTextBox}" Text="{Binding PageWidthText, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{loc:T Print.Sheet.PageWidth}" />
+                </StackPanel>
+                <StackPanel Margin="6,0,0,8" IsEnabled="{Binding IsCustomPage}">
+                  <TextBlock Text="{loc:T Print.Sheet.PageHeight}" Style="{StaticResource FieldLabel}" />
+                  <TextBox Style="{StaticResource MonoTextBox}" Text="{Binding PageHeightText, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{loc:T Print.Sheet.PageHeight}" />
+                </StackPanel>
+                <StackPanel Margin="0,0,6,8">
+                  <TextBlock Text="{loc:T Print.Sheet.LabelWidth}" Style="{StaticResource FieldLabel}" />
+                  <TextBox Style="{StaticResource MonoTextBox}" Text="{Binding LabelWidthText, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{loc:T Print.Sheet.LabelWidth}" />
+                </StackPanel>
+                <StackPanel Margin="6,0,0,8">
+                  <TextBlock Text="{loc:T Print.Sheet.LabelHeight}" Style="{StaticResource FieldLabel}" />
+                  <TextBox Style="{StaticResource MonoTextBox}" Text="{Binding LabelHeightText, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{loc:T Print.Sheet.LabelHeight}" />
+                </StackPanel>
+                <StackPanel Margin="0,0,6,8">
+                  <TextBlock Text="{loc:T Print.Sheet.Columns}" Style="{StaticResource FieldLabel}" />
+                  <TextBox Style="{StaticResource MonoTextBox}" Text="{Binding ColumnsText, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{loc:T Print.Sheet.Columns}" />
+                </StackPanel>
+                <StackPanel Margin="6,0,0,8">
+                  <TextBlock Text="{loc:T Print.Sheet.Rows}" Style="{StaticResource FieldLabel}" />
+                  <TextBox Style="{StaticResource MonoTextBox}" Text="{Binding RowsText, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{loc:T Print.Sheet.Rows}" />
+                </StackPanel>
+                <StackPanel Margin="0,0,6,8">
+                  <TextBlock Text="{loc:T Print.Sheet.Top}" Style="{StaticResource FieldLabel}" />
+                  <TextBox Style="{StaticResource MonoTextBox}" Text="{Binding TopText, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{loc:T Print.Sheet.Top}" />
+                </StackPanel>
+                <StackPanel Margin="6,0,0,8">
+                  <TextBlock Text="{loc:T Print.Sheet.Left}" Style="{StaticResource FieldLabel}" />
+                  <TextBox Style="{StaticResource MonoTextBox}" Text="{Binding LeftText, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{loc:T Print.Sheet.Left}" />
+                </StackPanel>
+                <StackPanel Margin="0,0,6,8">
+                  <TextBlock Text="{loc:T Print.Sheet.HorizontalPitch}" Style="{StaticResource FieldLabel}" ToolTip="{loc:T Print.Sheet.Pitch.Tip}" />
+                  <TextBox Style="{StaticResource MonoTextBox}" Text="{Binding HorizontalPitchText, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{loc:T Print.Sheet.HorizontalPitch}"
+                           ToolTip="{loc:T Print.Sheet.Pitch.Tip}" />
+                </StackPanel>
+                <StackPanel Margin="6,0,0,8">
+                  <TextBlock Text="{loc:T Print.Sheet.VerticalPitch}" Style="{StaticResource FieldLabel}" ToolTip="{loc:T Print.Sheet.Pitch.Tip}" />
+                  <TextBox Style="{StaticResource MonoTextBox}" Text="{Binding VerticalPitchText, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{loc:T Print.Sheet.VerticalPitch}"
+                           ToolTip="{loc:T Print.Sheet.Pitch.Tip}" />
+                </StackPanel>
+              </UniformGrid>
+            </StackPanel>
+          </Border>
+
+          <Border Style="{StaticResource Card}" Margin="0,16,0,0">
+            <StackPanel>
+              <UniformGrid Columns="2">
+                <StackPanel Margin="0,0,6,8">
+                  <TextBlock Text="{loc:T Print.Sheet.Start}" Style="{StaticResource FieldLabel}" />
+                  <TextBox Style="{StaticResource MonoTextBox}" Text="{Binding StartPositionText, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{loc:T Print.Sheet.Start}"
+                           ToolTip="{loc:T Print.Sheet.Start.Tip}" />
+                </StackPanel>
+                <StackPanel Margin="6,0,0,8">
+                  <TextBlock Text="{loc:T Print.Copies}" Style="{StaticResource FieldLabel}" />
+                  <TextBox Style="{StaticResource MonoTextBox}" Text="{Binding CopiesText, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{loc:T Print.Copies}" />
+                </StackPanel>
+                <StackPanel Margin="0,0,6,8">
+                  <TextBlock Text="{loc:T Print.Sheet.Order}" Style="{StaticResource FieldLabel}" />
+                  <ComboBox ItemsSource="{Binding Orders}" SelectedItem="{Binding SelectedOrder}" DisplayMemberPath="Name" AutomationProperties.Name="{loc:T Print.Sheet.Order}" />
+                </StackPanel>
+                <StackPanel Margin="6,0,0,8">
+                  <TextBlock Text="{loc:T Print.Sheet.Guides}" Style="{StaticResource FieldLabel}" />
+                  <ComboBox ItemsSource="{Binding GuideChoices}" SelectedItem="{Binding SelectedGuides}" DisplayMemberPath="Name" AutomationProperties.Name="{loc:T Print.Sheet.Guides}" />
+                </StackPanel>
+              </UniformGrid>
+              <TextBlock Text="{loc:T Print.Sheet.ActualSize}" Style="{StaticResource MutedText}" TextWrapping="Wrap" Margin="0,4,0,0" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+
+        <!-- ============================== preview -->
+        <StackPanel Grid.Row="1" Grid.Column="2" Width="320">
+          <TextBlock Text="{loc:T Print.Sheet.Preview}" Style="{StaticResource SectionHeading}" AutomationProperties.HeadingLevel="Level2" />
+          <TextBlock Text="{loc:T Print.Sheet.Preview.Hint}" Style="{StaticResource MutedText}" TextWrapping="Wrap" Margin="0,0,0,8" />
+          <Border HorizontalAlignment="Center" Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderStrongBrush}" BorderThickness="1"
+                  Width="{Binding PreviewWidth}" Height="{Binding PreviewHeight}" AutomationProperties.Name="{loc:T Print.Sheet.Preview}">
+            <ItemsControl ItemsSource="{Binding Slots}" Focusable="False" KeyboardNavigation.TabNavigation="Once" KeyboardNavigation.DirectionalNavigation="Cycle">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <Canvas />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemContainerStyle>
+                <Style TargetType="ContentPresenter">
+                  <Setter Property="Canvas.Left" Value="{Binding Left}" />
+                  <Setter Property="Canvas.Top" Value="{Binding Top}" />
+                </Style>
+              </ItemsControl.ItemContainerStyle>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Button Style="{StaticResource SlotButton}" Width="{Binding Width}" Height="{Binding Height}" ToolTip="{Binding Tip}"
+                          AutomationProperties.Name="{Binding Tip}"
+                          Command="{Binding DataContext.PickStartCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}" />
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </Border>
+          <Border Style="{StaticResource WarningBanner}" Margin="0,16,0,0" Visibility="{Binding HasProblems, Converter={StaticResource B2V}}" AutomationProperties.LiveSetting="Polite">
+            <TextBlock Text="{Binding ProblemsText}" TextWrapping="Wrap" Foreground="{StaticResource WarningBrush}" />
+          </Border>
+        </StackPanel>
+      </Grid>
+    </ScrollViewer>
+  </DockPanel>
+</views:DialogWindow>

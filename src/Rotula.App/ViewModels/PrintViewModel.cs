@@ -26,6 +26,7 @@ public sealed partial class PrintViewModel : OperationViewModel
     private readonly IFileDialogService _files;
     private readonly string _documentName;
     private readonly IVariableServices _variables;
+    private readonly Action? _showSheets;
 
     /// <summary>Creates the dialog's view-model.</summary>
     /// <param name="service">Printing service (a fake in tests; tests never reach a real printer).</param>
@@ -36,10 +37,12 @@ public sealed partial class PrintViewModel : OperationViewModel
     /// <param name="documentName">File name stem suggested for the ZPL file.</param>
     /// <param name="variables">Counter memory and the print-time questions; null means no counter memory and no questions (tests).</param>
     /// <param name="records">The data merge view-model that holds the loaded records and their ticks; null (or no records) keeps the single-label dialog.</param>
+    /// <param name="showSheets">Opens the "Label sheets" dialog (office printer sheets as a PDF); null hides the button.</param>
     public PrintViewModel(IPrintService service, PrinterSettingsViewModel printer, Func<LabelDocument> document,
         Func<IReadOnlyDictionary<string, string>?> data, IFileDialogService files, string documentName = "label", IVariableServices? variables = null,
-        DataMergeViewModel? records = null)
+        DataMergeViewModel? records = null, Action? showSheets = null)
     {
+        _showSheets = showSheets;
         Records = records;
         _variables = variables ?? new VariableServices(null, null);
         _service = service;
@@ -318,6 +321,17 @@ public sealed partial class PrintViewModel : OperationViewModel
         if (outcome is not { } o) return;
         SetResult(o.Text, o.IsError);
         if (!o.IsError) Printer.Persist();
+    }
+
+    /// <summary>True when the "Label sheets" button is offered.</summary>
+    public bool CanShowSheets => _showSheets is not null;
+
+    /// <summary>Opens the "Label sheets" dialog, for labels printed on sheets by an office printer instead of a label printer.</summary>
+    [RelayCommand]
+    private void ShowSheets()
+    {
+        if (IsBusy) return;
+        _showSheets?.Invoke();
     }
 
     /// <summary>Closes the dialog (stopping any running job first).</summary>
