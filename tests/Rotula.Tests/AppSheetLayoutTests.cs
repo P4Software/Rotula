@@ -244,6 +244,8 @@ public class AppSheetLayoutTests : IDisposable
     [Fact]
     public void TheDialog_ReadsWellInSpanish()
     {
+        // The main window applies the saved language when it opens, so the setting (not only Loc) must say Spanish.
+        _fake.Settings.Current.Language = "es";
         Loc.Instance.SetLanguage("es");
         var (_, sheet) = Open(2.625, 1);
         Assert.StartsWith("Carta", sheet.SelectedTemplate.Name);
