@@ -131,7 +131,7 @@ public sealed class JsonSettingsStore : ISettingsStore
 {
     private const string Header =
         "// Rotula settings. Edit with the program closed, or change them from the menus.\n" +
-        "// language: \"auto\" follows Windows, or use \"en\" / \"es\".\n" +
+        "// language: \"auto\" follows Windows, or use \"en\" / \"es\" / \"pt-BR\" / \"fr-CA\".\n" +
         "// unit: \"Millimeters\", \"Inches\" or \"Dots\".\n" +
         "// updateCheckEnabled: true asks GitHub once a day whether a newer version exists (off by default; nothing is sent about you).\n";
 

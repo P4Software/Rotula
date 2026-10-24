@@ -363,6 +363,27 @@ public class AppDeploymentTests : IDisposable
         Assert.Equal("Administrado por tu organización", Loc.Get("Policy.Managed"));
     }
 
+    [Theory]
+    [InlineData("pt-BR", "Gerenciado pela sua organização")]
+    [InlineData("fr-CA", "Géré par votre organisation")]
+    public void AManagedPortugueseOrFrench_IsAppliedAndLocksEveryLanguageEntry(string language, string managed)
+    {
+        _fake.Settings.Current.Language = "es";
+        var vm = Main(new RotulaPolicy { Language = language });
+        Assert.Equal(language, Loc.Instance.LanguageCode);
+        Assert.Equal(language, vm.LanguageSetting);
+        Assert.Equal(language == "pt-BR", vm.IsLanguagePtBr);
+        Assert.Equal(language == "fr-CA", vm.IsLanguageFrCa);
+        Assert.False(vm.IsLanguageEs);
+        // The four language entries and "Same as Windows" share one command, so all of them are disabled.
+        foreach (var code in new[] { "auto" }.Concat(Loc.SupportedLanguages))
+            Assert.False(vm.SetLanguageCommand.CanExecute(code), code);
+        vm.SetLanguageCommand.Execute("en");
+        Assert.Equal(language, Loc.Instance.LanguageCode);
+        Assert.Equal("es", _fake.Settings.Current.Language); // the user's own choice waits for the policy to go
+        Assert.Equal(managed, Loc.Get("Policy.Managed"));
+    }
+
     [Fact]
     public void AnUnmanagedLanguage_StaysTheUsersChoice()
     {

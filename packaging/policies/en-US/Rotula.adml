@@ -12,14 +12,16 @@
       <string id="Language">Language of Rotula</string>
       <string id="Language_Explain">Sets the language of Rotula and locks it: View &gt; Language is disabled and says "Managed by your organization".
 
-"Same as Windows" uses Spanish when the Windows display language is Spanish and English otherwise.
+"Same as Windows" uses Spanish when the Windows display language is Spanish, Portuguese (Brazil) when it is any Portuguese, French (Canada) when it is any French, and English otherwise.
 
 Not configured or disabled: each user chooses the language.
 
-Registry value: Language (text: auto, en or es).</string>
+Registry value: Language (text: auto, en, es, pt-BR or fr-CA).</string>
       <string id="Language_Auto">Same as Windows</string>
       <string id="Language_En">English</string>
       <string id="Language_Es">Spanish</string>
+      <string id="Language_PtBr">Portuguese (Brazil)</string>
+      <string id="Language_FrCa">French (Canada)</string>
 
       <string id="UpdateCheck">Check for updates</string>
       <string id="UpdateCheck_Explain">Controls the daily update check and locks the choice (Help &gt; Check for updates once a day).
