@@ -16,8 +16,10 @@ These are product rules; changes that break them will not be merged.
   anonymous `GET` of the public GitHub "latest release" API a day, with nothing about the user or the computer in it. It never
   downloads or installs anything. Do not add other network calls, and do not add anything to that request.
 - **Light theme only.**
-- **Spanish and English** through `.resx` resources (`src/Rotula.App/Resources/Strings.en.resx` and `Strings.es.resx`). Every new
-  user-visible string needs both. Core returns message keys, not text.
+- **English, Spanish, Portuguese (Brazil) and French (Canada)** through `.resx` resources in `src/Rotula.App/Resources`
+  (`Strings.en.resx`, `Strings.es.resx`, `Strings.pt-BR.resx`, `Strings.fr-CA.resx`). Every new user-visible string needs all
+  four: en, es, pt-BR, fr-CA, with the same `{0}` placeholders and `_` access keys. French follows Canadian (OQLF) usage, with
+  a non-breaking space before `:` `;` `!` `?` and inside « ». Core returns message keys, not text.
 - **Permissive dependencies only** (MIT, Apache-2.0, BSD and similar). Add any new package to
   [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) in the same pull request. Discuss new dependencies in an issue first.
 - **Plain-language messages**: say what happened and what the user can do next.

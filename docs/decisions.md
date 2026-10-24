@@ -3,13 +3,22 @@
 ## App (Rotula.App)
 
 ### Language switch: live update
-The in-app language switch (View > Language: Same as Windows / English / Espanol) updates open windows immediately; no restart.
+The in-app language switch (View > Language: Same as Windows / English / Español / Português (Brasil) / Français (Canada))
+updates open windows immediately; no restart. Each language is listed in its own language.
 All XAML text is bound to the indexer of `Loc` (`{loc:T Key}`), which raises `Item[]` on a change. View-models that cache
 translated text (property panel rows, toolbox, layers, status text) rebuild on `Loc.LanguageChanged`. The default follows the
-Windows display language (Spanish if it is Spanish, English otherwise). The choice is stored in `%AppData%\Rotula\settings.json`.
-Only `Strings.en.resx` and `Strings.es.resx` exist (satellite assemblies, no neutral resources), so `Loc` always asks for "en"
-or "es" explicitly and falls back to English per key. `NeutralResourcesLanguage(..., Satellite)` must NOT be used: it also
-redirects WPF's own XAML lookup and the application fails to start.
+Windows display language: any Spanish is `es`, any Portuguese `pt-BR`, any French `fr-CA`, everything else English. The choice
+is stored in `%AppData%\Rotula\settings.json` as `auto` or the culture name; settings saved as `en` or `es` keep working unchanged.
+Only `Strings.en.resx`, `Strings.es.resx`, `Strings.pt-BR.resx` and `Strings.fr-CA.resx` exist (satellite assemblies, no neutral
+resources), so `Loc` always asks for one of `Loc.SupportedLanguages` by its full culture name and falls back to English per key.
+Numbers and dates in UI text are formatted with that culture (decimal comma in es, pt-BR and fr-CA).
+`NeutralResourcesLanguage(..., Satellite)` must NOT be used: it also redirects WPF's own XAML lookup and the application fails
+to start.
+- **One variant per language**: Brazilian Portuguese and Canadian French are the ones shipped; a Portugal or France desktop gets
+  them rather than English. The French follows Quebec usage (OQLF): "courriel", and a non-breaking space before `:` `;` `!` `?`
+  and inside « ». Technical tokens (ZPL commands, GS1 AIs, file extensions, the product name) are never translated.
+- **Parity is tested**: every `Strings.*.resx` must have exactly the English keys, no empty value and the same `{n}`
+  placeholders per key, so a new language or a new key cannot ship half done.
 
 ### Core messages
 Core only returns `ValidationIssue.MessageKey` + args. The UI looks up `Issue.<MessageKey>`; args that are keywords

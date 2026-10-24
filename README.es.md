@@ -177,7 +177,7 @@ salida es determinista y en ASCII puro, así que puedes versionarla, compararla 
 | **Impresión** | Cola de Windows (RAW, incluido USB) y puerto TCP 9100, detección de DPI y papel, perfiles de impresora, etiqueta de prueba, comprobación del estado de la impresora antes y después de cada trabajo |
 | **Puesto de impresión** | Una pantalla bloqueada, solo para imprimir, pensada para el almacén: elige o escanea una etiqueta, responde a sus preguntas con un lector de códigos, imprime y lee la respuesta de la impresora en letra grande y palabras sencillas ([detalles](#puesto-de-impresión)) |
 | **Resolución** | Convierte una etiqueta entre 203, 300 y 600 dpi conservando su tamaño físico |
-| **Idiomas** | Español e inglés, con cambio en vivo |
+| **Idiomas** | Español, inglés, portugués (Brasil) y francés (Canadá), con cambio en vivo |
 
 ---
 
@@ -450,8 +450,10 @@ confirmación en dos pasos. El instalador lo coloca junto a la aplicación, por 
 
 ## Idiomas
 
-La interfaz está disponible en **español** y en **inglés**. De forma predeterminada Rotula sigue el idioma de Windows, y
-puedes cambiarlo en cualquier momento desde **Ver > Idioma**, sin reiniciar. El instalador también está en ambos idiomas.
+La interfaz está disponible en **español**, **inglés**, **portugués (Brasil)** y **francés (Canadá)**. De forma
+predeterminada Rotula sigue el idioma de Windows (cualquier portugués usa portugués de Brasil, cualquier francés usa francés
+de Canadá, y un idioma que Rotula no tiene usa inglés), y puedes cambiarlo en cualquier momento desde **Ver > Idioma**, sin
+reiniciar. Los números y las fechas siguen el idioma elegido. El instalador también está en los cuatro idiomas.
 
 ---
 
