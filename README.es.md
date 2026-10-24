@@ -169,7 +169,7 @@ salida es determinista y en ASCII puro, así que puedes versionarla, compararla 
 | **Bases de datos** | SQL Server, PostgreSQL, MySQL/MariaDB, SQLite y ODBC, más ajustes predefinidos para servicios en la nube comunes ([detalles](#fuentes-de-bases-de-datos)) |
 | **Cobertura ZPL** | 222 comandos ZPL revisados uno por uno en una [página de cobertura generada](docs/zpl-coverage.md) (en inglés) |
 | **Servidor MCP** | Un programa aparte que permite a los clientes compatibles con MCP diseñar y revisar etiquetas ([detalles](#servidor-mcp)) |
-| **Impresión** | Cola de Windows (RAW, incluido USB) y puerto TCP 9100, detección de DPI y papel, perfiles de impresora, etiqueta de prueba |
+| **Impresión** | Cola de Windows (RAW, incluido USB) y puerto TCP 9100, detección de DPI y papel, perfiles de impresora, etiqueta de prueba, comprobación del estado de la impresora antes y después de cada trabajo |
 | **Resolución** | Convierte una etiqueta entre 203, 300 y 600 dpi conservando su tamaño físico |
 | **Idiomas** | Español e inglés, con cambio en vivo |
 
@@ -379,6 +379,12 @@ Rotula envía el ZPL como datos RAW, así que el controlador lo transmite sin to
 - **Perfiles de impresora.** La resolución, el seguimiento de medios, la oscuridad (0 a 30) y la velocidad (1 a 14) se
   recuerdan junto con la impresora.
 - **Etiqueta de prueba.** Una pequeña etiqueta de muestra comprueba la conexión, el ancho y los caracteres con tilde.
+- **Estado de la impresora.** Antes de un trabajo Rotula puede preguntar a la impresora su estado (el comando ZPL `~HS`) y
+  retener el trabajo mientras no tenga etiquetas, esté abierta, sin cinta, en pausa o demasiado caliente. Después espera a que
+  la impresora indique que terminó y dice "impreso y verificado", nombra el fallo o avisa de que no pudo confirmarlo. Viene
+  activado para impresoras de red; para una impresora de Windows actívalo en el cuadro Imprimir (muchos controladores USB no
+  pueden responder y entonces se imprime sin la comprobación). "Comprobar estado de la impresora" muestra la respuesta cuando
+  quieras.
 - **Fallos en lenguaje sencillo.** Impresora desconectada, conexión rechazada, host inalcanzable, tiempo agotado o un carácter
   que el juego de caracteres no puede imprimir: cada caso dice qué pasó y qué hacer. Rotula no incluye controladores de impresora.
 
