@@ -109,8 +109,7 @@ public class AppDpiConversionTests : IDisposable
     }
 
     [Theory]
-    [InlineData("en")]
-    [InlineData("es")]
+    [MemberData(nameof(UiStrings.LanguageData), MemberType = typeof(UiStrings))]
     public void EveryDpiIssueKey_HasText_AndUnknownDpiKeysGetAFallback(string lang)
     {
         Loc.Instance.SetLanguage(lang);

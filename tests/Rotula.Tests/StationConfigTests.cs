@@ -209,18 +209,10 @@ public class StationConfigTests : IDisposable
     }
 
     [Fact]
-    public void EveryStationKey_HasAnIssueMessage_InBothLanguages()
+    public void EveryStationKey_HasAnIssueMessage_InEveryLanguage()
     {
-        var dir = new DirectoryInfo(AppContext.BaseDirectory);
-        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Rotula.sln"))) dir = dir.Parent;
-        Assert.NotNull(dir);
         var keys = typeof(StationKeys).GetFields().Where(f => f.IsLiteral).Select(f => (string)f.GetRawConstantValue()!).ToList();
         Assert.True(keys.Count >= 15);
-        foreach (var lang in new[] { "en", "es" })
-        {
-            var names = XDocument.Load(Path.Combine(dir!.FullName, "src", "Rotula.App", "Resources", $"Strings.{lang}.resx")).Root!
-                .Elements("data").Select(d => d.Attribute("name")!.Value).ToHashSet();
-            Assert.DoesNotContain(keys, k => !names.Contains("Issue." + k));
-        }
+        Assert.Empty(UiStrings.MissingInAnyLanguage(keys.Select(k => "Issue." + k)));
     }
 }

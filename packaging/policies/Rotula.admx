@@ -38,6 +38,12 @@
           <item displayName="$(string.Language_Es)">
             <value><string>es</string></value>
           </item>
+          <item displayName="$(string.Language_PtBr)">
+            <value><string>pt-BR</string></value>
+          </item>
+          <item displayName="$(string.Language_FrCa)">
+            <value><string>fr-CA</string></value>
+          </item>
         </enum>
       </elements>
     </policy>

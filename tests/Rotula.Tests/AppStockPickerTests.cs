@@ -584,13 +584,13 @@ public class AppStockPickerTests : IDisposable
     }
 
     [Fact]
-    public async Task EveryStockWarningKey_FormatsInBothLanguages_WithoutLeftoverPlaceholders()
+    public async Task EveryStockWarningKey_FormatsInEveryLanguage_WithoutLeftoverPlaceholders()
     {
         var stock = RealStock();
         var issues = typeof(StockMessageKeys).GetFields().Where(f => f.IsLiteral && ((string)f.GetRawConstantValue()!).StartsWith("Stocks.Apply.", StringComparison.Ordinal))
             .Select(f => new ValidationIssue(ValidationSeverity.Warning, (string)f.GetRawConstantValue()!, null, new[] { stock.Id, "2", "30" })).ToList();
         Assert.True(issues.Count >= 8);
-        foreach (string lang in new[] { "en", "es" })
+        foreach (string lang in Loc.SupportedLanguages)
         {
             Loc.Instance.SetLanguage(lang);
             foreach (var issue in issues)
@@ -629,21 +629,13 @@ public class AppStockPickerTests : IDisposable
     }
 
     [Fact]
-    public void EveryStockKeyUsedByTheDialog_ExistsInBothLanguages()
+    public void EveryStockKeyUsedByTheDialog_ExistsInEveryLanguage()
     {
-        string? root = AppContext.BaseDirectory;
-        while (root is not null && !File.Exists(Path.Combine(root, "Rotula.sln"))) root = Path.GetDirectoryName(root);
-        Assert.NotNull(root);
-        var keys = new[] { "en", "es" }.ToDictionary(l => l, l => XDocument.Load(Path.Combine(root, "src", "Rotula.App", "Resources", $"Strings.{l}.resx")).Root!.Elements("data").Select(d => d.Attribute("name")!.Value).ToHashSet());
         // Keys built from enum values in StockText.
         var built = new List<string>();
         foreach (var m in Enum.GetValues<StockMedia>()) built.Add("Stock.Media." + m);
         foreach (var f in Enum.GetValues<StockFormat>()) built.Add("Stock.Format." + f);
         foreach (var l in Enum.GetValues<StockLayout>()) built.Add("Stock.Layout." + l);
-        foreach (var k in built)
-        {
-            Assert.Contains(k, keys["en"]);
-            Assert.Contains(k, keys["es"]);
-        }
+        Assert.Empty(UiStrings.MissingInAnyLanguage(built));
     }
 }

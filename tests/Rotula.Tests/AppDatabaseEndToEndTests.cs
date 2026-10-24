@@ -268,7 +268,7 @@ public class AppDatabaseEndToEndTests : IDisposable
     }
 }
 
-/// <summary>Every <c>Data.*</c> key that Rotula.Data can raise has a plain-language text in both languages.</summary>
+/// <summary>Every <c>Data.*</c> key that Rotula.Data can raise has a plain-language text in every language.</summary>
 [Collection("App")]
 public class AppDatabaseLocalizationTests
 {
@@ -284,10 +284,9 @@ public class AppDatabaseLocalizationTests
             .ToDictionary(d => d.Attribute("name")!.Value, d => d.Element("value")!.Value);
 
     [Fact]
-    public void EveryDataKeyEmittedByTheLibrary_HasEnglishAndSpanishText()
+    public void EveryDataKeyEmittedByTheLibrary_HasTextInEveryLanguage()
     {
         var en = ReadResx("en");
-        var es = ReadResx("es");
         var keys = new HashSet<string>();
         string data = Path.Combine(RepoRoot(), "src", "Rotula.Data");
         foreach (var file in Directory.EnumerateFiles(data, "*.cs", SearchOption.AllDirectories).Where(f => !f.Contains(@"\obj\") && !f.Contains(@"\bin\")))
@@ -298,22 +297,19 @@ public class AppDatabaseLocalizationTests
         Assert.Contains("Data.Error.CertificateNotTrusted", keys);
         Assert.Contains("Data.Query.Truncated", keys);
         Assert.Contains("Data.Store.ProtectionUnavailable", keys);
-        Assert.Empty(keys.Where(k => !en.ContainsKey(k)).OrderBy(k => k));
-        Assert.Empty(keys.Where(k => !es.ContainsKey(k)).OrderBy(k => k));
-        // The texts that take an argument keep the same holes in both languages (the general test checks all keys too).
-        foreach (string k in keys)
-            Assert.Equal(Regex.Matches(en[k], @"\{\d\}").Count, Regex.Matches(es[k], @"\{\d\}").Count);
+        Assert.Empty(UiStrings.MissingInAnyLanguage(keys));
+        // The texts that take an argument keep the same holes in every language (the general test checks all keys too).
+        foreach (var lang in UiStrings.Translations)
+        {
+            var other = ReadResx(lang);
+            foreach (string k in keys)
+                Assert.Equal(Regex.Matches(en[k], @"\{\d\}").Count, Regex.Matches(other[k], @"\{\d\}").Count);
+        }
     }
 
     [Fact]
     public void TheConnectionFieldNames_AreTranslated_ForEveryPropertyTheEngineCanReport()
     {
-        var en = ReadResx("en");
-        var es = ReadResx("es");
-        foreach (var p in typeof(DatabaseConnectionSettings).GetProperties())
-        {
-            string key = "Conn.Field." + p.Name;
-            Assert.True(en.ContainsKey(key) && es.ContainsKey(key), key);
-        }
+        Assert.Empty(UiStrings.MissingInAnyLanguage(typeof(DatabaseConnectionSettings).GetProperties().Select(p => "Conn.Field." + p.Name)));
     }
 }

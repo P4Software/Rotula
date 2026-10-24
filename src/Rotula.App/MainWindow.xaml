@@ -215,6 +215,8 @@
           <MenuItem Header="{loc:T Menu.LanguageAuto}" Command="{Binding SetLanguageCommand}" CommandParameter="auto" IsChecked="{Binding IsLanguageAuto, Mode=OneWay}" />
           <MenuItem Header="English" Command="{Binding SetLanguageCommand}" CommandParameter="en" IsChecked="{Binding IsLanguageEn, Mode=OneWay}" />
           <MenuItem Header="Espa&#241;ol" Command="{Binding SetLanguageCommand}" CommandParameter="es" IsChecked="{Binding IsLanguageEs, Mode=OneWay}" />
+          <MenuItem Header="Portugu&#234;s (Brasil)" Command="{Binding SetLanguageCommand}" CommandParameter="pt-BR" IsChecked="{Binding IsLanguagePtBr, Mode=OneWay}" />
+          <MenuItem Header="Fran&#231;ais (Canada)" Command="{Binding SetLanguageCommand}" CommandParameter="fr-CA" IsChecked="{Binding IsLanguageFrCa, Mode=OneWay}" />
           <!-- A Group Policy / Intune setting fixes the language: the entries above are disabled and this note says why. -->
           <Separator Visibility="{Binding IsLanguageManaged, Converter={StaticResource B2V}}" />
           <MenuItem Header="{loc:T Policy.Managed}" IsEnabled="False" Visibility="{Binding IsLanguageManaged, Converter={StaticResource B2V}}" />

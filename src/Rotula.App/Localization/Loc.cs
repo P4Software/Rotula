@@ -6,14 +6,18 @@ using Rotula.Core.Validation;
 namespace Rotula.App.Localization;
 
 /// <summary>
-/// The application's translator. Every piece of UI text comes from Resources/Strings.en.resx or Strings.es.resx through
-/// this class. XAML binds to the indexer (<c>{loc:T Key}</c>), so switching the language updates the open windows at once
+/// The application's translator. Every piece of UI text comes from one of the Resources/Strings.&lt;language&gt;.resx files
+/// (en, es, pt-BR, fr-CA) through this class. XAML binds to the indexer (<c>{loc:T Key}</c>), so switching the language updates the open windows at once
 /// (the "live" option, see docs/decisions.md).
 /// </summary>
 public sealed class Loc : INotifyPropertyChanged
 {
-    /// <summary>Language codes the application ships.</summary>
-    public static readonly string[] SupportedLanguages = { "en", "es" };
+    /// <summary>
+    /// Culture names of the languages the application ships, English (the reference) first. Each has a
+    /// Resources/Strings.&lt;name&gt;.resx file. Full names, not two-letter codes: the Portuguese is Brazilian and the French is
+    /// Canadian, and their number and date formats follow those regions.
+    /// </summary>
+    public static readonly string[] SupportedLanguages = { "en", "es", "pt-BR", "fr-CA" };
 
     private readonly ResourceManager _resources = new("Rotula.App.Resources.Strings", typeof(Loc).Assembly);
     private CultureInfo _culture = CultureInfo.GetCultureInfo("en");
@@ -24,11 +28,11 @@ public sealed class Loc : INotifyPropertyChanged
     /// <inheritdoc />
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    /// <summary>The language currently shown (always "en" or "es").</summary>
+    /// <summary>The language currently shown (always one of <see cref="SupportedLanguages"/>).</summary>
     public CultureInfo Culture => _culture;
 
-    /// <summary>Two-letter code of the language currently shown.</summary>
-    public string LanguageCode => _culture.TwoLetterISOLanguageName;
+    /// <summary>Culture name of the language currently shown, as listed in <see cref="SupportedLanguages"/> ("en", "pt-BR"...).</summary>
+    public string LanguageCode => _culture.Name;
 
     /// <summary>
     /// Translates a key. A key that is missing in the current language falls back to English; a key missing everywhere is
@@ -66,14 +70,24 @@ public sealed class Loc : INotifyPropertyChanged
     }
 
     /// <summary>
-    /// Picks the language: "en" or "es" explicitly, or (for "auto" or anything unknown) the Windows display language
-    /// when it is Spanish, English otherwise.
+    /// Picks the language: one of <see cref="SupportedLanguages"/> when the setting names it, or (for "auto" or anything
+    /// unknown) the closest match to the Windows display language: any Spanish is "es", any Portuguese "pt-BR", any French
+    /// "fr-CA", and everything else English.
     /// </summary>
     public static string ResolveLanguage(string? setting, CultureInfo? windowsUiCulture = null)
     {
-        if (setting is "en" or "es") return setting;
+        // Settings saved before pt-BR and fr-CA existed hold "en", "es" or "auto"; they keep meaning the same thing.
+        var chosen = SupportedLanguages.FirstOrDefault(l => string.Equals(l, setting, StringComparison.OrdinalIgnoreCase));
+        if (chosen is not null) return chosen;
         var ui = windowsUiCulture ?? CultureInfo.CurrentUICulture;
-        return ui.TwoLetterISOLanguageName.Equals("es", StringComparison.OrdinalIgnoreCase) ? "es" : "en";
+        // One translation per language: a pt-PT or fr-FR desktop is far better served by pt-BR or fr-CA than by English.
+        return ui.TwoLetterISOLanguageName.ToLowerInvariant() switch
+        {
+            "es" => "es",
+            "pt" => "pt-BR",
+            "fr" => "fr-CA",
+            _ => "en",
+        };
     }
 
     /// <summary>Switches the language and tells every binding to refresh.</summary>

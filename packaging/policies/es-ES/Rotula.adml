@@ -12,14 +12,16 @@
       <string id="Language">Idioma de Rotula</string>
       <string id="Language_Explain">Fija el idioma de Rotula y lo bloquea: Ver &gt; Idioma queda desactivado e indica "Administrado por tu organización".
 
-"Igual que Windows" usa el español cuando el idioma de presentación de Windows es español, y el inglés en los demás casos.
+"Igual que Windows" usa el español cuando el idioma de presentación de Windows es español, el portugués (Brasil) cuando es cualquier portugués, el francés (Canadá) cuando es cualquier francés, y el inglés en los demás casos.
 
 Sin configurar o deshabilitada: cada usuario elige el idioma.
 
-Valor del registro: Language (texto: auto, en o es).</string>
+Valor del registro: Language (texto: auto, en, es, pt-BR o fr-CA).</string>
       <string id="Language_Auto">Igual que Windows</string>
       <string id="Language_En">Inglés</string>
       <string id="Language_Es">Español</string>
+      <string id="Language_PtBr">Portugués (Brasil)</string>
+      <string id="Language_FrCa">Francés (Canadá)</string>
 
       <string id="UpdateCheck">Buscar actualizaciones</string>
       <string id="UpdateCheck_Explain">Controla la búsqueda diaria de actualizaciones y bloquea la opción (Ayuda &gt; Buscar actualizaciones una vez al día).

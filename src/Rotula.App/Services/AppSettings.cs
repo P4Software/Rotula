@@ -6,7 +6,7 @@ namespace Rotula.App.Services;
 /// <summary>User preferences stored in %AppData%\Rotula\settings.json.</summary>
 public sealed class AppSettings
 {
-    /// <summary>"auto" (follow Windows), "en" or "es".</summary>
+    /// <summary>"auto" (follow Windows), "en", "es", "pt-BR" or "fr-CA".</summary>
     public string Language { get; set; } = "auto";
 
     /// <summary>Ruler unit: "Millimeters", "Inches" or "Dots".</summary>
@@ -131,7 +131,7 @@ public sealed class JsonSettingsStore : ISettingsStore
 {
     private const string Header =
         "// Rotula settings. Edit with the program closed, or change them from the menus.\n" +
-        "// language: \"auto\" follows Windows, or use \"en\" / \"es\".\n" +
+        "// language: \"auto\" follows Windows, or use \"en\" / \"es\" / \"pt-BR\" / \"fr-CA\".\n" +
         "// unit: \"Millimeters\", \"Inches\" or \"Dots\".\n" +
         "// updateCheckEnabled: true asks GitHub once a day whether a newer version exists (off by default; nothing is sent about you).\n";
 

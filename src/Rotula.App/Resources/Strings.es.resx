@@ -734,7 +734,7 @@
     <value>Mostrar cuadrícula</value>
   </data>
   <data name="Menu.Help" xml:space="preserve">
-    <value>_Ayuda</value>
+    <value>Ay_uda</value>
   </data>
   <data name="Menu.ImportZpl" xml:space="preserve">
     <value>Importar ZPL...</value>

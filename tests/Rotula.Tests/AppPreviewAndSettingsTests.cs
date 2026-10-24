@@ -119,6 +119,23 @@ public class AppPreviewAndSettingsTests
         finally { Directory.Delete(dir, true); }
     }
 
+    [Theory]
+    [InlineData("pt-BR")]
+    [InlineData("fr-CA")]
+    [InlineData("es")]
+    [InlineData("auto")]
+    public void Settings_KeepTheLanguageAsSaved(string language)
+    {
+        string dir = AppTestSupport.TempDir();
+        try
+        {
+            string path = Path.Combine(dir, "settings.json");
+            Assert.True(new JsonSettingsStore(path).Save(new AppSettings { Language = language }));
+            Assert.Equal(language, new JsonSettingsStore(path).Load().Language);
+        }
+        finally { Directory.Delete(dir, true); }
+    }
+
     [Fact]
     public void Settings_RoundTrip_AndSurviveHandEditing()
     {
