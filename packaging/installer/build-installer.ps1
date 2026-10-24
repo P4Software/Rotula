@@ -141,7 +141,7 @@ function Find-ThirdPartyLicense($packageId) {
   # (obj\project.assets.json) of the shipped projects, the folder from the package folders recorded there. Nothing is
   # guessed from the global cache, so an old cached version can never be picked up by mistake.
   $versions = @{}
-  foreach ($proj in 'Rotula.App', 'Rotula.Mcp') {
+  foreach ($proj in 'Rotula.App', 'Rotula.Mcp', 'Rotula.Cli') {
     $assetsPath = Join-Path $repo "src\$proj\obj\project.assets.json"
     if (-not (Test-Path -LiteralPath $assetsPath)) { throw "The restore output for $proj was not found ($assetsPath). Run the build again." }
     $assets = Get-Content -LiteralPath $assetsPath -Raw | ConvertFrom-Json
@@ -253,12 +253,13 @@ try {
   New-Item -ItemType Directory -Force -Path $artifacts, $stage | Out-Null
 
   # --- 1. Publish ---------------------------------------------------------------------------
-  Write-Host '1/6 Publishing the app and the MCP server (this takes a few minutes)...'
+  Write-Host '1/6 Publishing the app, the MCP server and the print engine (this takes a few minutes)...'
   # Same flags for both programs. DebugType=none keeps the huge SkiaSharp symbol file (.pdb) out of the output; only the
   # single .exe of each program is copied to the stage folder, so no .pdb or documentation .xml can slip into a release.
   $publishMcp = Join-Path $repo 'publish\win-x64-mcp'
-  if (Test-Path -LiteralPath $publishMcp) { Remove-Item -LiteralPath $publishMcp -Recurse -Force }
-  foreach ($p in @(@('Rotula.App', $publish), @('Rotula.Mcp', $publishMcp))) {
+  $publishEngine = Join-Path $repo 'publish\win-x64-engine'
+  foreach ($d in @($publishMcp, $publishEngine)) { if (Test-Path -LiteralPath $d) { Remove-Item -LiteralPath $d -Recurse -Force } }
+  foreach ($p in @(@('Rotula.App', $publish), @('Rotula.Mcp', $publishMcp), @('Rotula.Cli', $publishEngine))) {
     & dotnet publish (Join-Path $repo "src\$($p[0])\$($p[0]).csproj") -c Release -r win-x64 --self-contained true `
       -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -p:DebugType=none `
       "-p:Version=$version" -o $p[1]
@@ -267,9 +268,11 @@ try {
 
   Copy-Item -LiteralPath (Join-Path $publish 'Rotula.App.exe') -Destination $stage
   Copy-Item -LiteralPath (Join-Path $publishMcp 'Rotula.Mcp.exe') -Destination $stage
+  Copy-Item -LiteralPath (Join-Path $publishEngine 'rotula.exe') -Destination $stage
   foreach ($f in 'LICENSE', 'THIRD-PARTY-NOTICES.md', 'README.md') { Copy-Item -LiteralPath (Join-Path $repo $f) -Destination $stage }
   New-Item -ItemType Directory -Force -Path (Join-Path $stage 'docs'), (Join-Path $stage 'packs') | Out-Null
   Copy-Item -LiteralPath (Join-Path $repo 'docs\mcp.md') -Destination (Join-Path $stage 'docs')
+  Copy-Item -LiteralPath (Join-Path $repo 'docs\print-engine.md') -Destination (Join-Path $stage 'docs')
   # The icon of .rotula documents: the installer registers it by path, and the portable zip carries it too.
   New-Item -ItemType Directory -Force -Path (Join-Path $stage 'Assets') | Out-Null
   Copy-Item -LiteralPath (Join-Path $repo 'src\Rotula.App\Assets\rotula-document.ico') -Destination (Join-Path $stage 'Assets')
@@ -280,11 +283,12 @@ try {
   Write-Host "  Combined licence written; includes the full terms of: $($shipped -join ', ')"
   $exe = Join-Path $stage 'Rotula.App.exe'
   $mcpExe = Join-Path $stage 'Rotula.Mcp.exe'
+  $engineExe = Join-Path $stage 'rotula.exe'
 
   # --- 2. Sign the program ------------------------------------------------------------------
   $signed = $false
   Write-Host '2/6 Signing the programs...'
-  if ($canSign) { $signed = ((SignFile $exe) -and (SignFile $mcpExe)) } else { Write-Host '  Skipped (see the note above).' }
+  if ($canSign) { $signed = ((SignFile $exe) -and (SignFile $mcpExe) -and (SignFile $engineExe)) } else { Write-Host '  Skipped (see the note above).' }
   if ($canSign -and -not $signed) { Write-Host '  Signing failed; the output will be UNSIGNED.' -ForegroundColor Yellow }
 
   # --- 3. Installers ------------------------------------------------------------------------
@@ -313,9 +317,10 @@ try {
   Write-Host '5/6 Checking the signatures...'
   Show-Signature $exe
   Show-Signature $mcpExe
+  Show-Signature $engineExe
   Show-Signature $setup
   Show-Signature $msi
-  $allSigned = ((Test-Signed $exe) -and (Test-Signed $mcpExe) -and (Test-Signed $setup) -and (Test-Signed $msi))
+  $allSigned = ((Test-Signed $exe) -and (Test-Signed $mcpExe) -and (Test-Signed $engineExe) -and (Test-Signed $setup) -and (Test-Signed $msi))
 
   # --- 6. Zip, manifests, checksums ---------------------------------------------------------
   Write-Host '6/6 Packaging the portable zip, winget manifests and checksums...'

@@ -19,8 +19,8 @@ gate and the hygiene check, and keeps an unsigned portable zip as a workflow art
    bottom. The release notes are taken from that section.
 3. Merge to the main branch, make sure CI is green, then create and push the tag `vX.Y.Z` on that commit.
 4. Run `az login` (the signing uses that session).
-5. Double-click `packaging\installer\build-installer.cmd`. It publishes the app and the MCP server (`Rotula.Mcp.exe`), writes the
-   combined licence text, signs both programs, builds the per-user installer (Inno Setup) and the machine-wide MSI
+5. Double-click `packaging\installer\build-installer.cmd`. It publishes the app, the MCP server (`Rotula.Mcp.exe`) and the print engine
+   (`rotula.exe`), writes the combined licence text, signs the three programs, builds the per-user installer (Inno Setup) and the machine-wide MSI
    (`packaging\msi`, WiX Toolset) from the signed programs, signs both, verifies all four signatures, builds the
    portable zip from the signed programs, writes the winget manifests and `SHA256SUMS.txt`. Everything is in `artifacts\`
    (git-ignored). If you are not logged in, the files are still built but labelled `UNSIGNED` and must not be published.
@@ -57,13 +57,13 @@ Get-AuthenticodeSignature .\artifacts\Rotula-X.Y.Z-win-x64-setup.exe | Format-Li
 ```
 
 `Status` must be `Valid`, the signer subject must contain `Barrdega Sistemas NA LLC`, and a timestamp certificate must be
-present. Do the same for the MSI, and for `Rotula.App.exe` and `Rotula.Mcp.exe` inside the portable zip. The build script performs these checks itself and never
+present. Do the same for the MSI, and for `Rotula.App.exe`, `Rotula.Mcp.exe` and `rotula.exe` inside the portable zip. The build script performs these checks itself and never
 trusts the exit code of the signing tool. Compare downloads with `SHA256SUMS.txt` (`Get-FileHash`).
 
 ## What is in a release
 
-- `Rotula-X.Y.Z-win-x64-setup.exe`: per-user installer. Installs `Rotula.App.exe`, `Rotula.Mcp.exe`, `LICENSE`,
-  `LICENSE-THIRD-PARTY.txt`, `THIRD-PARTY-NOTICES.md`, `README.md`, `docs\mcp.md` and an empty `packs` folder (with a one-line
+- `Rotula-X.Y.Z-win-x64-setup.exe`: per-user installer. Installs `Rotula.App.exe`, `Rotula.Mcp.exe`, `rotula.exe`, `LICENSE`,
+  `LICENSE-THIRD-PARTY.txt`, `THIRD-PARTY-NOTICES.md`, `README.md`, `docs\mcp.md`, `docs\print-engine.md` and an empty `packs` folder (with a one-line
   `README.txt`) beside the program. Uninstalling removes them, and the MCP settings file created next to the exe on first run.
 - `Rotula-X.Y.Z-win-x64.msi`: machine-wide Windows Installer package for administrators (Program Files, every user; Intune,
   Group Policy, Configuration Manager). The same files as the setup exe. See [deployment.md](deployment.md).

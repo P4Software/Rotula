@@ -470,7 +470,8 @@ rotula status --host 10.20.0.31
 can run as a Windows service. It is off until you start it, listens on `127.0.0.1` unless you configure otherwise, needs an API
 key on every call, and prints only labels from the folders and to the printers its settings file lists. Messages follow the
 caller's language (English, Spanish, Portuguese (Brazil) or French (Canada)). Commands, API, settings and exit codes:
-[docs/print-engine.md](docs/print-engine.md). The installer does not include `rotula.exe` yet; build it from `src/Rotula.Cli`.
+[docs/print-engine.md](docs/print-engine.md). The installer and the MSI place `rotula.exe` beside the app (by default
+`%LOCALAPPDATA%\Programs\Rotula\rotula.exe`, or `C:\Program Files\Rotula\rotula.exe` for all users).
 
 ---
 

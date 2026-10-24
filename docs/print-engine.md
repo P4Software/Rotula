@@ -223,7 +223,14 @@ REG_DWORD `0`, in `packaging/policies`). The command line then refuses to print 
 server answers 403 to jobs and status requests; the health check reports `"printingBlocked": true`. The policy cannot switch
 anything on; the server's own settings still decide what it allows. See [deployment.md](deployment.md).
 
-## Publishing
+## Where it is
+
+The installer and the MSI put `rotula.exe` beside the designer: `%LOCALAPPDATA%\Programs\Rotula\rotula.exe` for a per-user
+install, `C:\Program Files\Rotula\rotula.exe` for all users (MSI or `/ALLUSERS`). The portable zip has it too. It is not added to
+`PATH`; call it by its full path or add the folder yourself. For a Windows service, use the all-users install so the service
+account can reach the program.
+
+## Building it yourself
 
 `rotula.exe` is built from `src/Rotula.Cli` (the engine itself is `src/Rotula.Engine`, a library with no UI):
 
