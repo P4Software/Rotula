@@ -751,6 +751,19 @@
             <Border Style="{StaticResource StatusSeparator}" />
             <TextBlock Text="{Binding CursorText}" MinWidth="120" />
           </StackPanel>
+          <!-- Only for a label the printer turns (^POI) or mirrors (^PMY): the canvas stays upright for editing, so the print difference is named here. -->
+          <StackPanel Orientation="Horizontal" ToolTip="{loc:T Status.PrintOrientation.Tip}">
+            <StackPanel.Style>
+              <Style TargetType="StackPanel">
+                <Style.Triggers>
+                  <DataTrigger Binding="{Binding PrintOrientationText}" Value=""><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
+                </Style.Triggers>
+              </Style>
+            </StackPanel.Style>
+            <Border Style="{StaticResource StatusSeparator}" />
+            <TextBlock Text="{Binding PrintOrientationText}" Foreground="{StaticResource AccentBrush}" FontWeight="SemiBold"
+                       AutomationProperties.Name="{loc:T Status.PrintOrientation.Name}" />
+          </StackPanel>
           <Border Style="{StaticResource StatusSeparator}" />
           <TextBlock Text="{Binding StatusLabelText}" AutomationProperties.Name="{loc:T Status.LabelInfo}" />
         </StackPanel>

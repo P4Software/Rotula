@@ -136,7 +136,9 @@ dithering).
 
 ### Preview and print
 
-A live preview shows the label larger, as it will be drawn, and says plainly that it is approximate. The print dialog
+A live preview shows the label larger, as it will be drawn, and says plainly that it is approximate. A label set to print
+upside down (`^POI`) or as a mirror image (`^PMY`) is shown "As printed" with a sentence saying why; switch to "As designed"
+to see it upright. The canvas always stays upright for editing, and the status bar says "Prints upside down". The print dialog
 reads the resolution and paper size from the printer driver, can send a test label, and prints to a Windows printer or a
 network printer.
 
@@ -565,7 +567,8 @@ Read these before relying on Rotula for production labels, and **always print a 
   shapes and line breaks can differ slightly from the printed label. The app says so.
 - **Bitmap fonts and `FontWidth`.** The printer's built-in bitmap fonts are not reproduced; width scaling is only approximated
   in the preview.
-- **`^PO` (print orientation) is not previewed.** It is written to the ZPL, but the preview always shows the normal orientation.
+- **Print orientation (`^PO`) and mirror (`^PM`) are shown only in the Preview window.** The canvas and the PNG, JPEG and PDF
+  exports show the label as designed (upright); the exports are artwork, not a picture of the printer's output.
 - **Variables do not survive a ZPL round trip.** ZPL cannot express `{{name}}`, so imported ZPL is plain text until you edit it.
 - **Raw ZPL is not scaled on DPI conversion.** Unknown commands kept as raw ZPL stay in their original dots when a label is
   converted to another resolution, and Rotula warns you.

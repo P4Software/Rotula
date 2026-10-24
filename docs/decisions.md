@@ -618,3 +618,13 @@ leaving by accident; it is not a security boundary, because anyone who can edit 
 Keyboard-wedge scanners end a code with Enter or Tab, which `ScanSequencer` turns into "stay", "next field", "focus Print" or "print". Timing
 heuristics (telling a scan from typing by speed) were left out: they misfire on slow PCs and remote sessions, and the terminator already works for
 both people and scanners.
+## Print orientation preview (Rotula.Rendering)
+
+### ^PO and ^PM are shown "as printed" only in the Preview window
+`RenderLabel.Inverted` (^POI) and `RenderLabel.Mirrored` (^PMY) flip the whole drawing about the label's centre inside `LabelRenderer.Draw`, so
+bitmaps and PDF pages get the same transform. `LabelDocumentAdapter.ToRenderLabel` never sets them; only `LabelDocumentAdapter.AsPrinted` does,
+and only the Preview window asks for it (it opens on "As printed" with an "As designed" switch and a sentence saying why the picture is turned).
+The design canvas stays upright because editing an upside-down label (handles, rulers, snapping, typing) would be confusing; the status bar says
+"Prints upside down" / "Prints mirrored" instead. PNG, JPEG and PDF exports and the MCP preview stay as designed: they are artwork for documents,
+proofs and screens, not a picture of the media leaving the printer, and there is no "as printed" export option to honour. The two flips commute
+(inverted and mirrored together is a top-to-bottom flip), so their order is not a question.

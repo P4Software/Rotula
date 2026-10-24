@@ -581,6 +581,21 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Right side of the status bar, for example "4.00 x 3.00 in · 203 dpi · ZPL".</summary>
     public string StatusLabelText => LabelSummaryText + " \u00B7 ZPL";
 
+    /// <summary>
+    /// Status bar badge for a label the printer turns (^POI) or mirrors (^PMY), for example "Prints upside down", or empty for a normal label.
+    /// The canvas always shows the label upright for editing; this badge is how the operator knows the print differs.
+    /// </summary>
+    public string PrintOrientationText
+    {
+        get
+        {
+            var doc = Session.Document;
+            bool inverted = doc.Orientation == LabelOrientation.Inverted;
+            if (!inverted && !doc.MirrorImage) return string.Empty;
+            return Loc.Get(inverted && doc.MirrorImage ? "Status.PrintsInvertedMirrored" : inverted ? "Status.PrintsInverted" : "Status.PrintsMirrored");
+        }
+    }
+
     /// <summary>Left side of the status bar, for example "5 objects · 1 selected".</summary>
     public string ObjectsText
     {
@@ -681,6 +696,7 @@ public sealed partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(TitleBarText));
         OnPropertyChanged(nameof(LabelSummaryText));
         OnPropertyChanged(nameof(StatusLabelText));
+        OnPropertyChanged(nameof(PrintOrientationText));
         OnPropertyChanged(nameof(ObjectsText));
         OnPropertyChanged(nameof(SelectionTypeTag));
         OnPropertyChanged(nameof(BarcodePreviewNote));

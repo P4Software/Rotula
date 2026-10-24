@@ -6,11 +6,29 @@
         Title="{loc:T Preview.Title}" Width="760" Height="820" MinWidth="420" MinHeight="360"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
         AutomationProperties.Name="{loc:T Preview.Title}">
+  <Window.Resources>
+    <BooleanToVisibilityConverter x:Key="PreviewB2V" />
+  </Window.Resources>
   <DockPanel>
     <Border DockPanel.Dock="Bottom" Background="{StaticResource ToolbarBrush}" BorderBrush="{StaticResource BorderBrushLight}" BorderThickness="0,1,0,0" Padding="24,12">
       <DockPanel>
         <Button DockPanel.Dock="Right" Content="{loc:T Common.Close}" IsCancel="True" IsDefault="True" MinWidth="88" AutomationProperties.Name="{loc:T Common.Close}" />
-        <TextBlock Text="{loc:T Preview.Approximate}" Style="{StaticResource MutedText}" FontStyle="Italic" VerticalAlignment="Center" Margin="0,0,16,0" />
+        <TextBlock Text="{loc:T Preview.Approximate}" Style="{StaticResource MutedText}" FontStyle="Italic" VerticalAlignment="Center" Margin="0,0,16,0" TextWrapping="Wrap" />
+      </DockPanel>
+    </Border>
+    <!-- Shown only when the printer turns (^POI) or mirrors (^PMY) the label, so an upside-down picture always comes with its reason. -->
+    <Border x:Name="ModeBar" DockPanel.Dock="Top" Background="{StaticResource ToolbarBrush}" BorderBrush="{StaticResource BorderBrushLight}" BorderThickness="0,0,0,1" Padding="24,12,24,4"
+            Visibility="{Binding ChangesWhenPrinted, Converter={StaticResource PreviewB2V}}">
+      <DockPanel>
+        <!-- No GroupName on purpose: radios in one panel already form a group, and a named group would be shared with other open windows. -->
+        <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" AutomationProperties.Name="{loc:T Preview.Mode.Name}">
+          <RadioButton Style="{StaticResource BuilderChip}" Content="{loc:T Preview.AsPrinted}" IsChecked="{Binding AsPrinted, Mode=TwoWay}"
+                       ToolTip="{loc:T Preview.AsPrinted.Tip}" AutomationProperties.Name="{loc:T Preview.AsPrinted}" />
+          <RadioButton Style="{StaticResource BuilderChip}" Content="{loc:T Preview.AsDesigned}" IsChecked="{Binding AsDesigned, Mode=TwoWay}"
+                       ToolTip="{loc:T Preview.AsDesigned.Tip}" AutomationProperties.Name="{loc:T Preview.AsDesigned}" />
+        </StackPanel>
+        <TextBlock Text="{Binding ModeNote}" Style="{StaticResource MutedText}" VerticalAlignment="Center" TextWrapping="Wrap" Margin="8,0,0,8"
+                   AutomationProperties.LiveSetting="Polite" />
       </DockPanel>
     </Border>
     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Disabled" Background="{StaticResource WorkspaceDotBrush}">
