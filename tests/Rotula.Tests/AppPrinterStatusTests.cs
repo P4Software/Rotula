@@ -193,8 +193,7 @@ public class AppPrinterStatusTests : IDisposable
     }
 
     [Theory]
-    [InlineData("en")]
-    [InlineData("es")]
+    [MemberData(nameof(UiStrings.LanguageData), MemberType = typeof(UiStrings))]
     public void EveryReasonAndEveryHeldBackKind_HasText(string lang)
     {
         Loc.Instance.SetLanguage(lang);
