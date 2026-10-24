@@ -6258,4 +6258,46 @@ Brand and product names belong to their owners; Rotula is not affiliated with th
   <data name="Update.OpenFailed" xml:space="preserve">
     <value>The browser could not be opened. The release page is {0}</value>
   </data>
+  <data name="Preview.Mode.Name" xml:space="preserve">
+    <value>Show the label as printed or as designed</value>
+  </data>
+  <data name="Preview.AsPrinted" xml:space="preserve">
+    <value>As printed</value>
+  </data>
+  <data name="Preview.AsPrinted.Tip" xml:space="preserve">
+    <value>Show the label the way it comes out of the printer, turned or mirrored by the label's print settings.</value>
+  </data>
+  <data name="Preview.AsDesigned" xml:space="preserve">
+    <value>As designed</value>
+  </data>
+  <data name="Preview.AsDesigned.Tip" xml:space="preserve">
+    <value>Show the label upright, the way you edit it on the canvas.</value>
+  </data>
+  <data name="Preview.Note.PrintedInverted" xml:space="preserve">
+    <value>Shown as printed: this label's print orientation is set to inverted, so the printer prints it upside down.</value>
+  </data>
+  <data name="Preview.Note.PrintedMirrored" xml:space="preserve">
+    <value>Shown as printed: this label is set to print as a mirror image, so left and right are swapped.</value>
+  </data>
+  <data name="Preview.Note.PrintedBoth" xml:space="preserve">
+    <value>Shown as printed: this label is set to print upside down and as a mirror image.</value>
+  </data>
+  <data name="Preview.Note.Designed" xml:space="preserve">
+    <value>Shown as designed, the way you edit it. Choose "As printed" to see how it comes out of the printer.</value>
+  </data>
+  <data name="Status.PrintsInverted" xml:space="preserve">
+    <value>Prints upside down</value>
+  </data>
+  <data name="Status.PrintsMirrored" xml:space="preserve">
+    <value>Prints mirrored</value>
+  </data>
+  <data name="Status.PrintsInvertedMirrored" xml:space="preserve">
+    <value>Prints upside down, mirrored</value>
+  </data>
+  <data name="Status.PrintOrientation.Name" xml:space="preserve">
+    <value>Print orientation</value>
+  </data>
+  <data name="Status.PrintOrientation.Tip" xml:space="preserve">
+    <value>The canvas shows the label upright so you can edit it. Open the preview to see it as printed. Change this in the label properties.</value>
+  </data>
 </root>

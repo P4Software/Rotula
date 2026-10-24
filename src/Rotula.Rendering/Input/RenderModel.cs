@@ -58,6 +58,18 @@ public sealed record RenderLabel(int WidthDots, int HeightDots, int Dpi, IReadOn
     /// <summary>Label height in millimetres.</summary>
     public double HeightMm => HeightDots * 25.4 / Dpi;
 
+    /// <summary>
+    /// True to draw the whole label turned by 180 degrees, as the printer does with ZPL <c>^POI</c>. False (the default) draws it
+    /// the way it was designed. Only the "as printed" preview sets it; the design canvas and the exports keep it false.
+    /// </summary>
+    public bool Inverted { get; init; }
+
+    /// <summary>
+    /// True to draw the whole label as a left-to-right mirror image, as the printer does with ZPL <c>^PMY</c>. False (the default)
+    /// draws it the way it was designed. Applied together with <see cref="Inverted"/> when both are set.
+    /// </summary>
+    public bool Mirrored { get; init; }
+
     /// <summary>Builds a label from a physical size in millimetres, rounding to whole dots.</summary>
     public static RenderLabel FromMillimetres(double widthMm, double heightMm, int dpi, IReadOnlyList<RenderElement> elements) =>
         new((int)Math.Round(widthMm / 25.4 * dpi), (int)Math.Round(heightMm / 25.4 * dpi), dpi, elements);

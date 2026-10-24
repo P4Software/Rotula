@@ -27,6 +27,9 @@ public sealed class PreviewCache : IDisposable
     /// <summary>Creates a cache for a session.</summary>
     public PreviewCache(EditorSession session) => _session = session;
 
+    /// <summary>The label this cache draws (the session's current document).</summary>
+    public Core.Model.LabelDocument Document => _session.Document;
+
     /// <summary>
     /// Values of the data-merge record shown on the canvas, or null to draw the sample values. Changing it must be followed
     /// by <see cref="EditorSession.Touch"/> so the cached render is rebuilt.
@@ -70,10 +73,16 @@ public sealed class PreviewCache : IDisposable
     /// Draws the label exactly as it prints (objects that are not printed for the shown record are left out). The caller owns and must dispose the
     /// result. Returns null and sets <paramref name="errorKey"/> when the label cannot be drawn.
     /// </summary>
-    public RenderResult? RenderPrinted(double scale, out string? errorKey)
+    /// <param name="scale">Output pixels per printer dot.</param>
+    /// <param name="errorKey">Message key of the reason the label could not be drawn, or null.</param>
+    /// <param name="asPrinted">
+    /// True to turn (^POI) or mirror (^PMY) the picture the way the printer puts it on the media; false shows it as designed.
+    /// </param>
+    public RenderResult? RenderPrinted(double scale, out string? errorKey, bool asPrinted = false)
     {
         errorKey = null;
         var label = GetLabel();
+        if (asPrinted) label = LabelDocumentAdapter.AsPrinted(label, _session.Document);
         if (label.WidthDots <= 0 || label.HeightDots <= 0) { errorKey = "Preview.InvalidSize"; return null; }
         try { return LabelRenderer.RenderBitmap(label, new RenderOptions { Scale = scale }); }
         catch (ArgumentOutOfRangeException) { errorKey = "Preview.TooLarge"; return null; }
