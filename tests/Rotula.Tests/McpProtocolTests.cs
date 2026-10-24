@@ -160,17 +160,21 @@ public class McpProtocolTests : IDisposable
 
     private static string FindBuildFolder()
     {
-        // 1. Next to the tests (the project reference copies the program there).
+        // 1. The program project's own output, matching the configuration of the running tests. The copy next to the tests is
+        //    not complete: the tests also reference rotula.exe (ASP.NET Core), so the Microsoft.Extensions.* files the shared
+        //    framework provides are left out of the test folder, and Rotula.Mcp.exe (plain .NET) cannot start there.
         string here = AppContext.BaseDirectory;
-        if (File.Exists(Path.Combine(here, "Rotula.Mcp.exe"))) return here;
-        // 2. The program project's own output, matching the configuration of the running tests.
         var dir = new DirectoryInfo(here);
         while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Rotula.sln"))) dir = dir.Parent;
-        Assert.NotNull(dir);
-        string config = here.Contains(@"\Release\", StringComparison.OrdinalIgnoreCase) ? "Release" : "Debug";
-        string folder = Path.Combine(dir.FullName, "src", "Rotula.Mcp", "bin", config, "net10.0-windows");
-        Assert.True(File.Exists(Path.Combine(folder, "Rotula.Mcp.exe")), "Build Rotula.Mcp first: " + folder);
-        return folder;
+        if (dir is not null)
+        {
+            string config = here.Contains(Path.DirectorySeparatorChar + "Release" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) ? "Release" : "Debug";
+            string folder = Path.Combine(dir.FullName, "src", "Rotula.Mcp", "bin", config, "net10.0-windows");
+            if (File.Exists(Path.Combine(folder, "Rotula.Mcp.exe"))) return folder;
+        }
+        // 2. Next to the tests, for a test folder copied elsewhere.
+        Assert.True(File.Exists(Path.Combine(here, "Rotula.Mcp.exe")), "Build Rotula.Mcp first.");
+        return here;
     }
 
     private static void CopyFolder(string from, string to)

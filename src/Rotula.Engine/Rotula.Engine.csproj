@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The headless print engine: loads a .rotula label, merges data, checks the printer status and prints, with no UI. The command line
+    (Rotula.Cli) and its REST server are thin shells over it. net10.0 (not -windows): the Windows spooler is reached through Rotula.Printing,
+    which reports "unsupported" elsewhere, so the engine and its tests also build on other systems.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <RootNamespace>Rotula.Engine</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Rotula.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Rotula.Core\Rotula.Core.csproj" />
+    <ProjectReference Include="..\Rotula.Files\Rotula.Files.csproj" />
+    <ProjectReference Include="..\Rotula.Printing\Rotula.Printing.csproj" />
+    <ProjectReference Include="..\Rotula.Rendering\Rotula.Rendering.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The app's texts in all four languages, embedded as plain XML so messages read the same as in the app. Read-only links. -->
+    <EmbeddedResource Include="..\Rotula.App\Resources\Strings.en.resx" Link="Strings\Strings.en.xml" LogicalName="Rotula.Engine.Strings.en.xml" Type="Non-Resx" WithCulture="false" />
+    <EmbeddedResource Include="..\Rotula.App\Resources\Strings.es.resx" Link="Strings\Strings.es.xml" LogicalName="Rotula.Engine.Strings.es.xml" Type="Non-Resx" WithCulture="false" />
+    <EmbeddedResource Include="..\Rotula.App\Resources\Strings.pt-BR.resx" Link="Strings\Strings.pt-BR.xml" LogicalName="Rotula.Engine.Strings.pt-BR.xml" Type="Non-Resx" WithCulture="false" />
+    <EmbeddedResource Include="..\Rotula.App\Resources\Strings.fr-CA.resx" Link="Strings\Strings.fr-CA.xml" LogicalName="Rotula.Engine.Strings.fr-CA.xml" Type="Non-Resx" WithCulture="false" />
+  </ItemGroup>
+
+</Project>

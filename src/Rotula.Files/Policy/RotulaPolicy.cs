@@ -27,8 +27,11 @@ public static class PolicyNames
     /// <summary>Number: 0 means the MCP server never reads databases, whatever its settings file says.</summary>
     public const string McpDatabase = "McpDatabase";
 
+    /// <summary>Number: 0 means the print engine (the rotula command line and its REST server) never prints and never queries printers.</summary>
+    public const string PrintEngine = "PrintEngine";
+
     /// <summary>Every value name, for the template check.</summary>
-    public static readonly IReadOnlyList<string> All = new[] { Language, UpdateCheck, DefaultPrinter, UserAddOns, McpPrinting, McpDatabase };
+    public static readonly IReadOnlyList<string> All = new[] { Language, UpdateCheck, DefaultPrinter, UserAddOns, McpPrinting, McpDatabase, PrintEngine };
 }
 
 /// <summary>
@@ -65,6 +68,9 @@ public sealed record RotulaPolicy
     /// <summary>True when the MCP server must refuse database access.</summary>
     public bool McpDatabaseBlocked { get; init; }
 
+    /// <summary>True when the print engine (command line and REST server) must refuse to print and to query printers.</summary>
+    public bool PrintEngineBlocked { get; init; }
+
     /// <summary>True when the language is chosen by the organization.</summary>
     public bool IsLanguageManaged => Language is not null;
 
@@ -90,6 +96,7 @@ public sealed record RotulaPolicy
             AllowUserAddOns = source.GetInt(PolicyNames.UserAddOns) != 0,
             McpPrintingBlocked = source.GetInt(PolicyNames.McpPrinting) == 0,
             McpDatabaseBlocked = source.GetInt(PolicyNames.McpDatabase) == 0,
+            PrintEngineBlocked = source.GetInt(PolicyNames.PrintEngine) == 0,
         };
     }
 }
