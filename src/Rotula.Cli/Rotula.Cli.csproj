@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    rotula.exe: the print engine's command line and REST server ("rotula serve"), for scripts, schedulers and warehouse systems that print
+    without the designer. net10.0 with the ASP.NET Core shared framework; the Windows spooler is reached through Rotula.Printing.
+    The publish flags (self-contained, single file) are passed on the command line, never set here, so the test project can reference it.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <RootNamespace>Rotula.Cli</RootNamespace>
+    <AssemblyName>rotula</AssemblyName>
+    <ApplicationIcon>..\Rotula.Mcp\Assets\rotula-mcp.ico</ApplicationIcon>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <PublishDocumentationFile>false</PublishDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Rotula.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Rotula.Engine\Rotula.Engine.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- OpenAPI document of the REST server (MIT). -->
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.13" />
+    <!-- Runs "rotula serve" as a Windows service (MIT); does nothing when started from a console. -->
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.13" />
+  </ItemGroup>
+
+</Project>

@@ -65,6 +65,14 @@ Valor del registro: McpPrinting (número: 0 bloquea).</string>
 Habilitada o sin configurar: decide el archivo de configuración del servidor MCP (allowDatabase). Esta directiva no puede activar el acceso a bases de datos por sí sola.
 
 Valor del registro: McpDatabase (número: 0 bloquea).</string>
+      <string id="PrintEngine">Permitir que el motor de impresión imprima</string>
+      <string id="PrintEngine_Explain">El motor de impresión (rotula.exe) imprime etiquetas sin el diseñador: desde la línea de comandos, un script o un sistema de almacén que llama a su API REST.
+
+Deshabilitada: el motor de impresión nunca imprime ni consulta el estado de las impresoras, ni desde la línea de comandos ni desde su servidor REST.
+
+Habilitada o no configurada: la línea de comandos imprime con los permisos de quien la ejecuta, y el servidor REST imprime solo lo que permite su archivo de configuración (claves de API, carpetas de etiquetas, allowedPrinters). Esta directiva no puede activar nada por sí sola.
+
+Valor del registro: PrintEngine (número: 0 bloquea).</string>
     </stringTable>
     <presentationTable>
       <presentation id="Language">

@@ -14,6 +14,8 @@
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
     <PackageReference Include="ZXing.Net" Version="0.16.11" />
+    <!-- In-memory server for the print engine's REST API tests (MIT). -->
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="10.0.13" />
   </ItemGroup>
 
   <ItemGroup>
@@ -27,6 +29,8 @@
     <ProjectReference Include="..\..\src\Rotula.Printing\Rotula.Printing.csproj" />
     <ProjectReference Include="..\..\src\Rotula.Files\Rotula.Files.csproj" />
     <ProjectReference Include="..\..\src\Rotula.Mcp\Rotula.Mcp.csproj" />
+    <ProjectReference Include="..\..\src\Rotula.Engine\Rotula.Engine.csproj" />
+    <ProjectReference Include="..\..\src\Rotula.Cli\Rotula.Cli.csproj" />
     <ProjectReference Include="..\..\src\Rotula.App\Rotula.App.csproj" />
     <!-- The sample provider pack: built before the tests, never referenced (a reference would make the default load context
          resolve it and the isolation tests would prove nothing). Its output is copied to testpacks/sample below. -->
