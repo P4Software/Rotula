@@ -200,6 +200,8 @@ internal sealed class FakeToolDialogs : IToolDialogService
     public Rotula.App.ViewModels.DataMergeViewModel? LastData;
     public void ShowPrintDialog(Rotula.App.ViewModels.PrintViewModel viewModel) => LastPrint = viewModel;
     public void ShowDataWindow(Rotula.App.ViewModels.DataMergeViewModel viewModel) => LastData = viewModel;
+    public Rotula.App.ViewModels.SheetLayoutViewModel? LastSheet;
+    public void ShowSheetDialog(Rotula.App.ViewModels.SheetLayoutViewModel viewModel) => LastSheet = viewModel;
     public readonly List<Rotula.App.ViewModels.ConnectionManagerViewModel> Managers = new();
     /// <summary>What the "user" does inside the manager before it is closed (the fake dialog returns immediately).</summary>
     public Func<Rotula.App.ViewModels.ConnectionManagerViewModel, Task>? OnManager;
