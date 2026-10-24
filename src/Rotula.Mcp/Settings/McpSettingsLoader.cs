@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using Rotula.Files.Policy;
 
 namespace Rotula.Mcp.Settings;
 
@@ -61,6 +62,31 @@ public static class McpSettingsLoader
             }
         }
         return new McpSettingsLoadResult(settings, notes, settingsPath);
+    }
+
+    /// <summary>
+    /// Applies the organization's policy on top of the settings file. A policy can only switch printing or database access off,
+    /// never on: the settings file must still allow them, so an administrator cannot widen what the person who set up the server chose.
+    /// </summary>
+    /// <param name="loaded">The result of <see cref="Load"/>.</param>
+    /// <param name="policy">The policy read from the registry.</param>
+    public static McpSettingsLoadResult ApplyPolicy(McpSettingsLoadResult loaded, RotulaPolicy policy)
+    {
+        ArgumentNullException.ThrowIfNull(loaded);
+        ArgumentNullException.ThrowIfNull(policy);
+        var settings = loaded.Settings;
+        var notes = loaded.Notes.ToList();
+        if (policy.McpPrintingBlocked)
+        {
+            if (settings.AllowPrinting) notes.Add("Printing is switched off by your organization's policy, although allowPrinting is true in the settings file.");
+            settings = settings with { AllowPrinting = false, PrintingBlockedByPolicy = true };
+        }
+        if (policy.McpDatabaseBlocked)
+        {
+            if (settings.AllowDatabase) notes.Add("Database access is switched off by your organization's policy, although allowDatabase is true in the settings file.");
+            settings = settings with { AllowDatabase = false, DatabaseBlockedByPolicy = true };
+        }
+        return new McpSettingsLoadResult(settings, notes, loaded.Path);
     }
 
     private static McpSettings Parse(string path, List<string> notes)

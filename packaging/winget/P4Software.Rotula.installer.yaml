@@ -1,22 +1,42 @@
-# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.9.0.schema.json
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.10.0.schema.json
+# Two installers for the same package: the per-user Inno Setup installer (no administrator rights; the default for
+# "winget install P4Software.Rotula") and the machine-wide MSI ("--scope machine"). Double-underscore placeholders are filled by
+# scripts/New-WingetManifest.ps1, which reads the MSI's ProductCode from the signed package.
 PackageIdentifier: P4Software.Rotula
 PackageVersion: __VERSION__
-InstallerType: inno
-Scope: user
 InstallModes:
   - interactive
   - silent
   - silentWithProgress
 UpgradeBehavior: install
-# Inno Setup registers the product as <AppId>_is1; naming it lets winget match the installed app for upgrades.
-AppsAndFeaturesEntries:
-  - DisplayName: Rotula
-    Publisher: P4 Software
-    ProductCode: "{6B0E5C1A-3F7D-4C52-9A1E-2D8F4B7A9C31}_is1"
+FileExtensions:
+  - rotula
+ReleaseDate: __RELEASE_DATE__
 Installers:
   - Architecture: x64
+    InstallerType: inno
+    Scope: user
     InstallerUrl: __INSTALLER_URL__
     InstallerSha256: __INSTALLER_SHA256__
-ReleaseDate: __RELEASE_DATE__
+    # Inno Setup registers the product as <AppId>_is1; naming it lets winget match the installed app for upgrades.
+    ProductCode: "{6B0E5C1A-3F7D-4C52-9A1E-2D8F4B7A9C31}_is1"
+    AppsAndFeaturesEntries:
+      - DisplayName: Rotula
+        Publisher: P4 Software
+        ProductCode: "{6B0E5C1A-3F7D-4C52-9A1E-2D8F4B7A9C31}_is1"
+  - Architecture: x64
+    InstallerType: wix
+    Scope: machine
+    InstallerUrl: __MSI_URL__
+    InstallerSha256: __MSI_SHA256__
+    # A per-machine MSI needs administrator rights; winget asks for them before it runs msiexec silently.
+    ElevationRequirement: elevationRequired
+    # The ProductCode changes with every version (MajorUpgrade); the UpgradeCode never does.
+    ProductCode: "__MSI_PRODUCT_CODE__"
+    AppsAndFeaturesEntries:
+      - DisplayName: Rotula
+        Publisher: P4 Software
+        ProductCode: "__MSI_PRODUCT_CODE__"
+        UpgradeCode: "{4B2C6076-5B82-411C-B751-EC4B70BEE9C6}"
 ManifestType: installer
-ManifestVersion: 1.9.0
+ManifestVersion: 1.10.0

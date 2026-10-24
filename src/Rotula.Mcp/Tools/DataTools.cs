@@ -61,6 +61,8 @@ public sealed class DataTools
 
     internal static void RequireEnabled(McpContext ctx)
     {
+        if (ctx.Settings.DatabaseBlockedByPolicy)
+            throw new McpException("Database access is switched off by your organization's policy for this computer. Ask your IT department.");
         if (!ctx.Settings.AllowDatabase)
             throw new McpException("Database access is switched off. The person who installed the server can allow it by setting allowDatabase to true in rotula-mcp.settings.json.");
     }

@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.9.0.schema.json
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.10.0.schema.json
 PackageIdentifier: P4Software.Rotula
 PackageVersion: __VERSION__
 PackageLocale: en-US
@@ -15,7 +15,8 @@ Description: >-
   Rotula is a free, open source, offline-first label designer. Lay out text, barcodes, QR codes, boxes and
   images, merge data from CSV or Excel files, preview the label and print ZPL-compatible output to USB,
   spooler or network (port 9100) printers. It also includes an MCP server for AI assistants and read-only
-  database sources. It sends no telemetry and connects only to the printers and databases you set up.
+  database sources. It sends no telemetry and connects only to the printers and databases you set up, plus, only
+  if you switch it on, one anonymous daily check for a newer version.
 Moniker: rotula
 Tags:
   - label
@@ -32,7 +33,9 @@ Agreements:
 Documentations:
   - DocumentLabel: MCP server (connect an AI assistant)
     DocumentUrl: https://github.com/P4Software/Rotula/blob/main/docs/mcp.md
+  - DocumentLabel: Deployment (silent install, MSI, policies)
+    DocumentUrl: https://github.com/P4Software/Rotula/blob/main/docs/deployment.md
   - DocumentLabel: Third-party notices
     DocumentUrl: https://github.com/P4Software/Rotula/blob/main/THIRD-PARTY-NOTICES.md
 ManifestType: defaultLocale
-ManifestVersion: 1.9.0
+ManifestVersion: 1.10.0

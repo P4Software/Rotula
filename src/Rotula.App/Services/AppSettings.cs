@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Rotula.Files.Policy;
 
 namespace Rotula.App.Services;
 
@@ -46,6 +47,24 @@ public sealed class AppSettings
 
     /// <summary>The printer and printer profile used last time, so the Print dialog opens ready to go.</summary>
     public PrintSettings Print { get; set; } = new();
+
+    /// <summary>
+    /// The user switched on the daily update check (Help menu). Off by default: without it Rotula makes no network request
+    /// of its own. An organization policy overrides it (see <see cref="UpdateCheckIn"/>).
+    /// </summary>
+    public bool UpdateCheckEnabled { get; set; }
+
+    /// <summary>When the release page was last asked (UTC); null before the first check.</summary>
+    public DateTimeOffset? LastUpdateCheckUtc { get; set; }
+
+    /// <summary>The newer version whose notice the user closed, so that notice is not shown again for the same version.</summary>
+    public string? UpdateDismissedVersion { get; set; }
+
+    /// <summary>The language in use: the organization's choice when a policy sets one, otherwise the user's own.</summary>
+    public string LanguageIn(RotulaPolicy policy) => policy.Language ?? Language;
+
+    /// <summary>Whether the update check runs: a policy that switches it on or off wins over the user's choice.</summary>
+    public bool UpdateCheckIn(RotulaPolicy policy) => policy.UpdateCheck ?? UpdateCheckEnabled;
 }
 
 /// <summary>The last printer and printer profile, stored in settings.json. Enum values are stored by name.</summary>
@@ -113,7 +132,8 @@ public sealed class JsonSettingsStore : ISettingsStore
     private const string Header =
         "// Rotula settings. Edit with the program closed, or change them from the menus.\n" +
         "// language: \"auto\" follows Windows, or use \"en\" / \"es\".\n" +
-        "// unit: \"Millimeters\", \"Inches\" or \"Dots\".\n";
+        "// unit: \"Millimeters\", \"Inches\" or \"Dots\".\n" +
+        "// updateCheckEnabled: true asks GitHub once a day whether a newer version exists (off by default; nothing is sent about you).\n";
 
     private static readonly JsonSerializerOptions Options = new()
     {

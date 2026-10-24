@@ -290,3 +290,23 @@ public sealed class WpfStockDialogs : Rotula.App.ViewModels.IStockDialogs
         MessageDialogWindow.Show(MessageKind.Info, title, body, new DialogChoice(Loc.Get("Common.Close"), IsPrimary: true, IsDefault: true, IsCancel: true));
     }
 }
+
+/// <summary>Hands a web address to the default browser. Rotula itself downloads nothing.</summary>
+public sealed class ShellUrlLauncher : IUrlLauncher
+{
+    /// <inheritdoc />
+    public bool Open(string url)
+    {
+        // Only https addresses: the update notice builds its own link, but a launcher must never start a program or a file.
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps) return false;
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(uri.AbsoluteUri) { UseShellExecute = true });
+            return true;
+        }
+        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
+        {
+            return false;
+        }
+    }
+}

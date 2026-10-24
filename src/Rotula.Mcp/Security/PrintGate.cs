@@ -52,6 +52,8 @@ public sealed class PrintGate
     /// <returns>A refusal, or null when the request may proceed.</returns>
     public GateResult? CheckPolicy(string? printer, int copies)
     {
+        if (_settings.PrintingBlockedByPolicy)
+            return Refuse("Printing is switched off by your organization's policy for this computer. Ask your IT department. Nothing was sent.");
         if (!_settings.AllowPrinting)
             return Refuse("Printing is switched off. The person who installed the server can allow it by setting allowPrinting to true " +
                           "and listing the printer in allowedPrinters in rotula-mcp.settings.json. Nothing was sent.");

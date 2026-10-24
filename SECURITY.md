@@ -19,7 +19,8 @@ changelog unless you prefer otherwise.
 ## What is in scope
 
 Rotula is an offline desktop application. It makes no network calls except the printing you ask for (a TCP connection to the
-printer address you enter). Reports of interest include:
+printer address you enter), the databases you connect, and, only when you or your administrator switch it on, one anonymous
+daily request to the GitHub "latest release" API (see [docs/deployment.md](docs/deployment.md#network-traffic-and-the-update-check)). Reports of interest include:
 
 - Crashes, hangs or memory exhaustion when opening a crafted `.rotula`, ZPL, CSV or Excel file.
 - Anything that causes Rotula to write outside the folders you chose, or to send data anywhere other than the printer you selected.

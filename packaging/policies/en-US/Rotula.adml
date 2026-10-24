@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<policyDefinitionResources xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                           revision="1.0" schemaVersion="1.0" xmlns="http://schemas.microsoft.com/GroupPolicy/2006/07/PolicyDefinitions">
+  <displayName>Rotula</displayName>
+  <description>Settings for the Rotula label designer.</description>
+  <resources>
+    <stringTable>
+      <string id="SUPPORTED_Rotula_0_4">Rotula 0.4.0 or later</string>
+      <string id="Cat_P4Software">P4 Software</string>
+      <string id="Cat_Rotula">Rotula</string>
+
+      <string id="Language">Language of Rotula</string>
+      <string id="Language_Explain">Sets the language of Rotula and locks it: View &gt; Language is disabled and says "Managed by your organization".
+
+"Same as Windows" uses Spanish when the Windows display language is Spanish and English otherwise.
+
+Not configured or disabled: each user chooses the language.
+
+Registry value: Language (text: auto, en or es).</string>
+      <string id="Language_Auto">Same as Windows</string>
+      <string id="Language_En">English</string>
+      <string id="Language_Es">Spanish</string>
+
+      <string id="UpdateCheck">Check for updates</string>
+      <string id="UpdateCheck_Explain">Controls the daily update check and locks the choice (Help &gt; Check for updates once a day).
+
+Enabled: once a day Rotula asks the public GitHub page of the project which version is the newest, with one anonymous request. Nothing about the user or the computer is sent. When a newer version exists, a notice with a link to the release page appears. Rotula never downloads or installs anything itself.
+
+Disabled: Rotula makes no update request at all, and users cannot switch it on.
+
+Not configured: each user decides. The check is off until the user switches it on.
+
+Registry value: UpdateCheck (number: 1 on, 0 off).</string>
+
+      <string id="DefaultPrinter">Default printer</string>
+      <string id="DefaultPrinter_Explain">Preselects this Windows printer in the Print dialog for users who have not chosen a printer yet. Users can still choose another printer; their choice is remembered.
+
+Type the printer name exactly as Windows shows it. If the printer is not installed on the computer, Rotula falls back to the Windows default printer without a message.
+
+Registry value: DefaultPrinter (text).</string>
+
+      <string id="UserAddOns">Allow data source add-ons from the user's folder</string>
+      <string id="UserAddOns_Explain">Data source add-ons are programs. Rotula loads add-ons from the "packs" folder next to the program (installed by an administrator) and, after the user approves each one, from %AppData%\Rotula\packs.
+
+Disabled: add-ons in the user's folder are not loaded and not offered for approval. Add-ons in the installed "packs" folder still work.
+
+Enabled or not configured: users may approve add-ons in their own folder.
+
+Registry value: UserAddOns (number: 0 blocks the user's folder).</string>
+
+      <string id="McpPrinting">Allow the MCP server to print</string>
+      <string id="McpPrinting_Explain">The Rotula MCP server (Rotula.Mcp.exe) lets an AI assistant design labels. Printing is off unless its settings file allows it.
+
+Disabled: the MCP server never prints, whatever its settings file says.
+
+Enabled or not configured: the settings file of the MCP server decides (allowPrinting and allowedPrinters). This policy cannot switch printing on by itself.
+
+Registry value: McpPrinting (number: 0 blocks).</string>
+
+      <string id="McpDatabase">Allow the MCP server to read databases</string>
+      <string id="McpDatabase_Explain">Disabled: the Rotula MCP server never reads saved database connections, whatever its settings file says.
+
+Enabled or not configured: the settings file of the MCP server decides (allowDatabase). This policy cannot switch database access on by itself.
+
+Registry value: McpDatabase (number: 0 blocks).</string>
+    </stringTable>
+    <presentationTable>
+      <presentation id="Language">
+        <dropdownList refId="Language" defaultItem="0">Language:</dropdownList>
+      </presentation>
+      <presentation id="DefaultPrinter">
+        <textBox refId="DefaultPrinter">
+          <label>Printer name:</label>
+        </textBox>
+      </presentation>
+    </presentationTable>
+  </resources>
+</policyDefinitionResources>

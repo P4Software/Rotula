@@ -56,6 +56,11 @@ a folder you own.
 A damaged settings file never switches anything on: the server falls back to the defaults above, leaves the file untouched
 and logs what is wrong. Values outside their range are clamped and mentioned in the log.
 
+An organization can switch printing and database access off for everyone with the `McpPrinting` and `McpDatabase` policies
+(Group Policy or Intune, see [deployment.md](deployment.md#policy-settings)). A policy can only take them away: when it
+allows them, the settings file above still decides. Installed in Program Files (the MSI or an all-users install) the
+settings file cannot be created by a normal user; the server then runs with the safe defaults and says so in its log.
+
 ## Tools
 
 Positions and sizes are in the label's unit (millimetres unless the label was created in inches or dots), measured from the

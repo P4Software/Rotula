@@ -1,0 +1,29 @@
+<Project Sdk="WixToolset.Sdk/5.0.2">
+
+  <!--
+    The machine-wide Windows Installer package (Rotula-X.Y.Z-win-x64.msi) for administrators: Intune, Group Policy software
+    installation, Configuration Manager. Built by packaging\installer\build-installer.ps1 from the same signed files as the
+    per-user Inno Setup installer, then signed the same way. Not part of Rotula.sln: the WiX Toolset (MS-RL, build tool only,
+    nothing of it ships) runs on Windows, and the solution must keep building on any CI runner.
+
+    By hand (Windows, .NET SDK, after build-installer.ps1 has filled artifacts\stage):
+      dotnet build packaging\msi\Rotula.Msi.wixproj -c Release -p:ProductVersion=0.4.0 -p:StageDir=<repo>\artifacts\stage
+  -->
+  <PropertyGroup>
+    <OutputName>Rotula</OutputName>
+    <OutputType>Package</OutputType>
+    <InstallerPlatform>x64</InstallerPlatform>
+    <!-- Windows Installer versions are numeric (major.minor.build); build-installer.ps1 passes the version without a -suffix. -->
+    <ProductVersion Condition="'$(ProductVersion)' == ''">0.0.0</ProductVersion>
+    <StageDir Condition="'$(StageDir)' == ''">$(MSBuildThisFileDirectory)..\..\artifacts\stage</StageDir>
+    <RepoRoot>$(MSBuildThisFileDirectory)..\..\</RepoRoot>
+    <DefineConstants>ProductVersion=$(ProductVersion);StageDir=$(StageDir);RepoRoot=$(RepoRoot)</DefineConstants>
+    <!-- The source files come from the stage folder, never from bin\: only the signed, published programs go into the package. -->
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Package.wxs" />
+  </ItemGroup>
+
+</Project>
