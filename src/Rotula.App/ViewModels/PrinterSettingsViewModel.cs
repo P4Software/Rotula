@@ -467,7 +467,7 @@ public sealed partial class PrinterSettingsViewModel : ObservableObject
         return $"{Math.Round(w.Value, 2).ToString("0.##", CultureInfo.CurrentCulture)} x {Math.Round(h.Value, 2).ToString("0.##", CultureInfo.CurrentCulture)} {unit}";
     }
 
-    /// <summary>Short description of the chosen printer for summaries, for example "Zebra ZD420" or "192.168.1.50:9100".</summary>
+    /// <summary>Short description of the chosen printer for summaries, for example a Windows printer name or "192.168.1.50:9100".</summary>
     public string Summary => UseNetwork ? $"{Host}:{PortText}" : (SelectedPrinterName ?? string.Empty);
 
     private void LoadFromSettings()
