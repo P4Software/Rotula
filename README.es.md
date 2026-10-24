@@ -41,6 +41,7 @@ Diséñala, previsualízala, combina tus datos e imprímela. Sin cuenta, sin nub
 - [Etiquetas y rollos de la biblioteca](#etiquetas-y-rollos-de-la-biblioteca)
 - [Fuentes de bases de datos](#fuentes-de-bases-de-datos)
 - [Impresión](#impresión)
+- [Puesto de impresión](#puesto-de-impresión)
 - [Servidor MCP](#servidor-mcp)
 - [Códigos de barras compatibles](#códigos-de-barras-compatibles)
 - [Idiomas](#idiomas)
@@ -170,6 +171,7 @@ salida es determinista y en ASCII puro, así que puedes versionarla, compararla 
 | **Cobertura ZPL** | 222 comandos ZPL revisados uno por uno en una [página de cobertura generada](docs/zpl-coverage.md) (en inglés) |
 | **Servidor MCP** | Un programa aparte que permite a los clientes compatibles con MCP diseñar y revisar etiquetas ([detalles](#servidor-mcp)) |
 | **Impresión** | Cola de Windows (RAW, incluido USB) y puerto TCP 9100, detección de DPI y papel, perfiles de impresora, etiqueta de prueba, comprobación del estado de la impresora antes y después de cada trabajo |
+| **Puesto de impresión** | Una pantalla bloqueada, solo para imprimir, pensada para el almacén: elige o escanea una etiqueta, responde a sus preguntas con un lector de códigos, imprime y lee la respuesta de la impresora en letra grande y palabras sencillas ([detalles](#puesto-de-impresión)) |
 | **Resolución** | Convierte una etiqueta entre 203, 300 y 600 dpi conservando su tamaño físico |
 | **Idiomas** | Español e inglés, con cambio en vivo |
 
@@ -389,6 +391,25 @@ Rotula envía el ZPL como datos RAW, así que el controlador lo transmite sin to
   que el juego de caracteres no puede imprimir: cada caso dice qué pasó y qué hacer. Rotula no incluye controladores de impresora.
 
 Más información en [docs/printing.md](docs/printing.md) (en inglés).
+
+---
+
+## Puesto de impresión
+
+Una pantalla solo para imprimir, para operarios, que se abre con `Rotula.exe --station <carpeta>` (o **Archivo > Abrir puesto de
+impresión**). Muestra las etiquetas de una carpeta como mosaicos grandes, sin menús ni herramientas de diseño.
+
+- **Elegir o escanear.** Toca un mosaico, escribe parte de su nombre o escanea el código que el puesto asigna a la etiqueta.
+- **Pensado para lectores.** Las preguntas de la etiqueta son campos grandes; un lector de códigos de tipo teclado rellena uno y su
+  Intro o Tab pasa al siguiente. Con "imprimir al último escaneo" el último escaneo imprime en el acto. Antes se comprueban las
+  reglas de la propia etiqueta (obligatorio, longitud, patrón), y un escaneo rechazado se queda en su campo.
+- **Resultado claro.** Lista, retenida (por ejemplo "el cabezal está abierto"), impresa y verificada, o sin confirmar, en letra
+  grande y palabras sencillas. Después las preguntas se vacían para la siguiente pieza; se pueden conservar las respuestas elegidas.
+- **Bloqueado.** Para salir hace falta un PIN cuando se ha definido (solo se guarda un hash con sal). Las impresoras, los límites
+  de copias, la impresión de datos y el PIN vienen de un `station.json` junto a las etiquetas o en `%ProgramData%\Rotula`, así que
+  el puesto se puede configurar por directiva.
+
+Más información en [docs/print-station.md](docs/print-station.md) (en inglés).
 
 ---
 
