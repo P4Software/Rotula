@@ -213,6 +213,7 @@ public class AppLocalizationTests : IDisposable
         Check<Rotula.Core.Model.DataBarType>(); Check<DiagonalLean>(); Check<GraphicSymbol>(); Check<FieldDirection>(); Check<MsiCheckDigitMode>(); Check<CodablockMode>(); Check<Rotula.Core.Barcodes.BarcodeCategory>();
         Check<Rotula.Core.Merge.CopiesMode>(); Check<Rotula.Core.Merge.InvalidRecordPolicy>(); Check<Rotula.Core.Merge.CounterKind>();
         Check<Rotula.Core.Merge.CounterOverflow>(); Check<Rotula.Printing.PrinterTransport>();
+        Check<Rotula.Printing.PrinterCondition>(); Check<Rotula.Printing.PrinterPrintMode>();
     }
 
     [Fact]
