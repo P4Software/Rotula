@@ -6300,4 +6300,202 @@ Les noms de marques et de produits appartiennent à leurs propriétaires ; Rot
   <data name="Status.PrintOrientation.Tip" xml:space="preserve">
     <value>La zone de conception affiche l’étiquette à l’endroit pour que vous puissiez la modifier. Ouvrez l’aperçu pour la voir telle qu’imprimée. Modifiez ce réglage dans les propriétés de l’étiquette.</value>
   </data>
+  <data name="Menu.ExportSheets" xml:space="preserve">
+    <value>Feuilles d’étiquettes (PDF)...</value>
+  </data>
+  <data name="Print.Button.Sheets" xml:space="preserve">
+    <value>Feuilles d’étiquettes (PDF)...</value>
+  </data>
+  <data name="Print.Button.Sheets.Tip" xml:space="preserve">
+    <value>Place les étiquettes sur des feuilles pour une imprimante de bureau (laser ou jet d’encre) et les enregistre en PDF.</value>
+  </data>
+  <data name="Print.Sheet.Title" xml:space="preserve">
+    <value>Feuilles d’étiquettes</value>
+  </data>
+  <data name="Print.Sheet.Subtitle" xml:space="preserve">
+    <value>Imprimez des étiquettes sur des feuilles avec une imprimante de bureau (laser ou jet d’encre). Rotula enregistre les feuilles en PDF à leur taille réelle ; imprimez-le en taille réelle (100 %).</value>
+  </data>
+  <data name="Print.Sheet.UsesRecords" xml:space="preserve">
+    <value>Des données sont chargées : les enregistrements cochés vont sur les feuilles, avec leurs copies et leurs numéros de série, comme à l’impression.</value>
+  </data>
+  <data name="Print.Sheet.Template" xml:space="preserve">
+    <value>Feuille</value>
+  </data>
+  <data name="Print.Sheet.Template.Hint" xml:space="preserve">
+    <value>Les feuilles de fournisseurs différents ayant la même taille d’étiquette peuvent varier d’un millimètre. Imprimez une page sur du papier ordinaire, superposez-la à une feuille d’étiquettes et ajustez les marges au besoin.</value>
+  </data>
+  <data name="Print.Sheet.Custom" xml:space="preserve">
+    <value>Disposition personnalisée</value>
+  </data>
+  <data name="Print.Sheet.Template.Name" xml:space="preserve">
+    <value>{0}, {1} par feuille ({2} x {3}), {4}</value>
+  </data>
+  <data name="Print.Sheet.Size.In" xml:space="preserve">
+    <value>{0} x {1} po</value>
+  </data>
+  <data name="Print.Sheet.Size.Mm" xml:space="preserve">
+    <value>{0} x {1} mm</value>
+  </data>
+  <data name="Print.Sheet.Page" xml:space="preserve">
+    <value>Papier</value>
+  </data>
+  <data name="Print.Sheet.Inches" xml:space="preserve">
+    <value>Tailles en pouces</value>
+  </data>
+  <data name="Print.Sheet.Unit.Mm" xml:space="preserve">
+    <value>Toutes les tailles en millimètres</value>
+  </data>
+  <data name="Print.Sheet.Unit.In" xml:space="preserve">
+    <value>Toutes les tailles en pouces</value>
+  </data>
+  <data name="Print.Sheet.PageWidth" xml:space="preserve">
+    <value>Largeur du papier</value>
+  </data>
+  <data name="Print.Sheet.PageHeight" xml:space="preserve">
+    <value>Hauteur du papier</value>
+  </data>
+  <data name="Print.Sheet.LabelWidth" xml:space="preserve">
+    <value>Largeur de l’étiquette</value>
+  </data>
+  <data name="Print.Sheet.LabelHeight" xml:space="preserve">
+    <value>Hauteur de l’étiquette</value>
+  </data>
+  <data name="Print.Sheet.Columns" xml:space="preserve">
+    <value>Étiquettes en largeur</value>
+  </data>
+  <data name="Print.Sheet.Rows" xml:space="preserve">
+    <value>Étiquettes en hauteur</value>
+  </data>
+  <data name="Print.Sheet.Top" xml:space="preserve">
+    <value>Marge du haut</value>
+  </data>
+  <data name="Print.Sheet.Left" xml:space="preserve">
+    <value>Marge de gauche</value>
+  </data>
+  <data name="Print.Sheet.HorizontalPitch" xml:space="preserve">
+    <value>En largeur : d’un bord à l’autre</value>
+  </data>
+  <data name="Print.Sheet.VerticalPitch" xml:space="preserve">
+    <value>En hauteur : d’un bord à l’autre</value>
+  </data>
+  <data name="Print.Sheet.Pitch.Tip" xml:space="preserve">
+    <value>La distance entre le bord gauche (ou supérieur) d’une étiquette et le même bord de la suivante : la taille de l’étiquette plus l’espace entre les étiquettes.</value>
+  </data>
+  <data name="Print.Sheet.Start" xml:space="preserve">
+    <value>Commencer à la position</value>
+  </data>
+  <data name="Print.Sheet.Start.Tip" xml:space="preserve">
+    <value>Sur une feuille déjà entamée, la première position libre. Les positions sont comptées par rangées à partir du coin supérieur gauche. Vous pouvez aussi cliquer sur une position dans l’aperçu.</value>
+  </data>
+  <data name="Print.Sheet.Order" xml:space="preserve">
+    <value>Ordre de remplissage</value>
+  </data>
+  <data name="Print.Sheet.Guides" xml:space="preserve">
+    <value>Repères</value>
+  </data>
+  <data name="Print.Sheet.ActualSize" xml:space="preserve">
+    <value>Imprimez le PDF en taille réelle (100 %), sans « Ajuster à la page », sinon les étiquettes ne seront pas alignées sur la feuille.</value>
+  </data>
+  <data name="Print.Sheet.Preview" xml:space="preserve">
+    <value>Aperçu de la feuille</value>
+  </data>
+  <data name="Print.Sheet.Preview.Hint" xml:space="preserve">
+    <value>Cliquez sur une position pour commencer à cet endroit. Les positions grises sont déjà utilisées ; les numéros indiquent où vont les premières étiquettes.</value>
+  </data>
+  <data name="Print.Sheet.Slot.Used" xml:space="preserve">
+    <value>Position {0} : déjà utilisée</value>
+  </data>
+  <data name="Print.Sheet.Slot.Label" xml:space="preserve">
+    <value>Position {0} : étiquette {1}</value>
+  </data>
+  <data name="Print.Sheet.Slot.Empty" xml:space="preserve">
+    <value>Position {0} : vide</value>
+  </data>
+  <data name="Print.Sheet.Export" xml:space="preserve">
+    <value>Enregistrer en PDF...</value>
+  </data>
+  <data name="Print.Sheet.Summary" xml:space="preserve">
+    <value>Étiquettes : {0}. Feuilles : {1} ({2} par feuille).</value>
+  </data>
+  <data name="Print.Sheet.Summary.FromData" xml:space="preserve">
+    <value>{0} par feuille. Les copies proviennent d’une colonne des données ; le nombre de feuilles n’est donc connu qu’à la création du PDF.</value>
+  </data>
+  <data name="Print.Sheet.Field.Invalid" xml:space="preserve">
+    <value>{0} : tapez un nombre.</value>
+  </data>
+  <data name="Print.Sheet.Copies.Invalid" xml:space="preserve">
+    <value>Copies : tapez un nombre entier de 1 à {0}.</value>
+  </data>
+  <data name="Print.Sheet.Busy" xml:space="preserve">
+    <value>Création des feuilles...</value>
+  </data>
+  <data name="Print.Sheet.Done" xml:space="preserve">
+    <value>{2} enregistré (étiquettes : {0}, feuilles : {1}). Imprimez-le en taille réelle (100 %).</value>
+  </data>
+  <data name="Print.Sheet.TooMany" xml:space="preserve">
+    <value>Cela dépasse {0} étiquettes, c’est trop pour un seul PDF. Cochez moins d’enregistrements ou réduisez les copies, et enregistrez le reste dans un autre fichier.</value>
+  </data>
+  <data name="Enum.SheetPageKind.Letter" xml:space="preserve">
+    <value>Lettre (8,5 x 11 po)</value>
+  </data>
+  <data name="Enum.SheetPageKind.A4" xml:space="preserve">
+    <value>A4 (210 x 297 mm)</value>
+  </data>
+  <data name="Enum.SheetPageKind.Legal" xml:space="preserve">
+    <value>Légal (8,5 x 14 po)</value>
+  </data>
+  <data name="Enum.SheetPageKind.Custom" xml:space="preserve">
+    <value>Taille personnalisée</value>
+  </data>
+  <data name="Enum.SheetOrder.AcrossThenDown" xml:space="preserve">
+    <value>Par rangées, puis vers le bas</value>
+  </data>
+  <data name="Enum.SheetOrder.DownThenAcross" xml:space="preserve">
+    <value>Par colonnes, puis vers la droite</value>
+  </data>
+  <data name="Enum.SheetGuides.None" xml:space="preserve">
+    <value>Aucun</value>
+  </data>
+  <data name="Enum.SheetGuides.CropMarks" xml:space="preserve">
+    <value>Traits de coupe dans les marges</value>
+  </data>
+  <data name="Enum.SheetGuides.Outlines" xml:space="preserve">
+    <value>Contour de chaque étiquette (essai sur papier ordinaire)</value>
+  </data>
+  <data name="Issue.Sheet.Page.Size" xml:space="preserve">
+    <value>Le papier doit mesurer entre {0} et {1} mm de chaque côté.</value>
+  </data>
+  <data name="Issue.Sheet.Label.Size" xml:space="preserve">
+    <value>Les étiquettes doivent mesurer au moins {0} mm de largeur et de hauteur.</value>
+  </data>
+  <data name="Issue.Sheet.Grid.Count" xml:space="preserve">
+    <value>Une feuille peut avoir de 1 à {0} étiquettes en largeur et de 1 à {1} en hauteur.</value>
+  </data>
+  <data name="Issue.Sheet.Margin.Negative" xml:space="preserve">
+    <value>Les marges ne peuvent pas être négatives.</value>
+  </data>
+  <data name="Issue.Sheet.Labels.OverlapAcross" xml:space="preserve">
+    <value>Les étiquettes se chevauchent en largeur : d’un bord d’étiquette au suivant, il y a {0} mm, mais une étiquette mesure {1} mm de largeur. La distance doit être au moins égale à la largeur de l’étiquette.</value>
+  </data>
+  <data name="Issue.Sheet.Labels.OverlapDown" xml:space="preserve">
+    <value>Les étiquettes se chevauchent en hauteur : d’un bord d’étiquette au suivant, il y a {0} mm, mais une étiquette mesure {1} mm de hauteur. La distance doit être au moins égale à la hauteur de l’étiquette.</value>
+  </data>
+  <data name="Issue.Sheet.Labels.TooWide" xml:space="preserve">
+    <value>Les étiquettes ne tiennent pas dans la largeur du papier : la dernière colonne se termine à {0} mm et le papier mesure {1} mm de largeur. Réduisez la marge de gauche, la distance ou le nombre d’étiquettes en largeur.</value>
+  </data>
+  <data name="Issue.Sheet.Labels.TooTall" xml:space="preserve">
+    <value>Les étiquettes ne tiennent pas dans la hauteur du papier : la dernière rangée se termine à {0} mm et le papier mesure {1} mm de hauteur. Réduisez la marge du haut, la distance ou le nombre d’étiquettes en hauteur.</value>
+  </data>
+  <data name="Issue.Sheet.Labels.NearEdge" xml:space="preserve">
+    <value>Certaines étiquettes arrivent à moins de {0} mm du bord du papier. La plupart des imprimantes de bureau ne peuvent pas imprimer à cet endroit ; gardez donc le texte et les codes à barres loin de ces bords d’étiquette.</value>
+  </data>
+  <data name="Issue.Sheet.Start.Range" xml:space="preserve">
+    <value>La position de départ doit être un nombre de 1 à {0}.</value>
+  </data>
+  <data name="Issue.Sheet.Label.Larger" xml:space="preserve">
+    <value>Le dessin de l’étiquette mesure {0} x {1} mm, soit plus que les étiquettes de {2} x {3} mm de cette feuille. Il est imprimé à sa propre taille, centré, et coupé aux bords de l’étiquette. Choisissez une feuille avec de plus grandes étiquettes ou redimensionnez le dessin.</value>
+  </data>
+  <data name="Issue.Sheet.Label.Smaller" xml:space="preserve">
+    <value>Le dessin de l’étiquette mesure {0} x {1} mm, soit moins que les étiquettes de {2} x {3} mm de cette feuille. Il est imprimé à sa propre taille, centré sur chaque étiquette.</value>
+  </data>
 </root>

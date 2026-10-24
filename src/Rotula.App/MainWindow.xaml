@@ -170,6 +170,7 @@
           <MenuItem Header="{loc:T Menu.ExportPng}" Command="{Binding ExportPngCommand}" />
           <MenuItem Header="{loc:T Menu.ExportJpeg}" Command="{Binding ExportJpegCommand}" />
           <MenuItem Header="{loc:T Menu.ExportPdf}" Command="{Binding ExportPdfCommand}" />
+          <MenuItem Header="{loc:T Menu.ExportSheets}" Command="{Binding ShowSheetsCommand}" />
           <MenuItem Header="{loc:T Menu.ExportZpl}" Command="{Binding ExportZplCommand}" />
         </MenuItem>
         <MenuItem Header="{loc:T Menu.ImportZpl}" Command="{Binding ImportZplCommand}" />

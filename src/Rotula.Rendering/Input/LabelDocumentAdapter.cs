@@ -31,7 +31,24 @@ public static class LabelDocumentAdapter
     public static RenderLabel ToRenderLabel(LabelDocument doc, IReadOnlyDictionary<string, string>? data = null, bool includeNonPrinting = false)
     {
         ArgumentNullException.ThrowIfNull(doc);
-        data = ResolvePreviewData(doc, data);
+        return Build(doc, ResolvePreviewData(doc, data), includeNonPrinting);
+    }
+
+    /// <summary>
+    /// Converts a label document into render input with values that were already resolved for one label of a run (a print run's or a merge batch's
+    /// values, see <c>LabelPrintRun.LabelValues</c> and <c>MergedLabel.Values</c>). Unlike <see cref="ToRenderLabel"/> the variables are not
+    /// resolved again, so every label keeps its own serial number instead of the preview's "next number". Objects that are not printed are left out.
+    /// </summary>
+    /// <param name="doc">The design.</param>
+    /// <param name="values">The resolved values of this label, or null for the sample values of a label without definitions.</param>
+    public static RenderLabel ToRenderLabelResolved(LabelDocument doc, IReadOnlyDictionary<string, string>? values)
+    {
+        ArgumentNullException.ThrowIfNull(doc);
+        return Build(doc, values, includeNonPrinting: false);
+    }
+
+    private static RenderLabel Build(LabelDocument doc, IReadOnlyDictionary<string, string>? data, bool includeNonPrinting)
+    {
         int dpi = (int)doc.Dpi;
         int homeX = doc.Margins.Left.ToDots(doc.Dpi);
         int homeY = doc.Margins.Top.ToDots(doc.Dpi);

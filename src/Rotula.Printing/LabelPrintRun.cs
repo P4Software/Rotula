@@ -197,6 +197,43 @@ public sealed class LabelPrintRun
     }
 
     /// <summary>
+    /// The values that fill every label of the run, in order and copies included (<see cref="LabelCount"/> items), for an output that draws the label
+    /// instead of sending ZPL, such as label sheets saved as PDF. They are resolved exactly as <see cref="Blocks"/> resolves them, so copy <c>i</c> carries
+    /// the serial number the ZPL of copy <c>i</c> would carry; a copy that cannot be resolved ends the sequence (<see cref="StoppedEarly"/>). Confirm
+    /// the labels that were written with <see cref="Complete"/>, as after sending blocks. Enumerate either this or <see cref="Blocks"/>, once.
+    /// </summary>
+    /// <remarks>The dictionaries are already resolved: draw them without resolving the variables again, or a counter would show its preview value.</remarks>
+    public IEnumerable<IReadOnlyDictionary<string, string>?> LabelValues()
+    {
+        if (!CanPrint) yield break;
+        if (_job is null)
+        {
+            // No definitions: every copy is the same record.
+            for (long i = 0; i < LabelCount; i++) yield return _data;
+            yield break;
+        }
+        if (!_expanded)
+        {
+            // No counter (or one copy): the copies are the same label, as ^PQ would print them.
+            var values = _job.Resolve(0, _data).Values;
+            for (long i = 0; i < LabelCount; i++) yield return values;
+            yield break;
+        }
+        for (long i = 0; i < LabelCount; i++)
+        {
+            var resolution = _job.Resolve(i, _data);
+            var errors = resolution.Issues.Where(x => x.Severity == ValidationSeverity.Error).ToList();
+            if (errors.Count > 0)
+            {
+                _issues.AddRange(errors);
+                StoppedEarly = true;
+                yield break;
+            }
+            yield return resolution.Values;
+        }
+    }
+
+    /// <summary>
     /// Confirms how many labels (counted from the first) may have been printed and releases the serial numbers that were not used.
     /// Safe to call more than once; only the first call counts. Returns problems met while writing the counter file.
     /// </summary>

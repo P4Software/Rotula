@@ -6300,4 +6300,202 @@ Os nomes de marcas e produtos pertencem aos seus proprietários; o Rotula não t
   <data name="Status.PrintOrientation.Tip" xml:space="preserve">
     <value>A área de design mostra a etiqueta na posição normal para que você possa editá-la. Abra a visualização para vê-la como é impressa. Altere isso nas propriedades da etiqueta.</value>
   </data>
+  <data name="Menu.ExportSheets" xml:space="preserve">
+    <value>Folhas de etiquetas (PDF)...</value>
+  </data>
+  <data name="Print.Button.Sheets" xml:space="preserve">
+    <value>Folhas de etiquetas (PDF)...</value>
+  </data>
+  <data name="Print.Button.Sheets.Tip" xml:space="preserve">
+    <value>Coloca as etiquetas em folhas para uma impressora de escritório (laser ou jato de tinta) e as salva como PDF.</value>
+  </data>
+  <data name="Print.Sheet.Title" xml:space="preserve">
+    <value>Folhas de etiquetas</value>
+  </data>
+  <data name="Print.Sheet.Subtitle" xml:space="preserve">
+    <value>Imprima etiquetas em folhas com uma impressora de escritório (laser ou jato de tinta). O Rotula salva as folhas como PDF no tamanho real; imprima-o em tamanho real (100%).</value>
+  </data>
+  <data name="Print.Sheet.UsesRecords" xml:space="preserve">
+    <value>Há dados carregados: os registros marcados vão para as folhas, com suas cópias e números de série, como na impressão.</value>
+  </data>
+  <data name="Print.Sheet.Template" xml:space="preserve">
+    <value>Folha</value>
+  </data>
+  <data name="Print.Sheet.Template.Hint" xml:space="preserve">
+    <value>Folhas de fornecedores diferentes com o mesmo tamanho de etiqueta podem variar um milímetro. Imprima uma página em papel comum, coloque-a contra uma folha de etiquetas e ajuste as margens se for preciso.</value>
+  </data>
+  <data name="Print.Sheet.Custom" xml:space="preserve">
+    <value>Layout personalizado</value>
+  </data>
+  <data name="Print.Sheet.Template.Name" xml:space="preserve">
+    <value>{0}, {1} por folha ({2} x {3}), {4}</value>
+  </data>
+  <data name="Print.Sheet.Size.In" xml:space="preserve">
+    <value>{0} x {1} pol</value>
+  </data>
+  <data name="Print.Sheet.Size.Mm" xml:space="preserve">
+    <value>{0} x {1} mm</value>
+  </data>
+  <data name="Print.Sheet.Page" xml:space="preserve">
+    <value>Papel</value>
+  </data>
+  <data name="Print.Sheet.Inches" xml:space="preserve">
+    <value>Medidas em polegadas</value>
+  </data>
+  <data name="Print.Sheet.Unit.Mm" xml:space="preserve">
+    <value>Todas as medidas em milímetros</value>
+  </data>
+  <data name="Print.Sheet.Unit.In" xml:space="preserve">
+    <value>Todas as medidas em polegadas</value>
+  </data>
+  <data name="Print.Sheet.PageWidth" xml:space="preserve">
+    <value>Largura do papel</value>
+  </data>
+  <data name="Print.Sheet.PageHeight" xml:space="preserve">
+    <value>Altura do papel</value>
+  </data>
+  <data name="Print.Sheet.LabelWidth" xml:space="preserve">
+    <value>Largura da etiqueta</value>
+  </data>
+  <data name="Print.Sheet.LabelHeight" xml:space="preserve">
+    <value>Altura da etiqueta</value>
+  </data>
+  <data name="Print.Sheet.Columns" xml:space="preserve">
+    <value>Etiquetas na horizontal</value>
+  </data>
+  <data name="Print.Sheet.Rows" xml:space="preserve">
+    <value>Etiquetas na vertical</value>
+  </data>
+  <data name="Print.Sheet.Top" xml:space="preserve">
+    <value>Margem superior</value>
+  </data>
+  <data name="Print.Sheet.Left" xml:space="preserve">
+    <value>Margem esquerda</value>
+  </data>
+  <data name="Print.Sheet.HorizontalPitch" xml:space="preserve">
+    <value>Na horizontal: de borda a borda</value>
+  </data>
+  <data name="Print.Sheet.VerticalPitch" xml:space="preserve">
+    <value>Na vertical: de borda a borda</value>
+  </data>
+  <data name="Print.Sheet.Pitch.Tip" xml:space="preserve">
+    <value>A distância da borda esquerda (ou superior) de uma etiqueta até a mesma borda da seguinte: o tamanho da etiqueta mais o espaço entre etiquetas.</value>
+  </data>
+  <data name="Print.Sheet.Start" xml:space="preserve">
+    <value>Começar na posição</value>
+  </data>
+  <data name="Print.Sheet.Start.Tip" xml:space="preserve">
+    <value>Em uma folha já usada em parte, a primeira posição livre. As posições são contadas pelas linhas a partir do canto superior esquerdo. Você também pode clicar em uma posição na visualização.</value>
+  </data>
+  <data name="Print.Sheet.Order" xml:space="preserve">
+    <value>Ordem de preenchimento</value>
+  </data>
+  <data name="Print.Sheet.Guides" xml:space="preserve">
+    <value>Guias</value>
+  </data>
+  <data name="Print.Sheet.ActualSize" xml:space="preserve">
+    <value>Imprima o PDF em tamanho real (100%), sem "Ajustar à página", ou as etiquetas não vão coincidir com a folha.</value>
+  </data>
+  <data name="Print.Sheet.Preview" xml:space="preserve">
+    <value>Visualização da folha</value>
+  </data>
+  <data name="Print.Sheet.Preview.Hint" xml:space="preserve">
+    <value>Clique em uma posição para começar nela. As posições cinza já estão usadas; os números mostram onde vão as primeiras etiquetas.</value>
+  </data>
+  <data name="Print.Sheet.Slot.Used" xml:space="preserve">
+    <value>Posição {0}: já usada</value>
+  </data>
+  <data name="Print.Sheet.Slot.Label" xml:space="preserve">
+    <value>Posição {0}: etiqueta {1}</value>
+  </data>
+  <data name="Print.Sheet.Slot.Empty" xml:space="preserve">
+    <value>Posição {0}: vazia</value>
+  </data>
+  <data name="Print.Sheet.Export" xml:space="preserve">
+    <value>Salvar como PDF...</value>
+  </data>
+  <data name="Print.Sheet.Summary" xml:space="preserve">
+    <value>Etiquetas: {0}. Folhas: {1} ({2} por folha).</value>
+  </data>
+  <data name="Print.Sheet.Summary.FromData" xml:space="preserve">
+    <value>{0} por folha. As cópias vêm de uma coluna dos dados, por isso o número de folhas só é conhecido quando o PDF é criado.</value>
+  </data>
+  <data name="Print.Sheet.Field.Invalid" xml:space="preserve">
+    <value>{0}: digite um número.</value>
+  </data>
+  <data name="Print.Sheet.Copies.Invalid" xml:space="preserve">
+    <value>Cópias: digite um número inteiro de 1 a {0}.</value>
+  </data>
+  <data name="Print.Sheet.Busy" xml:space="preserve">
+    <value>Criando as folhas...</value>
+  </data>
+  <data name="Print.Sheet.Done" xml:space="preserve">
+    <value>{2} salvo (etiquetas: {0}, folhas: {1}). Imprima-o em tamanho real (100%).</value>
+  </data>
+  <data name="Print.Sheet.TooMany" xml:space="preserve">
+    <value>São mais de {0} etiquetas, demais para um PDF. Marque menos registros ou diminua as cópias, e salve o restante em outro arquivo.</value>
+  </data>
+  <data name="Enum.SheetPageKind.Letter" xml:space="preserve">
+    <value>Carta (8,5 x 11 pol)</value>
+  </data>
+  <data name="Enum.SheetPageKind.A4" xml:space="preserve">
+    <value>A4 (210 x 297 mm)</value>
+  </data>
+  <data name="Enum.SheetPageKind.Legal" xml:space="preserve">
+    <value>Ofício (8,5 x 14 pol)</value>
+  </data>
+  <data name="Enum.SheetPageKind.Custom" xml:space="preserve">
+    <value>Tamanho personalizado</value>
+  </data>
+  <data name="Enum.SheetOrder.AcrossThenDown" xml:space="preserve">
+    <value>Pelas linhas, depois para baixo</value>
+  </data>
+  <data name="Enum.SheetOrder.DownThenAcross" xml:space="preserve">
+    <value>Pelas colunas, depois para a direita</value>
+  </data>
+  <data name="Enum.SheetGuides.None" xml:space="preserve">
+    <value>Nenhuma</value>
+  </data>
+  <data name="Enum.SheetGuides.CropMarks" xml:space="preserve">
+    <value>Marcas de corte nas margens</value>
+  </data>
+  <data name="Enum.SheetGuides.Outlines" xml:space="preserve">
+    <value>Contorno de cada etiqueta (teste em papel comum)</value>
+  </data>
+  <data name="Issue.Sheet.Page.Size" xml:space="preserve">
+    <value>O papel deve ter entre {0} e {1} mm de cada lado.</value>
+  </data>
+  <data name="Issue.Sheet.Label.Size" xml:space="preserve">
+    <value>As etiquetas devem ter pelo menos {0} mm de largura e de altura.</value>
+  </data>
+  <data name="Issue.Sheet.Grid.Count" xml:space="preserve">
+    <value>Uma folha pode ter de 1 a {0} etiquetas na horizontal e de 1 a {1} na vertical.</value>
+  </data>
+  <data name="Issue.Sheet.Margin.Negative" xml:space="preserve">
+    <value>As margens não podem ser negativas.</value>
+  </data>
+  <data name="Issue.Sheet.Labels.OverlapAcross" xml:space="preserve">
+    <value>As etiquetas se sobrepõem na horizontal: de uma borda de etiqueta à seguinte há {0} mm, mas cada etiqueta tem {1} mm de largura. A distância deve ser pelo menos a largura da etiqueta.</value>
+  </data>
+  <data name="Issue.Sheet.Labels.OverlapDown" xml:space="preserve">
+    <value>As etiquetas se sobrepõem na vertical: de uma borda de etiqueta à seguinte há {0} mm, mas cada etiqueta tem {1} mm de altura. A distância deve ser pelo menos a altura da etiqueta.</value>
+  </data>
+  <data name="Issue.Sheet.Labels.TooWide" xml:space="preserve">
+    <value>As etiquetas não cabem na largura do papel: a última coluna termina em {0} mm e o papel tem {1} mm de largura. Reduza a margem esquerda, a distância ou o número de etiquetas na horizontal.</value>
+  </data>
+  <data name="Issue.Sheet.Labels.TooTall" xml:space="preserve">
+    <value>As etiquetas não cabem na altura do papel: a última linha termina em {0} mm e o papel tem {1} mm de altura. Reduza a margem superior, a distância ou o número de etiquetas na vertical.</value>
+  </data>
+  <data name="Issue.Sheet.Labels.NearEdge" xml:space="preserve">
+    <value>Algumas etiquetas ficam a menos de {0} mm da borda do papel. A maioria das impressoras de escritório não imprime ali, por isso mantenha textos e códigos de barras longe dessas bordas da etiqueta.</value>
+  </data>
+  <data name="Issue.Sheet.Start.Range" xml:space="preserve">
+    <value>A posição inicial deve ser um número de 1 a {0}.</value>
+  </data>
+  <data name="Issue.Sheet.Label.Larger" xml:space="preserve">
+    <value>O design da etiqueta tem {0} x {1} mm, maior que as etiquetas de {2} x {3} mm desta folha. Ele é impresso no próprio tamanho, centralizado, e cortado nas bordas da etiqueta. Escolha uma folha com etiquetas maiores ou redimensione o design.</value>
+  </data>
+  <data name="Issue.Sheet.Label.Smaller" xml:space="preserve">
+    <value>O design da etiqueta tem {0} x {1} mm, menor que as etiquetas de {2} x {3} mm desta folha. Ele é impresso no próprio tamanho, centralizado em cada etiqueta.</value>
+  </data>
 </root>

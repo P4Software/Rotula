@@ -23,8 +23,10 @@
         <!-- A WrapPanel: in Spanish the two secondary buttons are long, and in a narrow window they drop to a second line instead of overlapping Close/Print. -->
         <WrapPanel IsEnabled="{Binding IsIdle}" VerticalAlignment="Center" Margin="0,0,12,0">
           <Button Content="{loc:T Print.Button.SaveZpl}" Command="{Binding SaveZplCommand}" Margin="0,2,8,2" AutomationProperties.Name="{loc:T Print.Button.SaveZpl}" />
-          <Button Content="{loc:T Print.Button.Test}" Command="{Binding PrintTestCommand}" Margin="0,2,0,2" AutomationProperties.Name="{loc:T Print.Button.Test}"
+          <Button Content="{loc:T Print.Button.Test}" Command="{Binding PrintTestCommand}" Margin="0,2,8,2" AutomationProperties.Name="{loc:T Print.Button.Test}"
                   ToolTip="{loc:T Print.Button.Test.Tip}" />
+          <Button Content="{loc:T Print.Button.Sheets}" Command="{Binding ShowSheetsCommand}" Margin="0,2,0,2" AutomationProperties.Name="{loc:T Print.Button.Sheets}"
+                  ToolTip="{loc:T Print.Button.Sheets.Tip}" Visibility="{Binding CanShowSheets, Converter={StaticResource B2V}}" />
         </WrapPanel>
       </DockPanel>
     </Border>
