@@ -31,7 +31,8 @@ public sealed class RotulaFileException : Exception
 /// <summary>A loaded .rotula file: the label plus the saved data-merge settings (null when the file has none).</summary>
 /// <param name="Document">The label.</param>
 /// <param name="Merge">Data-merge settings, or null.</param>
-public sealed record RotulaFileContent(LabelDocument Document, DataMergeSettings? Merge);
+/// <param name="Sheet">The sheet layout chosen for the label sheets export, or null when the file has none.</param>
+public sealed record RotulaFileContent(LabelDocument Document, DataMergeSettings? Merge, Rotula.Core.Sheets.SheetSettings? Sheet = null);
 
 /// <summary>
 /// Reads and writes the versioned .rotula JSON format and converts between the Core model and the file DTOs.
@@ -127,9 +128,11 @@ public static class RotulaFileSerializer
     /// </summary>
     /// <param name="document">The label.</param>
     /// <param name="merge">Data-merge settings to store, or null/empty for none.</param>
-    public static string Serialize(LabelDocument document, DataMergeSettings? merge = null)
+    /// <param name="sheet">The sheet layout to remember, or null for none. It does not change the format version (older builds ignore it).</param>
+    public static string Serialize(LabelDocument document, DataMergeSettings? merge = null, Rotula.Core.Sheets.SheetSettings? sheet = null)
     {
         var dto = ToDto(document);
+        if (sheet is not null) dto.Sheet = SheetSettingsMapper.ToDto(sheet);
         if (merge is { IsEmpty: false })
         {
             dto.Merge = MergeSettingsMapper.ToDto(merge);
@@ -210,7 +213,7 @@ public static class RotulaFileSerializer
         try
         {
             var merge = dto.Merge is null ? null : MergeSettingsMapper.FromDto(dto.Merge);
-            return new RotulaFileContent(FromDto(dto), merge);
+            return new RotulaFileContent(FromDto(dto), merge, SheetSettingsMapper.FromDto(dto.Sheet));
         }
         catch (Exception ex) when (ex is ArgumentException or FormatException or InvalidOperationException or OverflowException or NullReferenceException)
         {
@@ -219,9 +222,9 @@ public static class RotulaFileSerializer
     }
 
     /// <summary>Writes a document to a file (UTF-8 without BOM). A temp file is written first so a failed save never destroys the previous version.</summary>
-    public static void Save(LabelDocument document, string path, DataMergeSettings? merge = null)
+    public static void Save(LabelDocument document, string path, DataMergeSettings? merge = null, Rotula.Core.Sheets.SheetSettings? sheet = null)
     {
-        string json = Serialize(document, merge);
+        string json = Serialize(document, merge, sheet);
         string? folder = Path.GetDirectoryName(Path.GetFullPath(path));
         if (!string.IsNullOrEmpty(folder)) Directory.CreateDirectory(folder);
         string temp = path + ".tmp";
