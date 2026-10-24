@@ -45,9 +45,62 @@ A character that the code page cannot represent returns `Print.Error.EncodingFai
 `PrintAsync` to prepend them in the same job, send them alone with `ApplyProfileAsync`, or print a small
 sample label with `PrintTestLabelAsync`.
 
+## Printer status (`~HS`)
+
+Rotula can ask a ZPL compatible printer for its host status with the `~HS` command and read the three-string reply.
+`HostStatusParser.Parse` (UI-free, in `PrinterStatus.cs`) decodes it into a `PrinterStatus`:
+
+| String | Fields Rotula uses |
+|---|---|
+| 1 `aaa,b,c,dddd,eee,f,g,h,iii,j,k,l` | paper out (b), pause (c), label length in dots (dddd), formats in the receive buffer (eee), buffer full (f), communications diagnostics mode (g), partial format (h), corrupt RAM (j), under temperature (k), over temperature (l) |
+| 2 `mmm,n,o,p,q,r,s,t,uuuuuuuu,v,www` | head up (o), ribbon out (p), thermal transfer (q), print mode (r), label waiting (t), labels remaining in the batch (uuuuuuuu), graphics stored (www) |
+| 3 `xxxx,y` | not used |
+
+Each string is framed by STX (0x02) and ETX (0x03). Frames are recognised by their number of fields, so junk between frames
+or strings in another order do not matter; a frame cut off before its ETX, or with a value that is not a number, is ignored
+rather than guessed; a reply without any STX is read line by line. Only reported flags become `PrinterCondition`s, so a
+partial reply never invents a fault, and `IsIdle` is only true when both strings were read. "Ribbon out" only counts in
+thermal transfer mode.
+
+| Condition | Effect |
+|---|---|
+| `HeadOpen`, `PaperOut`, `RibbonOut`, `HeadTooHot`, `DiagnosticMode`, `BufferFull`, `Paused` | **Blocking**: the job is not sent (`Print.Error.<Condition>`, args: printer, then every reported condition) |
+| `HeadTooCold`, `CorruptRam`, `PartialFormat`, `LabelWaiting` | Warning: sent, with a `PrinterStatus.Warning` notice |
+
+**Reading the reply** (`IPrinterStatusReader`, implemented by `PrinterStatusReader`; fake it in tests):
+
+- **TCP**: one connection to host:port, write `~HS`, read until three frames arrived, the printer closes, or the timeout
+  (default 3 s for connect and reply together). A reply that already holds strings 1 and 2 is decoded even on a timeout.
+- **Windows queue (best effort)**: a tiny RAW job `~HS`, then `ReadPrinter` on the same handle. Many USB and standard TCP
+  port monitors cannot read back; that is "status unavailable" (`NotSupported`), never an exception. The read runs on its
+  own thread and the caller stops waiting at the timeout, so a driver that blocks cannot hang printing. A queue Windows
+  reports offline is not queried (the query would wait in the queue). Sending `~HS` to a printer that is not ZPL compatible
+  would print it as text, which is why the check is off by default for Windows printers.
+
+**Around a job.** The check is opt-in per target: `PrinterTarget.WithStatus(PrinterStatusOptions)` (default `Off`, so library
+callers send exactly what they always sent). The app sets it from the Print dialog switch "Check the printer before and
+after printing", stored per transport in `settings.json` (`print.statusCheckNetwork`, default true;
+`print.statusCheckWindows`, default false).
+
+- **Before**: `PrintAsync` asks before every block it sends (so paper running out halfway stops the run before the next
+  block), `PrintZplAsync` before its job. A blocking condition returns a failure with 0 bytes sent, so reserved serial
+  numbers go back. An unknown status never blocks: the job is sent with one `PrinterStatus.NotChecked` notice.
+  `ApplyProfileAsync` never asks (set-up commands print nothing).
+- **After**: when every block was sent, the service waits `PollInterval` (1 s) and asks again until the printer reports
+  no format in the buffer, no label left and no partial format (`PrinterStatus.Verified`), a blocking fault
+  (`PrinterStatus.FaultAfterJob`), or `VerifyTimeout` (30 s) passes (`PrinterStatus.NotVerified`, reason `StillPrinting` or
+  the unavailable reason). It runs after the serial numbers were confirmed: a fault after the job keeps the labels counted as
+  possibly printed. Cancelling the wait gives `NotVerified` / `Stopped`; the result stays a success because the labels were
+  sent. "Verified" means the printer says it finished without a fault; it cannot see a label that printed badly.
+- **Batches** (Data merge): every job is checked before it goes out; `IPrintService.VerifyPrintedAsync` runs once after the
+  last job.
+
+`IPrintService.GetStatusAsync(target)` backs the "Check printer status" button of the printer settings and the MCP tool
+`get_printer_status` (which needs the printing permission because it sends a command to the printer).
+
 ## Tests
 
-Tests never print. The spooler is faked (`IRawPrinter`); TCP is tested against an in-process `TcpListener`.
+Tests never print. The spooler is faked (`IRawPrinter`), status replies are scripted (`IPrinterStatusReader`); TCP printing and the TCP status query are tested against an in-process `TcpListener`.
 
 ## Reading the resolution from the driver
 
