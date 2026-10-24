@@ -164,4 +164,10 @@ public interface IToolDialogService
     /// returns false, which means "cancelled": a label that asks questions is never printed with guessed answers.
     /// </summary>
     bool ShowPromptDialog(Rotula.App.ViewModels.PromptDialogViewModel viewModel) => false;
+
+    /// <summary>Shows the print station full screen and returns when the operator has left it. The default shows nothing.</summary>
+    void ShowPrintStation(Rotula.App.ViewModels.StationViewModel viewModel) { }
+
+    /// <summary>Shows the tool that makes the exit PIN line for station.json. The default shows nothing.</summary>
+    void ShowStationPinTool(Rotula.App.ViewModels.StationPinViewModel viewModel) { }
 }

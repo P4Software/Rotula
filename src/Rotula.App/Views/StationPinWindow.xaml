@@ -1,0 +1,41 @@
+<views:DialogWindow x:Class="Rotula.App.Views.StationPinWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:Rotula.App.Localization"
+        xmlns:views="clr-namespace:Rotula.App.Views"
+        Title="{loc:T Station.NewPin.Title}" Width="620" SizeToContent="Height" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        AutomationProperties.Name="{loc:T Station.NewPin.Title}">
+  <Window.Resources>
+    <BooleanToVisibilityConverter x:Key="B2V" />
+  </Window.Resources>
+  <DockPanel>
+    <Border DockPanel.Dock="Bottom" Background="{StaticResource ToolbarBrush}" BorderBrush="{StaticResource BorderBrushLight}" BorderThickness="0,1,0,0" Padding="24,14">
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+        <Button Content="{loc:T Common.Close}" IsCancel="True" MinWidth="88" Margin="0,0,8,0" Click="OnClose" AutomationProperties.Name="{loc:T Common.Close}" />
+        <Button Content="{loc:T Station.NewPin.Create}" IsDefault="True" Style="{StaticResource PrimaryButton}" MinWidth="110" Click="OnCreate"
+                AutomationProperties.Name="{loc:T Station.NewPin.Create}" />
+      </StackPanel>
+    </Border>
+    <StackPanel Margin="24,20,24,16">
+      <TextBlock Text="{loc:T Station.NewPin.Title}" FontSize="20" FontWeight="SemiBold" AutomationProperties.HeadingLevel="Level1" />
+      <TextBlock Text="{loc:T Station.NewPin.Intro}" Style="{StaticResource MutedText}" TextWrapping="Wrap" Margin="0,2,0,16" />
+      <TextBlock Text="{loc:T Station.NewPin.Pin}" Style="{StaticResource FieldLabel}" />
+      <PasswordBox x:Name="PinBox" MaxLength="32" AutomationProperties.Name="{loc:T Station.NewPin.Pin}" />
+      <TextBlock Text="{loc:T Station.NewPin.Confirm}" Style="{StaticResource FieldLabel}" Margin="0,12,0,0" />
+      <PasswordBox x:Name="ConfirmBox" MaxLength="32" AutomationProperties.Name="{loc:T Station.NewPin.Confirm}" />
+      <Border Style="{StaticResource InfoBanner}" Margin="0,16,0,0" Visibility="{Binding HasMessage, Converter={StaticResource B2V}}" AutomationProperties.LiveSetting="Polite">
+        <TextBlock Text="{Binding Message}" TextWrapping="Wrap" />
+      </Border>
+      <StackPanel Margin="0,16,0,0" Visibility="{Binding HasResult, Converter={StaticResource B2V}}">
+        <TextBlock Text="{loc:T Station.NewPin.Result}" Style="{StaticResource FieldLabel}" />
+        <DockPanel>
+          <Button DockPanel.Dock="Right" Content="{loc:T Station.NewPin.Copy}" Margin="8,0,0,0" Command="{Binding CopyCommand}"
+                  AutomationProperties.Name="{loc:T Station.NewPin.Copy}" />
+          <TextBox Style="{StaticResource MonoTextBox}" IsReadOnly="True" Text="{Binding ResultLine, Mode=OneWay}" TextWrapping="Wrap" Padding="12,8"
+                   AutomationProperties.Name="{loc:T Station.NewPin.Result}" />
+        </DockPanel>
+      </StackPanel>
+    </StackPanel>
+  </DockPanel>
+</views:DialogWindow>

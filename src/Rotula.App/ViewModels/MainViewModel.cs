@@ -989,6 +989,30 @@ public sealed partial class MainViewModel : ObservableObject
             _svc.Messages.ShowInfo(Loc.Get("Dialog.ImportNotes"), string.Join(Environment.NewLine, result.Warnings));
     }
 
+    /// <summary>
+    /// Opens the print station for a folder of labels (its station.json, or every label in it with the printer used here). The station replaces the
+    /// designer on the screen until the operator leaves it; the open label is not touched.
+    /// </summary>
+    [RelayCommand]
+    private void OpenPrintStation()
+    {
+        string? folder = _svc.Files.PickFolder(Loc.Get("Station.PickFolder"));
+        if (folder is null) return;
+        var load = Rotula.Files.Station.StationConfigLoader.Load(folder);
+        if (!load.CanOpen)
+        {
+            _svc.Messages.ShowError(Loc.Get("Station.Open.Failed"), StationViewModel.DescribeIssues(load.Issues));
+            return;
+        }
+        var station = new StationViewModel(load.Config!, load.Warnings,
+            new StationServices(_svc.Printing, Variables, _svc.Messages, _settings.Print, _svc.Database));
+        _svc.Dialogs.ShowPrintStation(station);
+    }
+
+    /// <summary>Opens the tool that makes the exit PIN line for a print station's station.json.</summary>
+    [RelayCommand]
+    private void CreateStationPin() => _svc.Dialogs.ShowStationPinTool(new StationPinViewModel(_svc.Clipboard));
+
     /// <summary>Opens the Print dialog (printer, printer profile, copies, test label, save as ZPL).</summary>
     [RelayCommand]
     private void Print()
