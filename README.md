@@ -173,7 +173,7 @@ deterministic and plain ASCII, so you can version it, diff it or send it with an
 | **Printing** | Windows spooler (RAW, including USB) and TCP port 9100, DPI and paper detection, printer profiles, test label, printer status check before and after a job |
 | **Print station** | A locked, print-only screen for the warehouse floor: pick or scan a label, answer its questions with a barcode scanner, print, and read the printer's answer in large plain words ([details](#print-station)) |
 | **Resolution** | Convert a label between 203, 300 and 600 dpi while keeping its physical size |
-| **Languages** | English and Spanish, switchable live |
+| **Languages** | English, Spanish, Portuguese (Brazil) and French (Canada), switchable live |
 
 ---
 
@@ -438,8 +438,10 @@ on in `rotula-mcp.settings.json`. Printing needs a two-step confirmation. The in
 
 ## Languages
 
-The interface is available in **English** and **Spanish**. By default Rotula follows the Windows language, and you can
-switch at any time from **View > Language**, with no restart. The installer is also available in both languages.
+The interface is available in **English**, **Spanish**, **Portuguese (Brazil)** and **French (Canada)**. By default Rotula
+follows the Windows language (any Portuguese gets Portuguese (Brazil), any French gets French (Canada), and a language
+Rotula does not have gets English), and you can switch at any time from **View > Language**, with no restart. Numbers and
+dates follow the language you choose. The installer is also available in all four languages.
 
 ---
 
