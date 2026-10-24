@@ -81,6 +81,17 @@ public static class ZplGenerator
         return GenerateCore(doc, resolution.Values, resolution, quantity, rasterizer);
     }
 
+    /// <summary>
+    /// Generates ZPL from variables that were already resolved (<see cref="VariableEngine.Resolve"/>), so a caller that also needs the values (to draw
+    /// the same label) resolves only once.
+    /// </summary>
+    internal static ZplGenerationResult GenerateResolved(LabelDocument doc, VariableResolution resolution, int? quantity = null, ITextRasterizer? rasterizer = null)
+    {
+        ArgumentNullException.ThrowIfNull(doc);
+        ArgumentNullException.ThrowIfNull(resolution);
+        return GenerateCore(doc, resolution.Values, resolution, quantity, rasterizer);
+    }
+
     private static ZplGenerationResult GenerateCore(LabelDocument doc, IReadOnlyDictionary<string, string>? data, VariableResolution? resolution, int? quantity, ITextRasterizer? rasterizer)
     {
         ArgumentNullException.ThrowIfNull(doc);

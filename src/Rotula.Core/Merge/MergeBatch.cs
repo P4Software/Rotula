@@ -44,7 +44,10 @@ public sealed class MergeReport
 /// <param name="Zpl">The ZPL text, one or more <c>^XA..^XZ</c> blocks each ending with a line feed.</param>
 /// <param name="ItemNumber">1-based position of the label in the batch (equal to <paramref name="RecordNumber"/> unless a selection is used).
 /// It is the count of serial numbers used through this label.</param>
-public sealed record MergedLabel(int RecordNumber, string Zpl, int ItemNumber = 0);
+/// <param name="Values">The values that filled this label: the record's columns plus the resolved dates, counters, prompts and computed values. An output
+/// that draws the label instead of sending ZPL (label sheets as PDF) uses them, so the picture carries exactly the serial number the ZPL carries.</param>
+/// <param name="Copies">How many copies of this record's label are printed (the copies setting, or the label's own quantity).</param>
+public sealed record MergedLabel(int RecordNumber, string Zpl, int ItemNumber = 0, IReadOnlyDictionary<string, string>? Values = null, int Copies = 1);
 
 /// <summary>One print job of a batch: the ZPL of consecutive labels and the records it covers.</summary>
 /// <param name="Zpl">The ZPL text of the labels of this job.</param>
@@ -120,11 +123,25 @@ public static class MergeBatch
                 report.Processed++;
                 var problems = new List<ValidationIssue>();
                 string? zpl = null;
+                IReadOnlyDictionary<string, string>? filled = null;
+                int? copies = null;
                 try
                 {
                     var values = data.BuildData(i, problems, position);
-                    int? copies = ResolveCopies(data, i, problems);
-                    var result = job is null ? ZplGenerator.Generate(doc, values, options.TextRasterizer) : ZplGenerator.GenerateWithVariables(doc, job.ContextFor(position, values), null, options.TextRasterizer);
+                    copies = ResolveCopies(data, i, problems);
+                    ZplGenerationResult result;
+                    if (job is null)
+                    {
+                        result = ZplGenerator.Generate(doc, values, options.TextRasterizer);
+                        filled = values;
+                    }
+                    else
+                    {
+                        // Resolved once and used for both the ZPL and the label's values, so a drawn label and a printed one never differ.
+                        var resolution = job.Resolve(position, values);
+                        result = ZplGenerator.GenerateResolved(doc, resolution, null, options.TextRasterizer);
+                        filled = resolution.Values;
+                    }
                     // Variable warnings are the same for every record; say each of them once.
                     problems.AddRange(result.Issues.Where(p => job is null || p.Severity == ValidationSeverity.Error || warned.Add(p.MessageKey + "|" + string.Join("|", p.Args))));
                     if (!problems.Any(p => p.Severity == ValidationSeverity.Error))
@@ -149,7 +166,7 @@ public static class MergeBatch
                 }
                 report.Emitted++;
                 usedThrough = position + 1;
-                yield return new MergedLabel(number, zpl, position + 1);
+                yield return new MergedLabel(number, zpl, position + 1, filled, copies ?? Math.Max(1, doc.Print.Quantity));
             }
         }
         finally

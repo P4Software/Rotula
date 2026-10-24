@@ -335,7 +335,8 @@ type. Pick a result and Rotula sets the label size, media type (direct thermal o
 - **What it knows.** Size in millimetres and inches, die-cut corner radius, labels across, core size, labels per roll and where
   the data comes from. A stock whose size is not cross-checked is marked, and applying it shows a warning.
 - **Honest about gaps.** The gap between labels is usually unknown, so Rotula says to calibrate the printer instead of guessing.
-  Multi-up and sheet stocks apply the label size only, and Rotula says so.
+  Multi-up roll stocks apply the label size only, and Rotula says so. A sheet stock opens the [label sheets](#label-sheets-office-printers)
+  export on the matching layout.
 - **Your own stocks.** Save a custom size as a stock, or import a supplies list (`.csv` or `.xlsx`) and review the rows before
   they are kept. Prices are never read. User stocks live in `%AppData%\Rotula\stocks`.
 - **Favourites and recent** stocks are remembered on your PC.
@@ -388,6 +389,19 @@ Rotula sends ZPL as RAW data, so the driver passes it through untouched.
   cannot print: each says what happened and what to do. Rotula bundles no printer drivers.
 
 More in [docs/printing.md](docs/printing.md).
+
+### Label sheets (office printers)
+
+**File > Export > Label sheets (PDF)** (or **Label sheets** in the Print dialog) puts the label on sheets for a laser or inkjet
+printer: Letter 30-up (2-5/8 x 1 in), 20-up, 14-up, 10-up shipping (4 x 2 in), 6-up, 80-up, 2-up half sheets, A4 3 x 8 (70 x 37 mm),
+21-up, 65-up, 16-up, 14-up, 8-up, 2-up, or a custom layout (paper, margins, label size, labels across and down, distance between labels).
+
+- **Start at position** uses up a partly used sheet: click the first free position in the preview.
+- **Data merge and serial numbers** work as when printing: the ticked records with their copies, and every serial number used once.
+- **Crop marks** in the margins, or a **thin outline** of each label for a test on plain paper.
+- The result is a PDF at the sheet's real size with every label at its own physical size. Print it at **actual size (100 %)**. The
+  layout is saved with the label. Templates are described by their dimensions; sheets of different suppliers can differ by a
+  millimetre, so print one test page on plain paper first.
 
 ---
 
@@ -553,7 +567,6 @@ Not supported today, and open for discussion:
 - A label template marketplace
 - Cloud sync
 - macOS and Linux
-- Multi-label sheet layouts
 
 Have a use case that matters to you? [Open a feature request](https://github.com/P4Software/Rotula/issues/new/choose).
 

@@ -29,6 +29,10 @@ public sealed class RotulaFileDto
     /// <summary>Data-merge settings (format version 2 and later). Absent in version 1 files.</summary>
     [JsonPropertyOrder(4)]
     public MergeDto? Merge { get; set; }
+
+    /// <summary>The sheet layout of the label sheets export (optional, no version change: older builds ignore it).</summary>
+    [JsonPropertyOrder(5)]
+    public SheetDto? Sheet { get; set; }
 }
 
 /// <summary>A length with its unit.</summary>

@@ -170,6 +170,9 @@ public interface IToolDialogService
 
     /// <summary>Shows the tool that makes the exit PIN line for station.json. The default shows nothing.</summary>
     void ShowStationPinTool(Rotula.App.ViewModels.StationPinViewModel viewModel) { }
+
+    /// <summary>Shows the "Label sheets" dialog (office printer sheets as a PDF) modally. The default offers no dialog.</summary>
+    void ShowSheetDialog(Rotula.App.ViewModels.SheetLayoutViewModel viewModel) { }
 }
 
 /// <summary>Opens a web address in the user's browser (the update notice's "View release" link).</summary>

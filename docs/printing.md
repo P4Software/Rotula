@@ -129,3 +129,35 @@ a resolution the user picked is never overridden.
 
 The test label is sized from physical units (7 mm text, QR module size clamped to Core's 1-10) so it is readable and
 inside the label at 203/300/600 dpi.
+
+## Label sheets for office printers
+
+Labels can also be printed on sheets with a laser or inkjet printer. This path does not send ZPL: it draws the labels into a
+PDF that is printed from any PDF reader.
+
+- **Model** (`Rotula.Core.Sheets`, no UI): `SheetLayout` is the paper (`Letter`, `A4`, `Legal` or a custom size), the top and
+  left margin, the label size, columns x rows and the pitch across and down (label size plus gap), all in millimetres.
+  `Validate()` returns message keys (`Sheet.Labels.TooWide`, `Sheet.Labels.OverlapAcross`, `Sheet.Labels.NearEdge` and the
+  others in `Issue.Sheet.*`); `ValidateStart` checks a start position and `CheckDesignSize` warns when the design is larger or
+  smaller than the positions. `SheetTemplates.All` holds generic Letter and A4 layouts described only by their dimensions;
+  `FindForStock` matches a sheet stock of the library by label size and grid, without naming a brand.
+- **Imposition**: `SheetImposition.Paginate` pulls the labels lazily and fills the positions in reading order (or down the
+  columns), sheet after sheet. The first sheet can start at a later position (a partly used sheet); later sheets start at 1.
+- **Values**: the labels come from the same iterations as printing. With data, `MergeBatch.Labels` yields each record with its
+  resolved values (`MergedLabel.Values`) and its copies; without data, `LabelPrintRun.LabelValues()` yields one value set per
+  copy (each copy of a label with a counter has its own number). The renderer draws them with
+  `LabelDocumentAdapter.ToRenderLabelResolved`, which does not resolve the variables again.
+- **Serial numbers**: reserved before the PDF is written and confirmed only when the file is complete; a failed or cancelled
+  export gives them back. A PDF will be printed, so its numbers count as used, exactly as for "Save as ZPL".
+- **Output**: `SheetExporter.SavePdf` writes one page per sheet at the paper's real size. Each label is drawn at its physical
+  size (its dots divided by its resolution), centred in its position and clipped to it; text, boxes and barcode modules stay
+  vectors. Optional crop marks (in the margins only) or grey outlines. The page size is exact for US paper and within 0.02 mm
+  for A4 (the PDF writer rounds it to whole pixels at 600 dpi).
+- **The .rotula file** keeps the chosen layout in an optional root `sheet` object (template id, paper, margins, label size,
+  grid, pitch, order, guides). It does not raise the format version: an older build ignores it. The start position is not
+  saved, because it depends on the sheet in the printer today.
+
+**Not offered: sending the sheets straight to a Windows printer.** Office printer drivers add their own margins and often scale
+to fit, which would move every label; a PDF printed at actual size (100 %, no "fit to page") keeps the positions. Sheets of
+different suppliers with the same label size can differ by about a millimetre in their margins, so print one page on plain
+paper with outlines, hold it against a sheet and adjust the margins.

@@ -6300,4 +6300,202 @@ Brand and product names belong to their owners; Rotula is not affiliated with th
   <data name="Status.PrintOrientation.Tip" xml:space="preserve">
     <value>The canvas shows the label upright so you can edit it. Open the preview to see it as printed. Change this in the label properties.</value>
   </data>
+  <data name="Menu.ExportSheets" xml:space="preserve">
+    <value>Label sheets (PDF)...</value>
+  </data>
+  <data name="Print.Button.Sheets" xml:space="preserve">
+    <value>Label sheets (PDF)...</value>
+  </data>
+  <data name="Print.Button.Sheets.Tip" xml:space="preserve">
+    <value>Put the labels on sheets for an office (laser or inkjet) printer and save them as a PDF.</value>
+  </data>
+  <data name="Print.Sheet.Title" xml:space="preserve">
+    <value>Label sheets</value>
+  </data>
+  <data name="Print.Sheet.Subtitle" xml:space="preserve">
+    <value>Print labels on sheets with an office (laser or inkjet) printer. Rotula saves the sheets as a PDF at their real size; print it at actual size (100 %).</value>
+  </data>
+  <data name="Print.Sheet.UsesRecords" xml:space="preserve">
+    <value>Data is loaded: the ticked records go on the sheets, with their copies and serial numbers, as when printing.</value>
+  </data>
+  <data name="Print.Sheet.Template" xml:space="preserve">
+    <value>Sheet</value>
+  </data>
+  <data name="Print.Sheet.Template.Hint" xml:space="preserve">
+    <value>Sheets of different suppliers with the same label size can differ by a millimetre. Print one page on plain paper, hold it against a sheet of labels and adjust the margins if needed.</value>
+  </data>
+  <data name="Print.Sheet.Custom" xml:space="preserve">
+    <value>Custom layout</value>
+  </data>
+  <data name="Print.Sheet.Template.Name" xml:space="preserve">
+    <value>{0}, {1} per sheet ({2} x {3}), {4}</value>
+  </data>
+  <data name="Print.Sheet.Size.In" xml:space="preserve">
+    <value>{0} x {1} in</value>
+  </data>
+  <data name="Print.Sheet.Size.Mm" xml:space="preserve">
+    <value>{0} x {1} mm</value>
+  </data>
+  <data name="Print.Sheet.Page" xml:space="preserve">
+    <value>Paper</value>
+  </data>
+  <data name="Print.Sheet.Inches" xml:space="preserve">
+    <value>Sizes in inches</value>
+  </data>
+  <data name="Print.Sheet.Unit.Mm" xml:space="preserve">
+    <value>All sizes in millimetres</value>
+  </data>
+  <data name="Print.Sheet.Unit.In" xml:space="preserve">
+    <value>All sizes in inches</value>
+  </data>
+  <data name="Print.Sheet.PageWidth" xml:space="preserve">
+    <value>Paper width</value>
+  </data>
+  <data name="Print.Sheet.PageHeight" xml:space="preserve">
+    <value>Paper height</value>
+  </data>
+  <data name="Print.Sheet.LabelWidth" xml:space="preserve">
+    <value>Label width</value>
+  </data>
+  <data name="Print.Sheet.LabelHeight" xml:space="preserve">
+    <value>Label height</value>
+  </data>
+  <data name="Print.Sheet.Columns" xml:space="preserve">
+    <value>Labels across</value>
+  </data>
+  <data name="Print.Sheet.Rows" xml:space="preserve">
+    <value>Labels down</value>
+  </data>
+  <data name="Print.Sheet.Top" xml:space="preserve">
+    <value>Top margin</value>
+  </data>
+  <data name="Print.Sheet.Left" xml:space="preserve">
+    <value>Left margin</value>
+  </data>
+  <data name="Print.Sheet.HorizontalPitch" xml:space="preserve">
+    <value>Across: edge to edge</value>
+  </data>
+  <data name="Print.Sheet.VerticalPitch" xml:space="preserve">
+    <value>Down: edge to edge</value>
+  </data>
+  <data name="Print.Sheet.Pitch.Tip" xml:space="preserve">
+    <value>The distance from the left (or top) edge of one label to the same edge of the next one: the label size plus the gap between labels.</value>
+  </data>
+  <data name="Print.Sheet.Start" xml:space="preserve">
+    <value>Start at position</value>
+  </data>
+  <data name="Print.Sheet.Start.Tip" xml:space="preserve">
+    <value>On a partly used sheet, the first free position. Positions are counted along the rows from the top left. You can also click a position in the preview.</value>
+  </data>
+  <data name="Print.Sheet.Order" xml:space="preserve">
+    <value>Fill order</value>
+  </data>
+  <data name="Print.Sheet.Guides" xml:space="preserve">
+    <value>Guides</value>
+  </data>
+  <data name="Print.Sheet.ActualSize" xml:space="preserve">
+    <value>Print the PDF at actual size (100 %), without "Fit to page", or the labels will not line up with the sheet.</value>
+  </data>
+  <data name="Print.Sheet.Preview" xml:space="preserve">
+    <value>Sheet preview</value>
+  </data>
+  <data name="Print.Sheet.Preview.Hint" xml:space="preserve">
+    <value>Click a position to start there. Grey positions are already used; numbers show where the first labels go.</value>
+  </data>
+  <data name="Print.Sheet.Slot.Used" xml:space="preserve">
+    <value>Position {0}: already used</value>
+  </data>
+  <data name="Print.Sheet.Slot.Label" xml:space="preserve">
+    <value>Position {0}: label {1}</value>
+  </data>
+  <data name="Print.Sheet.Slot.Empty" xml:space="preserve">
+    <value>Position {0}: empty</value>
+  </data>
+  <data name="Print.Sheet.Export" xml:space="preserve">
+    <value>Save as PDF...</value>
+  </data>
+  <data name="Print.Sheet.Summary" xml:space="preserve">
+    <value>Labels: {0}. Sheets: {1} ({2} per sheet).</value>
+  </data>
+  <data name="Print.Sheet.Summary.FromData" xml:space="preserve">
+    <value>{0} per sheet. The copies come from a column of the data, so the number of sheets is known when the PDF is made.</value>
+  </data>
+  <data name="Print.Sheet.Field.Invalid" xml:space="preserve">
+    <value>{0}: type a number.</value>
+  </data>
+  <data name="Print.Sheet.Copies.Invalid" xml:space="preserve">
+    <value>Copies: type a whole number from 1 to {0}.</value>
+  </data>
+  <data name="Print.Sheet.Busy" xml:space="preserve">
+    <value>Making the sheets...</value>
+  </data>
+  <data name="Print.Sheet.Done" xml:space="preserve">
+    <value>Saved {2} (labels: {0}, sheets: {1}). Print it at actual size (100 %).</value>
+  </data>
+  <data name="Print.Sheet.TooMany" xml:space="preserve">
+    <value>That is more than {0} labels, too many for one PDF. Tick fewer records or lower the copies, and save the rest in another file.</value>
+  </data>
+  <data name="Enum.SheetPageKind.Letter" xml:space="preserve">
+    <value>Letter (8.5 x 11 in)</value>
+  </data>
+  <data name="Enum.SheetPageKind.A4" xml:space="preserve">
+    <value>A4 (210 x 297 mm)</value>
+  </data>
+  <data name="Enum.SheetPageKind.Legal" xml:space="preserve">
+    <value>Legal (8.5 x 14 in)</value>
+  </data>
+  <data name="Enum.SheetPageKind.Custom" xml:space="preserve">
+    <value>Custom size</value>
+  </data>
+  <data name="Enum.SheetOrder.AcrossThenDown" xml:space="preserve">
+    <value>Along the rows, then down</value>
+  </data>
+  <data name="Enum.SheetOrder.DownThenAcross" xml:space="preserve">
+    <value>Down the columns, then across</value>
+  </data>
+  <data name="Enum.SheetGuides.None" xml:space="preserve">
+    <value>None</value>
+  </data>
+  <data name="Enum.SheetGuides.CropMarks" xml:space="preserve">
+    <value>Crop marks in the margins</value>
+  </data>
+  <data name="Enum.SheetGuides.Outlines" xml:space="preserve">
+    <value>Outline of each label (test on plain paper)</value>
+  </data>
+  <data name="Issue.Sheet.Page.Size" xml:space="preserve">
+    <value>The paper must be between {0} and {1} mm on each side.</value>
+  </data>
+  <data name="Issue.Sheet.Label.Size" xml:space="preserve">
+    <value>The labels must be at least {0} mm wide and high.</value>
+  </data>
+  <data name="Issue.Sheet.Grid.Count" xml:space="preserve">
+    <value>A sheet can have 1 to {0} labels across and 1 to {1} down.</value>
+  </data>
+  <data name="Issue.Sheet.Margin.Negative" xml:space="preserve">
+    <value>The margins cannot be negative.</value>
+  </data>
+  <data name="Issue.Sheet.Labels.OverlapAcross" xml:space="preserve">
+    <value>The labels overlap across: from one label edge to the next is {0} mm, but a label is {1} mm wide. Make the distance at least the label width.</value>
+  </data>
+  <data name="Issue.Sheet.Labels.OverlapDown" xml:space="preserve">
+    <value>The labels overlap down: from one label edge to the next is {0} mm, but a label is {1} mm high. Make the distance at least the label height.</value>
+  </data>
+  <data name="Issue.Sheet.Labels.TooWide" xml:space="preserve">
+    <value>The labels do not fit across the paper: the last column ends at {0} mm, the paper is {1} mm wide. Reduce the left margin, the distance or the number of labels across.</value>
+  </data>
+  <data name="Issue.Sheet.Labels.TooTall" xml:space="preserve">
+    <value>The labels do not fit down the paper: the last row ends at {0} mm, the paper is {1} mm high. Reduce the top margin, the distance or the number of labels down.</value>
+  </data>
+  <data name="Issue.Sheet.Labels.NearEdge" xml:space="preserve">
+    <value>Some labels come within {0} mm of the paper edge. Most office printers cannot print there, so keep text and barcodes away from those label edges.</value>
+  </data>
+  <data name="Issue.Sheet.Start.Range" xml:space="preserve">
+    <value>The start position must be a number from 1 to {0}.</value>
+  </data>
+  <data name="Issue.Sheet.Label.Larger" xml:space="preserve">
+    <value>The label design is {0} x {1} mm, larger than the {2} x {3} mm labels of this sheet. It is printed at its own size, centred, and cut at the label edges. Choose a sheet with larger labels or resize the design.</value>
+  </data>
+  <data name="Issue.Sheet.Label.Smaller" xml:space="preserve">
+    <value>The label design is {0} x {1} mm, smaller than the {2} x {3} mm labels of this sheet. It is printed at its own size, centred on each label.</value>
+  </data>
 </root>
