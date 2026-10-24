@@ -5846,4 +5846,181 @@ Las marcas y los nombres de producto pertenecen a sus dueños; Rotula no está a
   <data name="Badge.Locked.Tip" xml:space="preserve">
     <value>Bloqueado: este objeto no se puede mover, cambiar de tamaño ni borrar hasta que lo desbloquee.</value>
   </data>
+  <data name="Print.Error.HeadOpen" xml:space="preserve">
+    <value>No se envió nada: la impresora "{0}" indica que el cabezal está abierto. Cierre el cabezal hasta que haga clic y vuelva a imprimir.</value>
+  </data>
+  <data name="Print.Error.PaperOut" xml:space="preserve">
+    <value>No se envió nada: la impresora "{0}" indica que no tiene etiquetas. Cargue etiquetas, cierre el cabezal, pulse Avance una vez y vuelva a imprimir.</value>
+  </data>
+  <data name="Print.Error.RibbonOut" xml:space="preserve">
+    <value>No se envió nada: la impresora "{0}" indica que se acabó la cinta. Coloque una cinta nueva, cierre el cabezal y vuelva a imprimir.</value>
+  </data>
+  <data name="Print.Error.HeadTooHot" xml:space="preserve">
+    <value>No se envió nada: la impresora "{0}" indica que el cabezal está demasiado caliente. Espere unos minutos a que se enfríe y vuelva a imprimir.</value>
+  </data>
+  <data name="Print.Error.DiagnosticMode" xml:space="preserve">
+    <value>No se envió nada: la impresora "{0}" está en modo de diagnóstico de comunicaciones e imprimiría los datos como texto en lugar de etiquetas. Desactive ese modo en la impresora (o reiníciela) y vuelva a imprimir.</value>
+  </data>
+  <data name="Print.Error.BufferFull" xml:space="preserve">
+    <value>No se envió nada: la impresora "{0}" indica que su memoria para trabajos entrantes está llena. Espere a que imprima lo que ya tiene y vuelva a imprimir.</value>
+  </data>
+  <data name="Print.Error.Paused" xml:space="preserve">
+    <value>No se envió nada: la impresora "{0}" está en pausa. Pulse Pausa en la impresora para reanudar y vuelva a imprimir.</value>
+  </data>
+  <data name="Print.Status.AlsoReports" xml:space="preserve">
+    <value>La impresora también indica: {0}.</value>
+  </data>
+  <data name="Issue.PrinterStatus.NotChecked" xml:space="preserve">
+    <value>No se pudo leer el estado de la impresora antes de imprimir ({0}), así que las etiquetas se enviaron sin esa comprobación.</value>
+  </data>
+  <data name="Issue.PrinterStatus.Warning" xml:space="preserve">
+    <value>La impresora indica: {0}. Las etiquetas se enviaron; revise la calidad de impresión.</value>
+  </data>
+  <data name="Issue.PrinterStatus.Verified" xml:space="preserve">
+    <value>Impreso y verificado: la impresora indica que terminó el trabajo sin problemas.</value>
+  </data>
+  <data name="Issue.PrinterStatus.FaultAfterJob" xml:space="preserve">
+    <value>Las etiquetas se enviaron, pero luego la impresora indicó un problema: {0}. Puede que algunas etiquetas no se hayan impreso. Solucione el problema y revise las etiquetas antes de volver a imprimir.</value>
+  </data>
+  <data name="Issue.PrinterStatus.NotVerified" xml:space="preserve">
+    <value>Las etiquetas se enviaron, pero Rotula no pudo confirmar que se imprimieran ({0}). Revise la impresora.</value>
+  </data>
+  <data name="Print.Status.Reason.NotSupported" xml:space="preserve">
+    <value>esta impresora o su controlador de Windows no responde a consultas de estado, algo habitual con controladores USB</value>
+  </data>
+  <data name="Print.Status.Reason.Offline" xml:space="preserve">
+    <value>Windows indica que la impresora está fuera de línea</value>
+  </data>
+  <data name="Print.Status.Reason.Unreachable" xml:space="preserve">
+    <value>no se pudo contactar con la impresora</value>
+  </data>
+  <data name="Print.Status.Reason.NoReply" xml:space="preserve">
+    <value>la impresora no respondió a tiempo</value>
+  </data>
+  <data name="Print.Status.Reason.Unreadable" xml:space="preserve">
+    <value>la respuesta de la impresora no era una respuesta de estado ZPL</value>
+  </data>
+  <data name="Print.Status.Reason.StillPrinting" xml:space="preserve">
+    <value>seguía imprimiendo cuando Rotula dejó de esperar</value>
+  </data>
+  <data name="Print.Status.Reason.Stopped" xml:space="preserve">
+    <value>la comprobación se detuvo</value>
+  </data>
+  <data name="Print.Status.Reason.Unknown" xml:space="preserve">
+    <value>el motivo es desconocido</value>
+  </data>
+  <data name="Enum.PrinterCondition.HeadOpen" xml:space="preserve">
+    <value>cabezal abierto</value>
+  </data>
+  <data name="Enum.PrinterCondition.PaperOut" xml:space="preserve">
+    <value>sin etiquetas</value>
+  </data>
+  <data name="Enum.PrinterCondition.RibbonOut" xml:space="preserve">
+    <value>sin cinta</value>
+  </data>
+  <data name="Enum.PrinterCondition.HeadTooHot" xml:space="preserve">
+    <value>cabezal demasiado caliente</value>
+  </data>
+  <data name="Enum.PrinterCondition.DiagnosticMode" xml:space="preserve">
+    <value>modo de diagnóstico de comunicaciones activado</value>
+  </data>
+  <data name="Enum.PrinterCondition.BufferFull" xml:space="preserve">
+    <value>memoria para trabajos entrantes llena</value>
+  </data>
+  <data name="Enum.PrinterCondition.Paused" xml:space="preserve">
+    <value>en pausa</value>
+  </data>
+  <data name="Enum.PrinterCondition.HeadTooCold" xml:space="preserve">
+    <value>cabezal demasiado frío (las etiquetas pueden salir más claras)</value>
+  </data>
+  <data name="Enum.PrinterCondition.CorruptRam" xml:space="preserve">
+    <value>configuración perdida (la impresora usa sus valores de fábrica)</value>
+  </data>
+  <data name="Enum.PrinterCondition.PartialFormat" xml:space="preserve">
+    <value>todavía está llegando un trabajo</value>
+  </data>
+  <data name="Enum.PrinterCondition.LabelWaiting" xml:space="preserve">
+    <value>una etiqueta impresa espera a que la retiren</value>
+  </data>
+  <data name="Enum.PrinterPrintMode.Unknown" xml:space="preserve">
+    <value>desconocido</value>
+  </data>
+  <data name="Enum.PrinterPrintMode.Rewind" xml:space="preserve">
+    <value>rebobinado</value>
+  </data>
+  <data name="Enum.PrinterPrintMode.PeelOff" xml:space="preserve">
+    <value>despegado</value>
+  </data>
+  <data name="Enum.PrinterPrintMode.TearOff" xml:space="preserve">
+    <value>corte manual</value>
+  </data>
+  <data name="Enum.PrinterPrintMode.Cutter" xml:space="preserve">
+    <value>cortador</value>
+  </data>
+  <data name="Enum.PrinterPrintMode.Applicator" xml:space="preserve">
+    <value>aplicador</value>
+  </data>
+  <data name="Enum.PrinterPrintMode.DelayedCut" xml:space="preserve">
+    <value>corte diferido</value>
+  </data>
+  <data name="Enum.PrinterPrintMode.LinerlessPeel" xml:space="preserve">
+    <value>despegado sin soporte</value>
+  </data>
+  <data name="Enum.PrinterPrintMode.LinerlessRewind" xml:space="preserve">
+    <value>rebobinado sin soporte</value>
+  </data>
+  <data name="Enum.PrinterPrintMode.PartialCutter" xml:space="preserve">
+    <value>cortador parcial</value>
+  </data>
+  <data name="Enum.PrinterPrintMode.Rfid" xml:space="preserve">
+    <value>RFID</value>
+  </data>
+  <data name="Enum.PrinterPrintMode.Kiosk" xml:space="preserve">
+    <value>quiosco</value>
+  </data>
+  <data name="Enum.PrinterPrintMode.Stream" xml:space="preserve">
+    <value>continuo</value>
+  </data>
+  <data name="Print.Status.Check" xml:space="preserve">
+    <value>Comprobar estado de la impresora</value>
+  </data>
+  <data name="Print.Status.Check.Tip" xml:space="preserve">
+    <value>Pregunta a la impresora su estado (papel, cabezal, cinta, pausa) con un pequeño comando ZPL. En una impresora compatible con ZPL no se imprime nada.</value>
+  </data>
+  <data name="Print.Status.Checking" xml:space="preserve">
+    <value>Consultando el estado de la impresora...</value>
+  </data>
+  <data name="Print.Status.Ready" xml:space="preserve">
+    <value>La impresora está lista.</value>
+  </data>
+  <data name="Print.Status.Blocked" xml:space="preserve">
+    <value>La impresora no puede imprimir ahora: {0}.</value>
+  </data>
+  <data name="Print.Status.Warnings" xml:space="preserve">
+    <value>La impresora indica: {0}.</value>
+  </data>
+  <data name="Print.Status.Unavailable" xml:space="preserve">
+    <value>No se pudo leer el estado de la impresora: {0}. Puede imprimir igualmente.</value>
+  </data>
+  <data name="Print.Status.Partial" xml:space="preserve">
+    <value>Solo se recibió parte del estado, así que puede que falten problemas en la lista.</value>
+  </data>
+  <data name="Print.Status.Busy" xml:space="preserve">
+    <value>Etiquetas pendientes: {0}. Trabajos en espera en la impresora: {1}.</value>
+  </data>
+  <data name="Print.Status.Details" xml:space="preserve">
+    <value>Modo de impresión: {0}. {1}. Largo de etiqueta: {2} puntos.</value>
+  </data>
+  <data name="Print.Status.ThermalTransfer" xml:space="preserve">
+    <value>Transferencia térmica (con cinta)</value>
+  </data>
+  <data name="Print.Status.DirectThermal" xml:space="preserve">
+    <value>Térmica directa (sin cinta)</value>
+  </data>
+  <data name="Print.Status.Option" xml:space="preserve">
+    <value>Comprobar la impresora antes y después de imprimir</value>
+  </data>
+  <data name="Print.Status.Option.Tip" xml:space="preserve">
+    <value>Antes de cada trabajo Rotula consulta el estado de la impresora y no envía nada si no tiene etiquetas, está abierta, en pausa o sin cinta. Después del trabajo espera a que la impresora indique que terminó. Para impresoras compatibles con ZPL; muchos controladores USB no pueden responder y entonces se imprime sin la comprobación.</value>
+  </data>
 </root>

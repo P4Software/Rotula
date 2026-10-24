@@ -55,6 +55,46 @@ public sealed record NetworkPrinterOptions(TimeSpan ConnectTimeout, TimeSpan Sen
     public static NetworkPrinterOptions Default { get; } = new(TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(15));
 }
 
+/// <summary>
+/// Reads the host status (<c>~HS</c>) of a printer. Implemented by <see cref="PrinterStatusReader"/>; fake it in tests. Implementations
+/// never throw for printer problems and never wait longer than the timeout: an unreachable or silent printer is an unavailable status.
+/// </summary>
+public interface IPrinterStatusReader
+{
+    /// <summary>Sends <c>~HS</c> to <paramref name="target"/> and decodes the reply.</summary>
+    /// <param name="target">The printer (Windows queue or TCP endpoint).</param>
+    /// <param name="timeout">Longest wait for the reply, connection included.</param>
+    /// <param name="cancellationToken">Cancellation; a cancelled query throws <see cref="OperationCanceledException"/>.</param>
+    Task<PrinterStatus> ReadStatusAsync(PrinterTarget target, TimeSpan timeout, CancellationToken cancellationToken = default);
+}
+
+/// <summary>
+/// Whether and how the print service asks the printer for its status around a job (ZPL <c>~HS</c>). Off by default in the library, so
+/// existing callers send exactly what they always sent; the app switches it on per transport.
+/// </summary>
+/// <param name="CheckBeforePrinting">Ask before each job and do not send while the printer reports a fault (paper out, head open...).</param>
+/// <param name="VerifyAfterPrinting">After the last job, ask until the printer reports it finished or a fault, and add the outcome as a notice.</param>
+public sealed record PrinterStatusOptions(bool CheckBeforePrinting, bool VerifyAfterPrinting)
+{
+    /// <summary>No status queries (the default of every target).</summary>
+    public static PrinterStatusOptions Off { get; } = new(false, false);
+
+    /// <summary>Check before printing and verify afterwards, with the default timeouts.</summary>
+    public static PrinterStatusOptions Default { get; } = new(true, true);
+
+    /// <summary>True when any query is made.</summary>
+    public bool Enabled => CheckBeforePrinting || VerifyAfterPrinting;
+
+    /// <summary>Longest wait for one status reply. Default 3 seconds.</summary>
+    public TimeSpan QueryTimeout { get; init; } = TimeSpan.FromSeconds(3);
+
+    /// <summary>Longest time the verification waits for the printer to finish. Default 30 seconds.</summary>
+    public TimeSpan VerifyTimeout { get; init; } = TimeSpan.FromSeconds(30);
+
+    /// <summary>Pause between two status queries while verifying. Default 1 second.</summary>
+    public TimeSpan PollInterval { get; init; } = TimeSpan.FromSeconds(1);
+}
+
 /// <summary>How a job reaches the printer.</summary>
 public enum PrinterTransport
 {
@@ -82,6 +122,14 @@ public sealed record PrinterTarget
     public int Port { get; private init; } = DefaultTcpPort;
     /// <summary>TCP timeouts.</summary>
     public NetworkPrinterOptions Network { get; private init; } = NetworkPrinterOptions.Default;
+    /// <summary>Status queries around a job; <see cref="PrinterStatusOptions.Off"/> unless set with <see cref="WithStatus"/>.</summary>
+    public PrinterStatusOptions Status { get; private init; } = PrinterStatusOptions.Off;
+
+    /// <summary>A copy of this target that asks the printer for its status as <paramref name="status"/> says.</summary>
+    public PrinterTarget WithStatus(PrinterStatusOptions status) => this with { Status = status ?? PrinterStatusOptions.Off };
+
+    /// <summary>A short name of the printer for messages: the queue name, or host:port.</summary>
+    public string DisplayName => Transport == PrinterTransport.Tcp ? Host + ":" + Port.ToString(System.Globalization.CultureInfo.InvariantCulture) : PrinterName;
 
     /// <summary>Targets an installed Windows printer (use this for USB printers).</summary>
     public static PrinterTarget Spooler(string printerName) =>

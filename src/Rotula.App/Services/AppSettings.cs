@@ -83,6 +83,15 @@ public sealed class PrintSettings
 
     /// <summary>Print speed 1-14 (^PR) or null to leave the printer as it is.</summary>
     public int? SpeedIps { get; set; }
+
+    /// <summary>Ask a network printer for its status (~HS) before and after printing. On by default: a TCP printer answers on the same port.</summary>
+    public bool StatusCheckNetwork { get; set; } = true;
+
+    /// <summary>
+    /// Ask a Windows printer for its status before and after printing. Off by default: many USB drivers cannot answer, and a queue that is
+    /// not a ZPL compatible printer would print the query as text.
+    /// </summary>
+    public bool StatusCheckWindows { get; set; }
 }
 
 /// <summary>Loads and saves <see cref="AppSettings"/>.</summary>

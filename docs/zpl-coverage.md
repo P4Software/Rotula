@@ -280,7 +280,7 @@ Nothing is silently dropped.
 | `~HI` | Host identification | Out of scope | No | No | No | Asks the printer to identify itself. *Out of scope: A query that makes the printer answer the host; a label file has no use for the reply.* |
 | `~HM` | Host RAM status | Out of scope | No | No | No | Asks for the memory status. *Out of scope: A query that makes the printer answer the host; a label file has no use for the reply.* |
 | `~HQ` | Host query | Out of scope | No | No | No | Asks for a named piece of printer information. *Out of scope: A query that makes the printer answer the host; a label file has no use for the reply.* |
-| `~HS` | Host status | Out of scope | No | No | No | Asks for the printer status. *Out of scope: A query that makes the printer answer the host; a label file has no use for the reply.* |
+| `~HS` | Host status | Out of scope | No | No | No | Asks for the printer status. *Out of scope: A query that makes the printer answer the host; a label file has no use for the reply. Rotula's printing sends it on its own to check the printer before a job and to verify the job afterwards (see docs/printing.md).* |
 | `^HT` | Host linked fonts list | Out of scope | No | No | No | Asks for the list of linked fonts. *Out of scope: A query that makes the printer answer the host; a label file has no use for the reply.* |
 | `~HU` | Alert configuration return | Out of scope | No | No | No | Sends the alert configuration back to the host. *Out of scope: A query that makes the printer answer the host; a label file has no use for the reply.* |
 | `^HV` | Host verification | Out of scope | No | No | No | Sends the data of a field back to the host. *Out of scope: A query that makes the printer answer the host; a label file has no use for the reply.* |

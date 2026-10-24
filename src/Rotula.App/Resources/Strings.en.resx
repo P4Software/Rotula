@@ -5846,4 +5846,181 @@ Brand and product names belong to their owners; Rotula is not affiliated with th
   <data name="Badge.Locked.Tip" xml:space="preserve">
     <value>Locked: this object cannot be moved, resized or deleted until you unlock it.</value>
   </data>
+  <data name="Print.Error.HeadOpen" xml:space="preserve">
+    <value>Nothing was sent: the printer "{0}" reports that its printhead is open. Close the head until it clicks, then print again.</value>
+  </data>
+  <data name="Print.Error.PaperOut" xml:space="preserve">
+    <value>Nothing was sent: the printer "{0}" reports that it is out of labels. Load labels, close the head, press Feed once, then print again.</value>
+  </data>
+  <data name="Print.Error.RibbonOut" xml:space="preserve">
+    <value>Nothing was sent: the printer "{0}" reports that the ribbon is out. Load a new ribbon, close the head, then print again.</value>
+  </data>
+  <data name="Print.Error.HeadTooHot" xml:space="preserve">
+    <value>Nothing was sent: the printer "{0}" reports that its printhead is too hot. Wait a few minutes for it to cool down, then print again.</value>
+  </data>
+  <data name="Print.Error.DiagnosticMode" xml:space="preserve">
+    <value>Nothing was sent: the printer "{0}" is in communications diagnostics mode and would print the data as text instead of labels. Switch the mode off on the printer (or restart it), then print again.</value>
+  </data>
+  <data name="Print.Error.BufferFull" xml:space="preserve">
+    <value>Nothing was sent: the printer "{0}" reports that its memory for incoming jobs is full. Wait until it has printed what it already has, then print again.</value>
+  </data>
+  <data name="Print.Error.Paused" xml:space="preserve">
+    <value>Nothing was sent: the printer "{0}" is paused. Press Pause on the printer to resume, then print again.</value>
+  </data>
+  <data name="Print.Status.AlsoReports" xml:space="preserve">
+    <value>The printer also reports: {0}.</value>
+  </data>
+  <data name="Issue.PrinterStatus.NotChecked" xml:space="preserve">
+    <value>The printer status could not be read before printing ({0}), so the labels were sent without that check.</value>
+  </data>
+  <data name="Issue.PrinterStatus.Warning" xml:space="preserve">
+    <value>The printer reports: {0}. The labels were sent; check the print quality.</value>
+  </data>
+  <data name="Issue.PrinterStatus.Verified" xml:space="preserve">
+    <value>Printed and verified: the printer reports it finished the job without problems.</value>
+  </data>
+  <data name="Issue.PrinterStatus.FaultAfterJob" xml:space="preserve">
+    <value>The labels were sent, but then the printer reported a problem: {0}. Some labels may not have printed. Fix the printer and check the labels before printing again.</value>
+  </data>
+  <data name="Issue.PrinterStatus.NotVerified" xml:space="preserve">
+    <value>The labels were sent, but Rotula could not confirm that they were printed ({0}). Check the printer.</value>
+  </data>
+  <data name="Print.Status.Reason.NotSupported" xml:space="preserve">
+    <value>this printer or its Windows driver does not answer status requests, which is common with USB drivers</value>
+  </data>
+  <data name="Print.Status.Reason.Offline" xml:space="preserve">
+    <value>Windows reports the printer as offline</value>
+  </data>
+  <data name="Print.Status.Reason.Unreachable" xml:space="preserve">
+    <value>the printer could not be reached</value>
+  </data>
+  <data name="Print.Status.Reason.NoReply" xml:space="preserve">
+    <value>the printer did not answer in time</value>
+  </data>
+  <data name="Print.Status.Reason.Unreadable" xml:space="preserve">
+    <value>the printer's answer was not a ZPL status reply</value>
+  </data>
+  <data name="Print.Status.Reason.StillPrinting" xml:space="preserve">
+    <value>it was still printing when Rotula stopped waiting</value>
+  </data>
+  <data name="Print.Status.Reason.Stopped" xml:space="preserve">
+    <value>the check was stopped</value>
+  </data>
+  <data name="Print.Status.Reason.Unknown" xml:space="preserve">
+    <value>the reason is unknown</value>
+  </data>
+  <data name="Enum.PrinterCondition.HeadOpen" xml:space="preserve">
+    <value>printhead open</value>
+  </data>
+  <data name="Enum.PrinterCondition.PaperOut" xml:space="preserve">
+    <value>out of labels</value>
+  </data>
+  <data name="Enum.PrinterCondition.RibbonOut" xml:space="preserve">
+    <value>ribbon out</value>
+  </data>
+  <data name="Enum.PrinterCondition.HeadTooHot" xml:space="preserve">
+    <value>printhead too hot</value>
+  </data>
+  <data name="Enum.PrinterCondition.DiagnosticMode" xml:space="preserve">
+    <value>communications diagnostics mode on</value>
+  </data>
+  <data name="Enum.PrinterCondition.BufferFull" xml:space="preserve">
+    <value>memory for incoming jobs full</value>
+  </data>
+  <data name="Enum.PrinterCondition.Paused" xml:space="preserve">
+    <value>paused</value>
+  </data>
+  <data name="Enum.PrinterCondition.HeadTooCold" xml:space="preserve">
+    <value>printhead too cold (labels may print lighter)</value>
+  </data>
+  <data name="Enum.PrinterCondition.CorruptRam" xml:space="preserve">
+    <value>settings lost (the printer is using its defaults)</value>
+  </data>
+  <data name="Enum.PrinterCondition.PartialFormat" xml:space="preserve">
+    <value>a job is still arriving</value>
+  </data>
+  <data name="Enum.PrinterCondition.LabelWaiting" xml:space="preserve">
+    <value>a printed label is waiting to be taken</value>
+  </data>
+  <data name="Enum.PrinterPrintMode.Unknown" xml:space="preserve">
+    <value>unknown</value>
+  </data>
+  <data name="Enum.PrinterPrintMode.Rewind" xml:space="preserve">
+    <value>rewind</value>
+  </data>
+  <data name="Enum.PrinterPrintMode.PeelOff" xml:space="preserve">
+    <value>peel-off</value>
+  </data>
+  <data name="Enum.PrinterPrintMode.TearOff" xml:space="preserve">
+    <value>tear-off</value>
+  </data>
+  <data name="Enum.PrinterPrintMode.Cutter" xml:space="preserve">
+    <value>cutter</value>
+  </data>
+  <data name="Enum.PrinterPrintMode.Applicator" xml:space="preserve">
+    <value>applicator</value>
+  </data>
+  <data name="Enum.PrinterPrintMode.DelayedCut" xml:space="preserve">
+    <value>delayed cut</value>
+  </data>
+  <data name="Enum.PrinterPrintMode.LinerlessPeel" xml:space="preserve">
+    <value>linerless peel</value>
+  </data>
+  <data name="Enum.PrinterPrintMode.LinerlessRewind" xml:space="preserve">
+    <value>linerless rewind</value>
+  </data>
+  <data name="Enum.PrinterPrintMode.PartialCutter" xml:space="preserve">
+    <value>partial cutter</value>
+  </data>
+  <data name="Enum.PrinterPrintMode.Rfid" xml:space="preserve">
+    <value>RFID</value>
+  </data>
+  <data name="Enum.PrinterPrintMode.Kiosk" xml:space="preserve">
+    <value>kiosk</value>
+  </data>
+  <data name="Enum.PrinterPrintMode.Stream" xml:space="preserve">
+    <value>stream</value>
+  </data>
+  <data name="Print.Status.Check" xml:space="preserve">
+    <value>Check printer status</value>
+  </data>
+  <data name="Print.Status.Check.Tip" xml:space="preserve">
+    <value>Asks the printer for its status (paper, head, ribbon, pause) with a small ZPL command. Nothing is printed on a ZPL compatible printer.</value>
+  </data>
+  <data name="Print.Status.Checking" xml:space="preserve">
+    <value>Asking the printer for its status...</value>
+  </data>
+  <data name="Print.Status.Ready" xml:space="preserve">
+    <value>The printer is ready.</value>
+  </data>
+  <data name="Print.Status.Blocked" xml:space="preserve">
+    <value>The printer cannot print right now: {0}.</value>
+  </data>
+  <data name="Print.Status.Warnings" xml:space="preserve">
+    <value>The printer reports: {0}.</value>
+  </data>
+  <data name="Print.Status.Unavailable" xml:space="preserve">
+    <value>The printer status could not be read: {0}. You can still print.</value>
+  </data>
+  <data name="Print.Status.Partial" xml:space="preserve">
+    <value>Only part of the status was received, so some problems may not be listed.</value>
+  </data>
+  <data name="Print.Status.Busy" xml:space="preserve">
+    <value>Labels still to print: {0}. Jobs waiting in the printer: {1}.</value>
+  </data>
+  <data name="Print.Status.Details" xml:space="preserve">
+    <value>Print mode: {0}. {1}. Label length: {2} dots.</value>
+  </data>
+  <data name="Print.Status.ThermalTransfer" xml:space="preserve">
+    <value>Thermal transfer (with ribbon)</value>
+  </data>
+  <data name="Print.Status.DirectThermal" xml:space="preserve">
+    <value>Direct thermal (no ribbon)</value>
+  </data>
+  <data name="Print.Status.Option" xml:space="preserve">
+    <value>Check the printer before and after printing</value>
+  </data>
+  <data name="Print.Status.Option.Tip" xml:space="preserve">
+    <value>Before each job Rotula asks the printer for its status and does not send while it is out of labels, open, paused or out of ribbon. After the job it waits until the printer reports it finished. For ZPL compatible printers; many USB drivers cannot answer, and then printing goes ahead without the check.</value>
+  </data>
 </root>

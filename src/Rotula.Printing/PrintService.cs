@@ -68,6 +68,45 @@ public interface IPrintService
     /// </summary>
     Task<PrinterCapabilities> GetPrinterInfoAsync(PrinterTarget target, CancellationToken ct = default) =>
         Task.FromResult(PrinterCapabilities.Unknown(target?.PrinterName ?? string.Empty));
+
+    /// <summary>
+    /// Asks the printer for its host status (<c>~HS</c>) and decodes it. Never throws for a printer problem: a printer that cannot answer
+    /// gives an unavailable status. Cancellation throws <see cref="OperationCanceledException"/>. The default implementation reports
+    /// "not supported" so existing fakes keep compiling.
+    /// </summary>
+    /// <param name="target">The printer; its <see cref="PrinterStatusOptions.QueryTimeout"/> bounds the wait.</param>
+    /// <param name="ct">Cancellation.</param>
+    Task<PrinterStatus> GetStatusAsync(PrinterTarget target, CancellationToken ct = default) =>
+        Task.FromResult(PrinterStatus.Unavailable(StatusUnavailableReason.NotSupported));
+
+    /// <summary>
+    /// After jobs were sent, asks the printer for its status until it reports it finished, reports a fault, or
+    /// <see cref="PrinterStatusOptions.VerifyTimeout"/> passes, and returns the outcome as one notice (<see cref="PrinterStatusKeys"/>).
+    /// Print calls do this themselves when the target asks for it; a caller that sends several jobs calls it once after the last.
+    /// Cancellation stops the wait and is reported as a notice, never as a failure, because the labels were already sent.
+    /// The default implementation returns no notice.
+    /// </summary>
+    Task<IReadOnlyList<ValidationIssue>> VerifyPrintedAsync(PrinterTarget target, CancellationToken ct = default) =>
+        Task.FromResult<IReadOnlyList<ValidationIssue>>(Array.Empty<ValidationIssue>());
+}
+
+/// <summary>Message keys of the notices the status check and the verification add to a <see cref="PrintResult"/>.</summary>
+public static class PrinterStatusKeys
+{
+    /// <summary>The status could not be read before printing, so the job was sent unchecked. Argument: a <see cref="StatusUnavailableReason"/> name.</summary>
+    public const string NotChecked = "PrinterStatus.NotChecked";
+    /// <summary>The printer reported conditions that do not stop printing (head cold...). Arguments: condition names.</summary>
+    public const string Warning = "PrinterStatus.Warning";
+    /// <summary>The printer reported it finished the job without a fault.</summary>
+    public const string Verified = "PrinterStatus.Verified";
+    /// <summary>The printer reported a fault after the job was sent; labels may be missing. Arguments: condition names.</summary>
+    public const string FaultAfterJob = "PrinterStatus.FaultAfterJob";
+    /// <summary>The outcome could not be confirmed. Argument: a <see cref="StatusUnavailableReason"/> name, <see cref="StillPrinting"/> or <see cref="Stopped"/>.</summary>
+    public const string NotVerified = "PrinterStatus.NotVerified";
+    /// <summary>Reason of <see cref="NotVerified"/>: the printer was still busy when the wait ended.</summary>
+    public const string StillPrinting = "StillPrinting";
+    /// <summary>Reason of <see cref="NotVerified"/>: the operator stopped the wait.</summary>
+    public const string Stopped = "Stopped";
 }
 
 /// <summary>Default <see cref="IPrintService"/>: ZPL from Core, bytes from <see cref="ZplEncoding"/>, transport by target.</summary>
@@ -76,16 +115,25 @@ public sealed class PrintService : IPrintService
     private readonly IRawPrinter _spooler;
     private readonly INetworkPrinter _network;
     private readonly IPrinterDiscovery _discovery;
+    private readonly IPrinterStatusReader _status;
 
     /// <summary>Creates the service with the real winspool and TCP implementations.</summary>
     public PrintService() : this(new WinspoolRawPrinter(), new TcpRawPrinter(), new WinspoolRawPrinter()) { }
 
-    /// <summary>Creates the service with explicit transports (tests pass fakes).</summary>
+    /// <summary>
+    /// Creates the service with explicit transports (tests pass fakes). Status queries use the real <see cref="PrinterStatusReader"/>; they
+    /// only happen for a target that asks for them (<see cref="PrinterTarget.WithStatus"/>) or through <see cref="GetStatusAsync"/>.
+    /// </summary>
     public PrintService(IRawPrinter spooler, INetworkPrinter network, IPrinterDiscovery discovery)
+        : this(spooler, network, discovery, new PrinterStatusReader()) { }
+
+    /// <summary>Creates the service with explicit transports and status reader (tests pass fakes).</summary>
+    public PrintService(IRawPrinter spooler, INetworkPrinter network, IPrinterDiscovery discovery, IPrinterStatusReader status)
     {
         _spooler = spooler ?? throw new ArgumentNullException(nameof(spooler));
         _network = network ?? throw new ArgumentNullException(nameof(network));
         _discovery = discovery ?? throw new ArgumentNullException(nameof(discovery));
+        _status = status ?? throw new ArgumentNullException(nameof(status));
     }
 
     /// <inheritdoc />
@@ -114,6 +162,7 @@ public sealed class PrintService : IPrintService
         int bytesSent = 0;
         PrintResult? outcome = null;
         IReadOnlyList<ValidationIssue> closing = Array.Empty<ValidationIssue>();
+        var statusNotes = new List<ValidationIssue>();
         try
         {
             string setup = string.Empty;
@@ -137,6 +186,10 @@ public sealed class PrintService : IPrintService
                     outcome = PrintResult.Fail(PrintErrorKind.EncodingFailed, document.Encoding.ToString());
                     break;
                 }
+                // Checked before every block, so paper running out in the middle of a long run stops it before the next block.
+                // A block that is held back sent nothing, so its serial numbers go back with the rest.
+                var held = await CheckBeforeAsync(target, statusNotes, cancellationToken).ConfigureAwait(false);
+                if (held is not null) { outcome = held; break; }
                 var sent = await SendAsync(target, bytes, cancellationToken).ConfigureAwait(false);
                 if (!sent.Succeeded)
                 {
@@ -156,11 +209,14 @@ public sealed class PrintService : IPrintService
             closing = run.Complete(printed);
         }
         // Warnings of the run plus problems writing the counter file; the errors of the run are reported through the result itself.
-        var notes = run.Issues.Where(i => i.Severity != ValidationSeverity.Error).Concat(closing).ToList();
+        var notes = run.Issues.Where(i => i.Severity != ValidationSeverity.Error).Concat(closing).Concat(statusNotes).ToList();
         if (outcome is null && run.StoppedEarly)
             return PrintResult.Fail(PrintError.Create(PrintErrorKind.InvalidLabel,
                 run.Issues.Where(i => i.Severity == ValidationSeverity.Error).Select(i => i.MessageKey).ToArray()), bytesSent)
-                .WithNotices(run.Issues.Concat(closing).ToList());
+                .WithNotices(run.Issues.Concat(closing).Concat(statusNotes).ToList());
+        // Verified only after the counters were confirmed: a fault reported now does not give numbers back, because the labels may have printed.
+        if (outcome is null && bytesSent > 0 && target.Status.VerifyAfterPrinting)
+            notes.AddRange(await VerifyPrintedAsync(target, cancellationToken).ConfigureAwait(false));
         return (outcome ?? PrintResult.Ok(bytesSent)).WithNotices(notes);
     }
 
@@ -172,7 +228,7 @@ public sealed class PrintService : IPrintService
         ArgumentNullException.ThrowIfNull(encoding);
         if (!TryEncode(zpl, encoding, out var bytes))
             return Task.FromResult(PrintResult.Fail(PrintErrorKind.EncodingFailed, encoding.ToString()));
-        return SendAsync(target, bytes, cancellationToken);
+        return SendCheckedAsync(target, bytes, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -185,7 +241,7 @@ public sealed class PrintService : IPrintService
         ArgumentNullException.ThrowIfNull(byteExactBlocks);
         if (!TryEncode(zpl, encoding, byteExactBlocks, out var bytes))
             return Task.FromResult(PrintResult.Fail(PrintErrorKind.EncodingFailed, encoding.ToString()));
-        return SendAsync(target, bytes, cancellationToken);
+        return SendCheckedAsync(target, bytes, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -194,8 +250,12 @@ public sealed class PrintService : IPrintService
         ArgumentNullException.ThrowIfNull(profile);
         var bad = profile.Validate();
         if (bad.Count > 0) return Task.FromResult(PrintResult.Fail(PrintError.Create(PrintErrorKind.InvalidProfile, bad.ToArray())));
-        // Set-up text is pure ASCII, so any encoding yields the same bytes.
-        return PrintZplAsync(target, PrinterSetup.BuildSetupZpl(profile), ZplEncoding.Utf8, cancellationToken);
+        ArgumentNullException.ThrowIfNull(target);
+        // Set-up text is pure ASCII, so any encoding yields the same bytes. No status check: the commands print nothing and a printer
+        // that is paused or out of labels still takes its new settings.
+        if (!TryEncode(PrinterSetup.BuildSetupZpl(profile), ZplEncoding.Utf8, out var bytes))
+            return Task.FromResult(PrintResult.Fail(PrintErrorKind.EncodingFailed, ZplEncoding.Utf8.ToString()));
+        return SendAsync(target, bytes, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -224,6 +284,102 @@ public sealed class PrintService : IPrintService
     {
         try { return await _discovery.GetPrinterInfoAsync(name, ct).ConfigureAwait(false); }
         catch { return PrinterCapabilities.Unknown(name); }
+    }
+
+    /// <inheritdoc />
+    public Task<PrinterStatus> GetStatusAsync(PrinterTarget target, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        return SafeStatusAsync(target, ct);
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<ValidationIssue>> VerifyPrintedAsync(PrinterTarget target, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        var options = target.Status;
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        PrinterStatus? lastKnown = null;
+        var lastReason = StatusUnavailableReason.NoReply;
+        try
+        {
+            while (true)
+            {
+                // Wait first: right after the send the printer may not have taken the format into its buffer yet, and an empty buffer
+                // read too early would look like "finished".
+                await Task.Delay(options.PollInterval, ct).ConfigureAwait(false);
+                var status = await SafeStatusAsync(target, ct).ConfigureAwait(false);
+                if (status.IsAvailable)
+                {
+                    lastKnown = status;
+                    if (status.IsBlocked) return [Notice(PrinterStatusKeys.FaultAfterJob, status.Conditions.Select(c => c.ToString()).ToArray())];
+                    if (status.IsIdle) return [Notice(PrinterStatusKeys.Verified)];
+                }
+                else
+                {
+                    lastReason = status.Reason!.Value;
+                    // Asking again cannot help when the transport cannot read replies at all.
+                    if (lastReason == StatusUnavailableReason.NotSupported) break;
+                }
+                if (clock.Elapsed >= options.VerifyTimeout) break;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            return [Notice(PrinterStatusKeys.NotVerified, PrinterStatusKeys.Stopped)];
+        }
+        return [Notice(PrinterStatusKeys.NotVerified, lastKnown is not null ? PrinterStatusKeys.StillPrinting : lastReason.ToString())];
+    }
+
+    /// <summary>
+    /// The check in front of a job, when the target asks for it. Returns the failure to report instead of sending (a blocking fault, or
+    /// the caller cancelled), or null to send. An unknown status never blocks; it adds one notice so the operator knows nothing was checked.
+    /// </summary>
+    private async Task<PrintResult?> CheckBeforeAsync(PrinterTarget target, List<ValidationIssue> notes, CancellationToken ct)
+    {
+        if (!target.Status.CheckBeforePrinting) return null;
+        PrinterStatus status;
+        try { status = await SafeStatusAsync(target, ct).ConfigureAwait(false); }
+        catch (OperationCanceledException) { return PrintResult.Fail(PrintErrorKind.Cancelled); }
+        if (!status.IsAvailable)
+        {
+            AddOnce(notes, Notice(PrinterStatusKeys.NotChecked, status.Reason!.Value.ToString()));
+            return null;
+        }
+        if (PrintError.FromStatus(status, target.DisplayName) is { } blocked) return PrintResult.Fail(blocked);
+        if (status.Warnings.Count > 0) AddOnce(notes, Notice(PrinterStatusKeys.Warning, status.Warnings.Select(c => c.ToString()).ToArray()));
+        return null;
+    }
+
+    /// <summary>One job with the optional check before and verification after (the ready-made ZPL paths).</summary>
+    private async Task<PrintResult> SendCheckedAsync(PrinterTarget target, byte[] bytes, CancellationToken ct)
+    {
+        var notes = new List<ValidationIssue>();
+        var held = await CheckBeforeAsync(target, notes, ct).ConfigureAwait(false);
+        if (held is not null) return held.WithNotices(notes);
+        var sent = await SendAsync(target, bytes, ct).ConfigureAwait(false);
+        if (sent.Succeeded && sent.BytesSent > 0 && target.Status.VerifyAfterPrinting)
+            notes.AddRange(await VerifyPrintedAsync(target, ct).ConfigureAwait(false));
+        return sent.WithNotices(notes);
+    }
+
+    /// <summary>Asks the reader; a reader that breaks its contract and throws is treated as "no status", never as a crash of the print.</summary>
+    private async Task<PrinterStatus> SafeStatusAsync(PrinterTarget target, CancellationToken ct)
+    {
+        try { return await _status.ReadStatusAsync(target, target.Status.QueryTimeout, ct).ConfigureAwait(false); }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch (OperationCanceledException) { return PrinterStatus.Unavailable(StatusUnavailableReason.NoReply); }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            return PrinterStatus.Unavailable(StatusUnavailableReason.NotSupported);
+        }
+    }
+
+    private static ValidationIssue Notice(string key, params string[] args) => new(ValidationSeverity.Warning, key, null, args);
+
+    private static void AddOnce(List<ValidationIssue> notes, ValidationIssue notice)
+    {
+        if (!notes.Any(n => n.MessageKey == notice.MessageKey)) notes.Add(notice);
     }
 
     /// <summary>
