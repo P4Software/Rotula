@@ -5846,4 +5846,416 @@ Les noms de marques et de produits appartiennent à leurs propriétaires ; Rot
   <data name="Badge.Locked.Tip" xml:space="preserve">
     <value>Verrouillé : cet objet ne peut pas être déplacé, redimensionné ni supprimé tant que vous ne le déverrouillez pas.</value>
   </data>
+  <data name="Print.Error.HeadOpen" xml:space="preserve">
+    <value>Rien n’a été envoyé : l’imprimante « {0} » signale que sa tête d’impression est ouverte. Fermez la tête jusqu’au déclic, puis imprimez de nouveau.</value>
+  </data>
+  <data name="Print.Error.PaperOut" xml:space="preserve">
+    <value>Rien n’a été envoyé : l’imprimante « {0} » signale qu’elle n’a plus d’étiquettes. Chargez des étiquettes, fermez la tête, appuyez une fois sur Feed, puis imprimez de nouveau.</value>
+  </data>
+  <data name="Print.Error.RibbonOut" xml:space="preserve">
+    <value>Rien n’a été envoyé : l’imprimante « {0} » signale que le ruban est épuisé. Installez un nouveau ruban, fermez la tête, puis imprimez de nouveau.</value>
+  </data>
+  <data name="Print.Error.HeadTooHot" xml:space="preserve">
+    <value>Rien n’a été envoyé : l’imprimante « {0} » signale que sa tête d’impression est trop chaude. Attendez quelques minutes qu’elle refroidisse, puis imprimez de nouveau.</value>
+  </data>
+  <data name="Print.Error.DiagnosticMode" xml:space="preserve">
+    <value>Rien n’a été envoyé : l’imprimante « {0} » est en mode de diagnostic des communications et imprimerait les données comme du texte au lieu d’étiquettes. Désactivez ce mode sur l’imprimante (ou redémarrez-la), puis imprimez de nouveau.</value>
+  </data>
+  <data name="Print.Error.BufferFull" xml:space="preserve">
+    <value>Rien n’a été envoyé : l’imprimante « {0} » signale que sa mémoire pour les travaux reçus est pleine. Attendez qu’elle ait imprimé ce qu’elle a déjà, puis imprimez de nouveau.</value>
+  </data>
+  <data name="Print.Error.Paused" xml:space="preserve">
+    <value>Rien n’a été envoyé : l’imprimante « {0} » est en pause. Appuyez sur Pause sur l’imprimante pour reprendre, puis imprimez de nouveau.</value>
+  </data>
+  <data name="Print.Status.AlsoReports" xml:space="preserve">
+    <value>L’imprimante signale aussi : {0}.</value>
+  </data>
+  <data name="Issue.PrinterStatus.NotChecked" xml:space="preserve">
+    <value>L’état de l’imprimante n’a pas pu être lu avant l’impression ({0}) ; les étiquettes ont donc été envoyées sans cette vérification.</value>
+  </data>
+  <data name="Issue.PrinterStatus.Warning" xml:space="preserve">
+    <value>L’imprimante signale : {0}. Les étiquettes ont été envoyées ; vérifiez la qualité d’impression.</value>
+  </data>
+  <data name="Issue.PrinterStatus.Verified" xml:space="preserve">
+    <value>Imprimé et vérifié : l’imprimante signale qu’elle a terminé le travail sans problème.</value>
+  </data>
+  <data name="Issue.PrinterStatus.FaultAfterJob" xml:space="preserve">
+    <value>Les étiquettes ont été envoyées, mais l’imprimante a ensuite signalé un problème : {0}. Certaines étiquettes n’ont peut-être pas été imprimées. Réglez le problème de l’imprimante et vérifiez les étiquettes avant d’imprimer de nouveau.</value>
+  </data>
+  <data name="Issue.PrinterStatus.NotVerified" xml:space="preserve">
+    <value>Les étiquettes ont été envoyées, mais Rotula n’a pas pu confirmer qu’elles ont été imprimées ({0}). Vérifiez l’imprimante.</value>
+  </data>
+  <data name="Print.Status.Reason.NotSupported" xml:space="preserve">
+    <value>cette imprimante ou son pilote Windows ne répond pas aux demandes d’état, ce qui est courant avec les pilotes USB</value>
+  </data>
+  <data name="Print.Status.Reason.Offline" xml:space="preserve">
+    <value>Windows indique que l’imprimante est hors ligne</value>
+  </data>
+  <data name="Print.Status.Reason.Unreachable" xml:space="preserve">
+    <value>l’imprimante n’a pas pu être jointe</value>
+  </data>
+  <data name="Print.Status.Reason.NoReply" xml:space="preserve">
+    <value>l’imprimante n’a pas répondu à temps</value>
+  </data>
+  <data name="Print.Status.Reason.Unreadable" xml:space="preserve">
+    <value>la réponse de l’imprimante n’était pas une réponse d’état ZPL</value>
+  </data>
+  <data name="Print.Status.Reason.StillPrinting" xml:space="preserve">
+    <value>elle imprimait encore quand Rotula a cessé d’attendre</value>
+  </data>
+  <data name="Print.Status.Reason.Stopped" xml:space="preserve">
+    <value>la vérification a été arrêtée</value>
+  </data>
+  <data name="Print.Status.Reason.Unknown" xml:space="preserve">
+    <value>la raison est inconnue</value>
+  </data>
+  <data name="Enum.PrinterCondition.HeadOpen" xml:space="preserve">
+    <value>tête d’impression ouverte</value>
+  </data>
+  <data name="Enum.PrinterCondition.PaperOut" xml:space="preserve">
+    <value>plus d’étiquettes</value>
+  </data>
+  <data name="Enum.PrinterCondition.RibbonOut" xml:space="preserve">
+    <value>ruban épuisé</value>
+  </data>
+  <data name="Enum.PrinterCondition.HeadTooHot" xml:space="preserve">
+    <value>tête d’impression trop chaude</value>
+  </data>
+  <data name="Enum.PrinterCondition.DiagnosticMode" xml:space="preserve">
+    <value>mode de diagnostic des communications activé</value>
+  </data>
+  <data name="Enum.PrinterCondition.BufferFull" xml:space="preserve">
+    <value>mémoire pour les travaux reçus pleine</value>
+  </data>
+  <data name="Enum.PrinterCondition.Paused" xml:space="preserve">
+    <value>en pause</value>
+  </data>
+  <data name="Enum.PrinterCondition.HeadTooCold" xml:space="preserve">
+    <value>tête d’impression trop froide (les étiquettes peuvent sortir plus pâles)</value>
+  </data>
+  <data name="Enum.PrinterCondition.CorruptRam" xml:space="preserve">
+    <value>réglages perdus (l’imprimante utilise ses valeurs par défaut)</value>
+  </data>
+  <data name="Enum.PrinterCondition.PartialFormat" xml:space="preserve">
+    <value>un travail est encore en cours de réception</value>
+  </data>
+  <data name="Enum.PrinterCondition.LabelWaiting" xml:space="preserve">
+    <value>une étiquette imprimée attend d’être retirée</value>
+  </data>
+  <data name="Enum.PrinterPrintMode.Unknown" xml:space="preserve">
+    <value>inconnu</value>
+  </data>
+  <data name="Enum.PrinterPrintMode.Rewind" xml:space="preserve">
+    <value>réenroulement</value>
+  </data>
+  <data name="Enum.PrinterPrintMode.PeelOff" xml:space="preserve">
+    <value>décollage (peel-off)</value>
+  </data>
+  <data name="Enum.PrinterPrintMode.TearOff" xml:space="preserve">
+    <value>détachement manuel (tear-off)</value>
+  </data>
+  <data name="Enum.PrinterPrintMode.Cutter" xml:space="preserve">
+    <value>coupe</value>
+  </data>
+  <data name="Enum.PrinterPrintMode.Applicator" xml:space="preserve">
+    <value>applicateur</value>
+  </data>
+  <data name="Enum.PrinterPrintMode.DelayedCut" xml:space="preserve">
+    <value>coupe différée</value>
+  </data>
+  <data name="Enum.PrinterPrintMode.LinerlessPeel" xml:space="preserve">
+    <value>décollage sans support</value>
+  </data>
+  <data name="Enum.PrinterPrintMode.LinerlessRewind" xml:space="preserve">
+    <value>réenroulement sans support</value>
+  </data>
+  <data name="Enum.PrinterPrintMode.PartialCutter" xml:space="preserve">
+    <value>coupe partielle</value>
+  </data>
+  <data name="Enum.PrinterPrintMode.Rfid" xml:space="preserve">
+    <value>RFID</value>
+  </data>
+  <data name="Enum.PrinterPrintMode.Kiosk" xml:space="preserve">
+    <value>kiosque</value>
+  </data>
+  <data name="Enum.PrinterPrintMode.Stream" xml:space="preserve">
+    <value>continu</value>
+  </data>
+  <data name="Print.Status.Check" xml:space="preserve">
+    <value>Vérifier l’état de l’imprimante</value>
+  </data>
+  <data name="Print.Status.Check.Tip" xml:space="preserve">
+    <value>Demande à l’imprimante son état (papier, tête, ruban, pause) avec une petite commande ZPL. Rien n’est imprimé sur une imprimante compatible ZPL.</value>
+  </data>
+  <data name="Print.Status.Checking" xml:space="preserve">
+    <value>Demande de l’état de l’imprimante...</value>
+  </data>
+  <data name="Print.Status.Ready" xml:space="preserve">
+    <value>L’imprimante est prête.</value>
+  </data>
+  <data name="Print.Status.Blocked" xml:space="preserve">
+    <value>L’imprimante ne peut pas imprimer pour l’instant : {0}.</value>
+  </data>
+  <data name="Print.Status.Warnings" xml:space="preserve">
+    <value>L’imprimante signale : {0}.</value>
+  </data>
+  <data name="Print.Status.Unavailable" xml:space="preserve">
+    <value>L’état de l’imprimante n’a pas pu être lu : {0}. Vous pouvez quand même imprimer.</value>
+  </data>
+  <data name="Print.Status.Partial" xml:space="preserve">
+    <value>Seule une partie de l’état a été reçue ; certains problèmes peuvent donc manquer dans la liste.</value>
+  </data>
+  <data name="Print.Status.Busy" xml:space="preserve">
+    <value>Étiquettes restant à imprimer : {0}. Travaux en attente dans l’imprimante : {1}.</value>
+  </data>
+  <data name="Print.Status.Details" xml:space="preserve">
+    <value>Mode d’impression : {0}. {1}. Longueur d’étiquette : {2} points.</value>
+  </data>
+  <data name="Print.Status.ThermalTransfer" xml:space="preserve">
+    <value>Transfert thermique (avec ruban)</value>
+  </data>
+  <data name="Print.Status.DirectThermal" xml:space="preserve">
+    <value>Thermique direct (sans ruban)</value>
+  </data>
+  <data name="Print.Status.Option" xml:space="preserve">
+    <value>Vérifier l’imprimante avant et après l’impression</value>
+  </data>
+  <data name="Print.Status.Option.Tip" xml:space="preserve">
+    <value>Avant chaque travail, Rotula demande son état à l’imprimante et n’envoie rien tant qu’elle n’a plus d’étiquettes, qu’elle est ouverte, en pause ou sans ruban. Après le travail, il attend que l’imprimante signale qu’elle a terminé. Pour les imprimantes compatibles ZPL ; beaucoup de pilotes USB ne peuvent pas répondre, et l’impression se fait alors sans la vérification.</value>
+  </data>
+  <data name="Menu.PrintStation" xml:space="preserve">
+    <value>Ouvrir le poste d’impression...</value>
+  </data>
+  <data name="Menu.StationPin" xml:space="preserve">
+    <value>Créer le NIP du poste d’impression...</value>
+  </data>
+  <data name="Station.Title" xml:space="preserve">
+    <value>Poste d’impression</value>
+  </data>
+  <data name="Station.PickFolder" xml:space="preserve">
+    <value>Choisissez le dossier du poste d’impression (avec son station.json, ou avec les étiquettes à proposer)</value>
+  </data>
+  <data name="Station.Open.Failed" xml:space="preserve">
+    <value>Le poste d’impression ne peut pas s’ouvrir.</value>
+  </data>
+  <data name="Station.Exit" xml:space="preserve">
+    <value>Quitter</value>
+  </data>
+  <data name="Station.Back" xml:space="preserve">
+    <value>Toutes les étiquettes</value>
+  </data>
+  <data name="Station.Search" xml:space="preserve">
+    <value>Recherchez ou scannez une étiquette</value>
+  </data>
+  <data name="Station.Search.Hint" xml:space="preserve">
+    <value>Tapez un nom ou scannez le code de l’étiquette, puis appuyez sur Entrée. Ou touchez une étiquette ci-dessous.</value>
+  </data>
+  <data name="Station.NoMatch" xml:space="preserve">
+    <value>Aucune étiquette ne correspond à la recherche.</value>
+  </data>
+  <data name="Station.UnknownCode" xml:space="preserve">
+    <value>Aucune étiquette n’a le code « {0} ». Scannez-le de nouveau ou choisissez une étiquette dans la liste.</value>
+  </data>
+  <data name="Station.Warnings" xml:space="preserve">
+    <value>Certaines étiquettes ne sont pas disponibles :</value>
+  </data>
+  <data name="Station.Label.LoadFailed" xml:space="preserve">
+    <value>L’étiquette « {0} » ne peut pas être utilisée : {1}</value>
+  </data>
+  <data name="Station.Printer" xml:space="preserve">
+    <value>Imprimante : {0}</value>
+  </data>
+  <data name="Station.Printer.None" xml:space="preserve">
+    <value>Aucune imprimante n’est configurée pour cette étiquette. Demandez à la personne qui a configuré le poste d’en ajouter une dans station.json.</value>
+  </data>
+  <data name="Station.Copies" xml:space="preserve">
+    <value>Quantité</value>
+  </data>
+  <data name="Station.Copies.Hint" xml:space="preserve">
+    <value>De 1 à {0} étiquettes</value>
+  </data>
+  <data name="Station.Copies.Invalid" xml:space="preserve">
+    <value>Entrez une quantité de 1 à {0}, puis appuyez de nouveau sur Imprimer.</value>
+  </data>
+  <data name="Station.Print" xml:space="preserve">
+    <value>Imprimer</value>
+  </data>
+  <data name="Station.PrintRecords" xml:space="preserve">
+    <value>Imprimer tous les enregistrements</value>
+  </data>
+  <data name="Station.Records" xml:space="preserve">
+    <value>{0} enregistrements des données de l’étiquette sont prêts à imprimer.</value>
+  </data>
+  <data name="Station.Records.NotLoaded" xml:space="preserve">
+    <value>Les données de l’étiquette n’ont pas pu être lues : {0}</value>
+  </data>
+  <data name="Station.Records.None" xml:space="preserve">
+    <value>les données ne contiennent aucun enregistrement.</value>
+  </data>
+  <data name="Station.Fields.None" xml:space="preserve">
+    <value>Cette étiquette ne pose aucune question. Indiquez la quantité et appuyez sur Imprimer.</value>
+  </data>
+  <data name="Station.Fields.Fix" xml:space="preserve">
+    <value>Certaines réponses ne sont pas acceptées. Corrigez les champs marqués en rouge, puis imprimez de nouveau.</value>
+  </data>
+  <data name="Station.Preview" xml:space="preserve">
+    <value>Aperçu</value>
+  </data>
+  <data name="Station.Status.Checking" xml:space="preserve">
+    <value>Vérification de l’imprimante...</value>
+  </data>
+  <data name="Station.Status.Ready" xml:space="preserve">
+    <value>Imprimante prête</value>
+  </data>
+  <data name="Station.Status.Unknown" xml:space="preserve">
+    <value>État de l’imprimante inconnu</value>
+  </data>
+  <data name="Station.Status.NeedsAttention" xml:space="preserve">
+    <value>L’imprimante demande votre attention</value>
+  </data>
+  <data name="Station.Status.Printing" xml:space="preserve">
+    <value>Impression...</value>
+  </data>
+  <data name="Station.Status.Printing.Checked" xml:space="preserve">
+    <value>Rotula vérifie l’imprimante avant l’envoi et attend qu’elle signale avoir terminé.</value>
+  </data>
+  <data name="Station.Status.HeldBack" xml:space="preserve">
+    <value>Non imprimé : l’imprimante demande votre attention</value>
+  </data>
+  <data name="Station.Status.Printed" xml:space="preserve">
+    <value>Envoyé à l’imprimante</value>
+  </data>
+  <data name="Station.Status.Verified" xml:space="preserve">
+    <value>Imprimé et vérifié</value>
+  </data>
+  <data name="Station.Status.NotVerified" xml:space="preserve">
+    <value>Envoyé, mais non confirmé</value>
+  </data>
+  <data name="Station.Status.Fault" xml:space="preserve">
+    <value>Envoyé, mais l’imprimante signale un problème</value>
+  </data>
+  <data name="Station.Status.Problem" xml:space="preserve">
+    <value>Non imprimé</value>
+  </data>
+  <data name="Station.Pin.Title" xml:space="preserve">
+    <value>Entrez le NIP pour quitter le poste d’impression</value>
+  </data>
+  <data name="Station.Pin.Field" xml:space="preserve">
+    <value>NIP</value>
+  </data>
+  <data name="Station.Pin.Ok" xml:space="preserve">
+    <value>Quitter le poste</value>
+  </data>
+  <data name="Station.Pin.Wrong" xml:space="preserve">
+    <value>Ce NIP n’est pas le bon. Réessayez.</value>
+  </data>
+  <data name="Station.Pin.Locked" xml:space="preserve">
+    <value>Trop de NIP erronés. Attendez {0} secondes, puis réessayez.</value>
+  </data>
+  <data name="Station.NewPin.Title" xml:space="preserve">
+    <value>Créer un NIP pour le poste d’impression</value>
+  </data>
+  <data name="Station.NewPin.Intro" xml:space="preserve">
+    <value>Le NIP est nécessaire pour quitter le poste d’impression. Rotula ne conserve qu’un code protégé créé à partir de celui-ci, jamais le NIP lui-même. Copiez la ligne dans le station.json du poste.</value>
+  </data>
+  <data name="Station.NewPin.Pin" xml:space="preserve">
+    <value>Nouveau NIP</value>
+  </data>
+  <data name="Station.NewPin.Confirm" xml:space="preserve">
+    <value>Tapez le NIP de nouveau</value>
+  </data>
+  <data name="Station.NewPin.Create" xml:space="preserve">
+    <value>Créer</value>
+  </data>
+  <data name="Station.NewPin.Result" xml:space="preserve">
+    <value>Ligne pour station.json</value>
+  </data>
+  <data name="Station.NewPin.Copy" xml:space="preserve">
+    <value>Copier</value>
+  </data>
+  <data name="Station.NewPin.Copied" xml:space="preserve">
+    <value>Copié. Collez-le dans station.json, à côté des autres réglages.</value>
+  </data>
+  <data name="Station.NewPin.Invalid" xml:space="preserve">
+    <value>Un NIP doit compter de {0} à {1} caractères.</value>
+  </data>
+  <data name="Station.NewPin.Mismatch" xml:space="preserve">
+    <value>Les deux NIP ne sont pas identiques. Tapez-les de nouveau.</value>
+  </data>
+  <data name="Issue.StationConfig.NotFound" xml:space="preserve">
+    <value>« {0} » est introuvable. Vérifiez le chemin donné au poste d’impression.</value>
+  </data>
+  <data name="Issue.StationConfig.ReadFailed" xml:space="preserve">
+    <value>« {0} » n’a pas pu être lu. Vérifiez que le fichier n’est pas verrouillé et que cet utilisateur a le droit de le lire.</value>
+  </data>
+  <data name="Issue.StationConfig.InvalidJson" xml:space="preserve">
+    <value>« {0} » contient une erreur près de la ligne {1} ({2}) : un réglage est mal orthographié, a une valeur du mauvais type, ou il manque une virgule ou un guillemet.</value>
+  </data>
+  <data name="Issue.StationConfig.NewerVersion" xml:space="preserve">
+    <value>Les réglages du poste ont été écrits pour une version plus récente de Rotula (format {0}). Mettez Rotula à jour sur cet ordinateur.</value>
+  </data>
+  <data name="Issue.StationConfig.NoLabels" xml:space="preserve">
+    <value>Il n’y a aucune étiquette à proposer. Placez des fichiers .rotula dans le dossier du poste ou énumérez-les sous "labels" dans station.json.</value>
+  </data>
+  <data name="Issue.StationConfig.LabelMissing" xml:space="preserve">
+    <value>L’étiquette « {0} » indiquée dans station.json est introuvable et est omise.</value>
+  </data>
+  <data name="Issue.StationConfig.LabelNotRotula" xml:space="preserve">
+    <value>« {0} » n’est pas une étiquette Rotula (fichier .rotula). Corrigez-le dans station.json.</value>
+  </data>
+  <data name="Issue.StationConfig.LabelNoFile" xml:space="preserve">
+    <value>L’entrée d’étiquette {0} de station.json n’a pas de "file". Ajoutez le nom du fichier de l’étiquette.</value>
+  </data>
+  <data name="Issue.StationConfig.DuplicateKey" xml:space="preserve">
+    <value>Deux étiquettes utilisent le code « {0} ». Donnez à chaque étiquette son propre code, pour qu’un scan ouvre la bonne.</value>
+  </data>
+  <data name="Issue.StationConfig.UnknownPrinter" xml:space="preserve">
+    <value>L’imprimante « {0} » n’est pas définie sous "printers" dans station.json.</value>
+  </data>
+  <data name="Issue.StationConfig.PrinterTarget" xml:space="preserve">
+    <value>L’imprimante « {0} » a besoin soit de "windowsPrinter" (une imprimante installée), soit de "host" (une adresse réseau), mais pas des deux.</value>
+  </data>
+  <data name="Issue.StationConfig.PrinterPort" xml:space="preserve">
+    <value>Le port de l’imprimante « {0} » doit être compris entre 1 et 65535 (habituellement 9100).</value>
+  </data>
+  <data name="Issue.StationConfig.PrinterDpi" xml:space="preserve">
+    <value>La résolution de l’imprimante « {0} » doit être 203, 300 ou 600.</value>
+  </data>
+  <data name="Issue.StationConfig.PrinterProfile" xml:space="preserve">
+    <value>L’imprimante « {0} » a un contraste hors de 0 à 30 ou une vitesse hors de 1 à 14.</value>
+  </data>
+  <data name="Issue.StationConfig.Copies" xml:space="preserve">
+    <value>Les réglages de copies du poste ne sont pas valides : "maxCopies" doit être compris entre 1 et 99999999 et "defaultCopies" entre 1 et "maxCopies".</value>
+  </data>
+  <data name="Issue.StationConfig.LabelCopies" xml:space="preserve">
+    <value>Les réglages de copies de l’étiquette « {0} » ne sont pas valides : "maxCopies" doit être compris entre 1 et 99999999 et "defaultCopies" entre 1 et "maxCopies".</value>
+  </data>
+  <data name="Issue.StationConfig.PinHash" xml:space="preserve">
+    <value>"exitPinHash" n’est pas un code de NIP créé par Rotula. Créez-le avec Fichier &gt; Créer le NIP du poste d’impression (un NIP n’est jamais enregistré en clair).</value>
+  </data>
+  <!-- Enterprise deployment: organization policies and the opt-in update check. -->
+  <data name="Policy.Managed" xml:space="preserve">
+    <value>Géré par votre organisation</value>
+  </data>
+  <data name="Update.Menu" xml:space="preserve">
+    <value>Vérifier les mises à jour une fois par jour</value>
+  </data>
+  <data name="Update.Menu.Tip" xml:space="preserve">
+    <value>Lorsque cette option est activée, Rotula demande une fois par jour à la page du projet sur GitHub si une version plus récente existe. Rien sur vous ni sur cet ordinateur n’est envoyé, et rien n’est téléchargé ni installé.</value>
+  </data>
+  <data name="Update.Notice" xml:space="preserve">
+    <value>Rotula {0} est disponible. Vous pouvez le télécharger à partir de la page de la version.</value>
+  </data>
+  <data name="Update.Notice.Name" xml:space="preserve">
+    <value>Mise à jour disponible</value>
+  </data>
+  <data name="Update.Notice.Open" xml:space="preserve">
+    <value>Voir la version</value>
+  </data>
+  <data name="Update.Notice.Dismiss" xml:space="preserve">
+    <value>Fermer cet avis</value>
+  </data>
+  <data name="Update.OpenFailed" xml:space="preserve">
+    <value>Le navigateur n’a pas pu être ouvert. La page de la version est {0}</value>
+  </data>
 </root>
