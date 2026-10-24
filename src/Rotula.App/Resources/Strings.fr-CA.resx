@@ -6258,4 +6258,46 @@ Les noms de marques et de produits appartiennent à leurs propriétaires ; Rot
   <data name="Update.OpenFailed" xml:space="preserve">
     <value>Le navigateur n’a pas pu être ouvert. La page de la version est {0}</value>
   </data>
+  <data name="Preview.Mode.Name" xml:space="preserve">
+    <value>Afficher l’étiquette telle qu’imprimée ou telle que conçue</value>
+  </data>
+  <data name="Preview.AsPrinted" xml:space="preserve">
+    <value>Telle qu’imprimée</value>
+  </data>
+  <data name="Preview.AsPrinted.Tip" xml:space="preserve">
+    <value>Affiche l’étiquette comme elle sort de l’imprimante, tournée ou inversée en miroir selon les réglages d’impression de l’étiquette.</value>
+  </data>
+  <data name="Preview.AsDesigned" xml:space="preserve">
+    <value>Telle que conçue</value>
+  </data>
+  <data name="Preview.AsDesigned.Tip" xml:space="preserve">
+    <value>Affiche l’étiquette à l’endroit, comme vous la modifiez dans la zone de conception.</value>
+  </data>
+  <data name="Preview.Note.PrintedInverted" xml:space="preserve">
+    <value>Affichée telle qu’imprimée : l’orientation d’impression de cette étiquette est inversée ; l’imprimante l’imprime donc à l’envers.</value>
+  </data>
+  <data name="Preview.Note.PrintedMirrored" xml:space="preserve">
+    <value>Affichée telle qu’imprimée : cette étiquette est réglée pour s’imprimer en miroir ; la gauche et la droite sont donc inversées.</value>
+  </data>
+  <data name="Preview.Note.PrintedBoth" xml:space="preserve">
+    <value>Affichée telle qu’imprimée : cette étiquette est réglée pour s’imprimer à l’envers et en miroir.</value>
+  </data>
+  <data name="Preview.Note.Designed" xml:space="preserve">
+    <value>Affichée telle que conçue, comme vous la modifiez. Choisissez « Telle qu’imprimée » pour voir comment elle sort de l’imprimante.</value>
+  </data>
+  <data name="Status.PrintsInverted" xml:space="preserve">
+    <value>S’imprime à l’envers</value>
+  </data>
+  <data name="Status.PrintsMirrored" xml:space="preserve">
+    <value>S’imprime en miroir</value>
+  </data>
+  <data name="Status.PrintsInvertedMirrored" xml:space="preserve">
+    <value>S’imprime à l’envers, en miroir</value>
+  </data>
+  <data name="Status.PrintOrientation.Name" xml:space="preserve">
+    <value>Orientation d’impression</value>
+  </data>
+  <data name="Status.PrintOrientation.Tip" xml:space="preserve">
+    <value>La zone de conception affiche l’étiquette à l’endroit pour que vous puissiez la modifier. Ouvrez l’aperçu pour la voir telle qu’imprimée. Modifiez ce réglage dans les propriétés de l’étiquette.</value>
+  </data>
 </root>
