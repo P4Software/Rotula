@@ -343,7 +343,8 @@ transferencia térmica) y el seguimiento.
 - **Qué sabe.** Tamaño en milímetros y pulgadas, radio de las esquinas, etiquetas a lo ancho, tamaño del núcleo, etiquetas por
   rollo y de dónde sale el dato. Un medio cuyo tamaño no está contrastado aparece marcado y, al aplicarlo, se muestra un aviso.
 - **Sin inventar.** La separación entre etiquetas casi siempre se desconoce, así que Rotula indica que calibres la impresora en
-  lugar de adivinar. En medios con varias etiquetas por fila o en hojas solo se aplica el tamaño de una etiqueta, y Rotula lo dice.
+  lugar de adivinar. En rollos con varias etiquetas por fila solo se aplica el tamaño de una etiqueta, y Rotula lo dice. Un medio en hojas abre la
+  exportación de [hojas de etiquetas](#hojas-de-etiquetas-impresoras-de-oficina) con el diseño que le corresponde.
 - **Tus propios medios.** Guarda un tamaño personalizado como medio, o importa una lista de suministros (`.csv` o `.xlsx`) y revisa
   las filas antes de conservarlas. Los precios nunca se leen. Tus medios se guardan en `%AppData%\Rotula\stocks`.
 - **Favoritos y recientes** se recuerdan en tu PC.
@@ -399,6 +400,21 @@ Rotula envía el ZPL como datos RAW, así que el controlador lo transmite sin to
   que el juego de caracteres no puede imprimir: cada caso dice qué pasó y qué hacer. Rotula no incluye controladores de impresora.
 
 Más información en [docs/printing.md](docs/printing.md) (en inglés).
+
+### Hojas de etiquetas (impresoras de oficina)
+
+**Archivo > Exportar > Hojas de etiquetas (PDF)** (o **Hojas de etiquetas** en el cuadro Imprimir) coloca la etiqueta en hojas para
+una impresora láser o de inyección de tinta: Carta de 30 (2-5/8 x 1 in), 20, 14, 10 de envío (4 x 2 in), 6, 80 y media hoja (2 por hoja),
+A4 de 3 x 8 (70 x 37 mm), 21, 65, 16, 14, 8 y 2 por hoja, o un diseño personalizado (papel, márgenes, tamaño de la etiqueta, etiquetas
+a lo ancho y a lo alto, distancia entre etiquetas).
+
+- **Empezar en la posición** aprovecha una hoja ya empezada: haz clic en la primera posición libre de la vista previa.
+- **La combinación de datos y los números de serie** funcionan como al imprimir: los registros marcados con sus copias, y cada
+  número de serie se usa una sola vez.
+- **Marcas de corte** en los márgenes, o un **contorno fino** de cada etiqueta para probar en papel normal.
+- El resultado es un PDF al tamaño real de la hoja, con cada etiqueta a su propio tamaño físico. Imprímelo a **tamaño real (100 %)**.
+  El diseño de la hoja se guarda con la etiqueta. Las plantillas se describen por sus medidas; las hojas de distintos proveedores
+  pueden variar un milímetro, así que imprime primero una página de prueba en papel normal.
 
 ---
 
@@ -565,7 +581,6 @@ No es compatible hoy, y está abierto a discusión:
 - Un mercado de plantillas de etiquetas
 - Sincronización en la nube
 - macOS y Linux
-- Diseños de hojas con varias etiquetas
 
 ¿Tienes un caso de uso que te importa? [Abre una solicitud de función](https://github.com/P4Software/Rotula/issues/new/choose).
 

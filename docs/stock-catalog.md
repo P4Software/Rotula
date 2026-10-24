@@ -177,8 +177,10 @@ reported; it never stops Rotula from starting.
 
 - The gap between labels along the roll is unknown for every entry except one (black-mark sensing). Calibrate the
   printer on the stock.
-- Multi-up (several labels across, or label sheets) is not supported yet. `columns`, `rows` and the gaps are in the
-  data and are reported by `StockApplier`, but the label document is laid out as a single label.
+- Multi-up rolls (several labels across) are not supported yet. `columns`, `rows` and the gaps are in the data and are
+  reported by `StockApplier`, but the label document is laid out as a single label. A sheet stock whose label size and grid
+  match a built-in sheet template (`SheetTemplates.FindForStock`) opens the label sheets export on that template; the catalogue
+  states no margins for sheets, so the template's geometry is used.
 - 40 entries are unverified: 15 where two sources disagree on size or series, 23 stated only by the PDF extraction (11
   Zebra part numbers and the 12 generic `std-*` sizes), 2 where the export lists the part twice with different sizes. They are listed in the rebuild output.
 - Roll length for long rolls comes from the stock name; the label height of those continuous rolls is the user's choice.

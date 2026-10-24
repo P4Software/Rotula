@@ -159,6 +159,14 @@ host that matches a preset offers its settings. The password stays a separate pr
   placeholder name used for an unnamed form can never pick up the password of a real connection. When the store asks for the password again
   the user is told and the password box takes the focus.
 
+### Label sheets (office printers)
+File > Export > Label sheets (PDF) and a button in the Print dialog open `SheetLayoutViewModel`. Output is a PDF only: sending to a Windows
+printer was left out because driver margins and "fit to page" scaling move the labels, while a PDF printed at actual size keeps them in place.
+The labels come from the print paths (`MergeBatch.Labels` with data, `LabelPrintRun.LabelValues` without), so copies, skipped records and serial
+numbers behave as when printing; numbers are confirmed only when the PDF is complete. Templates are generic and named from their dimensions.
+The chosen layout is saved in the optional `sheet` object of the .rotula file without a version change (an older build ignores it); changing it
+marks the label as changed but is not an undo step. Details in [printing.md](printing.md#label-sheets-for-office-printers).
+
 ### Tests
 `tests/Rotula.Tests` targets `net10.0-windows` (it references the WPF app). All App tests share the xUnit collection "App"
 because the language is process-wide state.
