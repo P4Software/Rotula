@@ -7,7 +7,9 @@ gate and the hygiene check, and keeps an unsigned portable zip as a workflow art
 ## One-time set-up on the build machine
 
 - .NET 10 SDK, Inno Setup 6 (`winget install JRSoftware.InnoSetup --scope user`), the Azure CLI, and the Microsoft `sign`
-  tool (`dotnet tool install --global sign --prerelease`).
+  tool (`dotnet tool install --global sign --prerelease`). The WiX Toolset that builds the MSI needs no install: `dotnet build`
+  restores `WixToolset.Sdk` from NuGet the first time.
+- For the winget submission: `winget install Microsoft.WingetCreate` (optional, see step 8).
 - For publishing from the script: the GitHub CLI (`winget install GitHub.cli`, then `gh auth login`).
 
 ## Cutting a release
@@ -18,7 +20,8 @@ gate and the hygiene check, and keeps an unsigned portable zip as a workflow art
 3. Merge to the main branch, make sure CI is green, then create and push the tag `vX.Y.Z` on that commit.
 4. Run `az login` (the signing uses that session).
 5. Double-click `packaging\installer\build-installer.cmd`. It publishes the app and the MCP server (`Rotula.Mcp.exe`), writes the
-   combined licence text, signs both programs, builds the installer, signs it, verifies all three signatures, builds the
+   combined licence text, signs both programs, builds the per-user installer (Inno Setup) and the machine-wide MSI
+   (`packaging\msi`, WiX Toolset) from the signed programs, signs both, verifies all four signatures, builds the
    portable zip from the signed programs, writes the winget manifests and `SHA256SUMS.txt`. Everything is in `artifacts\`
    (git-ignored). If you are not logged in, the files are still built but labelled `UNSIGNED` and must not be published.
    Set `ROTULA_NOPAUSE=1` to skip the final "press Enter" (automation only).
@@ -28,14 +31,24 @@ gate and the hygiene check, and keeps an unsigned portable zip as a workflow art
 
    ```
    gh release create vX.Y.Z --repo P4Software/Rotula --title "Rotula X.Y.Z" --verify-tag --notes-file <notes> ^
-     artifacts\Rotula-X.Y.Z-win-x64-setup.exe artifacts\Rotula-X.Y.Z-win-x64-portable.zip ^
+     artifacts\Rotula-X.Y.Z-win-x64-setup.exe artifacts\Rotula-X.Y.Z-win-x64.msi artifacts\Rotula-X.Y.Z-win-x64-portable.zip ^
      artifacts\LICENSE-THIRD-PARTY.txt artifacts\SHA256SUMS.txt artifacts\Rotula-X.Y.Z-winget-manifests.zip
    ```
 
    The script never replaces files of a release that already exists; it adds only the missing ones and says so.
-8. **Winget**: copy `artifacts\winget\manifests\p\P4Software\Rotula\X.Y.Z\` into a fork of `microsoft/winget-pkgs`, check it
-   with `winget validate`, and open a pull request. The manifest already holds the real installer hash and download URL, so
-   submit it only after the GitHub Release is public.
+8. **Winget** (only after the GitHub Release is public: the manifests hold the real download URLs and hashes). The set in
+   `artifacts\winget\manifests\p\P4Software\Rotula\X.Y.Z\` has four files: version, installer (the Inno exe for
+   `--scope user` and the MSI for `--scope machine`), en-US default locale and es-MX locale.
+   1. Check it: `winget validate --manifest artifacts\winget\manifests\p\P4Software\Rotula\X.Y.Z`.
+   2. Try it in Windows Sandbox or a test VM: `winget settings --enable LocalManifestFiles` (once, elevated), then
+      `winget install --manifest <that folder>` and `winget install --manifest <that folder> --scope machine`, and uninstall both.
+   3. Submit it, either with wingetcreate, which forks `microsoft/winget-pkgs` and opens the pull request for you:
+      `wingetcreate submit --token <GitHub token with public_repo> artifacts\winget\manifests\p\P4Software\Rotula\X.Y.Z`
+      or by hand: fork `microsoft/winget-pkgs`, copy the folder to `manifests/p/P4Software/Rotula/X.Y.Z/` on a new branch, and
+      open a pull request titled `New version: P4Software.Rotula version X.Y.Z` (the first one: `New package: ...`).
+   4. Follow the pull request: the winget bots validate, install and scan the package and label the pull request; answer any
+      `Needs-Author-Feedback` label. A moderator merges it, and the version reaches `winget search` within a few hours.
+   Never edit the hashes by hand; if a release file changes, build again (and use a new version number).
 
 ## Verifying a signature
 
@@ -44,7 +57,7 @@ Get-AuthenticodeSignature .\artifacts\Rotula-X.Y.Z-win-x64-setup.exe | Format-Li
 ```
 
 `Status` must be `Valid`, the signer subject must contain `Barrdega Sistemas NA LLC`, and a timestamp certificate must be
-present. Do the same for `Rotula.App.exe` and `Rotula.Mcp.exe` inside the portable zip. The build script performs these checks itself and never
+present. Do the same for the MSI, and for `Rotula.App.exe` and `Rotula.Mcp.exe` inside the portable zip. The build script performs these checks itself and never
 trusts the exit code of the signing tool. Compare downloads with `SHA256SUMS.txt` (`Get-FileHash`).
 
 ## What is in a release
@@ -52,6 +65,8 @@ trusts the exit code of the signing tool. Compare downloads with `SHA256SUMS.txt
 - `Rotula-X.Y.Z-win-x64-setup.exe`: per-user installer. Installs `Rotula.App.exe`, `Rotula.Mcp.exe`, `LICENSE`,
   `LICENSE-THIRD-PARTY.txt`, `THIRD-PARTY-NOTICES.md`, `README.md`, `docs\mcp.md` and an empty `packs` folder (with a one-line
   `README.txt`) beside the program. Uninstalling removes them, and the MCP settings file created next to the exe on first run.
+- `Rotula-X.Y.Z-win-x64.msi`: machine-wide Windows Installer package for administrators (Program Files, every user; Intune,
+  Group Policy, Configuration Manager). The same files as the setup exe. See [deployment.md](deployment.md).
 - `Rotula-X.Y.Z-win-x64-portable.zip`: the same files, nothing installed.
 - `LICENSE-THIRD-PARTY.txt`: also a separate release file, because the winget manifest links to it as the agreement.
 - `SHA256SUMS.txt` and `Rotula-X.Y.Z-winget-manifests.zip`.

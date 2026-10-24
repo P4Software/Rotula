@@ -38,7 +38,8 @@ DefaultGroupName=Rotula
 DisableProgramGroupPage=yes
 ; Per-user install: no UAC prompt, and winget can install it silently without elevation.
 PrivilegesRequired=lowest
-PrivilegesRequiredOverridesAllowed=dialog
+; /ALLUSERS (all users, Program Files, needs administrator rights) and /CURRENTUSER work on the command line for silent deployment (docs/deployment.md).
+PrivilegesRequiredOverridesAllowed=commandline dialog
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 ; The page the user must accept: Rotula's MIT licence plus the full terms of every non-permissive component that ships

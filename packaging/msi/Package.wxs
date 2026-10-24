@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Machine-wide MSI for Rotula (WiX Toolset v5). Installs to Program Files\Rotula for every user of the computer, with a
+  Start menu shortcut and the .rotula file association. No wizard pages: it is meant for silent deployment
+  (msiexec /i Rotula-X.Y.Z-win-x64.msi /qn); double-clicking it shows only the Windows Installer progress window.
+  Deploying it means accepting LICENSE-THIRD-PARTY.txt (installed next to the program) on behalf of the users. docs/deployment.md.
+
+  Public properties:
+    INSTALLFOLDER  where the program goes (default C:\Program Files\Rotula)
+    ASSOCIATE      1 (default) opens .rotula files with Rotula; 0 leaves file associations alone
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <!-- UpgradeCode must never change: it is how Windows Installer, winget and Intune recognise newer versions of the same product.
+       It is different from the Inno Setup AppId on purpose: the two packages are separate products (per-user and per-machine). -->
+  <Package Name="Rotula" Manufacturer="P4 Software" Version="$(var.ProductVersion)" UpgradeCode="{4B2C6076-5B82-411C-B751-EC4B70BEE9C6}"
+           Scope="perMachine" Language="1033" Compressed="yes" InstallerVersion="500">
+    <SummaryInformation Description="Rotula label designer" Manufacturer="P4 Software" />
+
+    <!-- A newer package removes the older one; the same numeric version is allowed so 0.4.0 can replace 0.4.0-rc1. Downgrades are refused. -->
+    <MajorUpgrade AllowSameVersionUpgrades="yes"
+                  DowngradeErrorMessage="A newer version of Rotula is already installed. Uninstall it first if you really want this older version." />
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <!-- Apps & features (ARP) entry. -->
+    <Icon Id="Rotula.ico" SourceFile="$(var.RepoRoot)src\Rotula.App\Assets\rotula.ico" />
+    <Property Id="ARPPRODUCTICON" Value="Rotula.ico" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/P4Software/Rotula" />
+    <Property Id="ARPHELPLINK" Value="https://github.com/P4Software/Rotula/issues" />
+    <Property Id="ARPURLUPDATEINFO" Value="https://github.com/P4Software/Rotula/releases" />
+    <Property Id="ARPCONTACT" Value="P4 Software" />
+    <Property Id="ARPCOMMENTS" Value="Offline label designer with ZPL-compatible output." />
+    <!-- There are no optional features to change, so Apps & features offers Uninstall (and Repair) only. -->
+    <Property Id="ARPNOMODIFY" Value="1" />
+
+    <Property Id="ASSOCIATE" Value="1" Secure="yes" />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="Rotula">
+        <Directory Id="DocsFolder" Name="docs" />
+        <Directory Id="PacksFolder" Name="packs" />
+        <Directory Id="AssetsFolder" Name="Assets" />
+      </Directory>
+    </StandardDirectory>
+    <StandardDirectory Id="ProgramMenuFolder" />
+
+    <Feature Id="Main" Title="Rotula" Level="1">
+      <ComponentGroupRef Id="ProgramFiles" />
+      <ComponentRef Id="FileAssociation" />
+    </Feature>
+
+    <ComponentGroup Id="ProgramFiles" Directory="INSTALLFOLDER">
+      <Component Id="RotulaAppExe">
+        <File Id="RotulaAppExe" Source="$(var.StageDir)\Rotula.App.exe" KeyPath="yes">
+          <!-- Advertised shortcut: the standard per-machine Start menu entry (common Start menu for every user). -->
+          <Shortcut Id="StartMenuShortcut" Directory="ProgramMenuFolder" Name="Rotula" Description="Design and print labels"
+                    WorkingDirectory="INSTALLFOLDER" Icon="Rotula.ico" Advertise="yes" />
+        </File>
+        <!-- Created by Rotula.Mcp.exe on first run next to the exe (when it may write there); removed so the folder can go. -->
+        <RemoveFile Id="McpSettingsFile" Name="rotula-mcp.settings.json" On="uninstall" />
+      </Component>
+      <!-- The MCP server: started by AI assistant applications, so it gets no shortcut. docs\mcp.md says how to connect it. -->
+      <Component Id="RotulaMcpExe">
+        <File Id="RotulaMcpExe" Source="$(var.StageDir)\Rotula.Mcp.exe" KeyPath="yes" />
+      </Component>
+      <Component Id="LicenseFile">
+        <File Id="LicenseFile" Source="$(var.StageDir)\LICENSE" KeyPath="yes" />
+      </Component>
+      <Component Id="ThirdPartyLicense">
+        <File Id="ThirdPartyLicense" Source="$(var.StageDir)\LICENSE-THIRD-PARTY.txt" KeyPath="yes" />
+      </Component>
+      <Component Id="ThirdPartyNotices">
+        <File Id="ThirdPartyNotices" Source="$(var.StageDir)\THIRD-PARTY-NOTICES.md" KeyPath="yes" />
+      </Component>
+      <Component Id="ReadmeFile">
+        <File Id="ReadmeFile" Source="$(var.StageDir)\README.md" KeyPath="yes" />
+      </Component>
+      <Component Id="McpDoc" Directory="DocsFolder">
+        <File Id="McpDoc" Source="$(var.StageDir)\docs\mcp.md" KeyPath="yes" />
+      </Component>
+      <!-- Add-ons placed in "packs" beside the exe are trusted (installed by an administrator; docs/data-providers.md). -->
+      <Component Id="PacksReadme" Directory="PacksFolder">
+        <File Id="PacksReadme" Source="$(var.StageDir)\packs\README.txt" KeyPath="yes" />
+      </Component>
+      <!-- The icon of .rotula documents; the association below points at this file. -->
+      <Component Id="DocumentIcon" Directory="AssetsFolder">
+        <File Id="DocumentIcon" Source="$(var.StageDir)\Assets\rotula-document.ico" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+
+    <!-- .rotula files open in Rotula (HKLM: for every user). The file name is the first argument, which the app opens. -->
+    <Component Id="FileAssociation" Directory="INSTALLFOLDER" Condition="ASSOCIATE = &quot;1&quot;">
+      <RegistryValue Root="HKLM" Key="Software\Classes\.rotula" Type="string" Value="Rotula.Label" KeyPath="yes" />
+      <RegistryValue Root="HKLM" Key="Software\Classes\Rotula.Label" Type="string" Value="Rotula label" />
+      <RegistryValue Root="HKLM" Key="Software\Classes\Rotula.Label\DefaultIcon" Type="string" Value="[#DocumentIcon]" />
+      <RegistryValue Root="HKLM" Key="Software\Classes\Rotula.Label\shell\open\command" Type="string" Value="&quot;[#RotulaAppExe]&quot; &quot;%1&quot;" />
+    </Component>
+  </Package>
+</Wix>

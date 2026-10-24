@@ -36,8 +36,11 @@ public partial class App : Application
 
         try
         {
+            // What the organization fixed through Group Policy or Intune (HKLM wins over HKCU; docs/deployment.md). Read once.
+            var policy = Rotula.Files.Policy.RotulaPolicy.Read(Rotula.Files.Policy.RegistryPolicySource.ForThisComputer());
             // Add-ons load on a background thread while the window opens; a failure of the loader itself only ends up in the log.
-            var packOptions = new Rotula.Data.Packs.PackLoadOptions();
+            // A policy can keep add-ons in the user's own folder from loading (the installed "packs" folder is still used).
+            var packOptions = new Rotula.Data.Packs.PackLoadOptions { IncludeUserPacks = policy.AllowUserAddOns };
             var packLoading = PackStartup.Begin(packOptions, LogCrash);
             // The first New label dialog should find the stock library already read.
             StockLibrary.Preload();
@@ -47,13 +50,18 @@ public partial class App : Application
                 new WpfNewLabelDialogService(), CreateZplImporter(), new Rotula.Printing.PrintService(), new JsonSettingsStore(), dialogs, new DatabaseServices(),
                 // Serial numbers that remember their value live in %AppData%\Rotula\counters.json (see docs/variables.md).
                 // Windows-font text is drawn to a picture by the SkiaSharp rasterizer, so Print, Save ZPL, Check All and Export can all print it.
-                new VariableServices(Rotula.Files.FileCounterStore.OpenDefault(), dialogs, textRasterizer: new Rotula.Rendering.SkiaTextRasterizer()));
+                new VariableServices(Rotula.Files.FileCounterStore.OpenDefault(), dialogs, textRasterizer: new Rotula.Rendering.SkiaTextRasterizer()),
+                Policy: policy,
+                // The opt-in update check: nothing is sent unless the user (Help menu) or a policy switches it on.
+                Updates: new UpdateChecker(new GitHubReleaseFeed(), Views.AboutWindow.VersionString()),
+                Links: new ShellUrlLauncher());
             var vm = new MainViewModel(services);
             var window = new MainWindow(vm);
             MainWindow = window;
             window.Show();
             // When loading is over, tell the user (non-modally) about add-ons that could not be loaded or wait for approval.
             _ = ShowPackNoticeAsync(packLoading, packOptions, vm);
+            _ = CheckForUpdatesAsync(vm);
 
             // Double-clicking a .rotula file starts the program with the path as its only argument.
             if (e.Args.Length > 0 && File.Exists(e.Args[0])) vm.LoadFile(e.Args[0]);
@@ -116,6 +124,19 @@ public partial class App : Application
         }
         catch (Exception ex)
         {
+            LogCrash(ex);
+        }
+    }
+
+    private static async Task CheckForUpdatesAsync(MainViewModel vm)
+    {
+        try
+        {
+            await vm.CheckForUpdatesAsync();
+        }
+        catch (Exception ex)
+        {
+            // The update check is a convenience; it must never disturb the user.
             LogCrash(ex);
         }
     }

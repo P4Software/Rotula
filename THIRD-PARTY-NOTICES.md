@@ -101,7 +101,8 @@ Specifications.
 | Newtonsoft.Json (via the test SDK) | 13.0.3 | MIT |
 | coverlet.collector | 6.0.4 | MIT |
 | dotnet-reportgenerator-globaltool (CI only, installed on demand) | latest | Apache-2.0 |
-| Inno Setup (CI only, builds the installer) | 6.x | Inno Setup License (free, redistribution of the tool is not part of Rotula) |
+| Inno Setup (release build machine, builds the per-user installer) | 6.x | Inno Setup License (free, redistribution of the tool is not part of Rotula) |
+| WiX Toolset SDK (`WixToolset.Sdk`, release build machine, builds the MSI; nothing of it is inside the MSI or the app) | 5.0.2 | MS-RL (Microsoft Reciprocal License); the tool is not redistributed |
 
 ## Data
 

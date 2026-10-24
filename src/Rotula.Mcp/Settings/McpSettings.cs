@@ -51,6 +51,12 @@ public sealed record McpSettings
 
     /// <summary>When true the log also records tool arguments; label contents then reach the log file. Off by default.</summary>
     public bool DebugLogging { get; init; }
+
+    /// <summary>True when an organization policy switched printing off (see <see cref="McpSettingsLoader.ApplyPolicy"/>).</summary>
+    public bool PrintingBlockedByPolicy { get; init; }
+
+    /// <summary>True when an organization policy switched database access off.</summary>
+    public bool DatabaseBlockedByPolicy { get; init; }
 }
 
 /// <summary>The outcome of loading the settings: the values plus plain-language notes for the person running the server.</summary>

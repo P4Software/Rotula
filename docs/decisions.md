@@ -163,6 +163,56 @@ because the language is process-wide state.
 satellite resource assemblies and the SkiaSharp native library all load from the single file. The native library is unpacked
 to a temporary folder on first start, which is why the first launch can take a second or two longer.
 
+### Machine-wide MSI (WiX Toolset), next to the Inno Setup installer
+Approved by the owner (Glenn) as part of the enterprise deployment work: administrators need a per-machine MSI for Intune,
+Group Policy software installation and Configuration Manager, which handle MSI packages natively (product code detection,
+upgrades, return codes). The per-user Inno Setup installer stays the default for people who install Rotula themselves.
+- **Tool**: WiX Toolset v5 (`WixToolset.Sdk/5.0.2`, MS-RL), restored by `dotnet build` on the build machine. It is a build-time
+  tool only: nothing of it is inside the MSI or the app, so the "permissive licences for what ships" rule is unaffected. It is
+  listed under "Build and test only" in THIRD-PARTY-NOTICES.md. The WiX project asks organizations that earn money from it to
+  pay its Open Source Maintenance Fee; **whether that applies to P4 Software is for the owner to check** before the first MSI
+  release.
+- **Not in Rotula.sln**: the WiX build needs Windows Installer and only runs on Windows; the solution must keep building on any
+  runner. `packaging/msi/Rotula.Msi.wixproj` is built by `build-installer.ps1` from the stage folder after the programs are
+  signed, and the MSI is signed and verified like the setup exe. An unsigned MSI is renamed `-UNSIGNED` and never published.
+- **Shape**: per-machine, `Program Files\Rotula`, advertised Start menu shortcut, `.rotula` association in HKLM (property
+  `ASSOCIATE=0` skips it), ARP links and icon, no Modify. No wizard pages (silent deployment is the use case); deploying it
+  means accepting `LICENSE-THIRD-PARTY.txt` for the users, as `docs/deployment.md` says.
+- **Upgrades**: fixed UpgradeCode `{4B2C6076-5B82-411C-B751-EC4B70BEE9C6}` (never change it), a new ProductCode per build,
+  `MajorUpgrade` with same-version upgrades allowed (MSI versions are numeric, so 0.4.0 must be able to replace 0.4.0-rc1) and
+  downgrades refused. The UpgradeCode differs from the Inno AppId on purpose: they are two products, and a computer should
+  have only one of them.
+
+### Organization policies (Group Policy / Intune)
+`Rotula.Files.Policy` reads `SOFTWARE\Policies\P4Software\Rotula` from HKLM and HKCU once at start-up, value by value with
+the computer winning (`LayeredPolicySource` over two `RegistryPolicySource`s, behind `IPolicySource` so tests use a dictionary).
+It lives in Rotula.Files because both the app and the MCP server need it. `RotulaPolicy.Read` ignores values it does not
+understand, so a typo cannot force a wrong value.
+- **What a policy may do**: choose a value for the user and lock it (language, update check), suggest a default (printer, not
+  locked), or take something away (add-ons from the user's folder; MCP printing and database access). It never switches a risky
+  feature on: the MCP policies only block, and the MCP settings file still has to allow printing and databases.
+- **Locked settings in the UI**: the menu entries are disabled (the language commands' CanExecute, the update entry's
+  IsEnabled) and a disabled "Managed by your organization" line appears under them. The user's own value stays in
+  settings.json and comes back when the policy is removed; `AppSettings.LanguageIn` / `UpdateCheckIn` give the value in force.
+- **Templates**: `packaging/policies/Rotula.admx` with en-US and es-ES ADML. A test checks that every registry value name of the
+  template is a `PolicyNames` constant (and the other way round) and that both ADML files define the same strings.
+
+### Update check: opt-in, anonymous, never installs
+The owner approved an update check on the condition that it sends nothing unless explicitly enabled. Rules:
+- Off by default. It runs only when the user ticks Help > Check for updates once a day, or the `UpdateCheck` policy is 1. The
+  policy at 0 forces it off and the user cannot switch it on.
+- At most once a day (`UpdateSchedule.IsDue`, 24 hours; a last-check time in the future counts as due so a wrong clock cannot
+  stop it). The time is stored before asking, so an offline computer tries once a day, not at every start.
+- One `GET https://api.github.com/repos/P4Software/Rotula/releases/latest`, User-Agent `Rotula` without a version, no cookies,
+  no identifiers; the Windows proxy with default credentials. Failures are silent.
+- `tag_name` is parsed as SemVer (`SemanticVersion`, pre-release ordering per SemVer 2.0); drafts and pre-releases are ignored.
+  The link of the notice is built from the parsed version (`https://github.com/P4Software/Rotula/releases/tag/vX.Y.Z`), never
+  taken from the answer, and the launcher opens https addresses only.
+- A newer version shows a non-modal strip under the toolbar ("View release", close). Closing it remembers that version so it
+  does not come back for it. Nothing is downloaded or installed, ever.
+- Testable: version compare, schedule, parsing and the checker are UI-free (`Services/UpdateCheck.cs`); HTTP is behind
+  `IReleaseFeed`, and `GitHubReleaseFeed` takes a handler so a test sees the exact request.
+
 ### Installer: Inno Setup, not MSIX
 An MSIX package must be signed with a certificate the machine trusts before Windows will install it, and the project has
 no signing certificate (and the CI has no secrets). An unsigned MSIX cannot be installed by double-clicking it, which
@@ -174,9 +224,11 @@ documents. The script lives in `packaging/installer/Rotula.iss`; the CI installs
 certificate becomes available, signing both the exe and the installer is the only change needed.
 
 ### Winget
-`packaging/winget/` holds templates for the version, installer and en-US locale manifests (schema 1.9.0).
-`scripts/New-WingetManifest.ps1` fills version, installer URL, SHA-256 and date from the tag, and the release workflow attaches
-the result as a zip. Submitting it to the winget-pkgs repository is a manual step because it needs a personal token.
+`packaging/winget/` holds templates for the version, installer, en-US default locale and es-MX locale manifests (schema 1.10.0).
+The installer manifest lists two installers: the Inno Setup exe (`Scope: user`, the default) and the MSI (`Scope: machine`,
+`InstallerType: wix`, `ElevationRequirement: elevationRequired`, its ProductCode and the fixed UpgradeCode).
+`scripts/New-WingetManifest.ps1` fills version, URLs, SHA-256 hashes, the MSI's ProductCode (read from the signed MSI) and the
+date; `build-installer.ps1` runs it and zips the result. Submitting it to winget-pkgs is a manual step (docs/releasing.md).
 
 ### Coverage gate
 CI fails when line coverage of `Rotula.Core` drops below 80% (`scripts/check-coverage.ps1`, reading the Cobertura report from
