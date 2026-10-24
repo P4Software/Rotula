@@ -19,10 +19,17 @@ read from the project files and the license metadata in each package's `.nuspec`
 | System.Configuration.ConfigurationManager (via the Microsoft.Extensions.* packages) | 9.0.18 | MIT | Rotula.Mcp | https://github.com/dotnet/runtime |
 | System.Security.Cryptography.Pkcs (pinned to the patched version in Rotula.Data) | 10.0.13 | MIT | Rotula.Mcp | https://github.com/dotnet/runtime |
 | System.Diagnostics.EventLog (via Microsoft.Extensions.Logging.EventLog) | 10.0.10 | MIT | Rotula.Mcp | https://github.com/dotnet/runtime |
+| ASP.NET Core shared framework (Microsoft.AspNetCore.App, part of .NET; copied into a self-contained `rotula.exe`) | 10.0 | MIT | Rotula.Cli | https://github.com/dotnet/aspnetcore |
+| Microsoft.AspNetCore.OpenApi (OpenAPI description of the print engine's REST API) | 10.0.13 | MIT | Rotula.Cli | https://github.com/dotnet/aspnetcore |
+| Microsoft.OpenApi (via Microsoft.AspNetCore.OpenApi) | 2.12.2 | MIT | Rotula.Cli | https://github.com/microsoft/OpenAPI.NET |
+| Microsoft.Extensions.Hosting.WindowsServices (runs `rotula serve` as a Windows service) | 10.0.13 | MIT | Rotula.Cli | https://github.com/dotnet/runtime |
+| System.ServiceProcess.ServiceController (via Microsoft.Extensions.Hosting.WindowsServices) | 10.0.13 | MIT | Rotula.Cli | https://github.com/dotnet/runtime |
 | Liberation Sans Regular / Bold and Liberation Mono Regular (embedded stand-in fonts) | 2.x | SIL Open Font License 1.1 | Rotula.Rendering | https://github.com/liberationfonts/liberation-fonts |
 
 The MCP server (`Rotula.Mcp`) is a separate executable from the app. It uses the packages marked `Rotula.Mcp` above; its license 
 expressions were read from each package's `.nuspec` in the restored NuGet cache (the SDK is Apache-2.0, used unmodified).
+The print engine (`rotula.exe`, `Rotula.Cli` and `Rotula.Engine`) is another separate executable; it uses the packages marked
+`Rotula.Cli` above besides Rotula.Rendering's and Rotula.Core's.
 
 The Liberation fonts are embedded unmodified in `Rotula.Rendering`; their license text is in
 `src/Rotula.Rendering/Fonts/LICENSE-LiberationFonts.txt` and is also embedded in the assembly. Apache-2.0 components are

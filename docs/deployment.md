@@ -205,7 +205,7 @@ the logon requirement to **Whether or not a user is logged on**, and add the new
 Rotula reads the policies once at start-up from `HKLM\SOFTWARE\Policies\P4Software\Rotula` (the computer) and
 `HKCU\SOFTWARE\Policies\P4Software\Rotula` (the user). When both set the same value, **the computer's value wins**. A
 setting fixed by a policy is shown disabled in Rotula with the note "Managed by your organization", and the user's own
-choice is kept in `settings.json` for the day the policy is removed. The MCP server (`Rotula.Mcp.exe`) reads the same key.
+choice is kept in `settings.json` for the day the policy is removed. The MCP server (`Rotula.Mcp.exe`) and the print engine (`rotula.exe`) read the same key.
 
 | Policy (template name) | Registry value | Type | Values | Effect |
 |---|---|---|---|---|
@@ -215,6 +215,7 @@ choice is kept in `settings.json` for the day the policy is removed. The MCP ser
 | Allow data source add-ons from the user's folder | `UserAddOns` | REG_DWORD | `0` blocks | Add-ons in `%AppData%\Rotula\packs` are neither loaded nor offered for approval; the installed `packs` folder still works ([data-providers.md](data-providers.md)) |
 | Allow the MCP server to print | `McpPrinting` | REG_DWORD | `0` blocks | The MCP server refuses every print request, whatever its settings file says |
 | Allow the MCP server to read databases | `McpDatabase` | REG_DWORD | `0` blocks | The MCP server refuses every database query |
+| Allow the print engine to print | `PrintEngine` | REG_DWORD | `0` blocks | `rotula.exe` refuses to print or query printers (exit code 5) and its REST server answers 403, whatever its settings file says ([print-engine.md](print-engine.md)) |
 
 A value that Rotula does not understand (a language other than the five values above, a number other than 0 or 1) is ignored, so
 a typo never forces a wrong setting on users. The MCP policies can only take something away: setting them to `1` does not

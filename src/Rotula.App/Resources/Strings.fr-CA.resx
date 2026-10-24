@@ -6498,4 +6498,190 @@ Les noms de marques et de produits appartiennent à leurs propriétaires ; Rot
   <data name="Issue.Sheet.Label.Smaller" xml:space="preserve">
     <value>Le dessin de l’étiquette mesure {0} x {1} mm, soit moins que les étiquettes de {2} x {3} mm de cette feuille. Il est imprimé à sa propre taille, centré sur chaque étiquette.</value>
   </data>
+  <data name="Engine.Cli.BadPair" xml:space="preserve">
+    <value>{0} attend NOM=VALEUR, mais a reçu « {1} ».</value>
+  </data>
+  <data name="Engine.Cli.BadValue" xml:space="preserve">
+    <value>« {1} » n’est pas une valeur valide pour {0}.</value>
+  </data>
+  <data name="Engine.Cli.Help" xml:space="preserve">
+    <value>rotula {0} : imprime des étiquettes Rotula sans le concepteur, pour les scripts, les planificateurs de tâches et les systèmes d’entrepôt.
+
+Commandes :
+  rotula print ÉTIQUETTE.rotula --printer NOM | --host ADRESSE [options]
+      Imprime une étiquette. Options :
+        --port N              port TCP de --host (9100 par défaut)
+        --copies N            copies de l’étiquette, ou de chaque enregistrement
+        --data FICHIER        enregistrements d’un fichier .csv, .txt, .xlsx ou .json (une étiquette par enregistrement)
+        --sheet NOM           la feuille Excel à lire
+        --set NOM=VALEUR      la valeur d’un champ (répétez pour d’autres champs)
+        --answer NOM=VALEUR   la réponse à une question que l’étiquette pose à l’impression
+        --dpi 203|300|600     résolution de la tête d’impression (par défaut : celle indiquée par le pilote Windows)
+        --darkness 0-30       noirceur envoyée avant les étiquettes
+        --speed 1-14          vitesse envoyée avant les étiquettes
+        --no-status           ne demande pas l’état de l’imprimante avant chaque travail
+        --no-verify           n’attend pas que l’imprimante indique qu’elle a terminé
+        --dry-run             affiche le ZPL sans imprimer (--output FICHIER l’enregistre dans un fichier)
+        --reference TEXTE     votre propre référence, reprise dans le résultat
+        --counter-file FICHIER où les numéros de série sont mémorisés (par défaut : le même fichier que l’application)
+  rotula status --printer NOM | --host ADRESSE [--port N]
+      Demande à l’imprimante si elle peut imprimer maintenant.
+  rotula printers
+      Liste les imprimantes Windows.
+  rotula serve [--settings FICHIER] [--urls URL]
+      Lance l’API REST. « rotula serve --init [--label-folder DOSSIER] » crée un fichier de paramètres de départ avec une nouvelle clé.
+  rotula new-key
+      Crée une nouvelle clé d’API et le hachage à mettre dans le fichier de paramètres.
+
+Toutes les commandes acceptent --json (sortie pour les programmes) et --lang en|es|pt-BR|fr-CA.
+Codes de sortie : 0 terminé, 1 échec de l’impression, 2 ligne de commande incorrecte, 3 erreurs dans l’étiquette, 4 imprimante pas prête, 5 bloqué par une stratégie, 6 annulé.</value>
+  </data>
+  <data name="Engine.Cli.InitDone" xml:space="preserve">
+    <value>Le fichier de paramètres {0} a été créé. Ajoutez vos imprimantes dans allowedPrinters, puis lancez « rotula serve ».</value>
+  </data>
+  <data name="Engine.Cli.InitExists" xml:space="preserve">
+    <value>Le fichier de paramètres {0} existe déjà ; il n’a pas été modifié.</value>
+  </data>
+  <data name="Engine.Cli.MissingValue" xml:space="preserve">
+    <value>L’option {0} doit être suivie d’une valeur.</value>
+  </data>
+  <data name="Engine.Cli.NewKey" xml:space="preserve">
+    <value>Nouvelle clé d’API (affichée une seule fois ; remettez-la au système qui appelle le serveur) : {0}
+Hachage à ajouter dans apiKeyHashes du fichier de paramètres : {1}</value>
+  </data>
+  <data name="Engine.Cli.PrintNeedsLabel" xml:space="preserve">
+    <value>Indiquez exactement un fichier d’étiquette, par exemple : rotula print expedition.rotula --printer "Quai 1"</value>
+  </data>
+  <data name="Engine.Cli.RecordPrefix" xml:space="preserve">
+    <value>Enregistrement {0} :</value>
+  </data>
+  <data name="Engine.Cli.SeeHelp" xml:space="preserve">
+    <value>Lancez « rotula help » pour voir les commandes et les options.</value>
+  </data>
+  <data name="Engine.Cli.UnknownCommand" xml:space="preserve">
+    <value>Commande inconnue « {0} ».</value>
+  </data>
+  <data name="Engine.Cli.UnknownOption" xml:space="preserve">
+    <value>Option inconnue {0}.</value>
+  </data>
+  <data name="Engine.Cli.WarningPrefix" xml:space="preserve">
+    <value>Avertissement :</value>
+  </data>
+  <data name="Engine.Error.Answers" xml:space="preserve">
+    <value>Des réponses aux questions de l’étiquette manquent ou ne sont pas valides. L’étiquette demande : {0}. Les questions marquées * sont obligatoires; les autres prennent leur valeur par défaut.</value>
+  </data>
+  <data name="Engine.Error.ApiKey" xml:space="preserve">
+    <value>Une clé d’API valide est requise. Envoyez-la dans l’en-tête X-Api-Key.</value>
+  </data>
+  <data name="Engine.Error.BadRequest" xml:space="preserve">
+    <value>La requête n’a pas pu être lue : {0}</value>
+  </data>
+  <data name="Engine.Error.Copies" xml:space="preserve">
+    <value>Le nombre de copies doit être un entier de 1 à {0}.</value>
+  </data>
+  <data name="Engine.Error.DataFile" xml:space="preserve">
+    <value>Le fichier de données {0} n’a pas pu être lu : {1}</value>
+  </data>
+  <data name="Engine.Error.DataMissing" xml:space="preserve">
+    <value>Le fichier de données {0} n’existe pas.{1}</value>
+  </data>
+  <data name="Engine.Error.DataShape" xml:space="preserve">
+    <value>Les données de {0} doivent être une liste d’enregistrements (objets de noms de champs et de valeurs) ou un seul enregistrement. {1}</value>
+  </data>
+  <data name="Engine.Error.Dpi" xml:space="preserve">
+    <value>La résolution doit être de 203, 300 ou 600 ppp.</value>
+  </data>
+  <data name="Engine.Error.InlineLabelsOff" xml:space="preserve">
+    <value>Ce serveur n’accepte pas les étiquettes envoyées comme contenu (allowInlineLabels est désactivé). Indiquez un fichier d’étiquette situé dans un de ses dossiers d’étiquettes.</value>
+  </data>
+  <data name="Engine.Error.LabelBoth" xml:space="preserve">
+    <value>Envoyez soit le nom d’un fichier d’étiquette (label), soit le contenu de l’étiquette (labelContent), pas les deux.</value>
+  </data>
+  <data name="Engine.Error.LabelNotFound" xml:space="preserve">
+    <value>L’étiquette {0} est introuvable.</value>
+  </data>
+  <data name="Engine.Error.LabelOutsideFolders" xml:space="preserve">
+    <value>L’étiquette {0} n’est pas un fichier .rotula situé dans un des dossiers d’étiquettes de ce serveur. Indiquez-la par rapport à un dossier d’étiquettes, sans lettre de lecteur ni « .. ».</value>
+  </data>
+  <data name="Engine.Error.LabelRequired" xml:space="preserve">
+    <value>Indiquez un fichier d’étiquette (label) ou envoyez le contenu de l’étiquette (labelContent).</value>
+  </data>
+  <data name="Engine.Error.LabelTooLarge" xml:space="preserve">
+    <value>L’étiquette {0} dépasse la limite de {1} Ko.</value>
+  </data>
+  <data name="Engine.Error.NoRecords" xml:space="preserve">
+    <value>Les données ne contiennent aucun enregistrement; rien n’a été imprimé.</value>
+  </data>
+  <data name="Engine.Error.NothingPrinted" xml:space="preserve">
+    <value>Aucun enregistrement n’a produit d’étiquette; rien n’a été envoyé. Voyez les problèmes indiqués dans le résultat.</value>
+  </data>
+  <data name="Engine.Error.OutputFile" xml:space="preserve">
+    <value>Le fichier {0} n’a pas pu être écrit : {1}</value>
+  </data>
+  <data name="Engine.Error.PrinterBoth" xml:space="preserve">
+    <value>Indiquez soit une imprimante Windows, soit l’adresse d’une imprimante réseau, pas les deux.</value>
+  </data>
+  <data name="Engine.Error.PrinterNotAllowed" xml:space="preserve">
+    <value>L’imprimante {0} ne figure pas dans la liste des imprimantes autorisées de ce serveur (allowedPrinters). Rien n’a été envoyé.</value>
+  </data>
+  <data name="Engine.Error.PrinterRequired" xml:space="preserve">
+    <value>Indiquez une imprimante : une imprimante Windows (printer) ou l’adresse d’une imprimante réseau (host).</value>
+  </data>
+  <data name="Engine.Error.PrintingBlocked" xml:space="preserve">
+    <value>L’impression avec le moteur d’impression est désactivée par la stratégie de votre organisation sur cet ordinateur. Adressez-vous à votre service informatique.</value>
+  </data>
+  <data name="Engine.Error.Records" xml:space="preserve">
+    <value>Une requête peut contenir au plus {0} enregistrements.</value>
+  </data>
+  <data name="Engine.Error.ValuesAndRecords" xml:space="preserve">
+    <value>Envoyez soit les valeurs d’une étiquette, soit une liste d’enregistrements, pas les deux.</value>
+  </data>
+  <data name="Engine.Printers.Default" xml:space="preserve">
+    <value>[par défaut]</value>
+  </data>
+  <data name="Engine.Printers.None" xml:space="preserve">
+    <value>Aucune imprimante n’est installée dans Windows.</value>
+  </data>
+  <data name="Engine.Printers.Offline" xml:space="preserve">
+    <value>[hors ligne]</value>
+  </data>
+  <data name="Engine.Result.DryRun" xml:space="preserve">
+    <value>Rien n’a été imprimé (essai). Voici le ZPL qui serait envoyé à {0}.</value>
+  </data>
+  <data name="Engine.Result.Printed" xml:space="preserve">
+    <value>{0} étiquette(s) envoyée(s) à {1}.</value>
+  </data>
+  <data name="Engine.Result.PrintedRecords" xml:space="preserve">
+    <value>{0} enregistrement(s), {1} étiquette(s), envoyé(s) à {2} en {3} travail(aux).</value>
+  </data>
+  <data name="Engine.Server.CannotListen" xml:space="preserve">
+    <value>Le serveur n’a pas pu écouter sur {0} : {1}</value>
+  </data>
+  <data name="Engine.Server.Listening" xml:space="preserve">
+    <value>Moteur d’impression Rotula à l’écoute sur {0}. Paramètres : {1}. Appuyez sur Ctrl+C pour l’arrêter.</value>
+  </data>
+  <data name="Engine.Settings.BadHash" xml:space="preserve">
+    <value>« {0} » dans apiKeyHashes n’est pas un hachage de clé (64 caractères hexadécimaux). Créez-en un avec « rotula new-key ».</value>
+  </data>
+  <data name="Engine.Settings.FolderMissing" xml:space="preserve">
+    <value>Le dossier d’étiquettes {0} n’existe pas.</value>
+  </data>
+  <data name="Engine.Settings.Invalid" xml:space="preserve">
+    <value>Le fichier de paramètres {0} ne peut pas être utilisé : {1}</value>
+  </data>
+  <data name="Engine.Settings.Missing" xml:space="preserve">
+    <value>Le fichier de paramètres {0} n’existe pas. Créez-en un avec « rotula serve --init ».</value>
+  </data>
+  <data name="Engine.Settings.NoFolders" xml:space="preserve">
+    <value>Aucun dossier d’étiquettes n’est indiqué (labelFolders) et les étiquettes envoyées comme contenu sont désactivées; aucune étiquette ne peut donc être imprimée.</value>
+  </data>
+  <data name="Engine.Settings.NoKeys" xml:space="preserve">
+    <value>Le fichier de paramètres {0} ne contient aucune clé d’API (apiKeyHashes). Créez-en une avec « rotula new-key ».</value>
+  </data>
+  <data name="Engine.Settings.NoPrinters" xml:space="preserve">
+    <value>Aucune imprimante n’est encore autorisée (allowedPrinters); toute demande d’impression sera donc refusée.</value>
+  </data>
+  <data name="Engine.Settings.PlainHttp" xml:space="preserve">
+    <value>Le serveur accepte les appels d’autres ordinateurs en http non chiffré : les clés d’API et les données des étiquettes circulent sur le réseau sans chiffrement. Utilisez https.</value>
+  </data>
 </root>

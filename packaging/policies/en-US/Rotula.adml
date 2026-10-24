@@ -65,6 +65,14 @@ Registry value: McpPrinting (number: 0 blocks).</string>
 Enabled or not configured: the settings file of the MCP server decides (allowDatabase). This policy cannot switch database access on by itself.
 
 Registry value: McpDatabase (number: 0 blocks).</string>
+      <string id="PrintEngine">Allow the print engine to print</string>
+      <string id="PrintEngine_Explain">The print engine (rotula.exe) prints labels without the designer: from a command line, a script or a warehouse system calling its REST API.
+
+Disabled: the print engine never prints and never asks printers for their status, from the command line or its REST server.
+
+Enabled or not configured: the command line prints with the rights of whoever runs it, and the REST server prints only what its settings file allows (API keys, label folders, allowedPrinters). This policy cannot switch anything on by itself.
+
+Registry value: PrintEngine (number: 0 blocks).</string>
     </stringTable>
     <presentationTable>
       <presentation id="Language">

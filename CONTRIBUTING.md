@@ -14,7 +14,9 @@ These are product rules; changes that break them will not be merged.
   address the user entered and the databases the user connects. The one exception is the **opt-in update check**: it sends
   nothing unless the user (Help menu) or an administrator (policy) explicitly switches it on, and then it is at most one
   anonymous `GET` of the public GitHub "latest release" API a day, with nothing about the user or the computer in it. It never
-  downloads or installs anything. Do not add other network calls, and do not add anything to that request.
+  downloads or installs anything. Do not add other network calls, and do not add anything to that request. The print engine's
+  REST server (`rotula serve`) is not a call out: it listens only when someone starts it, only on the addresses in its settings
+  file (`127.0.0.1` by default), and talks only to the printers that file allows.
 - **Light theme only.**
 - **English, Spanish, Portuguese (Brazil) and French (Canada)** through `.resx` resources in `src/Rotula.App/Resources`
   (`Strings.en.resx`, `Strings.es.resx`, `Strings.pt-BR.resx`, `Strings.fr-CA.resx`). Every new user-visible string needs all

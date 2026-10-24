@@ -88,5 +88,12 @@
       <enabledValue><decimal value="1" /></enabledValue>
       <disabledValue><decimal value="0" /></disabledValue>
     </policy>
+    <policy name="PrintEngine" class="Both" displayName="$(string.PrintEngine)" explainText="$(string.PrintEngine_Explain)"
+            key="SOFTWARE\Policies\P4Software\Rotula" valueName="PrintEngine">
+      <parentCategory ref="Rotula" />
+      <supportedOn ref="SUPPORTED_Rotula_0_4" />
+      <enabledValue><decimal value="1" /></enabledValue>
+      <disabledValue><decimal value="0" /></disabledValue>
+    </policy>
   </policies>
 </policyDefinitions>
