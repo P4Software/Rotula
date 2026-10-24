@@ -27,6 +27,13 @@ public partial class App : Application
         Editing.PreviewCache.RenderFailed += LogCrash;
         AppDomain.CurrentDomain.UnhandledException += (_, args) => LogCrash(args.ExceptionObject as Exception);
 
+        var launch = StationLaunch.Parse(e.Args);
+        if (launch.Mode != LaunchMode.Designer)
+        {
+            StartStation(launch);
+            return;
+        }
+
         try
         {
             // Add-ons load on a background thread while the window opens; a failure of the loader itself only ends up in the log.
@@ -50,6 +57,47 @@ public partial class App : Application
 
             // Double-clicking a .rotula file starts the program with the path as its only argument.
             if (e.Args.Length > 0 && File.Exists(e.Args[0])) vm.LoadFile(e.Args[0]);
+        }
+        catch (Exception ex)
+        {
+            LogCrash(ex);
+            ShowCrashMessage(Loc.Get("Crash.Startup", LogPath));
+            Shutdown(1);
+        }
+    }
+
+    /// <summary>
+    /// Starts the print station (or its PIN tool) instead of the designer. The station uses the same printing service, counter memory and saved
+    /// language as the designer; a configuration that cannot be used is explained and the program ends.
+    /// </summary>
+    private void StartStation(StationLaunch launch)
+    {
+        try
+        {
+            var settings = new JsonSettingsStore().Load();
+            Loc.Instance.SetLanguage(settings.Language);
+            if (launch.Mode == LaunchMode.StationPin)
+            {
+                var pinWindow = new Views.StationPinWindow(new StationPinViewModel(new WpfClipboardService())) { ShowInTaskbar = true };
+                MainWindow = pinWindow;
+                pinWindow.Show();
+                return;
+            }
+            var load = Rotula.Files.Station.StationConfigLoader.Load(launch.Path);
+            if (!load.CanOpen)
+            {
+                ShowCrashMessage(Loc.Get("Station.Open.Failed") + Environment.NewLine + Environment.NewLine + StationViewModel.DescribeIssues(load.Issues));
+                Shutdown(2);
+                return;
+            }
+            // Labels whose data comes from an add-on database need the add-ons; they load in the background as in the designer.
+            PackStartup.Begin(new Rotula.Data.Packs.PackLoadOptions(), LogCrash);
+            var variables = new VariableServices(Rotula.Files.FileCounterStore.OpenDefault(), null, textRasterizer: new Rotula.Rendering.SkiaTextRasterizer());
+            var station = new StationViewModel(load.Config!, load.Warnings,
+                new StationServices(new Rotula.Printing.PrintService(), variables, new WpfMessageService(), settings.Print, new DatabaseServices()));
+            var window = new Views.StationWindow(station);
+            MainWindow = window;
+            window.Show();
         }
         catch (Exception ex)
         {
