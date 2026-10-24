@@ -15,7 +15,9 @@ public static class Program
     {
         string settingsPath = Path.Combine(AppContext.BaseDirectory, McpSettingsLoader.FileName);
         string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-        var loaded = McpSettingsLoader.Load(settingsPath, documents);
+        // Group Policy / Intune can switch printing and database access off for every user of the computer (docs/deployment.md).
+        var loaded = McpSettingsLoader.ApplyPolicy(McpSettingsLoader.Load(settingsPath, documents),
+            Rotula.Files.Policy.RotulaPolicy.Read(Rotula.Files.Policy.RegistryPolicySource.ForThisComputer()));
 
         // Started by a person (double-click or a console) instead of by an AI assistant application: explain, then wait.
         if (!Console.IsInputRedirected)
@@ -64,8 +66,8 @@ public static class Program
         Console.WriteLine();
         Console.WriteLine("Settings file (folders, printing, databases): " + loaded.Path);
         Console.WriteLine("Allowed label folders: " + string.Join("; ", loaded.Settings.AllowedFolders));
-        Console.WriteLine("Printing: " + (loaded.Settings.AllowPrinting ? "allowed for the listed printers" : "off"));
-        Console.WriteLine("Databases: " + (loaded.Settings.AllowDatabase ? "on (read-only)" : "off"));
+        Console.WriteLine("Printing: " + (loaded.Settings.AllowPrinting ? "allowed for the listed printers" : loaded.Settings.PrintingBlockedByPolicy ? "off (organization policy)" : "off"));
+        Console.WriteLine("Databases: " + (loaded.Settings.AllowDatabase ? "on (read-only)" : loaded.Settings.DatabaseBlockedByPolicy ? "off (organization policy)" : "off"));
         foreach (var note in loaded.Notes) Console.WriteLine("Note: " + note);
         Console.WriteLine();
         Console.WriteLine("Press Enter to close this window.");

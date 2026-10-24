@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Administrative template for Rotula (Group Policy and Intune). Every policy writes one value under
+  SOFTWARE\Policies\P4Software\Rotula, in HKLM (Computer Configuration) or HKCU (User Configuration). A computer value wins.
+  The value names must match Rotula.Files.Policy.PolicyNames (a test compares them). How to use it: docs/deployment.md.
+-->
+<policyDefinitions xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   revision="1.0" schemaVersion="1.0" xmlns="http://schemas.microsoft.com/GroupPolicy/2006/07/PolicyDefinitions">
+  <policyNamespaces>
+    <target prefix="rotula" namespace="P4Software.Policies.Rotula" />
+    <using prefix="windows" namespace="Microsoft.Policies.Windows" />
+  </policyNamespaces>
+  <resources minRequiredRevision="1.0" />
+  <supportedOn>
+    <definitions>
+      <definition name="SUPPORTED_Rotula_0_4" displayName="$(string.SUPPORTED_Rotula_0_4)" />
+    </definitions>
+  </supportedOn>
+  <categories>
+    <category name="P4Software" displayName="$(string.Cat_P4Software)" />
+    <category name="Rotula" displayName="$(string.Cat_Rotula)">
+      <parentCategory ref="P4Software" />
+    </category>
+  </categories>
+  <policies>
+    <policy name="Language" class="Both" displayName="$(string.Language)" explainText="$(string.Language_Explain)"
+            presentation="$(presentation.Language)" key="SOFTWARE\Policies\P4Software\Rotula">
+      <parentCategory ref="Rotula" />
+      <supportedOn ref="SUPPORTED_Rotula_0_4" />
+      <elements>
+        <enum id="Language" valueName="Language" required="true">
+          <item displayName="$(string.Language_Auto)">
+            <value><string>auto</string></value>
+          </item>
+          <item displayName="$(string.Language_En)">
+            <value><string>en</string></value>
+          </item>
+          <item displayName="$(string.Language_Es)">
+            <value><string>es</string></value>
+          </item>
+        </enum>
+      </elements>
+    </policy>
+
+    <policy name="UpdateCheck" class="Both" displayName="$(string.UpdateCheck)" explainText="$(string.UpdateCheck_Explain)"
+            key="SOFTWARE\Policies\P4Software\Rotula" valueName="UpdateCheck">
+      <parentCategory ref="Rotula" />
+      <supportedOn ref="SUPPORTED_Rotula_0_4" />
+      <enabledValue><decimal value="1" /></enabledValue>
+      <disabledValue><decimal value="0" /></disabledValue>
+    </policy>
+
+    <policy name="DefaultPrinter" class="Both" displayName="$(string.DefaultPrinter)" explainText="$(string.DefaultPrinter_Explain)"
+            presentation="$(presentation.DefaultPrinter)" key="SOFTWARE\Policies\P4Software\Rotula">
+      <parentCategory ref="Rotula" />
+      <supportedOn ref="SUPPORTED_Rotula_0_4" />
+      <elements>
+        <text id="DefaultPrinter" valueName="DefaultPrinter" required="true" maxLength="220" />
+      </elements>
+    </policy>
+
+    <policy name="UserAddOns" class="Both" displayName="$(string.UserAddOns)" explainText="$(string.UserAddOns_Explain)"
+            key="SOFTWARE\Policies\P4Software\Rotula" valueName="UserAddOns">
+      <parentCategory ref="Rotula" />
+      <supportedOn ref="SUPPORTED_Rotula_0_4" />
+      <enabledValue><decimal value="1" /></enabledValue>
+      <disabledValue><decimal value="0" /></disabledValue>
+    </policy>
+
+    <policy name="McpPrinting" class="Both" displayName="$(string.McpPrinting)" explainText="$(string.McpPrinting_Explain)"
+            key="SOFTWARE\Policies\P4Software\Rotula" valueName="McpPrinting">
+      <parentCategory ref="Rotula" />
+      <supportedOn ref="SUPPORTED_Rotula_0_4" />
+      <enabledValue><decimal value="1" /></enabledValue>
+      <disabledValue><decimal value="0" /></disabledValue>
+    </policy>
+
+    <policy name="McpDatabase" class="Both" displayName="$(string.McpDatabase)" explainText="$(string.McpDatabase_Explain)"
+            key="SOFTWARE\Policies\P4Software\Rotula" valueName="McpDatabase">
+      <parentCategory ref="Rotula" />
+      <supportedOn ref="SUPPORTED_Rotula_0_4" />
+      <enabledValue><decimal value="1" /></enabledValue>
+      <disabledValue><decimal value="0" /></disabledValue>
+    </policy>
+  </policies>
+</policyDefinitions>
