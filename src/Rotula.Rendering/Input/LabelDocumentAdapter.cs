@@ -13,7 +13,9 @@ namespace Rotula.Rendering.Input;
 /// variables are substituted, defaults (^CF, ^FW) are applied and margins (^LH) are added to every position,
 /// so the preview lays elements out exactly where <see cref="ZplGenerator"/> tells the printer to put them.
 /// <para>
-/// Not previewed: whole-label inversion (^PO) and mirroring (^PM) are ignored, text direction (^FP) is ignored, and bitmap
+/// Whole-label inversion (^PO) and mirroring (^PM) are left out of <see cref="ToRenderLabel"/> so the canvas and the exports show the
+/// label as designed; <see cref="AsPrinted"/> adds them for the "as printed" preview.
+/// Not previewed: text direction (^FP) is ignored, and bitmap
 /// font ids other than '0' are all drawn with the monospaced stand-in. Label shift (^LS) and label top (^LT) are applied. Text preview is approximate in general (see <see cref="LabelRenderer"/>).
 /// </para>
 /// </summary>
@@ -49,6 +51,26 @@ public static class LabelDocumentAdapter
         }
 
         return new RenderLabel(doc.WidthDots, doc.HeightDots, dpi, elements);
+    }
+
+    /// <summary>True when the printer turns (<c>^POI</c>) or mirrors (<c>^PMY</c>) the whole label, so "as printed" differs from "as designed".</summary>
+    public static bool ChangesWhenPrinted(LabelDocument doc)
+    {
+        ArgumentNullException.ThrowIfNull(doc);
+        return doc.Orientation == LabelOrientation.Inverted || doc.MirrorImage;
+    }
+
+    /// <summary>
+    /// Returns <paramref name="label"/> set to draw the way the printer puts it on the media: turned by 180 degrees for <c>^POI</c> and
+    /// mirrored for <c>^PMY</c>. The same instance comes back when the document does neither.
+    /// </summary>
+    /// <param name="label">Render input made from <paramref name="doc"/> by <see cref="ToRenderLabel"/>.</param>
+    /// <param name="doc">The design whose print orientation and mirror settings apply.</param>
+    public static RenderLabel AsPrinted(RenderLabel label, LabelDocument doc)
+    {
+        ArgumentNullException.ThrowIfNull(label);
+        if (!ChangesWhenPrinted(doc)) return label;
+        return label with { Inverted = doc.Orientation == LabelOrientation.Inverted, Mirrored = doc.MirrorImage };
     }
 
     // Stateless and thread safe; shared so the preview does not build one per element.

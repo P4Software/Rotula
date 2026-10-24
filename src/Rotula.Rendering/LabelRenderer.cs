@@ -80,10 +80,32 @@ public static class LabelRenderer
 
     /// <summary>
     /// Draws all elements onto <paramref name="canvas"/>, whose coordinate system must already be in printer dots
-    /// with the origin at the label's top-left corner. The background is NOT painted here.
+    /// with the origin at the label's top-left corner. The background is NOT painted here. When the label is
+    /// <see cref="RenderLabel.Inverted"/> or <see cref="RenderLabel.Mirrored"/> the whole drawing is turned or flipped inside the label's own
+    /// area, so the caller's canvas setup stays the same.
     /// </summary>
     /// <returns>Elements that could not be drawn faithfully; empty when everything was fine.</returns>
     public static IReadOnlyList<RenderIssue> Draw(SKCanvas canvas, RenderLabel label)
+    {
+        if (!label.Inverted && !label.Mirrored) return DrawElements(canvas, label);
+        canvas.Save();
+        try
+        {
+            // Both are flips about the label's centre: ^POI flips both axes (a 180 degree turn), ^PM flips the horizontal axis.
+            // Together they leave only the vertical flip; the order does not matter because the two flips commute.
+            float sx = label.Inverted != label.Mirrored ? -1 : 1;
+            float sy = label.Inverted ? -1 : 1;
+            canvas.Translate(sx < 0 ? label.WidthDots : 0, sy < 0 ? label.HeightDots : 0);
+            canvas.Scale(sx, sy);
+            return DrawElements(canvas, label);
+        }
+        finally
+        {
+            canvas.Restore();
+        }
+    }
+
+    private static IReadOnlyList<RenderIssue> DrawElements(SKCanvas canvas, RenderLabel label)
     {
         const byte DimmedAlpha = 70;
         var issues = new List<RenderIssue>();

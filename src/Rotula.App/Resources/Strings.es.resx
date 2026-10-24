@@ -6258,4 +6258,46 @@ Las marcas y los nombres de producto pertenecen a sus dueños; Rotula no está a
   <data name="Update.OpenFailed" xml:space="preserve">
     <value>No se pudo abrir el navegador. La página de la versión es {0}</value>
   </data>
+  <data name="Preview.Mode.Name" xml:space="preserve">
+    <value>Mostrar la etiqueta como se imprime o como se diseñó</value>
+  </data>
+  <data name="Preview.AsPrinted" xml:space="preserve">
+    <value>Como se imprime</value>
+  </data>
+  <data name="Preview.AsPrinted.Tip" xml:space="preserve">
+    <value>Muestra la etiqueta tal como sale de la impresora, girada o reflejada según la configuración de impresión de la etiqueta.</value>
+  </data>
+  <data name="Preview.AsDesigned" xml:space="preserve">
+    <value>Como se diseñó</value>
+  </data>
+  <data name="Preview.AsDesigned.Tip" xml:space="preserve">
+    <value>Muestra la etiqueta derecha, tal como la edita en el lienzo.</value>
+  </data>
+  <data name="Preview.Note.PrintedInverted" xml:space="preserve">
+    <value>Vista como se imprime: la orientación de impresión de esta etiqueta es invertida, así que la impresora la imprime al revés.</value>
+  </data>
+  <data name="Preview.Note.PrintedMirrored" xml:space="preserve">
+    <value>Vista como se imprime: esta etiqueta está configurada para imprimirse en espejo, así que la izquierda y la derecha se intercambian.</value>
+  </data>
+  <data name="Preview.Note.PrintedBoth" xml:space="preserve">
+    <value>Vista como se imprime: esta etiqueta está configurada para imprimirse al revés y en espejo.</value>
+  </data>
+  <data name="Preview.Note.Designed" xml:space="preserve">
+    <value>Vista como se diseñó, tal como la edita. Elija "Como se imprime" para ver cómo sale de la impresora.</value>
+  </data>
+  <data name="Status.PrintsInverted" xml:space="preserve">
+    <value>Se imprime al revés</value>
+  </data>
+  <data name="Status.PrintsMirrored" xml:space="preserve">
+    <value>Se imprime en espejo</value>
+  </data>
+  <data name="Status.PrintsInvertedMirrored" xml:space="preserve">
+    <value>Se imprime al revés y en espejo</value>
+  </data>
+  <data name="Status.PrintOrientation.Name" xml:space="preserve">
+    <value>Orientación de impresión</value>
+  </data>
+  <data name="Status.PrintOrientation.Tip" xml:space="preserve">
+    <value>El lienzo muestra la etiqueta derecha para que pueda editarla. Abra la vista previa para verla como se imprime. Puede cambiarlo en las propiedades de la etiqueta.</value>
+  </data>
 </root>

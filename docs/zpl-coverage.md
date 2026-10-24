@@ -82,8 +82,8 @@ Nothing is silently dropped.
 | `^LS` | Label shift | Supported | Yes | Yes | Exact | Shifts every field to the left by a number of dots; a negative value shifts to the right. Written only when it is not zero. |
 | `^LT` | Label top | Supported | Yes | Yes | Exact | Moves the whole format down (or up for a negative value) by a few dot rows to fine-tune where it lands on the label. Rotula accepts -240 to 240; most printers only accept -120 to 120. |
 | `^MU` | Units of measure | Supported | No | Yes | n/a | Switches the units used by later numbers to dots, inches or millimetres. Values are converted to dots on import and a notice is shown. |
-| `^PM` | Mirror the label | Supported | Yes | Yes | No | Prints the whole label as a mirror image, left to right. The on-screen preview does not mirror. |
-| `^PO` | Print orientation | Supported | Yes | Yes | No | Prints the whole label rotated by 180 degrees. The on-screen preview always shows the normal orientation. |
+| `^PM` | Mirror the label | Supported | Yes | Yes | Exact | Prints the whole label as a mirror image, left to right. The Preview window shows it mirrored ("As printed"); the canvas and the image and PDF exports stay as designed. |
+| `^PO` | Print orientation | Supported | Yes | Yes | Exact | Prints the whole label rotated by 180 degrees. The Preview window shows it upside down ("As printed", with a switch to "As designed"); the canvas and the image and PDF exports stay upright. |
 | `^PQ` | Print quantity | Supported | Yes | Yes | n/a | Sets how many labels print, how many between pauses, and how many copies of each serial number. |
 | `^PW` | Print width | Supported | Yes | Yes | Exact | Sets the width of the printable area in dots. |
 | `^XA` | Start of label | Supported | Yes | Yes | n/a | Opens a label format. Everything up to the matching end-of-label command belongs to one label. |
