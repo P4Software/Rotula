@@ -170,6 +170,20 @@ public class RelativePositionTests : IDisposable
         Assert.True(ElementSizeEstimator.Estimate(doc, qr).Width > qw);
     }
 
+    [Fact]
+    public void ACode128OfDigits_IsAnchoredByItsMeasuredWidth_TheSameTheSizeReadoutShows()
+    {
+        // Code 128 packs two digits into one symbol character, so a per-character estimate (11 modules each) was far too wide: a
+        // right-anchored tracking number landed about a third of its width too far left. The anchor now uses the measured symbol width.
+        var bc = new BarcodeElement { Id = "bc", Symbology = BarcodeSymbology.Code128, Data = "7Q4882015366", ModuleWidth = 2, Height = 100, Anchor = AnchorPoint.BottomRight };
+        var doc = NewDoc(bc);
+        int measured = Rotula.Core.Barcodes.BarcodeSizing.Analyze(bc, bc.Data, (int)doc.Dpi)!.SymbolWidthDots!.Value;
+        Assert.Equal(measured, ElementSizeEstimator.Estimate(doc, bc).Width);
+        Assert.True(measured < 11 * (bc.Data.Length + 3) * 2, "the digits are packed in pairs, so the symbol is narrower than one character each");
+        // Bottom-right with no offset: the symbol's right edge is on the label's right edge (800 dots).
+        Assert.Equal(800 - measured, OriginOf(doc, bc).X);
+    }
+
     // ------------------------------------------------------------------------------------ cycles and missing references
 
     [Fact]

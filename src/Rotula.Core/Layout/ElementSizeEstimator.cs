@@ -167,6 +167,12 @@ public static class ElementSizeEstimator
             }
         }
 
+        // Where the symbology's own rules fix the width (Code 128 with its code sets, Code 39, Code 93, Interleaved 2 of 5, EAN/UPC), use the
+        // width the size readout measures: the per-character formulas below assume the widest encoding, and Code 128 packs two digits into one
+        // character, so a tracking number came out about a third too wide and a right-anchored one landed that far too left.
+        if (BarcodeSizing.Analyze(b, payload, (int)doc.Dpi)?.SymbolWidthDots is { } measured and > 0)
+            return (measured, LinearHeight(b, info, module));
+
         // Linear codes: modules per character of the symbology, plus start/stop. The ratio r is the wide-to-narrow bar ratio (^BY).
         double modules1D = b.Symbology switch
         {
