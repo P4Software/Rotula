@@ -19,7 +19,8 @@ uninstall the per-user copy first (command below). Settings, saved connections a
 are kept either way.
 
 Both packages install the same files: `Rotula.App.exe` (the designer), `Rotula.Mcp.exe` (the MCP server for AI assistants,
-see [mcp.md](mcp.md)), the licence files, `docs\mcp.md`, the document icon and an empty `packs` folder for data source
+see [mcp.md](mcp.md)), `rotula.exe` (the print engine's command line and REST API, see [print-engine.md](print-engine.md)), the
+licence files, `docs\mcp.md`, `docs\print-engine.md`, the document icon and an empty `packs` folder for data source
 add-ons. Both register `.rotula` files to open with Rotula and add a Start menu entry. Neither installs a service, a
 scheduled task, a driver or a browser extension, and neither needs a reboot.
 

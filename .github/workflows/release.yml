@@ -79,15 +79,24 @@ jobs:
           -p:Version=${{ steps.ver.outputs.version }}
           -o publish/win-x64-mcp
 
+      # The print engine (rotula.exe: command line and REST API), published the same way.
+      - name: Publish print engine single-file win-x64
+        run: >
+          dotnet publish src/Rotula.Cli/Rotula.Cli.csproj -c Release -r win-x64 --self-contained true
+          -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:EnableCompressionInSingleFile=true -p:DebugType=none
+          -p:Version=${{ steps.ver.outputs.version }}
+          -o publish/win-x64-engine
+
       # The zip is an UNSIGNED CI artifact for inspection only; the signed portable zip comes from the local build.
       - name: Stage files and create the portable zip
         shell: pwsh
         run: |
           $v = '${{ steps.ver.outputs.version }}'
           New-Item -ItemType Directory -Force artifacts, stage | Out-Null
-          Copy-Item publish/win-x64/Rotula.App.exe, publish/win-x64-mcp/Rotula.Mcp.exe stage/
+          Copy-Item publish/win-x64/Rotula.App.exe, publish/win-x64-mcp/Rotula.Mcp.exe, publish/win-x64-engine/rotula.exe stage/
           New-Item -ItemType Directory -Force stage/docs | Out-Null
-          Copy-Item docs/mcp.md stage/docs/
+          Copy-Item docs/mcp.md, docs/print-engine.md stage/docs/
           Copy-Item LICENSE, THIRD-PARTY-NOTICES.md, README.md stage/
           Compress-Archive -Path stage/* -DestinationPath "artifacts/Rotula-$v-win-x64-portable-unsigned-ci.zip" -Force
 
@@ -100,6 +109,10 @@ jobs:
           $alive = -not $p.HasExited
           if ($alive) { $p.Kill() }
           if (-not $alive) { throw "Rotula.App.exe exited early with code $($p.ExitCode)." }
+          # The print engine must start too: "version" prints the version and exits 0.
+          $out = & publish/win-x64-engine/rotula.exe version
+          if ($LASTEXITCODE -ne 0) { throw "rotula.exe version failed with exit code $LASTEXITCODE." }
+          Write-Host "rotula.exe version: $out"
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
