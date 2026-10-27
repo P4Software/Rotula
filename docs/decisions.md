@@ -106,6 +106,25 @@ written as "one field" turns it into an ordinary text element with the same id a
 Memento command: each edit stores the whole document before/after (documents are small; image pixels are shared). Unlimited.
 Arrow nudges and typing in one property merge into one step within one second. Drags are gestures: one undo step per drag.
 
+### Editable ZPL panel (`ZplSourceViewModel`)
+The panel under the canvas is a plain `TextBox` bound two-way to `ZplSource.Text`; the view only reports the caret. Typing starts a 300 ms
+quiet period (`IDebouncer`, a `DispatcherTimer` in the app, fired by hand in tests); when it elapses the text goes through `ZplParser` (the
+same importer as File > Import ZPL) and the session is edited once (`Undo.ZplSource`), so every pause is one undo step. Source of truth is an
+explicit state: *Generated* (the text mirrors the design), *Pending* (typing) or *Edited* (the design was rebuilt from the text, which stays as
+typed). Two guards break the loop between the two directions: while the panel applies its own text the regenerated text is ignored, and while an
+edit is pending nothing overwrites what is being typed; any other change of the design (canvas, undo, language) regenerates the text and the
+state goes back to *Generated*. "Revert to design" cancels a pending edit and regenerates. The editor's own undo is switched off so Ctrl+Z
+reaches the label's undo stack. Syntax colouring was left out on purpose: a highlighting editor package would need its own two-way text
+binding, dark-theme styling, accessibility checks and a licence entry for a cosmetic gain.
+- **ZPL cannot say everything the design knows**, so `DesignCarryOver` pairs each previous element with the re-imported one of the same kind
+  (same place and content first, then same content anywhere, then same place) and copies ids, names, print conditions, locks and text fit; a text
+  or barcode whose content equals the shown value of a `{{field}}` gets the field back; objects marked "do not print" (never written to ZPL)
+  are put back. The resolution, the label id, the stock and the declared variable definitions are restored too; an empty text changes nothing.
+- **Nothing is dropped silently**: the status line counts the commands kept as raw ZPL (`ZplImportWarning.KeptAsRaw`) and names the first
+  three; the other notices are counted and listed in the tooltip, like the Import ZPL dialog.
+- **Command hints** come from `ZplCommandReference` (Core, C# data: the parameters of every supported command and the usual kept-verbatim
+  ones, in Rotula's own words) merged with the name and summary of `commands.json`; a test fails when a supported command has no signature.
+
 ### Preview
 `PreviewCache` keeps the `RenderLabel` per document revision and the bitmap per (revision, scale). Selection, handles, grid and
 guides are drawn by WPF on top, so pointer movement never re-renders the label. A visible notice says the text preview is
@@ -569,6 +588,17 @@ which means "used when generated", the safe side; a caller that wants "used when
 `CounterStoreException`s with message keys, never bare `InvalidOperationException`s. A read-only look (previews, the MCP server) creates no folder
 and no lock when `counters.json` does not exist.
 
+### Numbered fields are placeholders; stored formats are a generator mode, not a document property
+A `^FN` field on import becomes `{{name}}` (the prompt made into a valid name, or `Field` plus the number) with the field's data as the
+variable's sample value, so the printed output is unchanged and the field can be merged; the number and prompt stay on the element so the
+ZPL written back is byte-identical. Fields that share a number share the variable (they share their data on the printer); a prompt already used by
+another number gets a suffix. `^SN` fields are left alone (their data is a start value). `^DF` stays out of the label model: a stored format is
+written on request (`GenerateStoredFormat`, `^DF` first, every pure `{{placeholder}}` as `^FN n"prompt"` without data, no `^PQ`) and its recall
+(`GenerateFormatRecall`, `^XF`, `^CI`, one `^FN n^FD value` per number, `^PQ`) reuses the same numbering (element numbers first, then the lowest
+free numbers in label order, one number per name). A field that mixes fixed text and placeholders, a Windows-font text and a QR code with a
+data header cannot be numbered: they are written with their current value and reported (`Format.Field.Mixed`, `Format.Field.Picture`). The
+catalogue keeps `^DF` and `^XF` as *Planned*: opening such a file still keeps the commands verbatim with a notice.
+
 ### The printer-clock codes and ^SO parameter order are not confirmed on a printer
 The `^FC` code table and the `^SO` order (clock set, months, days, years, hours, minutes, seconds) come from the ZPL II Programming Guide as
 remembered by the author; no excerpt is in the repository and no printer with a clock was used. `docs/variables.md` says so. Confirm on hardware
@@ -663,3 +693,58 @@ wildcards), printers must be listed, inline label content is off by default, and
 file and request bodies refuse unknown names, so a typo never widens what is allowed. The audit log carries an 8-character key id from the hash,
 never the key or label data. `PrintEngine = 0` (policy) switches it all off. Kestrel and ASP.NET Core come with .NET; the only packages added are
 Microsoft's OpenAPI and Windows service hosting (MIT).
+
+## Barcode sizing (Rotula.Core/Barcodes/BarcodeSizing)
+
+### Dots stay the stored unit; mil and mm are derived
+The file keeps `moduleWidth` / `moduleSize` in dots (what ^BY and ^BQ take), so the format did not change. `BarcodeSizing` derives the X-dimension in
+mils and mm from the dots and the label dpi, and the panel shows it. The module is edited in dots, with a - / + stepper, because that is what the
+printer can do: a mil value that is not a whole number of dots would silently be rounded.
+
+### The symbol width is only claimed where the symbology's rules fix it
+Core measures Code 128 (automatic mode, no GS1 parentheses), Code 39/LOGMARS, Code 93, Interleaved 2 of 5, EAN/UPC and QR Code model 2 from their element
+counts (wide bar = narrow x ratio rounded to whole dots, as ZPL does). Core cannot call the preview encoders (they live in Rotula.Rendering), so for
+the other symbologies the panel passes the encoder's module count (`BarcodeSizeInfo`), and the generator's fit warning simply stays silent: it never
+guesses a width. The preview draws wide bars at a fixed 3:1, so the encoder count is used only when the element's ratio is 3.0.
+
+### Quiet zones follow the standards, not one number
+Values are per symbology (Code 128/39/93, I2of5, Codabar 10X; EAN-13 11X/7X; UPC-A 9X/9X; EAN-8 7X/7X; UPC-E 9X/7X; QR 4X; Data Matrix 1X;
+PDF417 2X; Aztec none) with the source named next to each in the code. A symbology without an entry gets a conservative family default, which is a
+safe margin and not a claim about a standard. The fit check (symbol plus quiet zones against the label width) runs only for upright fields; the canvas
+guide handles every rotation because it grows the real frame along the reading axis. All three new findings are warnings, never errors: the label still
+prints. Thresholds: a 1-dot module at 300 dpi or more; a linear narrow bar under 2 dots at 203 dpi.
+
+## Relative position (Rotula.Core/Layout)
+
+### One anchor point, taken on both the object and its reference; X/Y are the vector between them
+An element may carry an `Anchor` (one of nine points: corners, edge middles, centre) and a reference (`RelativeTo`: the label, or another element
+by id). The same point is taken on the object's box and on the reference's box, and X/Y are the signed distance from the reference's point to the
+object's point (so a bottom-right object 10 dots inside the corner has X = Y = -10). One point rather than two keeps the panel a single 3 x 3
+grid, which is what people know from other designers; the signed offset is the plain reading of "X/Y are an offset" and needs no inward/outward
+convention. An element without an anchor is untouched: its X/Y stay the absolute origin and its ZPL is byte-for-byte as before. The label
+reference is the full label (margins included, at minus the home), the same box the Align commands use.
+
+### The ZPL stays absolute; one resolver places things, for every record, and the canvas uses it too
+`AnchorResolver` turns anchors into absolute origins; the ZPL generator (so every record of a data merge), the preview adapter and the designer's
+bounds calculator all call it, so what the canvas shows is where the printer puts the object. It runs per record because text widths change per
+record. Sizes come from `ElementSizeEstimator`: exact for shapes and images, exact for Windows-font text (the rasterizer the Text Fit feature uses,
+so the fitted size is honoured), and an **estimate** for printer-font text (`TextFitEstimator`, the same nominal character width behind the
+overflow warning) and barcodes (module count of the symbology times the module width, text band as the preview draws it). An anchored
+printer-font text can therefore sit a few dots off on paper, as the overflow warning can be a few dots off; the canvas and the ZPL always agree
+with each other, and an object relative to a Windows-font text is exact. Core gets no drawing code and the generator gets no new parameter.
+
+### Circles are refused in the panel and are an error in the file; a missing reference falls back to the label
+A reference that would make two objects relative to each other (directly or through others) is refused in the "Relative to" drop-down with a
+sentence naming the other object, and nothing is written. A file that carries a circle anyway (hand edited) gets an error per object on the
+circle and those objects are left out of the ZPL, like any other invalid field; the preview draws them at their raw numbers. A reference to an
+element that no longer exists (a file edited elsewhere, a paste from another label) is a warning and the label stands in, so the object keeps a
+place. Deleting a reference in the designer never produces that case: its followers are made relative to the label with the numbers that keep
+them exactly where they are, in the same undo step.
+
+### Choosing an anchor changes the numbers, never the picture; moving a reference moves its followers once
+Picking an anchor point or a reference in the panel recomputes X/Y so the object stays put (`OffsetKeepingPosition`). Dragging, nudging and
+aligning a selection skip the elements that follow another selected element, because those move with their reference already. Resizing works on
+bounds, so an anchored object keeps its anchored edge where the handle rule says. Duplicating or pasting a pair rewires the copy's reference to the
+copied reference. The .rotula file stores `anchor`, `relativeTo` and `referenceElementId` (version 11, stamped only when an anchor is used; the
+field is `relativeTo` rather than `reference` because a recall element already writes its stored-object name as `reference`). ZPL import never
+creates anchors; the MCP server reads and writes X/Y as they are (offsets for an anchored object) and does not expose anchors yet.

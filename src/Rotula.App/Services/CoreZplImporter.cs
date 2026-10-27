@@ -15,11 +15,13 @@ public sealed class CoreZplImporter : IZplImporter
         // ZPL does not say which printhead it was written for; 203 DPI is the most common and can be changed in the label
         // properties afterwards (positions are in dots, so they stay as they are).
         var result = ZplParser.Parse(zpl, new ZplParseOptions());
-        var warnings = result.Warnings.Select(w =>
-        {
-            string text = Loc.FormatIssue(w.ToValidationIssue());
-            return w.Line > 0 ? Loc.Get("Import.Warning.Line", w.Line, text) : text;
-        }).ToList();
-        return ZplImportResult.Success(result.Document, warnings);
+        return ZplImportResult.Success(result.Document, result.Warnings.Select(Describe).ToList());
+    }
+
+    /// <summary>One import notice as a sentence in the current language, with its line number when the parser knows it.</summary>
+    public static string Describe(ZplImportWarning w)
+    {
+        string text = Loc.FormatIssue(w.ToValidationIssue());
+        return w.Line > 0 ? Loc.Get("Import.Warning.Line", w.Line, text) : text;
     }
 }

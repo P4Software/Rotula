@@ -887,7 +887,7 @@
     <value>Variables</value>
   </data>
   <data name="Panel.Zpl" xml:space="preserve">
-    <value>ZPL code (read-only)</value>
+    <value>ZPL code (editable: the label follows what you type)</value>
   </data>
   <data name="Preset.100x150mm" xml:space="preserve">
     <value>100 x 150 mm</value>
@@ -2051,7 +2051,7 @@
     <value>Kind of the selected object</value>
   </data>
   <data name="Zpl.Output" xml:space="preserve">
-    <value>ZPL OUTPUT</value>
+    <value>ZPL CODE</value>
   </data>
   <data name="Zpl.ExportButton" xml:space="preserve">
     <value>Export .zpl</value>
@@ -3042,6 +3042,36 @@
   </data>
   <data name="Issue.Barcode.Logmars.TextAlways" xml:space="preserve">
     <value>The printer always prints the text under a LOGMARS barcode, so switching it off has no effect. Turn the text on to match what will print.</value>
+  </data>
+  <data name="Issue.Barcode.Size.OneDotModule" xml:space="preserve">
+    <value>The narrowest bar or module is 1 dot ({1} mil, {2} mm) at {3} dpi. Many scanners cannot read bars this narrow, and a little ink spread closes the gaps. Use a module of 2 dots or more.</value>
+  </data>
+  <data name="Issue.Barcode.Size.ThinBar" xml:space="preserve">
+    <value>The narrowest bar is {0} dot ({1} mil, {2} mm) at {3} dpi. Bars thinner than 2 dots print unevenly on a 203 dpi printer, which makes the code unreliable to scan. Use a module of 2 dots or more.</value>
+  </data>
+  <data name="Issue.Barcode.Size.QuietZoneOutside" xml:space="preserve">
+    <value>The barcode and its quiet zones (the blank margin a scanner needs) span {0} mm to {1} mm, but the label is {2} mm wide. A cut-off margin can stop the code from scanning. Move the barcode, make the module narrower or shorten the data.</value>
+  </data>
+  <data name="Prop.Size.Readout" xml:space="preserve">
+    <value>Module: {0} mil ({1} mm) - symbol {2} mm wide</value>
+  </data>
+  <data name="Prop.Size.ReadoutNoSymbol" xml:space="preserve">
+    <value>Module: {0} mil ({1} mm)</value>
+  </data>
+  <data name="Prop.Size.QuietBoth" xml:space="preserve">
+    <value>Quiet zone: {0} mm on each side ({1}X)</value>
+  </data>
+  <data name="Prop.Size.QuietLeftRight" xml:space="preserve">
+    <value>Quiet zone: {0} mm before and {1} mm after the symbol ({2}X and {3}X)</value>
+  </data>
+  <data name="Prop.Size.QuietNone" xml:space="preserve">
+    <value>No quiet zone is needed.</value>
+  </data>
+  <data name="Prop.Size.Narrower" xml:space="preserve">
+    <value>Narrower module (1 dot less)</value>
+  </data>
+  <data name="Prop.Size.Wider" xml:space="preserve">
+    <value>Wider module (1 dot more)</value>
   </data>
   <data name="Issue.Barcode.Codabar.Charset" xml:space="preserve">
     <value>Codabar allows only digits and - $ : / . + in the data. The start and stop letters A to D are chosen in the options, not typed in the data.</value>
@@ -6683,5 +6713,155 @@ Hash to add to apiKeyHashes in the settings file: {1}</value>
   </data>
   <data name="Engine.Settings.PlainHttp" xml:space="preserve">
     <value>The server accepts calls from other computers over plain http: API keys and label data cross the network unencrypted. Use https.</value>
+  </data>
+  <data name="Prop.Anchor" xml:space="preserve">
+    <value>Anchor point</value>
+  </data>
+  <data name="Prop.Anchor.Hint" xml:space="preserve">
+    <value>Which point of this object the position refers to. With an anchor, X and Y are the distance from the same point of the reference (the label, or another object), so the object keeps its place when the label is resized or the reference moves. Choosing a point never moves the object: only the numbers change.</value>
+  </data>
+  <data name="Prop.Anchor.Free" xml:space="preserve">
+    <value>Free</value>
+  </data>
+  <data name="Prop.Anchor.Free.Tip" xml:space="preserve">
+    <value>No anchor: X and Y are the top-left corner (or the baseline) measured from the label home, as before.</value>
+  </data>
+  <data name="Prop.Anchor.Free.Status" xml:space="preserve">
+    <value>Free position (X and Y from the label home)</value>
+  </data>
+  <data name="Enum.AnchorPoint.TopLeft" xml:space="preserve">
+    <value>Top left</value>
+  </data>
+  <data name="Enum.AnchorPoint.TopCenter" xml:space="preserve">
+    <value>Top centre</value>
+  </data>
+  <data name="Enum.AnchorPoint.TopRight" xml:space="preserve">
+    <value>Top right</value>
+  </data>
+  <data name="Enum.AnchorPoint.MiddleLeft" xml:space="preserve">
+    <value>Middle left</value>
+  </data>
+  <data name="Enum.AnchorPoint.Center" xml:space="preserve">
+    <value>Centre</value>
+  </data>
+  <data name="Enum.AnchorPoint.MiddleRight" xml:space="preserve">
+    <value>Middle right</value>
+  </data>
+  <data name="Enum.AnchorPoint.BottomLeft" xml:space="preserve">
+    <value>Bottom left</value>
+  </data>
+  <data name="Enum.AnchorPoint.BottomCenter" xml:space="preserve">
+    <value>Bottom centre</value>
+  </data>
+  <data name="Enum.AnchorPoint.BottomRight" xml:space="preserve">
+    <value>Bottom right</value>
+  </data>
+  <data name="Prop.Reference" xml:space="preserve">
+    <value>Relative to</value>
+  </data>
+  <data name="Prop.Reference.Hint" xml:space="preserve">
+    <value>What the anchor is measured from: the label itself, or another object of this label. An object that is relative to another one follows it when it moves or changes size.</value>
+  </data>
+  <data name="Prop.Reference.Label" xml:space="preserve">
+    <value>The label</value>
+  </data>
+  <data name="Prop.Reference.Missing" xml:space="preserve">
+    <value>(object no longer exists)</value>
+  </data>
+  <data name="Prop.X.Offset" xml:space="preserve">
+    <value>X offset (dots)</value>
+  </data>
+  <data name="Prop.Y.Offset" xml:space="preserve">
+    <value>Y offset (dots)</value>
+  </data>
+  <data name="Prop.Offset.Hint" xml:space="preserve">
+    <value>Distance from the anchor point of the reference to the anchor point of this object. Negative values go left or up.</value>
+  </data>
+  <data name="Anchor.Cycle" xml:space="preserve">
+    <value>{0} is already positioned relative to this object (directly or through another object), so this object cannot be relative to it. Choose another reference.</value>
+  </data>
+  <data name="Issue.Element.Anchor.Cycle" xml:space="preserve">
+    <value>This object and "{0}" are positioned relative to each other, so neither has a place and this one is left out of the label. Make one of them relative to the label.</value>
+  </data>
+  <data name="Issue.Element.Anchor.MissingReference" xml:space="preserve">
+    <value>The object this one is positioned relative to no longer exists, so it is placed relative to the label instead.</value>
+  </data>
+  <data name="Menu.AlignToLabel" xml:space="preserve">
+    <value>Align to label</value>
+  </data>
+  <data name="Zpl.Revert" xml:space="preserve">
+    <value>Revert to design</value>
+  </data>
+  <data name="Zpl.Revert.Tip" xml:space="preserve">
+    <value>Throw away the typed text and show the ZPL generated from the design again.</value>
+  </data>
+  <data name="Zpl.State.Generated" xml:space="preserve">
+    <value>Generated</value>
+  </data>
+  <data name="Zpl.State.Pending" xml:space="preserve">
+    <value>Editing...</value>
+  </data>
+  <data name="Zpl.State.Edited" xml:space="preserve">
+    <value>Edited by hand - re-imported</value>
+  </data>
+  <data name="Zpl.Status.Generated" xml:space="preserve">
+    <value>Generated from the design. Type or paste ZPL here; the label follows after a short pause.</value>
+  </data>
+  <data name="Zpl.Status.Pending" xml:space="preserve">
+    <value>Waiting for a pause in typing before re-importing...</value>
+  </data>
+  <data name="Zpl.Status.Empty" xml:space="preserve">
+    <value>Nothing to import: the text is empty. The label was left as it was.</value>
+  </data>
+  <data name="Zpl.Status.Clean" xml:space="preserve">
+    <value>Re-imported. Every command was understood.</value>
+  </data>
+  <data name="Zpl.Status.Kept.One" xml:space="preserve">
+    <value>Re-imported. 1 command is not supported and was kept as raw ZPL: {0}</value>
+  </data>
+  <data name="Zpl.Status.Kept.Many" xml:space="preserve">
+    <value>Re-imported. {0} commands are not supported and were kept as raw ZPL: {1}</value>
+  </data>
+  <data name="Zpl.Status.More" xml:space="preserve">
+    <value>{0} more</value>
+  </data>
+  <data name="Zpl.Status.Notices.One" xml:space="preserve">
+    <value>1 other notice (hover for details)</value>
+  </data>
+  <data name="Zpl.Status.Notices.Many" xml:space="preserve">
+    <value>{0} other notices (hover for details)</value>
+  </data>
+  <data name="Zpl.Status.MultipleLabels" xml:space="preserve">
+    <value>The text holds {0} labels; the first one is used</value>
+  </data>
+  <data name="Zpl.Status.Rebound" xml:space="preserve">
+    <value>{0} data field(s) bound again</value>
+  </data>
+  <data name="Zpl.Hint.Idle" xml:space="preserve">
+    <value>Put the caret on a command (^XX or ~XX) to see what it does and what its parameters mean.</value>
+  </data>
+  <data name="Zpl.Hint.Unknown" xml:space="preserve">
+    <value>{0} is not a ZPL command Rotula knows. It will be kept as raw ZPL.</value>
+  </data>
+  <data name="Zpl.Hint.Kept" xml:space="preserve">
+    <value>not modelled by the designer: kept as raw ZPL</value>
+  </data>
+  <data name="Zpl.Hint.Name" xml:space="preserve">
+    <value>ZPL command reference</value>
+  </data>
+  <data name="Zpl.Status.Name" xml:space="preserve">
+    <value>Result of the last re-import</value>
+  </data>
+  <data name="Undo.ZplSource" xml:space="preserve">
+    <value>ZPL text edit</value>
+  </data>
+  <data name="Issue.Format.Path.Invalid" xml:space="preserve">
+    <value>The stored format name {0} is not valid. Use a drive letter, up to 16 letters or digits and the .ZPL extension, for example R:SHIP.ZPL.</value>
+  </data>
+  <data name="Issue.Format.Field.Mixed" xml:space="preserve">
+    <value>This field mixes fixed text with data fields, so the stored format cannot fill it in at print time. It was written with its current value.</value>
+  </data>
+  <data name="Issue.Format.Field.Picture" xml:space="preserve">
+    <value>This text uses a Windows font and prints as a picture, so the stored format cannot fill its data fields in at print time.</value>
   </data>
 </root>

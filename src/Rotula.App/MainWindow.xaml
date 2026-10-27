@@ -243,6 +243,15 @@
           <MenuItem Header="{loc:T Menu.AlignCenterV}" Command="{Binding AlignCommand}" CommandParameter="{x:Static ed:AlignKind.CenterVertical}" />
           <MenuItem Header="{loc:T Menu.AlignBottom}" Command="{Binding AlignCommand}" CommandParameter="{x:Static ed:AlignKind.Bottom}" />
         </MenuItem>
+        <!-- The same six, always measured against the label (the plain Align uses the selection box when several objects are selected). -->
+        <MenuItem Header="{loc:T Menu.AlignToLabel}">
+          <MenuItem Header="{loc:T Menu.AlignLeft}" Command="{Binding AlignToLabelCommand}" CommandParameter="{x:Static ed:AlignKind.Left}" />
+          <MenuItem Header="{loc:T Menu.AlignCenterH}" Command="{Binding AlignToLabelCommand}" CommandParameter="{x:Static ed:AlignKind.CenterHorizontal}" />
+          <MenuItem Header="{loc:T Menu.AlignRight}" Command="{Binding AlignToLabelCommand}" CommandParameter="{x:Static ed:AlignKind.Right}" />
+          <MenuItem Header="{loc:T Menu.AlignTop}" Command="{Binding AlignToLabelCommand}" CommandParameter="{x:Static ed:AlignKind.Top}" />
+          <MenuItem Header="{loc:T Menu.AlignCenterV}" Command="{Binding AlignToLabelCommand}" CommandParameter="{x:Static ed:AlignKind.CenterVertical}" />
+          <MenuItem Header="{loc:T Menu.AlignBottom}" Command="{Binding AlignToLabelCommand}" CommandParameter="{x:Static ed:AlignKind.Bottom}" />
+        </MenuItem>
         <MenuItem Header="{loc:T Menu.Distribute}">
           <MenuItem Header="{loc:T Menu.DistributeH}" Command="{Binding DistributeCommand}" CommandParameter="{x:Static ed:DistributeKind.Horizontal}" />
           <MenuItem Header="{loc:T Menu.DistributeV}" Command="{Binding DistributeCommand}" CommandParameter="{x:Static ed:DistributeKind.Vertical}" />
@@ -648,8 +657,8 @@
         </DockPanel>
       </Grid>
 
-      <!-- ZPL output (a dark code surface by design; everything else stays light) -->
-      <Border Grid.Row="1" Grid.Column="1" Height="190" Background="{StaticResource CodeBackgroundBrush}"
+      <!-- ZPL source (a dark code surface by design; everything else stays light). Editable: typed text is re-imported after a short pause. -->
+      <Border Grid.Row="1" Grid.Column="1" Height="240" Background="{StaticResource CodeBackgroundBrush}"
               Visibility="{Binding ZplPanelVisible, Converter={StaticResource B2V}}">
         <Border.Resources>
           <!-- The only dark surface: lighter scrollbar thumbs so they show on the charcoal background. -->
@@ -660,15 +669,52 @@
         <DockPanel>
           <DockPanel DockPanel.Dock="Top" Margin="16,10,12,4">
             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+              <Button Content="{loc:T Zpl.Revert}" Command="{Binding ZplSource.RevertToDesignCommand}" Style="{StaticResource DarkToolButton}" ToolTip="{loc:T Zpl.Revert.Tip}"
+                      AutomationProperties.Name="{loc:T Zpl.Revert}" AutomationProperties.HelpText="{loc:T Zpl.Revert.Tip}" />
               <Button Content="{loc:T Zpl.Copy}" Command="{Binding CopyZplCommand}" Style="{StaticResource DarkToolButton}" AutomationProperties.Name="{loc:T Zpl.Copy}" />
               <Button Content="{loc:T Zpl.ExportButton}" Command="{Binding ExportZplCommand}" Style="{StaticResource DarkToolButton}" AutomationProperties.Name="{loc:T Zpl.ExportButton}" />
             </StackPanel>
-            <TextBlock Text="{loc:T Zpl.Output}" VerticalAlignment="Center" FontWeight="Bold" FontSize="11.5" Foreground="{StaticResource CodeMutedBrush}"
-                       AutomationProperties.HeadingLevel="Level1" />
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+              <TextBlock Text="{loc:T Zpl.Output}" VerticalAlignment="Center" FontWeight="Bold" FontSize="11.5" Foreground="{StaticResource CodeMutedBrush}"
+                         AutomationProperties.HeadingLevel="Level1" />
+              <!-- Source-of-truth badge: muted while the text is generated, accent while the design was rebuilt from typed text. -->
+              <Border CornerRadius="4" Padding="6,1" Margin="10,0,0,0" VerticalAlignment="Center" AutomationProperties.Name="{Binding ZplSource.StateText}">
+                <Border.Style>
+                  <Style TargetType="Border">
+                    <Setter Property="Background" Value="#2A2C34" />
+                    <Style.Triggers>
+                      <DataTrigger Binding="{Binding ZplSource.IsEdited}" Value="True"><Setter Property="Background" Value="#4A2A14" /></DataTrigger>
+                    </Style.Triggers>
+                  </Style>
+                </Border.Style>
+                <TextBlock Text="{Binding ZplSource.StateText}" FontSize="11" FontWeight="SemiBold">
+                  <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                      <Setter Property="Foreground" Value="{StaticResource CodeMutedBrush}" />
+                      <Style.Triggers>
+                        <DataTrigger Binding="{Binding ZplSource.IsEdited}" Value="True"><Setter Property="Foreground" Value="#F0A070" /></DataTrigger>
+                      </Style.Triggers>
+                    </Style>
+                  </TextBlock.Style>
+                </TextBlock>
+              </Border>
+            </StackPanel>
           </DockPanel>
-          <TextBox Text="{Binding ZplText, Mode=OneWay}" IsReadOnly="True" FontFamily="{StaticResource MonoFont}" FontSize="12" Background="Transparent" Foreground="{StaticResource CodeTextBrush}"
-                   BorderThickness="0" Padding="12,2" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" AcceptsReturn="True" VerticalContentAlignment="Top"
-                   CaretBrush="White" AutomationProperties.Name="{loc:T Panel.Zpl}" />
+          <!-- Under the editor: what the command under the caret means, then what the last re-import did. Both show their full text as a tooltip. -->
+          <!-- The hairline matters: the hint is monospace in the code colour, and without it the line looked like one more line of the ZPL text. -->
+          <Border DockPanel.Dock="Bottom" Margin="16,0,12,8" Padding="0,5,0,0" BorderThickness="0,1,0,0" BorderBrush="#2A2C34">
+            <StackPanel>
+              <TextBlock Text="{Binding ZplSource.HintText}" ToolTip="{Binding ZplSource.HintDetail}" FontFamily="{StaticResource MonoFont}" FontSize="11.5"
+                         Foreground="{StaticResource CodeTextBrush}" TextTrimming="CharacterEllipsis" AutomationProperties.Name="{loc:T Zpl.Hint.Name}" AutomationProperties.LiveSetting="Polite" />
+              <TextBlock Text="{Binding ZplSource.StatusText}" ToolTip="{Binding ZplSource.StatusDetail}" FontSize="11.5" Margin="0,2,0,0"
+                         Foreground="{StaticResource CodeMutedBrush}" TextTrimming="CharacterEllipsis" AutomationProperties.Name="{loc:T Zpl.Status.Name}" AutomationProperties.LiveSetting="Polite" />
+            </StackPanel>
+          </Border>
+          <!-- The editor's own undo is off so Ctrl+Z reaches the label's undo stack, where every re-import is one step. -->
+          <TextBox x:Name="ZplEditor" Text="{Binding ZplSource.Text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsUndoEnabled="False"
+                   FontFamily="{StaticResource MonoFont}" FontSize="12" Background="Transparent" Foreground="{StaticResource CodeTextBrush}"
+                   BorderThickness="0" Padding="12,2" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" AcceptsReturn="True" AcceptsTab="False"
+                   VerticalContentAlignment="Top" CaretBrush="White" SelectionChanged="ZplEditor_SelectionChanged" AutomationProperties.Name="{loc:T Panel.Zpl}" />
         </DockPanel>
       </Border>
     </Grid>

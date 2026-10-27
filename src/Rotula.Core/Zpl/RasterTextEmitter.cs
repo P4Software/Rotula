@@ -25,7 +25,8 @@ internal static class RasterTextEmitter
     private const int MaxHeight = 32000;
     private const int MaxBytes = 4 * 1024 * 1024;
 
-    public static string? Emit(LabelDocument doc, TextElement t, FontChoice font, IReadOnlyDictionary<string, string>? data, VariableResolution? resolution,
+    /// <summary>Writes the field. <paramref name="at"/> is the absolute origin (resolved from the anchor when the text has one).</summary>
+    public static string? Emit(LabelDocument doc, TextElement t, (int X, int Y) at, FontChoice font, IReadOnlyDictionary<string, string>? data, VariableResolution? resolution,
         List<ValidationIssue> issues, ITextRasterizer? rasterizer)
     {
         if (font.Validate() is { } invalid)
@@ -100,7 +101,7 @@ internal static class RasterTextEmitter
 
         // ^GF ignores rotation and, with ^FT, anchors the graphic's bottom-left corner instead of the text baseline. The picture is therefore
         // always placed with ^FO: for a typeset text its top-left corner is worked out from the baseline and the turn of the field.
-        int x = t.X, y = t.Y;
+        int x = at.X, y = at.Y;
         if (t.OriginKind == FieldOriginKind.Typeset)
         {
             var (dx, dy) = TypesetCorner(rotation, m.WidthDots, m.HeightDots, m.BaselineDots);

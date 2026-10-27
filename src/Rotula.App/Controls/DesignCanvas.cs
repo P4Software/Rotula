@@ -36,6 +36,9 @@ public sealed class DesignCanvas : FrameworkElement
     private static readonly Brush GridDotBrush = new SolidColorBrush(Color.FromArgb(120, 110, 100, 90));
     private static readonly Pen MarginPen = CreatePen(Color.FromArgb(150, 200, 120, 0), 1, new DashStyle(new double[] { 3, 3 }, 0));
 
+    // Subtle blue dots: quieter than the orange selection frame, readable on white paper and on a dark barcode edge.
+    private static readonly Pen QuietZonePen = CreatePen(Color.FromArgb(230, 40, 120, 190), 1, new DashStyle(new double[] { 2, 3 }, 0));
+
     private MainViewModel? _vm;
     private WriteableBitmap? _bitmap;
     private long _bitmapRevision = -1;
@@ -282,23 +285,69 @@ public sealed class DesignCanvas : FrameworkElement
         foreach (var e in selected)
             dc.DrawRectangle(null, pen, ToPixelRect(_vm.Session.Bounds.GetFrame(e)));
 
+        // The blank margin a scanner needs around a selected barcode, as a dotted guide; it is drawn only while that one barcode is selected,
+        // so it never clutters the label or reaches a print or export (this canvas is the only place that draws it).
+        if (selected is [BarcodeElement single] && BarcodeSizeInfo.QuietZoneFrame(_vm.Session.Bounds.GetFrame(single), single, Doc.DefaultRotation) is { } quiet)
+            dc.DrawRectangle(null, QuietZonePen, ToPixelRect(quiet));
+
         var union = RectD.UnionAll(selected.Select(_vm.Session.Bounds.GetFrame));
         if (selected.Count > 1) dc.DrawRectangle(null, new Pen(AccentBrush, 1), ToPixelRect(union));
 
-        // No handles on a locked object (the frame alone shows it is selected).
-        if (selected.Count != 1 || selected[0].Locked) return;
-        var r = ToPixelRect(union);
-        foreach (var h in Enum.GetValues<ResizeHandle>())
+        // No handles on a locked object (the frame alone shows it is selected); its anchor marker is still drawn below.
+        if (selected.Count == 1 && !selected[0].Locked)
         {
-            var (hx, hy) = HitTesting.HandlePosition(union, h);
-            var p = ToPixel(hx, hy);
-            dc.DrawRectangle(Brushes.White, new Pen(AccentBrush, 1), new Rect(p.X - HandleSize / 2, p.Y - HandleSize / 2, HandleSize, HandleSize));
+            var r = ToPixelRect(union);
+            // The anchor point of a single anchored object coincides with one of the eight handles (the ninth, the centre, has no handle); that
+            // handle is left out so the anchor dot drawn afterwards stands in for it, instead of the two fighting for the same pixels.
+            var anchorPixel = AnchorPixel(selected[0]);
+            foreach (var h in Enum.GetValues<ResizeHandle>())
+            {
+                var (hx, hy) = HitTesting.HandlePosition(union, h);
+                var p = ToPixel(hx, hy);
+                if (anchorPixel is { } a && Math.Abs(a.X - p.X) < 0.5 && Math.Abs(a.Y - p.Y) < 0.5) continue;
+                dc.DrawRectangle(Brushes.White, new Pen(AccentBrush, 1), new Rect(p.X - HandleSize / 2, p.Y - HandleSize / 2, HandleSize, HandleSize));
+            }
+            // Rotate handle: a circle above the top edge, joined to it by a thin stem.
+            var top = new Point(r.X + r.Width / 2, r.Y);
+            var rot = new Point(top.X, top.Y - HitTesting.RotateHandleOffsetPixels);
+            dc.DrawLine(new Pen(AccentBrush, 1), top, rot);
+            dc.DrawEllipse(Brushes.White, new Pen(AccentBrush, 1.5), rot, HandleSize / 2 + 1, HandleSize / 2 + 1);
         }
-        // Rotate handle: a circle above the top edge, joined to it by a thin stem.
-        var top = new Point(r.X + r.Width / 2, r.Y);
-        var rot = new Point(top.X, top.Y - HitTesting.RotateHandleOffsetPixels);
-        dc.DrawLine(new Pen(AccentBrush, 1), top, rot);
-        dc.DrawEllipse(Brushes.White, new Pen(AccentBrush, 1.5), rot, HandleSize / 2 + 1, HandleSize / 2 + 1);
+
+        // Last, so the handles never cover it: a white handle square drawn on top of the anchor dot hid it completely.
+        if (selected.Count == 1) DrawAnchorMarker(dc, selected[0]);
+    }
+
+    /// <summary>The pixel position of the element's anchor point on its selection frame, or null when the element is free.</summary>
+    private Point? AnchorPixel(LabelElement e)
+    {
+        if (e.Anchor is not { } anchor) return null;
+        var frame = _vm!.Session.Bounds.GetFrame(e);
+        var (ax, ay) = new Rotula.Core.Layout.DotRect(frame.X, frame.Y, frame.Width, frame.Height).PointAt(anchor);
+        return ToPixel(ax, ay);
+    }
+
+    private static readonly Pen AnchorLinkPen = CreatePen(Color.FromArgb(170, 0xC8, 0x42, 0x0F), 1, new DashStyle(new double[] { 4, 3 }, 0));
+
+    /// <summary>
+    /// Marks the anchor point of a selected anchored object: a filled dot on the corner, edge or centre of its frame, and a dashed line to the
+    /// same point of the object it is relative to (nothing for the label, whose edges speak for themselves). Drawn by the canvas only; it never
+    /// reaches a print or an export.
+    /// </summary>
+    private void DrawAnchorMarker(DrawingContext dc, LabelElement e)
+    {
+        if (e.Anchor is not { } anchor || AnchorPixel(e) is not { } own) return;
+        var session = _vm!.Session;
+        if (e.RelativeTo == Rotula.Core.Model.AnchorReference.Element && session.Document.Elements.FirstOrDefault(x => x.Id == e.ReferenceElementId) is { } reference
+            && !ReferenceEquals(reference, e))
+        {
+            var rf = session.Bounds.GetFrame(reference);
+            var (rx, ry) = new Rotula.Core.Layout.DotRect(rf.X, rf.Y, rf.Width, rf.Height).PointAt(anchor);
+            var target = ToPixel(rx, ry);
+            dc.DrawLine(AnchorLinkPen, own, target);
+            dc.DrawEllipse(Brushes.White, new Pen(AccentBrush, 1.5), target, 4, 4);
+        }
+        dc.DrawEllipse(AccentBrush, new Pen(Brushes.White, 1.5), own, 5, 5);
     }
 
     private void DrawGuides(DrawingContext dc, Rect labelRect)
@@ -363,7 +412,10 @@ public sealed class DesignCanvas : FrameworkElement
             else if (!session.IsSelected(hit)) session.Select(hit);
             _mode = Mode.Move;
             // Locked objects stay where they are even when they are part of a dragged selection; with only locked ones there is nothing to drag.
-            _origins = session.SelectedElements.Where(el => !el.Locked).ToDictionary(el => el.Id, el => (el.X, el.Y));
+            // An object positioned relative to another dragged one follows it by itself, so only the independent ones get the distance.
+            var unlocked = session.SelectedElements.Where(el => !el.Locked).ToList();
+            var independent = EditorCommands.IndependentlyMovable(Doc, unlocked);
+            _origins = unlocked.Where(el => independent.Contains(el.Id)).ToDictionary(el => el.Id, el => (el.X, el.Y));
             _gesture = _origins.Count > 0 ? session.BeginGesture() : null;
             _startBounds = session.Bounds.GetSelectionBounds(session.SelectedElements.Where(el => !el.Locked).ToList());
             CaptureMouse();

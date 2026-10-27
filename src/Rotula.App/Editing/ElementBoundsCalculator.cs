@@ -1,5 +1,6 @@
 using Rotula.Core.Elements;
 using Rotula.Core.Imaging;
+using Rotula.Core.Layout;
 using Rotula.Core.Text;
 using Rotula.Core.Model;
 using Rotula.Rendering;
@@ -135,6 +136,52 @@ public sealed class ElementBoundsCalculator
     /// <summary>The rotation an element is drawn with (its own, or the label default).</summary>
     public static FieldRotation EffectiveRotation(LabelElement e, LabelDocument doc) => e.Rotation ?? doc.DefaultRotation;
 
+    // Measures Windows fonts for the anchor layout; stateless and thread safe, like the one the preview uses.
+    private static readonly SkiaTextRasterizer AnchorRasterizer = new();
+
+    /// <summary>
+    /// The anchor layout of the current document: the same resolver, with the same size estimates, that the ZPL generator and the preview use,
+    /// so the frame the designer draws around an anchored object is where the object prints. Sizes of text and barcodes are cached by their
+    /// content, so dragging never re-estimates them.
+    /// </summary>
+    public AnchorLayout GetLayout()
+    {
+        var doc = _document();
+        var data = DataProvider?.Invoke();
+        return AnchorResolver.Resolve(doc, data, AnchorRasterizer, e =>
+        {
+            // Only text and barcodes are worth caching (the others are read straight from the model).
+            if (e is not (TextElement or BarcodeElement)) return ElementSizeEstimator.Estimate(doc, e, data, AnchorRasterizer);
+            string key = DataKey(data) + "" + MeasureKey(e, doc);
+            if (!_sizeCache.TryGetValue(key, out var size))
+            {
+                size = ElementSizeEstimator.Estimate(doc, e, data, AnchorRasterizer);
+                if (_sizeCache.Count > 2000) _sizeCache.Clear();
+                _sizeCache[key] = size;
+            }
+            return size;
+        });
+    }
+
+    private readonly Dictionary<string, (int Width, int Height)> _sizeCache = new();
+
+    /// <summary>
+    /// The absolute origin of the element (the point its <c>^FO</c>/<c>^FT</c> gets): its own X/Y, or the resolved point when it is anchored.
+    /// Everything the designer draws or hit-tests starts from this point, never from the raw X/Y of an anchored object.
+    /// </summary>
+    public (int X, int Y) GetOrigin(LabelElement e)
+    {
+        var doc = _document();
+        return !AnchorResolver.HasAnchors(doc) ? (e.X, e.Y) : GetLayout().OriginOf(e);
+    }
+
+    /// <summary>
+    /// The X/Y that keep <paramref name="e"/> where it is when its anchor or reference becomes the given values (null anchor = absolute), so
+    /// choosing an anchor in the panel changes the numbers and not the picture.
+    /// </summary>
+    public (int X, int Y) OffsetKeepingPosition(LabelElement e, AnchorPoint? anchor, AnchorReference relativeTo, string? referenceElementId) =>
+        AnchorResolver.OffsetKeepingPosition(GetLayout(), e, anchor, relativeTo, referenceElementId);
+
     /// <summary>Bounding box of the element in label dots (relative to the label home, like element coordinates).</summary>
     public RectD GetBounds(LabelElement e)
     {
@@ -179,7 +226,7 @@ public sealed class ElementBoundsCalculator
         if (!HasTextBoxFrame(e)) return bounds;
         var block = ((TextElement)e).Block!;
         // The ink may start right of the origin (centred or right-aligned lines), but the box always starts at the origin.
-        return new RectD(e.X, bounds.Y, Math.Max(1, block.WidthDots), bounds.Height);
+        return new RectD(GetOrigin(e).X, bounds.Y, Math.Max(1, block.WidthDots), bounds.Height);
     }
 
     /// <summary>True when <see cref="GetFrame"/> is a text block's box rather than the element's ink (the frame can then be resized by width).</summary>
@@ -189,13 +236,15 @@ public sealed class ElementBoundsCalculator
     /// <summary>Bounds of every element, same order as the document.</summary>
     public RectD GetSelectionBounds(IEnumerable<LabelElement> elements) => RectD.UnionAll(elements.Select(GetBounds));
 
-    private static RectD FromSize(LabelElement e, LabelDocument doc, int w, int h, FieldRotation rotation)
+    private RectD FromSize(LabelElement e, LabelDocument doc, int w, int h, FieldRotation rotation)
     {
         w = Math.Max(1, w);
         h = Math.Max(1, h);
+        // The resolved origin, not the raw X/Y: for an anchored object those are an offset from its reference.
+        var (ox, oy) = GetOrigin(e);
         bool swap = rotation is FieldRotation.Rotated90 or FieldRotation.Rotated270;
         if (e.OriginKind == FieldOriginKind.Origin)
-            return new RectD(e.X, e.Y, swap ? h : w, swap ? w : h);
+            return new RectD(ox, oy, swap ? h : w, swap ? w : h);
 
         // ^FT: the origin is the bottom-left corner of the unrotated box and the box rotates clockwise around it.
         var corners = new (double X, double Y)[] { (0, -h), (w, -h), (w, 0), (0, 0) };
@@ -212,19 +261,20 @@ public sealed class ElementBoundsCalculator
             minX = Math.Min(minX, rx); maxX = Math.Max(maxX, rx);
             minY = Math.Min(minY, ry); maxY = Math.Max(maxY, ry);
         }
-        return new RectD(e.X + minX, e.Y + minY, maxX - minX, maxY - minY);
+        return new RectD(ox + minX, oy + minY, maxX - minX, maxY - minY);
     }
 
     private RectD MeasureInk(LabelElement e, LabelDocument doc)
     {
         var data = DataProvider?.Invoke();
+        var (ox, oy) = GetOrigin(e);
         // A record's values change the text width, so they are part of the cache key (empty when no record is shown).
         string key = DataKey(data) + "" + MeasureKey(e, doc);
         if (!_cache.TryGetValue(key, out var m))
         {
             bool failed = false;
             m = Probe(e, doc, data, ref failed);
-            if (failed && _lastGood.TryGetValue(e.Id, out var known)) return new RectD(e.X + known.OffX, e.Y + known.OffY, known.W, known.H);
+            if (failed && _lastGood.TryGetValue(e.Id, out var known)) return new RectD(ox + known.OffX, oy + known.OffY, known.W, known.H);
             if (!failed)
             {
                 if (_cache.Count > 2000) _cache.Clear();
@@ -232,7 +282,7 @@ public sealed class ElementBoundsCalculator
                 _lastGood[e.Id] = m;
             }
         }
-        return new RectD(e.X + m.OffX, e.Y + m.OffY, m.W, m.H);
+        return new RectD(ox + m.OffX, oy + m.OffY, m.W, m.H);
     }
 
     /// <summary>Everything that influences how large a text/barcode is, except its position.</summary>
@@ -261,6 +311,10 @@ public sealed class ElementBoundsCalculator
         var clone = ElementCloner.Clone(e, newId: false);
         clone.X = ProbePad;
         clone.Y = ProbePad;
+        // The probe measures the ink alone; an anchor would move it (and would point at an element the probe label does not have).
+        clone.Anchor = null;
+        clone.RelativeTo = AnchorReference.Label;
+        clone.ReferenceElementId = null;
         // Reverse printing inverts what is underneath; on a blank probe that would make the whole area ink.
         clone.ReverseField = false;
         // An object that is switched off for the shown record still has a size and must stay selectable; the renderer would otherwise skip it and

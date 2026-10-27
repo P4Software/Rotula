@@ -154,10 +154,13 @@ every record for problems and print the whole batch. The data file itself is nev
 
 ### Read exactly what the printer receives
 
-The ZPL panel shows the generated code, live, read-only, with a Copy button and an Export .zpl button. The output is
-deterministic and plain ASCII, so you can version it, diff it or send it with any other tool.
+The ZPL panel shows the generated code live, with a Copy button and an Export .zpl button. The output is deterministic and
+plain ASCII, so you can version it, diff it or send it with any other tool. The panel is also an editor: type or paste ZPL and,
+after a short pause, the label is rebuilt from it (one undo step per edit); a badge says whether the text is generated or edited
+by hand, "Revert to design" regenerates it, the status line names any command that was kept as raw ZPL, and a hint line explains
+the command under the caret and its parameters.
 
-<p align="center"><img src="docs/images/zpl-panel.png" alt="The read-only ZPL code panel under the canvas showing the generated ZPL" width="800"></p>
+<p align="center"><img src="docs/images/zpl-panel.png" alt="The ZPL code panel under the canvas showing the generated ZPL" width="800"></p>
 
 ### Everything at a glance
 

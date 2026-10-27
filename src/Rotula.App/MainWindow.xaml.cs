@@ -45,6 +45,9 @@ public partial class MainWindow : Window
         };
     }
 
+    /// <summary>Keeps the view-model's caret position current, so the hint line under the ZPL editor follows the caret.</summary>
+    private void ZplEditor_SelectionChanged(object sender, RoutedEventArgs e) => _vm.ZplSource.CaretIndex = ZplEditor.CaretIndex;
+
     /// <inheritdoc />
     protected override void OnClosing(CancelEventArgs e)
     {

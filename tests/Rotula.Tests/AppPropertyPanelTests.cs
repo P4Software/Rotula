@@ -166,7 +166,7 @@ public class AppPropertyPanelTests : IDisposable
     [Fact]
     public void BarcodeData_IsValidatedByCore_AndShownAsLocalizedMessages()
     {
-        var bc = new BarcodeElement { Symbology = BarcodeSymbology.Ean13, Data = "5901234123457" };
+        var bc = new BarcodeElement { Symbology = BarcodeSymbology.Ean13, Data = "5901234123457", X = 100 }; // clear of the label edge, so the quiet-zone warning stays out of this test
         var vm = new MainViewModel(new FakeServices().Build());
         vm.Session.Load(new LabelDocument());
         vm.Commands.Add(bc);

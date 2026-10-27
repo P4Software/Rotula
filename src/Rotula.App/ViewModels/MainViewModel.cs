@@ -101,7 +101,8 @@ public sealed record MainServices(
     RotulaPolicy? Policy = null,
     UpdateChecker? Updates = null,
     IUrlLauncher? Links = null,
-    TimeProvider? Clock = null);
+    TimeProvider? Clock = null,
+    IDebouncer? Debouncer = null);
 
 /// <summary>
 /// View-model of the main window: the open label, its files, editing commands, view settings (zoom, unit, grid),
@@ -138,6 +139,8 @@ public sealed partial class MainViewModel : ObservableObject
         Variables = services.Variables ?? new VariableServices(null, services.Dialogs);
         Properties = new PropertyPanelViewModel(Session, ChooseImageFor, () => Variables.TextRasterizer);
         Preview = new PreviewCache(Session);
+        // The editable ZPL panel: it re-imports typed text into the session and asks for a fresh text through RefreshZplView.
+        ZplSource = new ZplSourceViewModel(Session, services.Debouncer ?? new DispatcherDebouncer(), () => Preview.Data, RefreshZplView);
         ConnectFormatting();
         // Handles and selection frames are measured with the record shown on the canvas, not only the sample values.
         Session.Bounds.DataProvider = () => Preview.Data;
@@ -229,6 +232,9 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Cache of the rendered preview.</summary>
     public PreviewCache Preview { get; }
 
+    /// <summary>The editable ZPL source panel under the canvas.</summary>
+    public ZplSourceViewModel ZplSource { get; }
+
     /// <summary>Printer and printer profile fields (shared by the Print dialog and the Data window).</summary>
     public PrinterSettingsViewModel Printer { get; }
 
@@ -276,7 +282,7 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private string _title = "Rotula";
 
-    /// <summary>The generated ZPL (read-only code view).</summary>
+    /// <summary>The ZPL generated from the design (with the shown record's values). The panel shows it through <see cref="ZplSource"/>, which may hold edited text instead.</summary>
     [ObservableProperty]
     private string _zplText = string.Empty;
 
@@ -720,6 +726,7 @@ public sealed partial class MainViewModel : ObservableObject
             _zplResult = ZplGenerator.Generate(Session.Document, null, Variables.TextRasterizer);
             var view = Preview.Data is null ? _zplResult : ZplGenerator.Generate(Session.Document, Preview.Data, Variables.TextRasterizer);
             ZplText = view.Zpl;
+            ZplSource.SetGenerated(view.Zpl);
             Properties.SetIssues(view.Issues);
             ErrorCount = view.Issues.Count(i => i.Severity == ValidationSeverity.Error);
             int warnings = view.Issues.Count - ErrorCount;
@@ -730,6 +737,7 @@ public sealed partial class MainViewModel : ObservableObject
             // The ZPL view must never take the editor down; say what happened instead.
             _zplResult = null;
             ZplText = string.Empty;
+            ZplSource.SetGenerated(string.Empty);
             ProblemsText = Loc.Get("Status.ZplFailed");
         }
     }
@@ -762,6 +770,7 @@ public sealed partial class MainViewModel : ObservableObject
         FillToolbox();
         OnDocumentChanged();
         OnSelectionChanged();
+        ZplSource.OnLanguageChanged();
         OnPropertyChanged(nameof(ApproximateNotice));
         OnPropertyChanged(nameof(ApproximateNoticeShort));
         OnPropertyChanged(nameof(DataRecordText));
@@ -1196,12 +1205,13 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Record navigator text for the toolbar ("Record 3 of 120").</summary>
     public string DataRecordText => Data.RecordText;
 
-    /// <summary>Copies the ZPL text to the clipboard.</summary>
+    /// <summary>Copies the ZPL text shown in the panel (generated, or as typed by the user) to the clipboard.</summary>
     [RelayCommand]
     private void CopyZpl()
     {
-        if (ZplText.Length == 0) return;
-        _svc.Clipboard.SetText(ZplText);
+        string text = ZplSource.Text.Length > 0 ? ZplSource.Text : ZplText;
+        if (text.Length == 0) return;
+        _svc.Clipboard.SetText(text);
         StatusMessage = Loc.Get("Status.ZplCopied");
     }
 
@@ -1336,6 +1346,14 @@ public sealed partial class MainViewModel : ObservableObject
     private void Align(AlignKind kind)
     {
         Commands.Align(kind);
+        ReportLocked();
+    }
+
+    /// <summary>Align the selection to the label itself, whatever its size (the parameter is an <see cref="AlignKind"/>).</summary>
+    [RelayCommand(CanExecute = nameof(HasSelection))]
+    private void AlignToLabel(AlignKind kind)
+    {
+        Commands.AlignToLabel(kind);
         ReportLocked();
     }
 

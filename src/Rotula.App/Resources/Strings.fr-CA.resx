@@ -6684,4 +6684,184 @@ Hachage à ajouter dans apiKeyHashes du fichier de paramètres : {1}</value>
   <data name="Engine.Settings.PlainHttp" xml:space="preserve">
     <value>Le serveur accepte les appels d’autres ordinateurs en http non chiffré : les clés d’API et les données des étiquettes circulent sur le réseau sans chiffrement. Utilisez https.</value>
   </data>
+  <data name="Issue.Barcode.Size.OneDotModule" xml:space="preserve">
+    <value>La barre ou le module le plus étroit mesure 1 point ({1} mil, {2} mm) à {3} ppp. Beaucoup de lecteurs ne peuvent pas lire des barres aussi étroites, et un peu d’encre qui s’étale bouche les espaces. Utilisez un module de 2 points ou plus.</value>
+  </data>
+  <data name="Issue.Barcode.Size.ThinBar" xml:space="preserve">
+    <value>La barre la plus étroite mesure {0} point ({1} mil, {2} mm) à {3} ppp. Les barres de moins de 2 points s’impriment de façon irrégulière sur une imprimante de 203 ppp, ce qui rend la lecture du code peu fiable. Utilisez un module de 2 points ou plus.</value>
+  </data>
+  <data name="Issue.Barcode.Size.QuietZoneOutside" xml:space="preserve">
+    <value>Le code à barres et ses zones de silence (la marge vierge dont le lecteur a besoin) vont de {0} mm à {1} mm, mais l’étiquette fait {2} mm de large. Une marge coupée peut empêcher la lecture du code. Déplacez le code à barres, utilisez un module plus étroit ou raccourcissez les données.</value>
+  </data>
+  <data name="Prop.Size.Readout" xml:space="preserve">
+    <value>Module : {0} mil ({1} mm) - symbole de {2} mm de large</value>
+  </data>
+  <data name="Prop.Size.ReadoutNoSymbol" xml:space="preserve">
+    <value>Module : {0} mil ({1} mm)</value>
+  </data>
+  <data name="Prop.Size.QuietBoth" xml:space="preserve">
+    <value>Zone de silence : {0} mm de chaque côté ({1}X)</value>
+  </data>
+  <data name="Prop.Size.QuietLeftRight" xml:space="preserve">
+    <value>Zone de silence : {0} mm avant et {1} mm après le symbole ({2}X et {3}X)</value>
+  </data>
+  <data name="Prop.Size.QuietNone" xml:space="preserve">
+    <value>Aucune zone de silence n’est nécessaire.</value>
+  </data>
+  <data name="Prop.Size.Narrower" xml:space="preserve">
+    <value>Module plus étroit (1 point de moins)</value>
+  </data>
+  <data name="Prop.Size.Wider" xml:space="preserve">
+    <value>Module plus large (1 point de plus)</value>
+  </data>
+  <data name="Prop.Anchor" xml:space="preserve">
+    <value>Point d’ancrage</value>
+  </data>
+  <data name="Prop.Anchor.Hint" xml:space="preserve">
+    <value>Le point de cet objet auquel la position se rapporte. Avec un ancrage, X et Y sont la distance depuis le même point de la référence (l’étiquette ou un autre objet), de sorte que l’objet garde sa place quand l’étiquette change de taille ou que la référence se déplace. Choisir un point ne déplace jamais l’objet : seuls les nombres changent.</value>
+  </data>
+  <data name="Prop.Anchor.Free" xml:space="preserve">
+    <value>Libre</value>
+  </data>
+  <data name="Prop.Anchor.Free.Tip" xml:space="preserve">
+    <value>Sans ancrage : X et Y sont le coin supérieur gauche (ou la ligne de base) mesurés depuis l’origine de l’étiquette, comme avant.</value>
+  </data>
+  <data name="Prop.Anchor.Free.Status" xml:space="preserve">
+    <value>Position libre (X et Y depuis l’origine de l’étiquette)</value>
+  </data>
+  <data name="Enum.AnchorPoint.TopLeft" xml:space="preserve">
+    <value>En haut à gauche</value>
+  </data>
+  <data name="Enum.AnchorPoint.TopCenter" xml:space="preserve">
+    <value>En haut au centre</value>
+  </data>
+  <data name="Enum.AnchorPoint.TopRight" xml:space="preserve">
+    <value>En haut à droite</value>
+  </data>
+  <data name="Enum.AnchorPoint.MiddleLeft" xml:space="preserve">
+    <value>Au milieu à gauche</value>
+  </data>
+  <data name="Enum.AnchorPoint.Center" xml:space="preserve">
+    <value>Centre</value>
+  </data>
+  <data name="Enum.AnchorPoint.MiddleRight" xml:space="preserve">
+    <value>Au milieu à droite</value>
+  </data>
+  <data name="Enum.AnchorPoint.BottomLeft" xml:space="preserve">
+    <value>En bas à gauche</value>
+  </data>
+  <data name="Enum.AnchorPoint.BottomCenter" xml:space="preserve">
+    <value>En bas au centre</value>
+  </data>
+  <data name="Enum.AnchorPoint.BottomRight" xml:space="preserve">
+    <value>En bas à droite</value>
+  </data>
+  <data name="Prop.Reference" xml:space="preserve">
+    <value>Relatif à</value>
+  </data>
+  <data name="Prop.Reference.Hint" xml:space="preserve">
+    <value>Ce depuis quoi l’ancrage est mesuré : l’étiquette elle-même ou un autre objet de cette étiquette. Un objet relatif à un autre le suit quand celui-ci se déplace ou change de taille.</value>
+  </data>
+  <data name="Prop.Reference.Label" xml:space="preserve">
+    <value>L’étiquette</value>
+  </data>
+  <data name="Prop.Reference.Missing" xml:space="preserve">
+    <value>(l’objet n’existe plus)</value>
+  </data>
+  <data name="Prop.X.Offset" xml:space="preserve">
+    <value>Décalage X (points)</value>
+  </data>
+  <data name="Prop.Y.Offset" xml:space="preserve">
+    <value>Décalage Y (points)</value>
+  </data>
+  <data name="Prop.Offset.Hint" xml:space="preserve">
+    <value>Distance entre le point d’ancrage de la référence et le point d’ancrage de cet objet. Les valeurs négatives vont vers la gauche ou vers le haut.</value>
+  </data>
+  <data name="Anchor.Cycle" xml:space="preserve">
+    <value>{0} est déjà positionné par rapport à cet objet (directement ou par l’intermédiaire d’un autre objet) ; cet objet ne peut donc pas lui être relatif. Choisissez une autre référence.</value>
+  </data>
+  <data name="Issue.Element.Anchor.Cycle" xml:space="preserve">
+    <value>Cet objet et « {0} » sont positionnés l’un par rapport à l’autre ; aucun des deux n’a donc de place et celui-ci est laissé hors de l’étiquette. Rendez l’un d’eux relatif à l’étiquette.</value>
+  </data>
+  <data name="Issue.Element.Anchor.MissingReference" xml:space="preserve">
+    <value>L’objet par rapport auquel celui-ci est positionné n’existe plus ; il est donc placé par rapport à l’étiquette.</value>
+  </data>
+  <data name="Menu.AlignToLabel" xml:space="preserve">
+    <value>Aligner sur l’étiquette</value>
+  </data>
+  <data name="Zpl.Revert" xml:space="preserve">
+    <value>Revenir à la conception</value>
+  </data>
+  <data name="Zpl.Revert.Tip" xml:space="preserve">
+    <value>Abandonne le texte tapé et affiche de nouveau le ZPL généré à partir de la conception.</value>
+  </data>
+  <data name="Zpl.State.Generated" xml:space="preserve">
+    <value>Généré</value>
+  </data>
+  <data name="Zpl.State.Pending" xml:space="preserve">
+    <value>Modification en cours...</value>
+  </data>
+  <data name="Zpl.State.Edited" xml:space="preserve">
+    <value>Modifié à la main - réimporté</value>
+  </data>
+  <data name="Zpl.Status.Generated" xml:space="preserve">
+    <value>Généré à partir de la conception. Tapez ou collez du ZPL ici ; l’étiquette suit après une courte pause.</value>
+  </data>
+  <data name="Zpl.Status.Pending" xml:space="preserve">
+    <value>En attente d’une pause dans la saisie avant de réimporter...</value>
+  </data>
+  <data name="Zpl.Status.Empty" xml:space="preserve">
+    <value>Rien à importer : le texte est vide. L’étiquette est restée telle quelle.</value>
+  </data>
+  <data name="Zpl.Status.Clean" xml:space="preserve">
+    <value>Réimporté. Toutes les commandes ont été comprises.</value>
+  </data>
+  <data name="Zpl.Status.Kept.One" xml:space="preserve">
+    <value>Réimporté. 1 commande n’est pas prise en charge et a été conservée en ZPL brut : {0}</value>
+  </data>
+  <data name="Zpl.Status.Kept.Many" xml:space="preserve">
+    <value>Réimporté. {0} commandes ne sont pas prises en charge et ont été conservées en ZPL brut : {1}</value>
+  </data>
+  <data name="Zpl.Status.More" xml:space="preserve">
+    <value>{0} de plus</value>
+  </data>
+  <data name="Zpl.Status.Notices.One" xml:space="preserve">
+    <value>1 autre avis (survolez pour voir les détails)</value>
+  </data>
+  <data name="Zpl.Status.Notices.Many" xml:space="preserve">
+    <value>{0} autres avis (survolez pour voir les détails)</value>
+  </data>
+  <data name="Zpl.Status.MultipleLabels" xml:space="preserve">
+    <value>Le texte contient {0} étiquettes ; la première est utilisée</value>
+  </data>
+  <data name="Zpl.Status.Rebound" xml:space="preserve">
+    <value>{0} champ(s) de données lié(s) de nouveau</value>
+  </data>
+  <data name="Zpl.Hint.Idle" xml:space="preserve">
+    <value>Placez le curseur sur une commande (^XX ou ~XX) pour voir ce qu’elle fait et ce que signifient ses paramètres.</value>
+  </data>
+  <data name="Zpl.Hint.Unknown" xml:space="preserve">
+    <value>{0} n’est pas une commande ZPL que Rotula connaît. Elle sera conservée en ZPL brut.</value>
+  </data>
+  <data name="Zpl.Hint.Kept" xml:space="preserve">
+    <value>non modélisée par le concepteur : conservée en ZPL brut</value>
+  </data>
+  <data name="Zpl.Hint.Name" xml:space="preserve">
+    <value>Référence des commandes ZPL</value>
+  </data>
+  <data name="Zpl.Status.Name" xml:space="preserve">
+    <value>Résultat de la dernière réimportation</value>
+  </data>
+  <data name="Undo.ZplSource" xml:space="preserve">
+    <value>la modification du texte ZPL</value>
+  </data>
+  <data name="Issue.Format.Path.Invalid" xml:space="preserve">
+    <value>Le nom de format stocké {0} n’est pas valide. Utilisez une lettre de lecteur, jusqu’à 16 lettres ou chiffres et l’extension .ZPL, par exemple R:SHIP.ZPL.</value>
+  </data>
+  <data name="Issue.Format.Field.Mixed" xml:space="preserve">
+    <value>Ce champ mélange du texte fixe et des champs de données ; le format stocké ne peut donc pas le remplir à l’impression. Il a été écrit avec sa valeur actuelle.</value>
+  </data>
+  <data name="Issue.Format.Field.Picture" xml:space="preserve">
+    <value>Ce texte utilise une police Windows et s’imprime comme une image ; le format stocké ne peut donc pas remplir ses champs de données à l’impression.</value>
+  </data>
 </root>

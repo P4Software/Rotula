@@ -319,3 +319,41 @@ public sealed class ShellUrlLauncher : IUrlLauncher
         }
     }
 }
+
+/// <summary>
+/// <see cref="IDebouncer"/> on the WPF dispatcher: the action runs on the UI thread, which the editor session requires, after the
+/// quiet period. One timer is reused; restarting it simply pushes the tick back.
+/// </summary>
+public sealed class DispatcherDebouncer : IDebouncer
+{
+    private readonly System.Windows.Threading.DispatcherTimer _timer = new();
+    private Action? _pending;
+
+    /// <summary>Creates the debouncer on the current thread's dispatcher.</summary>
+    public DispatcherDebouncer()
+    {
+        _timer.Tick += (_, _) =>
+        {
+            _timer.Stop();
+            var action = _pending;
+            _pending = null;
+            action?.Invoke();
+        };
+    }
+
+    /// <inheritdoc />
+    public void Restart(TimeSpan delay, Action action)
+    {
+        _timer.Stop();
+        _pending = action;
+        _timer.Interval = delay;
+        _timer.Start();
+    }
+
+    /// <inheritdoc />
+    public void Cancel()
+    {
+        _timer.Stop();
+        _pending = null;
+    }
+}

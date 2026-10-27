@@ -56,6 +56,9 @@ public static class LabelDocumentAdapter
         // Resolver warnings (unknown variables) are reported by the ZPL validation, not by the preview.
         var ignored = new List<ValidationIssue>();
         var elements = new List<RenderElement>(doc.Elements.Count);
+        // Anchored objects are placed by the same resolver (and the same measurements) the ZPL generator uses for this record, so the picture
+        // shows exactly where the printer puts them.
+        var layout = Core.Layout.AnchorResolver.HasAnchors(doc) ? Core.Layout.AnchorResolver.Resolve(doc, data, FitRasterizer) : null;
         foreach (var e in doc.Elements)
         {
             // Decided on the data that fills this record's placeholders, exactly as the ZPL generator does, so the picture and the print agree.
@@ -63,8 +66,9 @@ public static class LabelDocumentAdapter
             if (!printed && !includeNonPrinting) continue;
             var mapped = Map(doc, e, data, ignored);
             if (mapped is null) continue;
+            var (x, y) = layout?.OriginOf(e) ?? (e.X, e.Y);
             // ^LS moves everything to the left, ^LT moves the whole format down (or up when negative).
-            elements.Add(mapped with { X = e.X + homeX - doc.LabelShift, Y = e.Y + homeY + doc.LabelTop, Dimmed = !printed });
+            elements.Add(mapped with { X = x + homeX - doc.LabelShift, Y = y + homeY + doc.LabelTop, Dimmed = !printed });
         }
 
         return new RenderLabel(doc.WidthDots, doc.HeightDots, dpi, elements);

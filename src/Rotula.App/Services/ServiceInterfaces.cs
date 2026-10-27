@@ -135,6 +135,19 @@ public sealed class StubZplImporter : IZplImporter
     public ZplImportResult Import(byte[] zpl) => ZplImportResult.Failure("Import.NotAvailable");
 }
 
+/// <summary>
+/// Runs one action after a quiet period, restarting the wait on every call (typing in the ZPL source panel re-imports the label only once
+/// the user pauses). The production implementation ticks on the UI thread; tests fire it by hand.
+/// </summary>
+public interface IDebouncer
+{
+    /// <summary>Forgets any pending action and arranges for <paramref name="action"/> to run once <paramref name="delay"/> has passed without another call.</summary>
+    void Restart(TimeSpan delay, Action action);
+
+    /// <summary>Drops the pending action, if any.</summary>
+    void Cancel();
+}
+
 /// <summary>Opens the tool windows that belong to the main window (print and data merge).</summary>
 public interface IToolDialogService
 {

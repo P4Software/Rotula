@@ -142,9 +142,11 @@ internal sealed class FakeServices
     public readonly InMemorySettings Settings = new();
     /// <summary>Counter memory and prompt answers; null keeps the production default (no counter memory, questions cancelled).</summary>
     public IVariableServices? Variables;
+    /// <summary>The quiet-period timer of the ZPL source panel, fired by hand so tests control when typed text is re-imported.</summary>
+    public readonly ManualDebouncer Debouncer = new();
 
     public MainServices Build() => new(
-        new Dialogs(this), new Messages(this), new Clip(this), new Images(this), new NewDialog(this), Importer, Printer, Settings, ToolDialogs, Database, Variables);
+        new Dialogs(this), new Messages(this), new Clip(this), new Images(this), new NewDialog(this), Importer, Printer, Settings, ToolDialogs, Database, Variables, Debouncer: Debouncer);
 
     private sealed class Dialogs(FakeServices f) : IFileDialogService
     {
@@ -180,6 +182,35 @@ internal sealed class FakeServices
     private sealed class NewDialog(FakeServices f) : INewLabelDialogService
     {
         public LabelDocument? ShowNewLabelDialog() => f.NewLabel;
+    }
+}
+
+/// <summary>An <see cref="IDebouncer"/> without a clock: the pending action waits until the test calls <see cref="Fire"/>.</summary>
+internal sealed class ManualDebouncer : IDebouncer
+{
+    /// <summary>The action waiting for the quiet period, or null.</summary>
+    public Action? Pending { get; private set; }
+    /// <summary>How many times the wait was (re)started.</summary>
+    public int Restarts { get; private set; }
+    /// <summary>The delay asked for by the last restart.</summary>
+    public TimeSpan LastDelay { get; private set; }
+
+    public void Restart(TimeSpan delay, Action action)
+    {
+        Restarts++;
+        LastDelay = delay;
+        Pending = action;
+    }
+
+    public void Cancel() => Pending = null;
+
+    /// <summary>Lets the quiet period elapse: runs the pending action once. Returns false when nothing was pending.</summary>
+    public bool Fire()
+    {
+        var action = Pending;
+        Pending = null;
+        action?.Invoke();
+        return action is not null;
     }
 }
 

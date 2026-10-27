@@ -118,6 +118,15 @@ public sealed partial class IntRow : PropertyRow
     /// <summary>True to give the row a whole line instead of sharing it with the next number (used when it carries a longer second line).</summary>
     public bool FullWidth { get; init; }
 
+    /// <summary>True to show a compact "-" / "+" pair next to the box that changes the value by one (the module width of a barcode).</summary>
+    public bool ShowStepper { get; init; }
+
+    /// <summary>Translated tool tip of the "-" button.</summary>
+    public string StepDownHint => Loc.Get("Prop.Size.Narrower");
+
+    /// <summary>Translated tool tip of the "+" button.</summary>
+    public string StepUpHint => Loc.Get("Prop.Size.Wider");
+
     /// <summary>The text in the box.</summary>
     [ObservableProperty]
     private string _text;
@@ -127,6 +136,35 @@ public sealed partial class IntRow : PropertyRow
         if (_applying) return;
         Commit(value);
     }
+
+    /// <summary>
+    /// Changes the value by <paramref name="delta"/>, stopping at the limits. It starts from the value in the document, not from the box,
+    /// so a half-typed number does not steer the step; the box then shows the new value and the edit goes through the normal commit
+    /// (one undo step per click, merged with the typing of the same property).
+    /// </summary>
+    private void Step(int delta)
+    {
+        int current = _get() ?? _min;
+        int next = Math.Clamp(current + delta, _min, _max);
+        // Clear an old complaint: the stepped value is always valid.
+        Error = string.Empty;
+        string text = Format(next);
+        if (Text == text)
+        {
+            // Same text but the document may differ (the box showed a typed value that was rejected): write the value through.
+            if (_get() != next) _set(next);
+            return;
+        }
+        Text = text;
+    }
+
+    /// <summary>Makes the value one smaller.</summary>
+    [RelayCommand]
+    private void StepDown() => Step(-1);
+
+    /// <summary>Makes the value one larger.</summary>
+    [RelayCommand]
+    private void StepUp() => Step(1);
 
     private bool _applying;
 
@@ -456,13 +494,23 @@ public partial class ChoiceRow : PropertyRow
 {
     private readonly Func<object?> _get;
     private readonly Action<object?> _set;
+    private readonly Func<object?, string?>? _validate;
     private bool _applying;
 
     /// <summary>Creates a row.</summary>
-    public ChoiceRow(string labelKey, IReadOnlyList<ChoiceItem> items, Func<object?> get, Action<object?> set, string? hintKey = null)
+    /// <param name="labelKey">Resource key of the label.</param>
+    /// <param name="items">The options.</param>
+    /// <param name="get">Reads the current value.</param>
+    /// <param name="set">Writes a chosen value.</param>
+    /// <param name="hintKey">Resource key of the tool tip.</param>
+    /// <param name="validate">
+    /// Returns a plain-language reason why a value cannot be chosen, or null when it can. A refused choice is shown as the row's error and the
+    /// drop-down goes back to the current value; nothing is written.
+    /// </param>
+    public ChoiceRow(string labelKey, IReadOnlyList<ChoiceItem> items, Func<object?> get, Action<object?> set, string? hintKey = null, Func<object?, string?>? validate = null)
         : base(labelKey, hintKey)
     {
-        Items = items; _get = get; _set = set;
+        Items = items; _get = get; _set = set; _validate = validate;
         _selected = Find(get());
         // The drop-down binds to a view so that items with a group (the barcode families) are listed under group headings.
         View = System.Windows.Data.CollectionViewSource.GetDefaultView(items);
@@ -485,7 +533,18 @@ public partial class ChoiceRow : PropertyRow
     partial void OnSelectedChanged(ChoiceItem? value)
     {
         if (_applying || value is null) return;
-        if (!Equals(_get(), value.Value)) _set(value.Value);
+        if (Equals(_get(), value.Value)) return;
+        if (_validate?.Invoke(value.Value) is { } problem)
+        {
+            // Refused: say why and show the value that is still in force.
+            Error = problem;
+            _applying = true;
+            Selected = Find(_get());
+            _applying = false;
+            return;
+        }
+        Error = string.Empty;
+        _set(value.Value);
     }
 
     /// <inheritdoc />
@@ -502,6 +561,116 @@ public partial class ChoiceRow : PropertyRow
     /// <summary>Builds the options for an enum, translated.</summary>
     public static List<ChoiceItem> ForEnum<T>(IEnumerable<T>? values = null) where T : struct, Enum =>
         (values ?? Enum.GetValues<T>()).Select(v => new ChoiceItem(v, Loc.EnumName(v))).ToList();
+}
+
+/// <summary>One of the nine cells of the anchor picker.</summary>
+public sealed partial class AnchorCell : ObservableObject
+{
+    internal AnchorCell(AnchorRow owner, Rotula.Core.Model.AnchorPoint point)
+    {
+        Owner = owner;
+        Point = point;
+        Tip = Loc.EnumName(point);
+        // Where the dot sits inside the cell: the picker is a picture of the object's box, so each cell shows its own corner, edge or centre.
+        Horizontal = point switch
+        {
+            Rotula.Core.Model.AnchorPoint.TopLeft or Rotula.Core.Model.AnchorPoint.MiddleLeft or Rotula.Core.Model.AnchorPoint.BottomLeft => System.Windows.HorizontalAlignment.Left,
+            Rotula.Core.Model.AnchorPoint.TopRight or Rotula.Core.Model.AnchorPoint.MiddleRight or Rotula.Core.Model.AnchorPoint.BottomRight => System.Windows.HorizontalAlignment.Right,
+            _ => System.Windows.HorizontalAlignment.Center,
+        };
+        Vertical = point switch
+        {
+            Rotula.Core.Model.AnchorPoint.TopLeft or Rotula.Core.Model.AnchorPoint.TopCenter or Rotula.Core.Model.AnchorPoint.TopRight => System.Windows.VerticalAlignment.Top,
+            Rotula.Core.Model.AnchorPoint.BottomLeft or Rotula.Core.Model.AnchorPoint.BottomCenter or Rotula.Core.Model.AnchorPoint.BottomRight => System.Windows.VerticalAlignment.Bottom,
+            _ => System.Windows.VerticalAlignment.Center,
+        };
+    }
+
+    /// <summary>The row the cell belongs to (the cell's button runs its command).</summary>
+    public AnchorRow Owner { get; }
+
+    /// <summary>The anchor point the cell stands for.</summary>
+    public Rotula.Core.Model.AnchorPoint Point { get; }
+
+    /// <summary>Translated name, shown as tool tip and read by screen readers.</summary>
+    public string Tip { get; }
+
+    /// <summary>Where the dot sits horizontally inside the cell.</summary>
+    public System.Windows.HorizontalAlignment Horizontal { get; }
+
+    /// <summary>Where the dot sits vertically inside the cell.</summary>
+    public System.Windows.VerticalAlignment Vertical { get; }
+
+    /// <summary>True when this is the chosen anchor.</summary>
+    [ObservableProperty]
+    private bool _isSelected;
+}
+
+/// <summary>
+/// The anchor picker of the Position section: a 3 x 3 grid of the nine anchor points plus a "Free" button for an absolute position. Picking a
+/// point never moves the object: the panel converts its X/Y so it stays put and only the meaning of the numbers changes.
+/// </summary>
+public sealed partial class AnchorRow : PropertyRow
+{
+    private readonly Func<Rotula.Core.Model.AnchorPoint?> _get;
+    private readonly Action<Rotula.Core.Model.AnchorPoint?> _set;
+
+    /// <summary>Creates the row.</summary>
+    /// <param name="labelKey">Resource key of the label.</param>
+    /// <param name="get">Reads the current anchor (null = free).</param>
+    /// <param name="set">Writes the chosen anchor (null = free).</param>
+    /// <param name="hintKey">Resource key of the tool tip.</param>
+    public AnchorRow(string labelKey, Func<Rotula.Core.Model.AnchorPoint?> get, Action<Rotula.Core.Model.AnchorPoint?> set, string? hintKey = null) : base(labelKey, hintKey)
+    {
+        _get = get; _set = set;
+        Cells = Enum.GetValues<Rotula.Core.Model.AnchorPoint>().Select(p => new AnchorCell(this, p)).ToList();
+        FreeCaption = Loc.Get("Prop.Anchor.Free");
+        FreeTip = Loc.Get("Prop.Anchor.Free.Tip");
+        Apply(get());
+    }
+
+    /// <summary>The nine cells, in reading order (top-left first), which is the order a 3 x 3 grid lays them out.</summary>
+    public IReadOnlyList<AnchorCell> Cells { get; }
+
+    /// <summary>Caption of the "no anchor" button.</summary>
+    public string FreeCaption { get; }
+
+    /// <summary>Tool tip of the "no anchor" button.</summary>
+    public string FreeTip { get; }
+
+    /// <summary>The chosen anchor, or null for a free (absolute) position.</summary>
+    public Rotula.Core.Model.AnchorPoint? Selected { get; private set; }
+
+    /// <summary>True while the position is absolute.</summary>
+    public bool IsFree => Selected is null;
+
+    /// <summary>What is chosen, in words, for the line under the grid and for screen readers.</summary>
+    public string SelectedText => Selected is { } p ? Loc.EnumName(p) : Loc.Get("Prop.Anchor.Free.Status");
+
+    /// <summary>Chooses an anchor point, or null for free.</summary>
+    [RelayCommand]
+    private void Pick(Rotula.Core.Model.AnchorPoint? point)
+    {
+        if (point == _get()) return;
+        _set(point);
+        Apply(_get());
+    }
+
+    private void Apply(Rotula.Core.Model.AnchorPoint? value)
+    {
+        Selected = value;
+        foreach (var c in Cells) c.IsSelected = c.Point == value;
+        OnPropertyChanged(nameof(Selected));
+        OnPropertyChanged(nameof(IsFree));
+        OnPropertyChanged(nameof(SelectedText));
+    }
+
+    /// <inheritdoc />
+    public override void Refresh()
+    {
+        var current = _get();
+        if (current != Selected) Apply(current);
+    }
 }
 
 /// <summary>A button in the property panel (for example "Choose image").</summary>

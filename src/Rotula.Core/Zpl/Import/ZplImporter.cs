@@ -73,6 +73,8 @@ internal sealed partial class ZplImporter
         /// <summary>Offset where the label ended (its ^XZ, or the end of the input); downloads before it belong to it.</summary>
         public int EndPosition = int.MaxValue;
         public Dictionary<string, int> Positions { get; } = new();
+        /// <summary>The variable name chosen for each field number seen so far, so fields that share a number share a placeholder.</summary>
+        public Dictionary<int, string> FieldNames { get; } = new();
     }
 
     private readonly string _s;
@@ -966,7 +968,64 @@ internal sealed partial class ZplImporter
         element.Y = f.Y;
         element.OriginKind = f.Kind;
         element.ReverseField = f.Reverse || f.LabelReverse;
+        // A numbered field is the printer's way of saying "this data is filled in later", which is what a placeholder is here.
+        if (element is FieldDataElement { FieldNumber: { } number, Serial: null } numbered) BindNumberedField(d, numbered, number);
         AddElement(d, element, f.StartPosition);
+    }
+
+    /// <summary>
+    /// Turns a numbered field (<c>^FN</c>) into a <c>{{placeholder}}</c> and declares the variable, so the field can be merged from data
+    /// instead of being plain text. The number and prompt stay on the element, so the ZPL written back is the same as the original, and the
+    /// data the field carried becomes the variable's sample value (its printed value until data is merged). Fields that share a number share
+    /// the variable, as they share their data on the printer. A printer-side serial number (<c>^SN</c>) is left alone: its data is a start
+    /// value the printer counts from, not something to fill in.
+    /// </summary>
+    private static void BindNumberedField(DocCtx d, FieldDataElement element, int number)
+    {
+        string current = element is TextElement text ? text.Text : ((BarcodeElement)element).Data;
+        string name = FieldVariableName(d, number, element.FieldPrompt);
+        var variable = d.Doc.Variables.FirstOrDefault(v => v.Name == name);
+        if (variable is null) d.Doc.Variables.Add(new LabelVariable(name, current));
+        else if (variable.SampleValue.Length == 0 && current.Length > 0) variable.SampleValue = current;
+        string placeholder = "{{" + name + "}}";
+        if (element is TextElement t) t.Text = placeholder;
+        else ((BarcodeElement)element).Data = placeholder;
+    }
+
+    /// <summary>
+    /// The variable name of a field number: the prompt text written in the ^FN (<c>Customer name</c> becomes <c>Customer_name</c>) when
+    /// there is one, otherwise <c>Field</c> plus the number. The same number always gives the same name; a prompt already used by another
+    /// number gets a numeric suffix, because on the printer those are two different fields.
+    /// </summary>
+    private static string FieldVariableName(DocCtx d, int number, string? prompt)
+    {
+        if (d.FieldNames.TryGetValue(number, out var known)) return known;
+        string fallback = "Field" + number.ToString(CultureInfo.InvariantCulture);
+        string candidate = SanitizeVariableName(prompt) ?? fallback;
+        string unique = candidate;
+        for (int suffix = 2; d.FieldNames.ContainsValue(unique); suffix++)
+            unique = candidate + "_" + suffix.ToString(CultureInfo.InvariantCulture);
+        d.FieldNames[number] = unique;
+        return unique;
+    }
+
+    /// <summary>Makes a placeholder name out of free text (letters, digits and underscores only); null when nothing usable is left.</summary>
+    internal static string? SanitizeVariableName(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return null;
+        var sb = new StringBuilder(text.Length);
+        bool lastUnderscore = true; // suppresses a leading underscore
+        foreach (char ch in text)
+        {
+            if (char.IsAsciiLetterOrDigit(ch)) { sb.Append(ch); lastUnderscore = false; }
+            else if (!lastUnderscore) { sb.Append('_'); lastUnderscore = true; }
+        }
+        string name = sb.ToString().TrimEnd('_');
+        if (name.Length == 0) return null;
+        // A name cannot start with a digit; "123" becomes "Field_123".
+        if (char.IsAsciiDigit(name[0])) name = "Field_" + name;
+        if (name.Length > Variables.VariableLimits.MaxNameLength) name = name[..Variables.VariableLimits.MaxNameLength].TrimEnd('_');
+        return Variables.VariableEngine.IsValidName(name) ? name : null;
     }
 
     /// <summary>
