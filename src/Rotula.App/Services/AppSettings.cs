@@ -57,6 +57,11 @@ public sealed class AppSettings
     /// <summary>When the release page was last asked (UTC); null before the first check.</summary>
     public DateTimeOffset? LastUpdateCheckUtc { get; set; }
 
+    /// <summary>
+    /// How often, in seconds, a recovery copy of the open label is written while it has unsaved changes (see docs/recovery.md).
+    /// 0 switches the recovery copy off. Values between 1 and 4 count as 5 and values above 3600 as 3600.
+    /// </summary>
+    public int AutosaveSeconds { get; set; } = 30;
     /// <summary>The newer version whose notice the user closed, so that notice is not shown again for the same version.</summary>
     public string? UpdateDismissedVersion { get; set; }
 
@@ -133,7 +138,9 @@ public sealed class JsonSettingsStore : ISettingsStore
         "// Rotula settings. Edit with the program closed, or change them from the menus.\n" +
         "// language: \"auto\" follows Windows, or use \"en\" / \"es\" / \"pt-BR\" / \"fr-CA\".\n" +
         "// unit: \"Millimeters\", \"Inches\" or \"Dots\".\n" +
-        "// updateCheckEnabled: true asks GitHub once a day whether a newer version exists (off by default; nothing is sent about you).\n";
+        "// updateCheckEnabled: true asks GitHub once a day whether a newer version exists (off by default; nothing is sent about you).\n" +
+        "// autosaveSeconds: how often (in seconds) a recovery copy of a label with unsaved changes is kept, so a crash or power cut does not lose your work.\n" +
+        "//   30 is the default, 0 switches it off. Rotula offers the copy the next time it starts. Your label file is never changed by it.\n";
 
     private static readonly JsonSerializerOptions Options = new()
     {
@@ -178,14 +185,23 @@ public sealed class JsonSettingsStore : ISettingsStore
     /// <inheritdoc />
     public bool Save(AppSettings settings)
     {
+        // Why a temp file: File.WriteAllText truncates settings.json before it writes, so a crash or power loss in between would leave an
+        // empty file and the user's settings (recent files, printer, language) would be gone. The new text is written beside the real
+        // file first and swapped in with one operation, so the real file is always either the old version or the new one.
+        // The name is unique because two Rotula windows (or the designer and the print engine) can save at the same moment.
+        string temp = _path + "." + Guid.NewGuid().ToString("N")[..8] + ".tmp";
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
-            File.WriteAllText(_path, Header + JsonSerializer.Serialize(settings, Options), new System.Text.UTF8Encoding(false));
+            File.WriteAllText(temp, Header + JsonSerializer.Serialize(settings, Options), new System.Text.UTF8Encoding(false));
+            if (File.Exists(_path)) File.Replace(temp, _path, null);
+            else File.Move(temp, _path);
             return true;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
+            // Never leave a half-written copy next to the settings.
+            try { File.Delete(temp); } catch (Exception cleanup) when (cleanup is IOException or UnauthorizedAccessException) { /* nothing more can be done */ }
             return false;
         }
     }
