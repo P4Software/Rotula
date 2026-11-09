@@ -2794,6 +2794,9 @@
   <data name="Data.Query.Rejected.Ambiguous" xml:space="preserve">
     <value>Esta consulta puede leerse de más de una forma (por ejemplo una barra invertida antes de una comilla), así que no se ejecutó. Use dos comillas ('') en lugar de la barra invertida.</value>
   </data>
+  <data name="Data.Query.Rejected.UnclearText" xml:space="preserve">
+    <value>Esta consulta contiene algo que las bases de datos leen de formas distintas, como un carácter oculto, una palabra que empieza con un dígito (1AS) o un nombre U&amp;"...", así que no se ejecutó. Quítelo, o escriba los nombres entre comillas y deje un espacio entre las palabras.</value>
+  </data>
   <data name="Conn.Field.ProviderId" xml:space="preserve">
     <value>proveedor</value>
   </data>

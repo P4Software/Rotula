@@ -69,7 +69,9 @@ public class DataLexAmbiguityTests
         Fine(pg, "SELECT 'C:\\temp' FROM t");
         Fine(pg, "SELECT 'it''s' FROM t");
         Fine(pg, "SELECT E'a\\'b' FROM t");                     // E'...' always honours backslashes: one reading
-        Fine(pg, "SELECT \"a\\b\" FROM t");                       // double-quoted names never escape in PostgreSQL
+        // Double-quoted names never escape in PostgreSQL, but U&"..\0065.." does (the guard refuses that prefix as well), and a backslash inside a
+        // quoted name is how such an escape is smuggled past the function lists. No honest name needs one, so it is refused as ambiguous.
+        Ambiguous(pg, "SELECT \"a\\b\" FROM t");
         Fine(pg, "SELECT $$a\\$$ FROM t");
         Fine(SqlDialects.SqlServer, "SELECT 'a\\' FROM t WHERE x = '1'");   // T-SQL has no backslash escapes at all
         Fine(SqlDialects.Sqlite, "SELECT 'a\\' FROM t WHERE x = '1'");

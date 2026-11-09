@@ -2794,6 +2794,9 @@
   <data name="Data.Query.Rejected.Ambiguous" xml:space="preserve">
     <value>This query can be read in more than one way (for example a backslash before a quote), so it was not run. Use two quotes ('') instead of a backslash.</value>
   </data>
+  <data name="Data.Query.Rejected.UnclearText" xml:space="preserve">
+    <value>This query contains something that different databases read in different ways, such as a hidden character, a word that starts with a digit (1AS) or a U&amp;"..." name, so it was not run. Remove it, or write names in quotes and keep a space between words.</value>
+  </data>
   <data name="Conn.Field.ProviderId" xml:space="preserve">
     <value>provider</value>
   </data>

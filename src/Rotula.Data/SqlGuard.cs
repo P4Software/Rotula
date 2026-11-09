@@ -100,6 +100,9 @@ public static class SqlGuard
         ArgumentNullException.ThrowIfNull(dialect);
         if (string.IsNullOrWhiteSpace(sql)) return Reject(DataKeys.RejectEmpty);
         if (sql.Length > MaxQueryLength) return Reject(DataKeys.RejectTooLong);
+        // A NUL byte is read as "end of text" by some engines and skipped by others ("DR<NUL>OP"), inside a string or comment as well as
+        // outside, so there is no reading of it the guard can trust. No honest query contains one.
+        if (sql.Contains('\0')) return Reject(DataKeys.RejectUnclearText);
 
         List<string>? parameters = null;
         List<SqlToken>? paramTokens = null;
