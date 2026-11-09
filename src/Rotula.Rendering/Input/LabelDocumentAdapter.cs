@@ -309,13 +309,29 @@ public static class LabelDocumentAdapter
             case ImageElement img:
             {
                 if (img.Source is null) return null;
-                // Use the exact dots the printer will receive, so dithering is previewed faithfully.
-                var mono = ImageProcessor.ToMonochrome(img);
+                // Use the exact dots the printer will receive, so dithering is previewed faithfully. The work is cached: it is the same
+                // for every re-render while an object is dragged.
+                var prepared = ImageRenderCache.Prepare(img);
+                if (prepared.TooLarge)
+                {
+                    // A visible marker instead of an exception or an out-of-memory crash. The box is limited to the label, because
+                    // nothing outside it can be seen and a 40000-dot box would only make the hatch drawing slow.
+                    var (tw, th) = ImageRenderCache.ResolveSize(img);
+                    bool turned = (img.Rotation ?? FieldRotation.Normal) is FieldRotation.Rotated90 or FieldRotation.Rotated270;
+                    return new RenderPlaceholder
+                    {
+                        WidthDots = Math.Clamp(turned ? th : tw, 1, Math.Max(1, doc.WidthDots)),
+                        HeightDots = Math.Clamp(turned ? tw : th, 1, Math.Max(1, doc.HeightDots)),
+                        Caption = "Image too large to preview",
+                        Typeset = typeset,
+                        Reverse = img.ReverseField,
+                    };
+                }
                 return new RenderImage
                 {
-                    EncodedBytes = EncodeMonochrome(mono),
-                    WidthDots = mono.Width,
-                    HeightDots = mono.Height,
+                    EncodedBytes = prepared.EncodedBytes,
+                    WidthDots = prepared.Width,
+                    HeightDots = prepared.Height,
                     // ^GF ignores field rotation (it is applied to the dots already), so none is passed on.
                     Typeset = typeset,
                     Reverse = img.ReverseField,
@@ -417,7 +433,7 @@ public static class LabelDocumentAdapter
     };
 
     /// <summary>Encodes packed 1-bit dots (1 = black) as a grey PNG.</summary>
-    private static byte[] EncodeMonochrome(MonochromeBitmap mono)
+    internal static byte[] EncodeMonochrome(MonochromeBitmap mono)
     {
         using var bmp = new SKBitmap(new SKImageInfo(mono.Width, mono.Height, SKColorType.Gray8, SKAlphaType.Opaque));
         var pixels = new byte[mono.Width * mono.Height];

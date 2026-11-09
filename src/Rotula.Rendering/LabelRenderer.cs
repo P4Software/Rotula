@@ -498,18 +498,35 @@ public static class LabelRenderer
             _im = im;
             Width = Math.Max(0, im.WidthDots);
             Height = Math.Max(0, im.HeightDots);
-            using var bmp = TryDecode(im.EncodedBytes);
-            if (bmp is null)
+            using var bmp = TryDecode(im.EncodedBytes, out bool tooLarge);
+            if (tooLarge)
+                issues.Add(new RenderIssue(im, "The image is too large to preview."));
+            else if (bmp is null)
                 issues.Add(new RenderIssue(im, "The image could not be read. Choose the image file again."));
             else
                 _image = SKImage.FromBitmap(bmp);
         }
 
-        /// <summary>SkiaSharp throws for unrecognised data instead of returning null, so translate that into null.</summary>
-        private static SKBitmap? TryDecode(byte[] bytes)
+        /// <summary>
+        /// SkiaSharp throws for unrecognised data instead of returning null, so translate that into null. The size is read from the
+        /// header first: a few bytes can claim a picture of billions of pixels, and decoding it would try to allocate that much.
+        /// </summary>
+        private static SKBitmap? TryDecode(byte[] bytes, out bool tooLarge)
         {
+            tooLarge = false;
             if (bytes.Length == 0) return null;
-            try { return SKBitmap.Decode(bytes); }
+            try
+            {
+                using (var codec = SKCodec.Create(new SKMemoryStream(bytes)))
+                {
+                    if (codec is not null && (long)codec.Info.Width * codec.Info.Height > Input.ImageRenderCache.MaxPixels)
+                    {
+                        tooLarge = true;
+                        return null;
+                    }
+                }
+                return SKBitmap.Decode(bytes);
+            }
             catch (ArgumentNullException) { return null; }
         }
 
