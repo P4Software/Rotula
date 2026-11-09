@@ -62,6 +62,50 @@ public sealed class ZplEncoding : IEquatable<ZplEncoding>
         }
     }
 
+    /// <summary>
+    /// Rebuilds an encoding from the two numbers a saved file carries. Returns false unless the pair is one Rotula itself produces: UTF-8 is
+    /// <c>^CI28</c> with no code page, and a legacy set must name exactly the code page <see cref="TryFromCiCode"/> gives that <c>^CI</c> number. A
+    /// file is untrusted input, and an unknown or mismatched code page would either throw while generating ZPL or print other characters than
+    /// the label shows.
+    /// </summary>
+    /// <param name="ciCode">The <c>^CI</c> number.</param>
+    /// <param name="codePage">The .NET code page, or null for UTF-8.</param>
+    /// <param name="encoding">The encoding when the method returns true.</param>
+    public static bool TryFromStored(int ciCode, int? codePage, out ZplEncoding encoding)
+    {
+        if (TryFromCiCode(ciCode, out var known, out _) && known.DotNetCodePage == codePage && known.IsUsable)
+        {
+            encoding = known;
+            return true;
+        }
+        encoding = Utf8;
+        return false;
+    }
+
+    /// <summary>
+    /// True when <see cref="GetEncoding"/> works and gives a single-byte code page (or UTF-8). An encoding made with <see cref="Legacy"/> from a number
+    /// that is not a code page of this machine is not usable, and the generator reports that instead of throwing.
+    /// </summary>
+    public bool IsUsable
+    {
+        get
+        {
+            if (DotNetCodePage is null) return true;
+            try { return GetEncoding().IsSingleByte; }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException) { return false; }
+        }
+    }
+
+    /// <summary>
+    /// The number of bytes <paramref name="text"/> takes in this encoding when every character the code page cannot hold is sent as a single
+    /// <c>?</c>, which is exactly what <see cref="ZplText.Escape"/> writes for it. Unlike <see cref="GetEncoding"/> it never throws for such characters.
+    /// </summary>
+    public int GetByteCountLenient(string text)
+    {
+        if (DotNetCodePage is null) return GetEncoding().GetByteCount(text);
+        return Encoding.GetEncoding(DotNetCodePage.Value, new EncoderReplacementFallback("?"), DecoderFallback.ExceptionFallback).GetByteCount(text);
+    }
+
     /// <summary>The number sent with ^CI.</summary>
     public int CiCode { get; }
 

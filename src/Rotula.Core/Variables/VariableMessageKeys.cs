@@ -65,6 +65,8 @@ public static class VariableMessageKeys
     public const string CounterStoreNewer = "Variable.Counter.Store.NewerVersion";
     /// <summary>The counters file is locked by another program or cannot be written. Args: file path.</summary>
     public const string CounterStoreBusy = "Variable.Counter.Store.Busy";
+    /// <summary>The counters file already remembers as many counters as it can hold, so a new one cannot be added. Args: the limit.</summary>
+    public const string CounterStoreFull = "Variable.Counter.Store.Full";
     /// <summary>A counter that remembers its value needs the label to be saved first so it has an identity. Args: variable.</summary>
     public const string CounterNeedsLabelId = "Variable.Counter.NeedsLabelId";
     /// <summary>

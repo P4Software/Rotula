@@ -6867,4 +6867,25 @@ Hash to add to apiKeyHashes in the settings file: {1}</value>
   <data name="Issue.Format.Field.Picture" xml:space="preserve">
     <value>This text uses a Windows font and prints as a picture, so the stored format cannot fill its data fields in at print time.</value>
   </data>
+  <data name="Issue.Import.Graphic.TooMuchData" xml:space="preserve">
+    <value>A graphic of {0} bytes was not decoded because the graphics in this file together need more memory than one import may use. It was kept as raw ZPL. Split the file into smaller files to see every graphic.</value>
+  </data>
+  <data name="Issue.Variable.Counter.Store.Full" xml:space="preserve">
+    <value>The counters file already remembers {0} counters, the most it can hold, so a new counter cannot be added. Use a counter that already exists, or move the counters file aside to start a new one (the numbers then begin again, so only do this if the old numbers are no longer on any label).</value>
+  </data>
+  <data name="Issue.Merge.Table.TooWide" xml:space="preserve">
+    <value>The data file has {0} columns, and Rotula reads at most {1}. For a text file, check that the separator is right; otherwise remove the extra columns. Then load the file again.</value>
+  </data>
+  <data name="Issue.Merge.Table.TooLarge" xml:space="preserve">
+    <value>The data file would need {0} cells (columns times rows), and Rotula reads at most {1}. Remove columns you do not use or split the file, then load it again.</value>
+  </data>
+  <data name="Issue.Merge.Copies.TooLarge" xml:space="preserve">
+    <value>{0} copies written one after another are too long to build (the limit for this label is {1} copies). Use fewer copies, or make the copies with the print quantity instead of repeating the label.</value>
+  </data>
+  <data name="Issue.Image.Size.Pixels" xml:space="preserve">
+    <value>The image has too many dots in total (more than {0} million). Make the image smaller.</value>
+  </data>
+  <data name="Issue.Encoding.Unsupported" xml:space="preserve">
+    <value>The label uses character set ^CI{0}, which this computer cannot produce, so no ZPL was generated. Choose another character set in the label properties.</value>
+  </data>
 </root>

@@ -259,6 +259,13 @@ public static class ZplGenerator
         ArgumentNullException.ThrowIfNull(doc);
         var issues = new List<ValidationIssue>();
         if (resolution is not null) issues.AddRange(resolution.Issues);
+        // Text and barcode data are turned into bytes with the label's encoding all through generation; one that cannot be built would throw
+        // from deep inside, so it is reported once here and nothing is generated.
+        if (!doc.Encoding.IsUsable)
+        {
+            issues.Add(new ValidationIssue(ValidationSeverity.Error, "Encoding.Unsupported", null, doc.Encoding.CiCode.ToString(CultureInfo.InvariantCulture)));
+            return new ZplGenerationResult(string.Empty, issues, format?.Fields);
+        }
         int widthDots = doc.WidthDots, heightDots = doc.HeightDots;
         ValidateDocument(doc, widthDots, heightDots, issues);
         if (format is not null && !IsValidFormatPath(format.Path))
@@ -268,7 +275,8 @@ public static class ZplGenerator
         void Line(string s) => sb.Append(s).Append('\n');
 
         // Downloaded graphics are immediate (tilde) commands: they go before the label format, not inside it.
-        foreach (var g in doc.StoredGraphics) Line(StoredGraphicCommand(g));
+        // Only graphics that pass validation are written (ValidateDocument reports the others): the name goes into the command unescaped.
+        foreach (var g in doc.StoredGraphics.Where(IsWritableStoredGraphic)) Line(StoredGraphicCommand(g));
 
         Line("^XA");
         // The store command must come first: the printer stores everything that follows it instead of printing.
@@ -291,7 +299,7 @@ public static class ZplGenerator
         if (doc.MediaDarkness is { } darkness) Line("^MD" + darkness.ToString(CultureInfo.InvariantCulture));
         Line("^FW" + RotationChar(doc.DefaultRotation));
         if (doc.DefaultFont is { } f) Line(Invariant($"^CF{f.FontId},{f.Height},{f.Width}"));
-        foreach (var alias in doc.FontAliases) Line("^CW" + alias.Letter + "," + alias.Path);
+        foreach (var alias in doc.FontAliases.Where(a => FontAlias.IsValid(a.Letter, a.Path))) Line("^CW" + alias.Letter + "," + alias.Path);
         // Offsets of the printer's secondary and third clock, defined once for the whole label before any field uses them.
         if (resolution is not null)
             foreach (var (clockSet, offset) in resolution.ClockOffsets.OrderBy(kv => kv.Key)) Line(PrinterClock.OffsetCommand(clockSet, offset));
@@ -341,17 +349,16 @@ public static class ZplGenerator
         if (doc.PrintRate is { } pr && new[] { pr.Speed, pr.SlewSpeed, pr.BackfeedSpeed }.Any(v => v is < 1 or > 14))
             issues.Add(new ValidationIssue(ValidationSeverity.Error, "Print.Rate.Range", null, "1", "14"));
         foreach (var alias in doc.FontAliases)
-            if (!(char.IsAsciiLetterOrDigit(alias.Letter) && FontPath.IsMatch(alias.Path)))
+            if (!FontAlias.IsValid(alias.Letter, alias.Path))
                 issues.Add(new ValidationIssue(ValidationSeverity.Error, "Font.Alias.Invalid", null, alias.Letter.ToString(), alias.Path));
         foreach (var g in doc.StoredGraphics)
-            if (!StoredGraphic.IsValidPath(g.Path) || g.Data.Length > 4 * 1024 * 1024)
+            if (!IsWritableStoredGraphic(g))
                 issues.Add(new ValidationIssue(ValidationSeverity.Error, "Graphic.Stored.Invalid", null, g.Path));
         if (doc.DefaultFont is { } f && (f.Height < 10 || f.Height > 32000 || f.Width < 0 || f.Width > 32000))
             issues.Add(new ValidationIssue(ValidationSeverity.Error, "Font.Size.Range", null, "10", "32000"));
     }
 
-    // Font file names: an optional device letter, a name of up to 8 characters and a font extension.
-    private static readonly System.Text.RegularExpressions.Regex FontPath = new(@"^(?:[REBA]:)?[A-Za-z0-9_\-]{1,8}\.(?:FNT|TTF|TTE|fnt|ttf|tte)$", System.Text.RegularExpressions.RegexOptions.CultureInvariant | System.Text.RegularExpressions.RegexOptions.Compiled);
+    private static bool IsWritableStoredGraphic(StoredGraphic g) => StoredGraphic.IsValidPath(g.Path) && g.Data.Length <= 4 * 1024 * 1024;
 
     private static string StoredGraphicCommand(StoredGraphic g) =>
         Invariant($"~DG{g.Path},{g.Data.Length},{g.BytesPerRow},") + Convert.ToHexString(g.Data);
@@ -673,9 +680,15 @@ public static class ZplGenerator
         var sb = new StringBuilder(Origin(b, at));
         sb.Append(ZplBarcodeEmitter.Command(b, RotationOrEmpty(b.Rotation), RotationChar(doc.DefaultRotation), out string fdPrefix));
         if (fdPrefix.Contains(ZplBarcodeEmitter.QrByteCountToken, StringComparison.Ordinal))
+        {
             // Manual byte input states how many bytes follow, counted in the label's encoding (UTF-8 under ^CI28).
+            // Lenient count: a character the code page cannot hold goes out as one '?', exactly as ZplText.Escape writes it, so the count matches
+            // the bytes and the generator no longer throws; the substitution is reported like it is for a text field.
             fdPrefix = fdPrefix.Replace(ZplBarcodeEmitter.QrByteCountToken,
-                Math.Min(9999, doc.Encoding.GetEncoding().GetByteCount(payload)).ToString("0000", CultureInfo.InvariantCulture), StringComparison.Ordinal);
+                Math.Min(9999, doc.Encoding.GetByteCountLenient(payload)).ToString("0000", CultureInfo.InvariantCulture), StringComparison.Ordinal);
+            foreach (var ch in ZplText.Escape(payload, doc.Encoding, allowLineBreaks: false).Unmappable)
+                issues.Add(new ValidationIssue(ValidationSeverity.Warning, "Text.UnmappableChar", b.Id, ch));
+        }
         // A symbology whose data starts with a fixed header (a QR Code's "QA,") cannot be filled in by number: the recall would supply data without it.
         if (formatField is not null && fdPrefix.Length > 0)
         {
@@ -732,6 +745,12 @@ public static class ZplGenerator
         if (rw > 9999 || rh > 32000)
         {
             issues.Add(new ValidationIssue(ValidationSeverity.Error, "Image.Size.Range", img.Id, "9999", "32000"));
+            return null;
+        }
+        // Each axis can be within its limit while the total is not; the check comes before the scaling buffers are allocated.
+        if ((long)rw * rh > ImageProcessor.MaxPixels)
+        {
+            issues.Add(new ValidationIssue(ValidationSeverity.Error, "Image.Size.Pixels", img.Id, (ImageProcessor.MaxPixels / 1_000_000).ToString(CultureInfo.InvariantCulture)));
             return null;
         }
         var mono = ImageProcessor.ToMonochrome(img);

@@ -96,4 +96,15 @@ public sealed class MergeOptions
     /// job. Counted in records, not copies, so a ^PQ of 50 still counts as one.
     /// </summary>
     public int MaxRecordsPerJob { get; set; }
+
+    /// <summary>Default for <see cref="MaxJobCharacters"/>: 64 Mi characters, which is 128 MB in memory.</summary>
+    public const long DefaultMaxJobCharacters = 64L * 1024 * 1024;
+
+    /// <summary>
+    /// Most characters of ZPL one job may hold. A job is built as one string, so without a limit a data file with many records (or one record with
+    /// a huge copy count in the repeated-block mode) could ask for gigabytes. Producing jobs starts a new job before a label that would pass the
+    /// limit, even when <see cref="MaxRecordsPerJob"/> is 0; a single record whose repeated copies alone would pass it is refused with a
+    /// <c>Merge.Copies.TooLarge</c> error. Tests lower it to work with small strings.
+    /// </summary>
+    public long MaxJobCharacters { get; set; } = DefaultMaxJobCharacters;
 }

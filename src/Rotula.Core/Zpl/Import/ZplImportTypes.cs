@@ -12,6 +12,16 @@ public sealed class ZplParseOptions
     /// it only matters for <c>^MU</c> unit conversion and for how the document reports its size.
     /// </summary>
     public PrinterDpi Dpi { get; set; } = PrinterDpi.Dpi203;
+
+    /// <summary>Default for <see cref="MaxDecodedBytes"/>: 128 MiB.</summary>
+    public const long DefaultMaxDecodedBytes = 128L * 1024 * 1024;
+
+    /// <summary>
+    /// Memory the whole import may spend on decoded graphics. A <c>^GF</c> field costs eight bytes per packed byte (one luminance
+    /// byte per dot) and a <c>~DG</c> download costs its packed size; both draw from this one budget. A command that would exceed it is
+    /// kept as raw ZPL with a warning instead of being decoded, so a hostile file made of many small graphic fields cannot exhaust memory.
+    /// </summary>
+    public long MaxDecodedBytes { get; set; } = DefaultMaxDecodedBytes;
 }
 
 /// <summary>
