@@ -323,6 +323,7 @@ public static class LabelDocumentAdapter
                         WidthDots = Math.Clamp(turned ? th : tw, 1, Math.Max(1, doc.WidthDots)),
                         HeightDots = Math.Clamp(turned ? tw : th, 1, Math.Max(1, doc.HeightDots)),
                         Caption = "Image too large to preview",
+                        Issue = "An image is too large to draw, so a hatched box is shown in its place. Make the image smaller (width and height in dots).",
                         Typeset = typeset,
                         Reverse = img.ReverseField,
                     };

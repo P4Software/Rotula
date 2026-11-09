@@ -31,6 +31,15 @@ public class McpPrinterCommandScannerTests
     [InlineData("^XA~JL^XZ", "~JL")]
     [InlineData("^XA^CWA,E:ARIAL.TTF^XZ", "^CW")]
     [InlineData("^XA~DGE:LOGO.GRF,4,2,ABCDABCD^XZ", "~DG")]
+    [InlineData("^XA^XSA^XZ", "^XS")]
+    [InlineData("^XA^CMB,E,R,A^XZ", "^CM")]
+    [InlineData("^XA^ISR:PIC.GRF,Y^XZ", "^IS")]
+    [InlineData("^XA^JI^XZ", "^JI")]
+    [InlineData("^XA~JI^XZ", "~JI")]
+    [InlineData("^XA^SXA,Y,Y,Y,192.168.0.9^XZ", "^SX")]
+    [InlineData("^XA^ZZ30^XZ", "^ZZ")]
+    [InlineData("^XA~WR^XZ", "~WR")]
+    [InlineData("^XA^SC9600,8,N,1,X,N,N^XZ", "^SC")]
     public void EachListedCommandIsFoundByName(string zpl, string expected) => Assert.Contains(expected, Names(zpl));
 
     [Fact]
@@ -51,6 +60,17 @@ public class McpPrinterCommandScannerTests
         Assert.Equal(3, found.Count);
         Assert.Equal("^IDE:A.ZPL", found.Example);
     }
+
+    [Theory]
+    [InlineData("^XA~J\nA^XZ")]
+    [InlineData("^XA~J\r\nA^XZ")]
+    [InlineData("^XA^I\r\nDE:*.*^XZ")]
+    public void ALineBreakInsideACommandDoesNotHideIt(string zpl) =>
+        Assert.Contains(PrinterCommandScanner.Scan(zpl), c => c.Name is "~JA" or "^ID");
+
+    [Fact]
+    public void AfterTheMemoryLettersAreRemappedNoDeviceLetterIsTrusted() =>
+        Assert.Equal(["^CM", "~DG"], Names("^XA^CMB,E,E,A^XZ~DGR:LOGO.GRF,4,2,ABCDABCD"));
 
     [Fact]
     public void ADownloadToRamIsNotFlaggedButAnyFlashDeviceIs()

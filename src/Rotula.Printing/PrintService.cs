@@ -292,7 +292,7 @@ public sealed class PrintService : IPrintService
         try { return await _discovery.GetPrinterInfoAsync(name, ct).ConfigureAwait(false); }
         // By contract detection never throws; if a custom discovery does, "unknown" is the honest answer. The caller keeps the
         // profile's own resolution and paper size, and the print test label still works, so there is nothing the operator must act on.
-        catch (Exception ex) when (ex is not OutOfMemoryException and not OperationCanceledException) { return PrinterCapabilities.Unknown(name); }
+        catch (Exception ex) when (ex is not OutOfMemoryException) { return PrinterCapabilities.Unknown(name); }
     }
 
     /// <inheritdoc />

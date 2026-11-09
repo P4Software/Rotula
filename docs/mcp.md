@@ -194,8 +194,10 @@ to the assistant that asked for the print, so it cannot by itself prove that a p
 
 The scanned commands are listed in `PrinterCommandScanner` (job control `~JA ~JB ~JC ~JD ~JL ~JP ~JR ~JX ~PP ~PS ^JJ ^JU`, stored
 objects `^ID ~EG ^EG ^TO ~DY ~DB ~DS ~DT ~DU ~DE ~DG(flash) ^DF ^CW`, settings `~WC ~RO ^MP ^MM ^MF ~SD ~TA ^SS ^SZ ^ST ^KP ^KN ^KL`,
-network and wireless `^NI ^NS ^ND ^NN ^NP ^NT ^NW ^NB ~NC ~NR ~NT ^WA ^WE ^WI ^WL ^WP ^WR ^WS`, and the command-character changes
-above). A label that is only text, barcodes, graphics and the usual page set-up (`^PW ^LL ^MN ^MT ^MD ^PR ...`) lists none and
+network and wireless `^NI ^NS ^ND ^NN ^NP ^NT ^NW ^NB ~NC ~NR ~NT ^WA ^WE ^WI ^WL ^WP ^WR ^WS ~WR`, other state changes
+`^CM ^IS ^JI ~JI ^SX ^SC ^ZZ ^XS`, and the command-character changes above). `^CM` remaps the memory letters, so once it appears every
+`~DG` is listed whatever its device letter. Line breaks inside a command are ignored by printers, so the scan reads the text with
+them removed. A label that is only text, barcodes, graphics and the usual page set-up (`^PW ^LL ^MN ^MT ^MD ^PR ...`) lists none and
 needs no acknowledgement. The scan is a safety net, not a ZPL parser: it can list a command that sits inside binary data, but it
 does not miss one that is written the normal way (upper or lower case), wherever it sits in the text.
 

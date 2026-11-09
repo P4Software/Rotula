@@ -85,6 +85,15 @@ public static class PrinterCommandScanner
         ["^WP"] = "changes the printer's wireless password settings",
         ["^WR"] = "changes the printer's wireless transmit rate",
         ["^WS"] = "changes the printer's wireless settings",
+        ["^CM"] = "remaps the memory letters (R:, E:, B:, A:), so a later store to RAM can land in permanent memory",
+        ["^IS"] = "saves an image into the printer's memory",
+        ["^JI"] = "starts the printer's built-in BASIC interpreter (ZBI), which can run programs",
+        ["~JI"] = "starts the printer's built-in BASIC interpreter (ZBI), which can run programs",
+        ["^SX"] = "changes where the printer sends its alert messages",
+        ["^SC"] = "changes the printer's serial port settings, which can cut off communication with it",
+        ["^ZZ"] = "puts the printer to sleep or changes its idle time-out",
+        ["~WR"] = "resets the printer's wireless card",
+        ["^XS"] = "is a printer set-up command that can change how the printer behaves for later jobs",
         // Changing the command characters means the text after it cannot be scanned for commands any more.
         ["^CC"] = "changes the character that starts commands, so later commands in this job cannot be read or checked",
         ["~CC"] = "changes the character that starts commands, so later commands in this job cannot be read or checked",
@@ -102,6 +111,11 @@ public static class PrinterCommandScanner
     public static IReadOnlyList<RiskyCommand> Scan(string zpl)
     {
         ArgumentNullException.ThrowIfNull(zpl);
+        // Printers ignore carriage returns and line feeds in the command stream, so "~J" + line break + "A" is a ~JA. Reading the text
+        // with them removed catches that; the price is a possible extra report for two commands that merely meet at a line end.
+        if (zpl.Contains('\r') || zpl.Contains('\n')) zpl = zpl.Replace("\r", "").Replace("\n", "");
+        // ^CM can make "R:" mean a flash drive, so once it appears no device letter can be trusted.
+        bool memoryRemapped = zpl.Contains("^CM", StringComparison.OrdinalIgnoreCase) || zpl.Contains("~CM", StringComparison.OrdinalIgnoreCase);
         var found = new Dictionary<string, (int Count, string Example)>(StringComparer.Ordinal);
         var order = new List<string>();
         for (int i = 0; i + 2 < zpl.Length; i++)
@@ -111,7 +125,7 @@ public static class PrinterCommandScanner
             string key = string.Concat(prefix, char.ToUpperInvariant(zpl[i + 1]), char.ToUpperInvariant(zpl[i + 2]));
             if (!Table.ContainsKey(key)) continue;
             // A graphic stored in RAM (the default device) is routine; only the permanent memory is a concern.
-            if (key == "~DG" && !TargetsFlash(zpl, i + 3)) continue;
+            if (key == "~DG" && !memoryRemapped && !TargetsFlash(zpl, i + 3)) continue;
 
             if (found.TryGetValue(key, out var seen)) found[key] = (seen.Count + 1, seen.Example);
             else
@@ -131,7 +145,7 @@ public static class PrinterCommandScanner
     private static string ExampleAt(string zpl, int start)
     {
         int end = start + 3;
-        while (end < zpl.Length && end - start < ExampleLength && zpl[end] is not ('^' or '~' or '\r' or '\n')) end++;
+        while (end < zpl.Length && end - start < ExampleLength && zpl[end] is not ('^' or '~')) end++;
         return zpl[start..end];
     }
 }

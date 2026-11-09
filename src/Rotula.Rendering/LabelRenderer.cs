@@ -177,7 +177,7 @@ public static class LabelRenderer
         {
             RenderText t => new TextLayout(t),
             RenderBox b => new BoxLayout(b),
-            RenderPlaceholder p => new PlaceholderLayout(p),
+            RenderPlaceholder p => new PlaceholderLayout(p, issues),
             RenderCircle c => new CircleLayout(c),
             RenderLine l => new LineLayout(l),
             RenderEllipse el => new EllipseLayout(el),
@@ -296,11 +296,12 @@ public static class LabelRenderer
     {
         private readonly RenderPlaceholder _p;
 
-        public PlaceholderLayout(RenderPlaceholder p)
+        public PlaceholderLayout(RenderPlaceholder p, List<RenderIssue> issues)
         {
             _p = p;
             Width = Math.Max(0, p.WidthDots);
             Height = Math.Max(0, p.HeightDots);
+            if (!string.IsNullOrEmpty(p.Issue)) issues.Add(new RenderIssue(p, p.Issue));
         }
 
         public override void Paint(SKCanvas canvas)
@@ -500,7 +501,7 @@ public static class LabelRenderer
             Height = Math.Max(0, im.HeightDots);
             using var bmp = TryDecode(im.EncodedBytes, out bool tooLarge);
             if (tooLarge)
-                issues.Add(new RenderIssue(im, "The image is too large to preview."));
+                issues.Add(new RenderIssue(im, "The image is too large to preview. Use a smaller image file."));
             else if (bmp is null)
                 issues.Add(new RenderIssue(im, "The image could not be read. Choose the image file again."));
             else

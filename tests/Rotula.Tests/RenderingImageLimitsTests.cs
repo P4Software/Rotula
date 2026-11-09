@@ -49,6 +49,15 @@ public class RenderingImageLimitsTests
         var p = Assert.IsType<RenderPlaceholder>(Assert.Single(label.Elements));
         Assert.True(p.WidthDots <= doc.WidthDots && p.HeightDots <= doc.HeightDots);
         using var r = LabelRenderer.RenderBitmap(label);
+        // The hatched box is not the picture, so an export must be able to tell the person; the message says what to do.
+        var issue = Assert.Single(r.Issues);
+        Assert.Contains("smaller", issue.Message);
+    }
+
+    [Fact]
+    public void Ordinary_placeholders_such_as_recalled_objects_report_nothing()
+    {
+        using var r = LabelRenderer.RenderBitmap(Label(100, 60, new RenderPlaceholder { WidthDots = 40, HeightDots = 20, Caption = "R:LOGO.GRF" }));
         Assert.Empty(r.Issues);
     }
 
@@ -118,9 +127,20 @@ public class RenderingImageLimitsTests
 }
 
 /// <summary>
+/// The cache is process-wide and these tests shrink its limit, so they must not run at the same time as any other test that renders an
+/// image (a shrunken limit would evict the entries the assertions rely on).
+/// </summary>
+[CollectionDefinition(Name, DisableParallelization = true)]
+public sealed class ImageCacheCollection
+{
+    public const string Name = "ImageRenderCache";
+}
+
+/// <summary>
 /// The dithered picture of an image element is computed once per distinct picture, so dragging an object does not redo it for every
 /// mouse move. These tests change process-wide cache settings, so they live in one class (xUnit runs a class's tests one after another).
 /// </summary>
+[Collection(ImageCacheCollection.Name)]
 public class RenderingImageCacheTests : IDisposable
 {
     private readonly long _savedMax = ImageRenderCache.MaxBytes;
