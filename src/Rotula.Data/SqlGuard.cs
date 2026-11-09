@@ -67,7 +67,28 @@ public static class SqlGuard
         "PG_LS_DIR", "PG_STAT_FILE", "LO_IMPORT", "LO_EXPORT", "DBLINK", "DBLINK_EXEC", "DBLINK_CONNECT", "LOAD_EXTENSION",
         "READFILE", "WRITEFILE", "PG_TERMINATE_BACKEND", "PG_CANCEL_BACKEND", "SET_CONFIG", "NEXTVAL", "SETVAL",
         "SYS_EXEC", "SYS_EVAL",
+        // PostgreSQL functions that run the text they are given as SQL (ts_stat, ts_rewrite(query, 'select ...'), tablefunc's crosstab and
+        // connectby) or read server state, kept in the SHARED list on purpose: an ODBC connection to a PostgreSQL server has no PostgreSQL
+        // dialect (the engine hint is only a claim), and the inner SQL sits inside a string, so nothing else would ever see it.
+        "TS_STAT", "TS_REWRITE", "CROSSTAB", "CROSSTAB2", "CROSSTAB3", "CROSSTAB4", "CONNECTBY",
+        "PG_LOG_BACKEND_MEMORY_CONTEXTS", "TXID_CURRENT", "PG_CURRENT_XACT_ID",
     };
+
+    // Function-name prefixes refused in every dialect, for the same reason as the PostgreSQL names above (ODBC cannot know the engine). Each
+    // family is PostgreSQL-specific and has no plausible ordinary column name: query_to_xml / cursor_to_xml / table_to_xml / schema_to_xml /
+    // database_to_xml (plus their _and_xmlschema and *_xmlschema forms) execute SQL text or dump whole tables; dblink* is the dblink extension
+    // (open, fetch, send_query, get_result, connect_u...); pg_ls_* / pg_read_* / pg_file_* read and write the server's files; pg_logical_slot_*
+    // consume replication changes; the advisory-lock and statistics-reset families outlive a rolled-back READ ONLY transaction.
+    private static readonly string[] ForbiddenFunctionPrefixes =
+    {
+        "query_to_xml", "cursor_to_xml", "table_to_xml", "schema_to_xml", "database_to_xml", "dblink", "pg_ls_", "pg_read_", "pg_file_",
+        "pg_logical_slot_", "pg_advisory_", "pg_try_advisory_", "pg_stat_reset",
+    };
+
+    // Refused only when called (followed by "("): the PostgreSQL large-object API (lo_open, lo_get, lo_creat, lo_unlink, lo_put, lo_from_bytea...;
+    // lo_import and lo_export are in the list above) and its older loread/lowrite. A column called lo_total still works.
+    private static readonly string[] ForbiddenCallPrefixes = { "lo_" };
+    private static readonly HashSet<string> ForbiddenCalls = new(StringComparer.OrdinalIgnoreCase) { "loread", "lowrite" };
 
     // Phrases that look like a plain SELECT but advance server state. NEXT and VALUE are common column names, so only the
     // three-word sequence is refused (a lone NEXTVAL is already in the function list). Applies to every dialect.
@@ -351,13 +372,15 @@ public static class SqlGuard
     {
         if (ForbiddenFunctions.Contains(name) || d.ForbiddenFunctions.Contains(name)
             || name.StartsWith("xp_", StringComparison.OrdinalIgnoreCase) || name.StartsWith("sp_", StringComparison.OrdinalIgnoreCase)) return true;
+        if (ForbiddenFunctionPrefixes.Any(p => name.StartsWith(p, StringComparison.OrdinalIgnoreCase))) return true;
         if (d.AllowedFunctions.Contains(name)) return false;
         return d.ForbiddenFunctionPrefixes.Any(p => name.StartsWith(p, StringComparison.OrdinalIgnoreCase));
     }
 
     private static bool IsForbiddenCall(string name, SqlDialect d)
     {
-        if (d.ForbiddenCalls.Contains(name)) return true;
+        if (ForbiddenCalls.Contains(name) || d.ForbiddenCalls.Contains(name)) return true;
+        if (ForbiddenCallPrefixes.Any(p => name.StartsWith(p, StringComparison.OrdinalIgnoreCase))) return true;
         if (d.AllowedFunctions.Contains(name)) return false;
         return d.ForbiddenCallPrefixes.Any(p => name.StartsWith(p, StringComparison.OrdinalIgnoreCase));
     }

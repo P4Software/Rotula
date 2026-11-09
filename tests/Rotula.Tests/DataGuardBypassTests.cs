@@ -145,6 +145,30 @@ public class DataGuardBypassTests
         Assert.Equal(DataKeys.RejectForbiddenFunction, r.ReasonKey);
         // The built-in provider overload resolves to the same dialect and must agree.
         Assert.False(SqlGuard.Check(sql, Pg).IsAllowed, sql);
+        // An ODBC connection to a PostgreSQL server has no PostgreSQL dialect (the engine hint is only a claim), and the SQL such a function
+        // runs sits inside a string, so the shared lists must refuse it too: with no hint, with a postgresql hint and with a wrong hint.
+        Assert.False(SqlGuard.Check(sql, Odbc).IsAllowed, "ODBC: " + sql);
+        foreach (string engine in new[] { "postgresql", "mysql", "sqlserver", "oracle" })
+        {
+            var hinted = new DatabaseConnectionSettings
+            {
+                Name = "o", Provider = DatabaseProvider.Odbc, Dsn = "x",
+                Extras = ProviderExtras.Of(("underlyingEngine", engine)),
+            };
+            Assert.False(SqlGuard.Check(sql, hinted).IsAllowed, $"ODBC hinted {engine}: {sql}");
+        }
+    }
+
+    [Theory]
+    [InlineData("SELECT * FROM ts_rewrite('a & b'::tsquery, 'select t, s from aliases')")]
+    [InlineData("SELECT ts_rewrite(q, 'select t, s from aliases') FROM t")]
+    [InlineData("SELECT * FROM crosstab('select a, b, c from t')")]
+    [InlineData("SELECT * FROM crosstab('select 1', 'select 2') AS ct(a int)")]
+    [InlineData("SELECT * FROM connectby('t', 'id', 'parent', 'root', 0) AS c(id int)")]
+    public void PostgreSql_RefusesFunctionsThatRunTheirArgumentAsSql_OnEveryDialectIncludingOdbc(string sql)
+    {
+        Assert.False(SqlGuard.Check(sql, SqlDialects.PostgreSql).IsAllowed, sql);
+        Assert.False(SqlGuard.Check(sql, Odbc).IsAllowed, sql);
     }
 
     [Fact]
