@@ -75,6 +75,16 @@ public sealed class FontAlias
         Path = path;
     }
 
+    // Font file names: an optional device letter, a name of up to 8 characters and a font extension. No ^ ~ or comma can match, so a name that
+    // passes can never end the ^CW command it is written into.
+    private static readonly System.Text.RegularExpressions.Regex PathShape = new(@"^(?:[REBA]:)?[A-Za-z0-9_\-]{1,8}\.(?:FNT|TTF|TTE|fnt|ttf|tte)$", System.Text.RegularExpressions.RegexOptions.CultureInvariant | System.Text.RegularExpressions.RegexOptions.Compiled);
+
+    /// <summary>True when <paramref name="path"/> is a stored font name the printer accepts (<c>E:ARIAL.TTF</c>) and nothing else.</summary>
+    public static bool IsValidPath(string? path) => path is not null && PathShape.IsMatch(path);
+
+    /// <summary>True when the letter and the path can be written as a <c>^CW</c> command.</summary>
+    public static bool IsValid(char letter, string? path) => char.IsAsciiLetterOrDigit(letter) && IsValidPath(path);
+
     /// <summary>The font id (A-Z or 0-9).</summary>
     public char Letter { get; set; }
     /// <summary>The stored font, as <c>device:NAME.EXT</c> (the device is optional).</summary>

@@ -6864,4 +6864,25 @@ Hash a adicionar em apiKeyHashes no arquivo de configuração: {1}</value>
   <data name="Issue.Format.Field.Picture" xml:space="preserve">
     <value>Este texto usa uma fonte do Windows e é impresso como imagem, então o formato armazenado não pode preencher seus campos de dados na impressão.</value>
   </data>
+  <data name="Issue.Import.Graphic.TooMuchData" xml:space="preserve">
+    <value>Um gráfico de {0} bytes não foi decodificado porque os gráficos deste arquivo precisam juntos de mais memória do que uma importação pode usar. Ele foi mantido como ZPL bruto. Divida o arquivo em arquivos menores para ver todos os gráficos.</value>
+  </data>
+  <data name="Issue.Variable.Counter.Store.Full" xml:space="preserve">
+    <value>O arquivo de contadores já lembra {0} contadores, o máximo que ele comporta, então não é possível adicionar um novo. Use um contador que já exista ou mova o arquivo de contadores para começar um novo (os números recomeçam, então só faça isso se os números antigos não estiverem mais em nenhuma etiqueta).</value>
+  </data>
+  <data name="Issue.Merge.Table.TooWide" xml:space="preserve">
+    <value>O arquivo de dados tem {0} colunas e o Rotula lê no máximo {1}. Em um arquivo de texto, verifique se o separador está correto; caso contrário, remova as colunas extras. Depois carregue o arquivo novamente.</value>
+  </data>
+  <data name="Issue.Merge.Table.TooLarge" xml:space="preserve">
+    <value>O arquivo de dados precisaria de {0} células (colunas vezes linhas) e o Rotula lê no máximo {1}. Remova as colunas que você não usa ou divida o arquivo e carregue-o novamente.</value>
+  </data>
+  <data name="Issue.Merge.Copies.TooLarge" xml:space="preserve">
+    <value>{0} cópias escritas uma após a outra são longas demais para serem geradas (o limite desta etiqueta é de {1} cópias). Use menos cópias ou faça as cópias com a quantidade de impressão em vez de repetir a etiqueta.</value>
+  </data>
+  <data name="Issue.Image.Size.Pixels" xml:space="preserve">
+    <value>A imagem tem pontos demais no total (mais de {0} milhões). Reduza a imagem.</value>
+  </data>
+  <data name="Issue.Encoding.Unsupported" xml:space="preserve">
+    <value>A etiqueta usa o conjunto de caracteres ^CI{0}, que este computador não consegue produzir, então nenhum ZPL foi gerado. Escolha outro conjunto de caracteres nas propriedades da etiqueta.</value>
+  </data>
 </root>

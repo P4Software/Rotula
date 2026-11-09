@@ -29,11 +29,27 @@ public static class ImageProcessor
         return (w, h);
     }
 
+    /// <summary>
+    /// Most pixels (width times height of the scaled image) <see cref="ToMonochrome"/> will work on: 40 million, which holds an 8 x 12 inch label
+    /// at 600 dpi. Scaling needs four bytes per pixel plus a copy for error diffusion, so the per-axis limits alone (9999 x 32000 is 320 million
+    /// pixels) would let a small file ask for several gigabytes.
+    /// </summary>
+    public const long MaxPixels = 40_000_000;
+
+    /// <summary>True when the image, at the size <see cref="ResolveSize"/> gives it, is within <see cref="MaxPixels"/>.</summary>
+    public static bool IsWithinPixelLimit(ImageElement element)
+    {
+        var (w, h) = ResolveSize(element);
+        return (long)w * h <= MaxPixels;
+    }
+
     /// <summary>Scales, dithers and rotates the source into printable dots.</summary>
+    /// <exception cref="InvalidOperationException">The element has no source, or the scaled image is over <see cref="MaxPixels"/> (check <see cref="IsWithinPixelLimit"/> first to report it nicely).</exception>
     public static MonochromeBitmap ToMonochrome(ImageElement element)
     {
         var src = element.Source ?? throw new InvalidOperationException("Image element has no source.");
         var (w, h) = ResolveSize(element);
+        if ((long)w * h > MaxPixels) throw new InvalidOperationException("Image is larger than " + MaxPixels + " pixels.");
         float[] lum = Scale(src, w, h, element.Invert);
         bool[] black = Reduce(lum, w, h, element.Dither, element.Threshold);
         var (rw, rh, rotated) = Rotate(black, w, h, element.Rotation ?? FieldRotation.Normal);

@@ -145,7 +145,7 @@ public static class MergeBatch
                     // Variable warnings are the same for every record; say each of them once.
                     problems.AddRange(result.Issues.Where(p => job is null || p.Severity == ValidationSeverity.Error || warned.Add(p.MessageKey + "|" + string.Join("|", p.Args))));
                     if (!problems.Any(p => p.Severity == ValidationSeverity.Error))
-                        zpl = ApplyCopies(result.Zpl, copies, options.CopiesMode);
+                        zpl = ApplyCopies(result.Zpl, copies, options.CopiesMode, options.MaxJobCharacters, problems);
                 }
                 catch (Exception ex) when (ex is not OutOfMemoryException)
                 {
@@ -195,8 +195,16 @@ public static class MergeBatch
         int max = Math.Max(0, data.Options.MaxRecordsPerJob);
         var sb = new StringBuilder();
         int inJob = 0, last = 0, lastItem = 0;
+        long maxChars = Math.Max(1, data.Options.MaxJobCharacters);
         foreach (var label in Labels(doc, data, report))
         {
+            // Close the job before the label that would push it past the size limit; last/lastItem still describe the previous label here.
+            if (inJob > 0 && sb.Length + (long)label.Zpl.Length > maxChars)
+            {
+                yield return new MergedJob(sb.ToString(), last, inJob, lastItem);
+                sb.Clear();
+                inJob = 0;
+            }
             sb.Append(label.Zpl);
             inJob++;
             last = label.RecordNumber;
@@ -250,7 +258,7 @@ public static class MergeBatch
     /// Rewrites the generator's trailing <c>^PQ</c> line. The generator always ends with "\n^PQ...\n^XZ\n", so the
     /// last occurrence is ours; imported raw ZPL elsewhere in the block can never be hit.
     /// </summary>
-    private static string ApplyCopies(string zpl, int? copies, CopiesMode mode)
+    private static string? ApplyCopies(string zpl, int? copies, CopiesMode mode, long maxChars, List<ValidationIssue> problems)
     {
         if (copies is null) return zpl;
         int pq = zpl.LastIndexOf("\n^PQ", StringComparison.Ordinal);
@@ -262,7 +270,15 @@ public static class MergeBatch
         if (mode == CopiesMode.RepeatBlock)
         {
             string block = head + "^PQ1,0,1,N\n" + tail;
-            var sb = new StringBuilder(block.Length * copies.Value);
+            // long arithmetic: the product of a block and 99,999,999 copies does not fit an int. Refused before anything is allocated.
+            long total = (long)block.Length * copies.Value;
+            if (total > maxChars)
+            {
+                problems.Add(new ValidationIssue(ValidationSeverity.Error, "Merge.Copies.TooLarge", null,
+                    copies.Value.ToString(CultureInfo.InvariantCulture), (maxChars / Math.Max(1, block.Length)).ToString(CultureInfo.InvariantCulture)));
+                return null;
+            }
+            var sb = new StringBuilder((int)total);
             for (int i = 0; i < copies.Value; i++) sb.Append(block);
             return sb.ToString();
         }

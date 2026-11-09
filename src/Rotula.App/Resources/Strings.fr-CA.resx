@@ -6864,4 +6864,25 @@ Hachage à ajouter dans apiKeyHashes du fichier de paramètres : {1}</value>
   <data name="Issue.Format.Field.Picture" xml:space="preserve">
     <value>Ce texte utilise une police Windows et s’imprime comme une image ; le format stocké ne peut donc pas remplir ses champs de données à l’impression.</value>
   </data>
+  <data name="Issue.Import.Graphic.TooMuchData" xml:space="preserve">
+    <value>Un graphique de {0} octets n’a pas été décodé, car les graphiques de ce fichier demandent ensemble plus de mémoire qu’une importation ne peut en utiliser. Il a été conservé en ZPL brut. Divisez le fichier en fichiers plus petits pour voir tous les graphiques.</value>
+  </data>
+  <data name="Issue.Variable.Counter.Store.Full" xml:space="preserve">
+    <value>Le fichier des compteurs mémorise déjà {0} compteurs, soit le maximum qu’il peut contenir, donc un nouveau compteur ne peut pas être ajouté. Utilisez un compteur qui existe déjà ou déplacez le fichier des compteurs pour en commencer un nouveau (les numéros recommencent, alors ne le faites que si les anciens numéros ne sont plus sur aucune étiquette).</value>
+  </data>
+  <data name="Issue.Merge.Table.TooWide" xml:space="preserve">
+    <value>Le fichier de données compte {0} colonnes, et Rotula en lit au maximum {1}. Pour un fichier texte, vérifiez que le séparateur est le bon ; sinon, retirez les colonnes en trop. Chargez ensuite de nouveau le fichier.</value>
+  </data>
+  <data name="Issue.Merge.Table.TooLarge" xml:space="preserve">
+    <value>Le fichier de données demanderait {0} cellules (colonnes fois lignes), et Rotula en lit au maximum {1}. Retirez les colonnes inutilisées ou divisez le fichier, puis chargez-le de nouveau.</value>
+  </data>
+  <data name="Issue.Merge.Copies.TooLarge" xml:space="preserve">
+    <value>{0} copies écrites l’une après l’autre sont trop longues à produire (la limite pour cette étiquette est de {1} copies). Utilisez moins de copies ou faites les copies avec la quantité d’impression plutôt que de répéter l’étiquette.</value>
+  </data>
+  <data name="Issue.Image.Size.Pixels" xml:space="preserve">
+    <value>L’image compte trop de points au total (plus de {0} millions). Réduisez l’image.</value>
+  </data>
+  <data name="Issue.Encoding.Unsupported" xml:space="preserve">
+    <value>L’étiquette utilise le jeu de caractères ^CI{0}, que cet ordinateur ne peut pas produire ; aucun ZPL n’a donc été généré. Choisissez un autre jeu de caractères dans les propriétés de l’étiquette.</value>
+  </data>
 </root>

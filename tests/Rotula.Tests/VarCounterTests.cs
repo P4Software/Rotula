@@ -523,9 +523,11 @@ public class VarCounterTests : IDisposable
         var book = new CounterBook();
         var t = DateTimeOffset.UnixEpoch;
         for (int i = 0; i < CounterBook.MaxRecords + 50; i++) book.Reset("k" + i, "f", 1, t.AddSeconds(i));
-        Assert.Equal(CounterBook.MaxRecords, book.Count);
-        Assert.Null(book.Get("k0"));
-        Assert.NotNull(book.Get("k" + (CounterBook.MaxRecords + 49)));
+        // Counters beyond the limit of full records are compacted, never forgotten: forgetting one would restart its serial numbers.
+        Assert.Equal(CounterBook.MaxRecords + 50, book.Count);
+        Assert.True(book.Get("k0")!.Compact);
+        Assert.Equal(1, book.Get("k0")!.Next);
+        Assert.False(book.Get("k" + (CounterBook.MaxRecords + 49))!.Compact);
         for (int i = 0; i < CounterBook.MaxPending + 10; i++) book.Reserve("p", "f", 1, t);
         Assert.Equal(CounterBook.MaxPending, book.Get("p")!.Pending.Count);
         Assert.Throws<ArgumentOutOfRangeException>(() => book.Reserve("p", "f", 0, t));
