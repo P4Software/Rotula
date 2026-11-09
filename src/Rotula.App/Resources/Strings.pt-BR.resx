@@ -2794,6 +2794,9 @@
   <data name="Data.Query.Rejected.Ambiguous" xml:space="preserve">
     <value>Esta consulta pode ser lida de mais de uma forma (por exemplo, uma barra invertida antes de uma aspa), por isso não foi executada. Use duas aspas simples ('') em vez da barra invertida.</value>
   </data>
+  <data name="Data.Query.Rejected.UnclearText" xml:space="preserve">
+    <value>Esta consulta contém algo que os bancos de dados leem de formas diferentes, como um caractere oculto, uma palavra que começa com um dígito (1AS) ou um nome U&amp;"...", por isso não foi executada. Remova-o, ou escreva os nomes entre aspas e deixe um espaço entre as palavras.</value>
+  </data>
   <data name="Conn.Field.ProviderId" xml:space="preserve">
     <value>provedor</value>
   </data>

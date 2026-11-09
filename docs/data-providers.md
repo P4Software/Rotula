@@ -96,7 +96,16 @@ For every feature in `SqlDialect.AmbiguityChecks` the guard lexes the text again
 boundaries differ the query is refused with `Data.Query.Rejected.Ambiguous`. Use it for anything that depends on a server setting or that the
 vendor documents loosely. A quoted identifier that the dialect reads WITHOUT backslash escapes but that is checked for them (Snowflake `"..."`, MySQL backticks) is refused
 if it contains a backslash. (Quoted strings are not refused just for containing a backslash: only the readings that move a boundary matter, and
-those are exactly what the differential lexing catches; a Windows path in a MySQL string still works.)
+those are exactly what the differential lexing catches; a Windows path in a MySQL string still works.) PostgreSQL and DuckDB check
+`DoubleBackslash` too, so a backslash in a `"..."` name is refused there (it is how a `U&"..\0065.."` escape would be smuggled).
+
+Text that no honest query contains and that engines lex differently is refused with `Data.Query.Rejected.UnclearText` before any keyword
+check: a NUL byte anywhere; hidden characters (zero-width, soft hyphen, bidi marks, BOM, control characters, surrogates) outside strings, quoted
+names and comments; the `U&"..."` / `U&'...'` prefix; and a word that starts with a digit but is not a plain number (`1DROP` is one word in
+MySQL and PostgreSQL but `1` then `DROP` in SQL Server, so an unquoted table such as `2024sales` must be written in quotes). Non-ASCII words
+are compared in their compatibility form (full-width `DROP` is `DROP`) and split into ASCII and non-ASCII runs so a keyword glued to an
+accented letter is still seen. A line comment ends at LF, CR, VT, FF, NEL, U+2028 and U+2029 (the guard may only err by looking at more text),
+and MySQL's `--` needs ASCII white space after it (a no-break space does not make a comment).
 
 **The ODBC engine hint only adds rules.** With `underlyingEngine` set, the text must still be clean under the four classic lexings and under the
 engine's, with every backslash reading checked, and the engine's forbidden lists apply on top. Rotula cannot see what is behind a driver and the

@@ -2794,6 +2794,9 @@
   <data name="Data.Query.Rejected.Ambiguous" xml:space="preserve">
     <value>Cette requête peut se lire de plusieurs façons (par exemple une barre oblique inverse devant un guillemet) ; elle n’a donc pas été exécutée. Utilisez deux apostrophes ('') au lieu de la barre oblique inverse.</value>
   </data>
+  <data name="Data.Query.Rejected.UnclearText" xml:space="preserve">
+    <value>Cette requête contient un élément que les bases de données lisent de façons différentes, comme un caractère caché, un mot qui commence par un chiffre (1AS) ou un nom U&amp;"...", elle n’a donc pas été exécutée. Retirez-le, ou écrivez les noms entre guillemets et laissez une espace entre les mots.</value>
+  </data>
   <data name="Conn.Field.ProviderId" xml:space="preserve">
     <value>fournisseur</value>
   </data>

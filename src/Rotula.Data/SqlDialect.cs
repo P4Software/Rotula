@@ -220,7 +220,9 @@ public static class SqlDialects
     /// <summary>PostgreSQL (also used for Redshift, CockroachDB, YugabyteDB, Supabase, Neon, Aurora).</summary>
     public static readonly SqlDialect PostgreSql = new()
     {
-        AmbiguityChecks = LexFeature.SingleBackslash, Id = "postgresql", DisplayName = "PostgreSQL", LexRules = new[] { SqlLexRules.PostgreSql }, RowLimit = RowLimitStyle.Limit,
+        // DoubleBackslash: PostgreSQL has no backslash escape in "..." names, but U&"..\0065.." does (guarded in the tokenizer), and a backslash
+        // inside a quoted name is how that escape is smuggled; any quoted name that contains one is refused.
+        AmbiguityChecks = LexFeature.SingleBackslash | LexFeature.DoubleBackslash, Id = "postgresql", DisplayName = "PostgreSQL", LexRules = new[] { SqlLexRules.PostgreSql }, RowLimit = RowLimitStyle.Limit,
         DescribeWithKeyInfo = true,
         // Functions a READ ONLY transaction does NOT block: they take session locks that outlive the rolled-back transaction, reload the
         // server configuration, switch or back up the write-ahead log, reset statistics or touch replication. pg_sleep stays allowed: the
@@ -229,10 +231,13 @@ public static class SqlDialects
         ForbiddenFunctions = Set("pg_reload_conf", "pg_switch_wal", "pg_rotate_logfile", "pg_create_restore_point", "pg_start_backup", "pg_stop_backup",
             "pg_backup_start", "pg_backup_stop", "pg_promote", "pg_notify", "pg_logical_emit_message", "pg_import_system_collations",
             "pg_wal_replay_pause", "pg_wal_replay_resume", "pg_truncate_visibility_map", "pg_replication_slot_advance", "pg_drop_replication_slot",
-            "pg_file_write", "pg_file_rename", "pg_file_unlink", "pg_logdir_ls", "pg_ls_logdir", "pg_ls_waldir", "pg_ls_tmpdir", "pg_ls_archive_statusdir"),
-        // pg_advisory_lock, _lock_shared, _xact_lock*, _unlock*, pg_try_advisory_*; the pg_stat_reset* family; replication origins and slots.
-        ForbiddenFunctionPrefixes = Set("pg_advisory_", "pg_try_advisory_", "pg_stat_reset", "pg_replication_origin_", "pg_create_physical_replication_slot",
-            "pg_create_logical_replication_slot", "pg_copy_physical_replication_slot", "pg_copy_logical_replication_slot", "pg_stat_statements_reset"),
+            "pg_logdir_ls"),
+        // Replication origins and slots, and the postgres_fdw connection functions. The advisory-lock and statistics-reset families, the
+        // query_to_xml / dblink / file-reader families and the large-object calls are in SqlGuard's shared prefix lists, so that an ODBC
+        // connection to a PostgreSQL server (no PostgreSQL dialect, the engine hint is only a claim) is guarded too.
+        ForbiddenFunctionPrefixes = Set("pg_replication_origin_", "pg_create_physical_replication_slot",
+            "pg_create_logical_replication_slot", "pg_copy_physical_replication_slot", "pg_copy_logical_replication_slot", "pg_stat_statements_reset",
+            "postgres_fdw_"),
         CatalogueSql =
             "SELECT table_schema, table_name, table_type FROM information_schema.tables " +
             "WHERE table_type IN ('BASE TABLE','VIEW') AND table_schema NOT IN ('pg_catalog','information_schema') ORDER BY 1, 2",
@@ -312,7 +317,8 @@ public static class SqlDialects
     /// </summary>
     public static readonly SqlDialect DuckDb = new()
     {
-        AmbiguityChecks = LexFeature.SingleBackslash, Id = "duckdb", DisplayName = "DuckDB",
+        // DoubleBackslash: DuckDB shares PostgreSQL's parser, including the U&"..." unicode-escaped names; see the PostgreSQL entry.
+        AmbiguityChecks = LexFeature.SingleBackslash | LexFeature.DoubleBackslash, Id = "duckdb", DisplayName = "DuckDB",
         LexRules = new[] { new SqlLexRules { PostgresStrings = true, DollarParameters = true, NestedComments = true } },
         ParameterStyle = ParameterStyle.DollarName, RowLimit = RowLimitStyle.Limit,
         ForbiddenCallPrefixes = Set("read_", "parquet_", "iceberg_", "delta_", "json_scan", "csv_scan"),
