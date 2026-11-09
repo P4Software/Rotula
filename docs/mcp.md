@@ -171,6 +171,34 @@ the printer, the copies and the final ZPL, so changing the label, the printer or
 Only the newest code is valid. Copies are capped by `maxCopies`. Copies are applied to a copy of the label (`^PQ`); the open
 label is not changed. A label with validation errors is refused.
 
+### Commands that change the printer
+
+A label made from imported ZPL or a downloaded `.rotula` file can carry raw printer commands that do much more than print:
+cancel every job (`~JA`), delete stored fonts and graphics (`^ID`, including wildcards such as `^IDE:*.*`), reset the printer
+(`^JUF`, `~JR`), change its settings or network configuration, or store objects in its memory. The confirmation code goes back
+to the assistant that asked for the print, so it cannot by itself prove that a person looked at such a job. Therefore:
+
+- The dry run scans **all** of the ZPL that would be sent, not just the part it displays, and lists every such command by name
+  in `riskyCommands` (name, what it does, how many times, and the first occurrence with its parameters). `requiresAcknowledgement`
+  is `true` and the message starts the list with a warning. Padding in front of a command or hundreds of raw blocks hide nothing:
+  the scan reads every character. A graphic stored with `~DG` is only listed when it goes to permanent (flash) memory
+  (`A:`, `B:`, `E:`); `R:` is routine. Commands that change the command characters (`^CC`, `~CT`, `^CD`) are listed too, because
+  the text after them cannot be checked.
+- The second call must pass `acknowledgedCommands` with the name of **every** listed command (for example
+  `["~JA", "^ID"]`, case does not matter). Without it, or with a name missing, nothing is sent **and the confirmation code is
+  used up**, so the assistant has to make a new preview and the list is put in front of the person again. The assistant is told
+  to set `acknowledgedCommands` only after the person agreed.
+- The code is still single use and tied to the fingerprint of the exact ZPL, so a command added after the preview invalidates it.
+- `rawZplBlocks` shows each raw block whole, on one line. A block longer than 4,000 characters is cut and says how many characters
+  are missing; more than 100 blocks are counted in a last entry. The scan does not depend on what is displayed.
+
+The scanned commands are listed in `PrinterCommandScanner` (job control `~JA ~JB ~JC ~JD ~JL ~JP ~JR ~JX ~PP ~PS ^JJ ^JU`, stored
+objects `^ID ~EG ^EG ^TO ~DY ~DB ~DS ~DT ~DU ~DE ~DG(flash) ^DF ^CW`, settings `~WC ~RO ^MP ^MM ^MF ~SD ~TA ^SS ^SZ ^ST ^KP ^KN ^KL`,
+network and wireless `^NI ^NS ^ND ^NN ^NP ^NT ^NW ^NB ~NC ~NR ~NT ^WA ^WE ^WI ^WL ^WP ^WR ^WS`, and the command-character changes
+above). A label that is only text, barcodes, graphics and the usual page set-up (`^PW ^LL ^MN ^MT ^MD ^PR ...`) lists none and
+needs no acknowledgement. The scan is a safety net, not a ZPL parser: it can list a command that sits inside binary data, but it
+does not miss one that is written the normal way (upper or lower case), wherever it sits in the text.
+
 ## Databases
 
 Off by default (`allowDatabase`). When on:
@@ -195,7 +223,8 @@ Off by default (`allowDatabase`). When on:
   data file) is escaped so it cannot add ZPL commands. **One exception to be aware of:** ZPL that `import_zpl` (or a saved
   `.rotula` file made from an import) could not interpret is kept as "raw ZPL" so the label still prints the same, and
   `print_label` sends those blocks to the printer unchanged, including any printer-control commands they contain. The dry run
-  lists every raw block (`rawZplBlocks`) so the person confirming can see them; `get_label` shows them as `rawZpl` or
+  lists every raw block (`rawZplBlocks`) and names every printer-changing command in it (`riskyCommands`), and the job is not sent
+  unless the second call acknowledges each of them (see "Commands that change the printer"); `get_label` shows them as `rawZpl` or
   `recall` elements and `delete_element` removes them. Sizes are limited: elements
   per label, characters per text or barcode, image pixels (decoded size is read from the header first), the output size of
   an image on the label, workbook size after unzipping, and preview size (large labels are scaled down).

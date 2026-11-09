@@ -1,6 +1,7 @@
 #pragma warning disable CS1573 // positional record parameters are documented where the meaning is not obvious from the name
 
 using Rotula.Mcp.Hosting;
+using Rotula.Mcp.Security;
 using Rotula.Mcp.Session;
 
 namespace Rotula.Mcp.Tools;
@@ -115,4 +116,4 @@ public sealed record QueryResult(
 public sealed record PrintResultInfo(
     string Status, string Message, string? Printer, int Copies, string? LabelSize, int? PrinterDpi, string? DpiConversion,
     IReadOnlyList<string> ZplPreview, string? ConfirmationToken, DateTimeOffset? TokenExpiresUtc, IReadOnlyList<IssueInfo> Issues,
-    IReadOnlyList<string> RawZplBlocks);
+    IReadOnlyList<string> RawZplBlocks, IReadOnlyList<RiskyCommand> RiskyCommands, bool RequiresAcknowledgement);

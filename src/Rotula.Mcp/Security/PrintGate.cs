@@ -75,7 +75,13 @@ public sealed class PrintGate
     /// <param name="copies">Number of labels.</param>
     /// <param name="fingerprint">A hash of everything the job consists of; see <see cref="Fingerprint"/>.</param>
     /// <param name="token">The token from an earlier dry run, or null.</param>
-    public GateResult Evaluate(string? printer, int copies, string fingerprint, string? token)
+    /// <param name="requiredAcknowledgements">
+    /// Names of printer-changing commands the job contains (see <see cref="PrinterCommandScanner"/>). When there are any, a confirmation is
+    /// only accepted if <paramref name="acknowledged"/> names every one of them. Null or empty means the job has none.
+    /// </param>
+    /// <param name="acknowledged">The command names the caller says the user agreed to, or null.</param>
+    public GateResult Evaluate(string? printer, int copies, string fingerprint, string? token,
+        IReadOnlyCollection<string>? requiredAcknowledgements = null, IReadOnlyCollection<string>? acknowledged = null)
     {
         var policy = CheckPolicy(printer, copies);
         if (policy is not null)
@@ -109,8 +115,23 @@ public sealed class PrintGate
             if (!string.Equals(expectedFingerprint, fingerprint, StringComparison.Ordinal))
                 return Refuse("The label, printer or copies changed since the preview, so the confirmation code no longer applies. Nothing was sent. " +
                               "Call print_label again without a code to get a new preview.");
+            // Checked last, after the token is already spent: an assistant that forgot the acknowledgement must start over with a new
+            // preview, which is the moment the list of commands is put in front of the user again.
+            var missing = MissingAcknowledgements(requiredAcknowledgements, acknowledged);
+            if (missing.Count > 0)
+                return Refuse($"This job contains commands that change or erase things in the printer ({string.Join(", ", missing)}) and they were not acknowledged. " +
+                              "Nothing was sent. Call print_label again without a code to get a new preview, tell the user exactly which commands it lists, " +
+                              "and only if they agree repeat the call with the code and acknowledgedCommands naming each of them.");
             return new GateResult(GateDecision.Confirmed, null);
         }
+    }
+
+    /// <summary>The required command names that <paramref name="acknowledged"/> does not contain (names compare without regard to case).</summary>
+    private static List<string> MissingAcknowledgements(IReadOnlyCollection<string>? required, IReadOnlyCollection<string>? acknowledged)
+    {
+        if (required is null || required.Count == 0) return [];
+        var given = new HashSet<string>((acknowledged ?? []).Where(a => a is not null).Select(a => a.Trim()), StringComparer.OrdinalIgnoreCase);
+        return required.Where(r => !given.Contains(r)).ToList();
     }
 
     /// <summary>Drops any outstanding token (called when a request is refused or the label changed).</summary>
