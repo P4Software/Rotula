@@ -22,10 +22,12 @@ namespace Rotula.Rendering.Input;
 internal static class ImageRenderCache
 {
     /// <summary>
-    /// Largest target, in pixels, that is dithered for the preview. 25 million pixels is far more than any label printed at 600 dpi
-    /// (a full 4 x 6 inch label is about 8.6 million) and keeps the transient buffers of the dither near 250 MB.
+    /// Largest target, in pixels, that is dithered for the preview. 40 million pixels is far more than any label printed at 600 dpi
+    /// (a full 4 x 6 inch label is about 8.6 million) and keeps the transient buffers of the dither near 360 MB.
+    /// It is the same limit as the pixel cap of <c>ImageProcessor</c> in Rotula.Core (kept as its own constant because Rendering must
+    /// check before calling Core, so that the preview draws a placeholder instead of catching the exception Core throws above it).
     /// </summary>
-    internal const long MaxPixels = 25_000_000;
+    internal const long MaxPixels = 40_000_000;
 
     /// <summary>Upper bound of the memory held by the cache, in bytes. Not a constant so a test can shrink it.</summary>
     internal static long MaxBytes { get; set; } = 64L * 1024 * 1024;
