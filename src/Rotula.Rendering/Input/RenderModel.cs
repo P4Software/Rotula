@@ -167,6 +167,12 @@ public sealed record RenderPlaceholder : RenderElement
 
     /// <summary>Short caption drawn inside the box (for example the recalled object name). May be empty.</summary>
     public string Caption { get; init; } = string.Empty;
+
+    /// <summary>
+    /// When set, the renderer reports this text as a <see cref="RenderIssue"/> so that an export (PNG, PDF, sheets) tells the person the
+    /// box is not the real content. Null for ordinary stand-ins such as recalled objects, which are expected.
+    /// </summary>
+    public string? Issue { get; init; }
 }
 
 /// <summary>A rectangle outline or filled box.</summary>

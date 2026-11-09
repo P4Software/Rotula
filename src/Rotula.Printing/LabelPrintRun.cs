@@ -143,7 +143,14 @@ public sealed class LabelPrintRun
         }
 
         // The first label is generated now so an error in the design is reported before anything is sent.
-        run._first = Generate(run, 0);
+        try { run._first = Generate(run, 0); }
+        catch
+        {
+            // An unexpected failure here (a font engine that throws, say) leaves no run object for the caller to cancel, so the
+            // numbers reserved above would stay pending and be reported as an unfinished run next time. Give them back, then let it surface.
+            job.Cancel();
+            throw;
+        }
         foreach (var issue in run._first.Issues) run._issues.Add(issue);
         if (run._first.HasErrors)
         {

@@ -150,7 +150,14 @@ public sealed class PrintService : IPrintService
         PrinterProfile? profile, PrintVariableOptions? variables, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(document);
-        var run = LabelPrintRun.Begin(document, data, variables);
+        LabelPrintRun run;
+        try { run = LabelPrintRun.Begin(document, data, variables); }
+        catch (Exception ex) when (ex is not OutOfMemoryException and not OperationCanceledException)
+        {
+            // Starting reads the counter file and generates the first label; a locked file, a full disk or a failing font engine must
+            // reach the operator as a result with the reason, not as a crash of the caller. Begin gives back what it reserved.
+            return PrintResult.Fail(PrintError.Create(PrintErrorKind.Unknown, target?.DisplayName ?? string.Empty, ex.GetType().Name, ex.Message));
+        }
         if (!run.CanPrint)
         {
             // Begin gave any reserved numbers back; the error keys tell the operator what to fix.
@@ -283,7 +290,9 @@ public sealed class PrintService : IPrintService
     private async Task<PrinterCapabilities> SafeInfoAsync(string name, CancellationToken ct)
     {
         try { return await _discovery.GetPrinterInfoAsync(name, ct).ConfigureAwait(false); }
-        catch { return PrinterCapabilities.Unknown(name); }
+        // By contract detection never throws; if a custom discovery does, "unknown" is the honest answer. The caller keeps the
+        // profile's own resolution and paper size, and the print test label still works, so there is nothing the operator must act on.
+        catch (Exception ex) when (ex is not OutOfMemoryException) { return PrinterCapabilities.Unknown(name); }
     }
 
     /// <inheritdoc />
