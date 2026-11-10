@@ -18,7 +18,7 @@
 
   <ItemGroup>
     <!-- SkiaSharp: MIT. Same version as Rotula.Rendering. -->
-    <PackageReference Include="SkiaSharp" Version="4.153.1" />
+    <PackageReference Include="SkiaSharp" Version="4.155.0" />
   </ItemGroup>
 
 </Project>
