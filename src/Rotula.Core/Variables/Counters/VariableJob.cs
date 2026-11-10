@@ -31,6 +31,7 @@ public sealed class VariableJob
     private readonly LabelDocument _doc;
     private readonly VariableContext _baseContext;
     private readonly List<(LabelVariable Variable, CounterReservation Reservation, long First)> _reservations = new();
+    private readonly Dictionary<string, long> _bases = new(StringComparer.OrdinalIgnoreCase);
     private readonly List<ValidationIssue> _issues = new();
     private bool _done;
 
@@ -38,7 +39,7 @@ public sealed class VariableJob
     {
         _doc = doc;
         ItemCount = itemCount;
-        var bases = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
+        var bases = _bases;
         _baseContext = context.Clone();
         _baseContext.CounterBase = bases;
         if (context.CounterBase is { } given) foreach (var kv in given) bases[kv.Key] = kv.Value;
@@ -81,19 +82,59 @@ public sealed class VariableJob
                     continue;
                 }
                 var reservation = store.Reserve(key, fingerprint, Math.Max(1, itemCount));
+                // Recorded before anything else can fail, so the rollback below can never miss a reservation the store already made.
+                _reservations.Add((v, reservation, reservation.First));
+                bases[v.Name] = reservation.First;
                 // Anything that was pending before this reservation is a run that never finished.
                 foreach (var stale in record?.Pending ?? Array.Empty<PendingRange>())
                     _issues.Add(new ValidationIssue(ValidationSeverity.Warning, VariableMessageKeys.CounterUnconfirmed, null, v.Name,
                         stale.First.ToString(CultureInfo.InvariantCulture), (stale.End - 1).ToString(CultureInfo.InvariantCulture)));
-                _reservations.Add((v, reservation, reservation.First));
-                bases[v.Name] = reservation.First;
             }
             catch (CounterStoreException ex)
             {
                 _issues.Add(new ValidationIssue(ValidationSeverity.Error, ex.MessageKey, null, ex.Args));
             }
+            catch (Exception ex) when (IsStoreFailure(ex))
+            {
+                // A store other than the file store (or an unexpected error inside it) may throw IOException and friends directly. They must not
+                // escape: the caller would get no job to cancel, and the numbers taken for the counters before this one would stay reserved.
+                _issues.Add(StoreFailed(v.Name, ex, ValidationSeverity.Error));
+            }
         }
+
+        // The run cannot start, so nothing will be printed and every number taken so far is still unused. Give them back now instead of
+        // trusting every caller to call Cancel (the print path used to leave them reserved when a later counter failed).
+        if (_issues.Any(i => i.Severity == ValidationSeverity.Error)) RollBack(store);
     }
+
+    /// <summary>
+    /// Gives back the reservations of a run that never started, newest first (so each one is still the newest block of its counter and its
+    /// unused tail can be returned). A release that fails is reported as a warning and leaves the numbers reserved, which is the safe side: they
+    /// are skipped later and never handed out twice. The error that caused the rollback stays first in <see cref="Issues"/>.
+    /// </summary>
+    private void RollBack(ICounterStore store)
+    {
+        _done = true; // a later Cancel or Complete has nothing left to do
+        for (int i = _reservations.Count - 1; i >= 0; i--)
+        {
+            var (variable, reservation, _) = _reservations[i];
+            try { store.Complete(reservation, 0, null); }
+            catch (Exception ex) when (IsStoreFailure(ex))
+            {
+                _issues.Add(ex is CounterStoreException cse
+                    ? new ValidationIssue(ValidationSeverity.Warning, cse.MessageKey, null, cse.Args)
+                    : StoreFailed(variable.Name, ex, ValidationSeverity.Warning));
+            }
+            _bases.Remove(variable.Name);
+        }
+        _reservations.Clear();
+    }
+
+    /// <summary>True for the failures a store can reasonably throw (anything except the runtime's own fatal errors).</summary>
+    private static bool IsStoreFailure(Exception ex) => ex is not (OutOfMemoryException or AccessViolationException);
+
+    private static ValidationIssue StoreFailed(string counterName, Exception ex, ValidationSeverity severity) =>
+        new(severity, VariableMessageKeys.CounterStoreFailed, null, counterName, ex.Message);
 
     /// <summary>Number of labels this run was started for.</summary>
     public long ItemCount { get; }
@@ -105,8 +146,9 @@ public sealed class VariableJob
     public bool CanPrint => !_issues.Any(i => i.Severity == ValidationSeverity.Error);
 
     /// <summary>
-    /// Starts a run of <paramref name="itemCount"/> labels and reserves their serial numbers. If <see cref="CanPrint"/> is false, nothing was reserved
-    /// that is not given back by <see cref="Cancel"/>.
+    /// Starts a run of <paramref name="itemCount"/> labels and reserves their serial numbers. If <see cref="CanPrint"/> is false, whatever was
+    /// reserved before the problem was met has already been given back (calling <see cref="Cancel"/> afterwards is harmless). Never throws for a
+    /// failing store: the failure is an error in <see cref="Issues"/>.
     /// </summary>
     /// <param name="doc">The label.</param>
     /// <param name="context">Clock, record template, answers and the counter store.</param>
@@ -147,6 +189,12 @@ public sealed class VariableJob
             catch (CounterStoreException ex)
             {
                 problems.Add(new ValidationIssue(ValidationSeverity.Error, ex.MessageKey, null, ex.Args));
+            }
+            catch (Exception ex) when (IsStoreFailure(ex))
+            {
+                // Labels may already be on the printer, so an exception here must not skip the remaining counters (they would stay
+                // unconfirmed) or reach the print path. The failed counter keeps its reservation: its numbers are skipped, never reissued.
+                problems.Add(StoreFailed(variable.Name, ex, ValidationSeverity.Error));
             }
         }
         return problems;

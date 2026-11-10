@@ -247,8 +247,10 @@ public class PrintBeginFailureTests
         var r = await svc.PrintAsync(Target, CounterLabel(), null, null, new PrintVariableOptions { CounterStore = new BrokenStore() });
 
         Assert.False(r.Succeeded);
-        Assert.Equal(PrintErrorKind.Unknown, r.Error!.Kind);
-        Assert.Contains(r.Error.Args, a => a.Contains("locked"));
+        // The job turns the store's failure into an issue (and gives back what it reserved), so the operator gets a labelled reason.
+        Assert.Equal(PrintErrorKind.InvalidLabel, r.Error!.Kind);
+        Assert.Contains(VariableMessageKeys.CounterStoreFailed, r.Error.Args);
+        Assert.Contains(r.Notices, n => n.MessageKey == VariableMessageKeys.CounterStoreFailed && n.Args.Any(a => a.Contains("locked")));
         Assert.Empty(spooler.Sent);
     }
 

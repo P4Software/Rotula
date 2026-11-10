@@ -67,6 +67,11 @@ public static class VariableMessageKeys
     public const string CounterStoreBusy = "Variable.Counter.Store.Busy";
     /// <summary>The counters file already remembers as many counters as it can hold, so a new one cannot be added. Args: the limit.</summary>
     public const string CounterStoreFull = "Variable.Counter.Store.Full";
+    /// <summary>
+    /// The counters could not be read or saved for a reason other than the file being busy, damaged or full (the disk is full, access is denied...).
+    /// Numbers already taken stay taken or are given back, never reissued. Args: variable, the system's description of the problem.
+    /// </summary>
+    public const string CounterStoreFailed = "Variable.Counter.Store.Failed";
     /// <summary>A counter that remembers its value needs the label to be saved first so it has an identity. Args: variable.</summary>
     public const string CounterNeedsLabelId = "Variable.Counter.NeedsLabelId";
     /// <summary>

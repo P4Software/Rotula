@@ -6888,4 +6888,7 @@ Hash a adicionar em apiKeyHashes no arquivo de configuração: {1}</value>
   <data name="Issue.Encoding.Unsupported" xml:space="preserve">
     <value>A etiqueta usa o conjunto de caracteres ^CI{0}, que este computador não consegue produzir, então nenhum ZPL foi gerado. Escolha outro conjunto de caracteres nas propriedades da etiqueta.</value>
   </data>
+  <data name="Issue.Variable.Counter.Store.Failed" xml:space="preserve">
+    <value>Não foi possível ler nem gravar os contadores de "{0}" ({1}). Nenhum número de série foi perdido ou repetido: os números já usados são devolvidos ou pulados. Verifique se o disco tem espaço livre e se você pode gravar na pasta dos contadores e tente novamente.</value>
+  </data>
 </root>
