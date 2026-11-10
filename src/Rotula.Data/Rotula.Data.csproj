@@ -28,15 +28,16 @@
          "Distributable Code" licence terms, not a permissive licence. The owner accepted those terms on
          2026-10-10 (see docs/decisions.md); the notice is listed in THIRD-PARTY-NOTICES.md. -->
 
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.12" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.14" />
     <PackageReference Include="MySqlConnector" Version="2.6.2" />
     <PackageReference Include="Npgsql" Version="10.0.3" />
+    <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" Version="2.1.14" />
     <PackageReference Include="System.Data.Odbc" Version="10.0.12" />
-    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.12" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.14" />
     <!-- Not used directly. Microsoft.Data.SqlClient 7.1.1 brings System.Security.Cryptography.Pkcs 9.0.18, which has published
          advisories (GHSA-846f-f764-76mx high, GHSA-2fmv-rv2c-59x7 moderate). NuGet audit turns them into build errors here, so
          the patched version is pinned until SqlClient depends on it. -->
-    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.14" />
   </ItemGroup>
 
 </Project>
