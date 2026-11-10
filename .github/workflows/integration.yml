@@ -35,7 +35,7 @@ jobs:
       # The downloads are large (about 480 MB). They are keyed on the settings file, which holds the versions and checksums,
       # and are verified again by the script on every run, so a poisoned cache cannot be used.
       - name: Cache the server downloads
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~\AppData\Local\Rotula\test-servers\cache
           key: test-servers-${{ hashFiles('tests/Rotula.Data.Integration/servers/servers.settings.json') }}
