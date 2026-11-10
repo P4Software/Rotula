@@ -380,12 +380,12 @@ public class AppStockPickerTests : IDisposable
         Assert.True(vm.SelectedItem.IsUnverified);
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task AContinuousRoll_NeedsTheLabelHeight_BeforeItCanBeCreated()
     {
         var vm = await OpenAsync();
         var roll = vm.Catalog.Entries.FirstOrDefault(e => e.IsContinuous && e.WidthMm > 0);
-        if (roll is null) return;                                // the bundled data may hold none; the rule is covered by the applier tests
+        Skip.If(roll is null, "The bundled stock data holds no continuous roll to test with.");
         vm.SearchText = roll.PartNumber ?? roll.Name;
         vm.RunSearch();
         vm.SelectedItem = vm.Items.First(i => i.Stock?.Id == roll.Id);

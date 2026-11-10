@@ -66,17 +66,17 @@ public class FontStyleVariantTests
         OperatingSystem.IsWindows() && Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts")?
             .GetValueNames().Any(n => n.StartsWith(family + " (", StringComparison.OrdinalIgnoreCase)) == true;
 
-    [Fact]
+    [SkippableFact]
     public void ArialNarrow_IsLoadedFromItsFile_AndIsNarrowerThanArial()
     {
-        if (!Installed("Arial Narrow")) return;
+        Skip.IfNot(Installed("Arial Narrow"), "Arial Narrow is not installed on this PC.");
         Assert.True(RightEdge("Arial Narrow") < RightEdge("Arial") - 40);
     }
 
-    [Fact]
+    [SkippableFact]
     public void FranklinGothicMedium_IsLoadedFromItsFile_NotTheDefaultFace()
     {
-        if (!Installed("Franklin Gothic Medium")) return;
+        Skip.IfNot(Installed("Franklin Gothic Medium"), "Franklin Gothic Medium is not installed on this PC.");
         Assert.NotEqual(RightEdge("Segoe UI"), RightEdge("Franklin Gothic Medium"));
     }
 }

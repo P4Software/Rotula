@@ -376,12 +376,12 @@ public class VarCounterTests : IDisposable
         Assert.Equal(VariableMessageKeys.CounterStoreBusy, ex.MessageKey);
     }
 
-    [Fact]
+    [SkippableFact]
     public void ALockHeldByAnotherProgram_IsRespected_UntilThatProgramEnds()
     {
         // A second operating-system process holds the lock file; this is the real cross-process case, not a thread.
         string ps = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "WindowsPowerShell", "v1.0", "powershell.exe");
-        if (!File.Exists(ps)) return; // not Windows: nothing to start
+        Skip.IfNot(File.Exists(ps), "Windows PowerShell is not available to hold the lock from a second process.");
         File.WriteAllText(CountersPath, new CounterBook().ToJson());
         string ready = Path.Combine(_dir, "ready.txt");
         string lockFile = CountersPath.Replace("'", "''") + ".lock";

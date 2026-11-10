@@ -827,14 +827,14 @@ public class AppTextFormatTests
         Assert.True(sizes.ActualWidth > 300);
     }
 
-    [Fact]
+    [SkippableFact]
     public void TheMainWindow_ShowsThePanelAndTheBarForASelectedText_ForAVisualCheck()
     {
         // Draws pictures of the whole window only when ROTULA_SHOTS names a folder (never in a normal run).
         string? folder = Environment.GetEnvironmentVariable("ROTULA_SHOTS");
         // Why gated: a main view-model bound to a window on the shared WPF thread stays subscribed to the language change for the rest of the run, and
         // the next test that switches the language from its own thread would then touch that window's collections from the wrong thread.
-        if (string.IsNullOrEmpty(folder)) return;
+        Skip.If(string.IsNullOrEmpty(folder), "Visual check: set ROTULA_SHOTS to a folder to draw the pictures.");
         var barShown = new List<bool>();
         foreach (var (lang, fontKind, name) in new[] { ("en", "windows", "main-windows-font-en"), ("es", "printer", "main-printer-font-es"), ("en", "wrapped", "main-wrapped-en") })
         {
