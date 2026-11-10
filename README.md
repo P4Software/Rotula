@@ -2,9 +2,9 @@
 
 <img src="docs/images/logo.svg" alt="Rotula logo" width="96" height="96">
 
-# Rotula
+# Rotula: free ZPL label designer for Windows
 
-**Free barcode & label designer for Windows (ZPL and any Windows printer)**
+**Free, open-source ZPL label designer and barcode label maker for Zebra and other ZPL printers, and any Windows printer**
 
 Design it, preview it, merge your data, print it. No account, no cloud, no telemetry.
 
