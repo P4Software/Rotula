@@ -33,9 +33,9 @@
 
   <ItemGroup>
     <!-- OpenAPI document of the REST server (MIT). -->
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.13" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.15" />
     <!-- Runs "rotula serve" as a Windows service (MIT); does nothing when started from a console. -->
-    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.13" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.15" />
   </ItemGroup>
 
 </Project>
