@@ -19,7 +19,7 @@
 
   <ItemGroup>
     <!-- SkiaSharp: MIT. Pulls the Windows native assets transitively. -->
-    <PackageReference Include="SkiaSharp" Version="4.153.1" />
+    <PackageReference Include="SkiaSharp" Version="4.155.0" />
     <!-- ZXing.Net: Apache-2.0. Used only as a barcode ENCODER (bit matrices); drawing is done by us. -->
     <PackageReference Include="ZXing.Net" Version="0.16.11" />
   </ItemGroup>
