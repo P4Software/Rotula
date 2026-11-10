@@ -21,7 +21,7 @@
     <ProjectReference Include="..\..\src\Rotula.Data\Rotula.Data.csproj" Private="false" ExcludeAssets="runtime" />
     <ProjectReference Include="..\Rotula.Data.SamplePack.Dep\Rotula.Data.SamplePack.Dep.csproj" />
     <!-- Apache-2.0, already a Rotula dependency; here it only supplies a native library for the loader tests. -->
-    <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" Version="2.1.12" />
+    <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" Version="3.53.3" />
     <None Include="pack.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="NOTICES.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
