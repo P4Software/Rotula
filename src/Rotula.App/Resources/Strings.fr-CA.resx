@@ -2794,6 +2794,9 @@
   <data name="Data.Query.Rejected.Ambiguous" xml:space="preserve">
     <value>Cette requête peut se lire de plusieurs façons (par exemple une barre oblique inverse devant un guillemet) ; elle n’a donc pas été exécutée. Utilisez deux apostrophes ('') au lieu de la barre oblique inverse.</value>
   </data>
+  <data name="Data.Query.Rejected.UnclearText" xml:space="preserve">
+    <value>Cette requête contient un élément que les bases de données lisent de façons différentes, comme un caractère caché, un mot qui commence par un chiffre (1AS) ou un nom U&amp;"...", elle n’a donc pas été exécutée. Retirez-le, ou écrivez les noms entre guillemets et laissez une espace entre les mots.</value>
+  </data>
   <data name="Conn.Field.ProviderId" xml:space="preserve">
     <value>fournisseur</value>
   </data>
@@ -6683,5 +6686,428 @@ Hachage à ajouter dans apiKeyHashes du fichier de paramètres : {1}</value>
   </data>
   <data name="Engine.Settings.PlainHttp" xml:space="preserve">
     <value>Le serveur accepte les appels d’autres ordinateurs en http non chiffré : les clés d’API et les données des étiquettes circulent sur le réseau sans chiffrement. Utilisez https.</value>
+  </data>
+  <data name="Issue.Barcode.Size.OneDotModule" xml:space="preserve">
+    <value>La barre ou le module le plus étroit mesure 1 point ({1} mil, {2} mm) à {3} ppp. Beaucoup de lecteurs ne peuvent pas lire des barres aussi étroites, et un peu d’encre qui s’étale bouche les espaces. Utilisez un module de 2 points ou plus.</value>
+  </data>
+  <data name="Issue.Barcode.Size.ThinBar" xml:space="preserve">
+    <value>La barre la plus étroite mesure {0} point ({1} mil, {2} mm) à {3} ppp. Les barres de moins de 2 points s’impriment de façon irrégulière sur une imprimante de 203 ppp, ce qui rend la lecture du code peu fiable. Utilisez un module de 2 points ou plus.</value>
+  </data>
+  <data name="Issue.Barcode.Size.QuietZoneOutside" xml:space="preserve">
+    <value>Le code à barres et ses zones de silence (la marge vierge dont le lecteur a besoin) vont de {0} mm à {1} mm, mais l’étiquette fait {2} mm de large. Une marge coupée peut empêcher la lecture du code. Déplacez le code à barres, utilisez un module plus étroit ou raccourcissez les données.</value>
+  </data>
+  <data name="Prop.Size.Readout" xml:space="preserve">
+    <value>Module : {0} mil ({1} mm) - symbole de {2} mm de large</value>
+  </data>
+  <data name="Prop.Size.ReadoutNoSymbol" xml:space="preserve">
+    <value>Module : {0} mil ({1} mm)</value>
+  </data>
+  <data name="Prop.Size.QuietBoth" xml:space="preserve">
+    <value>Zone de silence : {0} mm de chaque côté ({1}X)</value>
+  </data>
+  <data name="Prop.Size.QuietLeftRight" xml:space="preserve">
+    <value>Zone de silence : {0} mm avant et {1} mm après le symbole ({2}X et {3}X)</value>
+  </data>
+  <data name="Prop.Size.QuietNone" xml:space="preserve">
+    <value>Aucune zone de silence n’est nécessaire.</value>
+  </data>
+  <data name="Prop.Size.Narrower" xml:space="preserve">
+    <value>Module plus étroit (1 point de moins)</value>
+  </data>
+  <data name="Prop.Size.Wider" xml:space="preserve">
+    <value>Module plus large (1 point de plus)</value>
+  </data>
+  <data name="Prop.Anchor" xml:space="preserve">
+    <value>Point d’ancrage</value>
+  </data>
+  <data name="Prop.Anchor.Hint" xml:space="preserve">
+    <value>Le point de cet objet auquel la position se rapporte. Avec un ancrage, X et Y sont la distance depuis le même point de la référence (l’étiquette ou un autre objet), de sorte que l’objet garde sa place quand l’étiquette change de taille ou que la référence se déplace. Choisir un point ne déplace jamais l’objet : seuls les nombres changent.</value>
+  </data>
+  <data name="Prop.Anchor.Free" xml:space="preserve">
+    <value>Libre</value>
+  </data>
+  <data name="Prop.Anchor.Free.Tip" xml:space="preserve">
+    <value>Sans ancrage : X et Y sont le coin supérieur gauche (ou la ligne de base) mesurés depuis l’origine de l’étiquette, comme avant.</value>
+  </data>
+  <data name="Prop.Anchor.Free.Status" xml:space="preserve">
+    <value>Position libre (X et Y depuis l’origine de l’étiquette)</value>
+  </data>
+  <data name="Enum.AnchorPoint.TopLeft" xml:space="preserve">
+    <value>En haut à gauche</value>
+  </data>
+  <data name="Enum.AnchorPoint.TopCenter" xml:space="preserve">
+    <value>En haut au centre</value>
+  </data>
+  <data name="Enum.AnchorPoint.TopRight" xml:space="preserve">
+    <value>En haut à droite</value>
+  </data>
+  <data name="Enum.AnchorPoint.MiddleLeft" xml:space="preserve">
+    <value>Au milieu à gauche</value>
+  </data>
+  <data name="Enum.AnchorPoint.Center" xml:space="preserve">
+    <value>Centre</value>
+  </data>
+  <data name="Enum.AnchorPoint.MiddleRight" xml:space="preserve">
+    <value>Au milieu à droite</value>
+  </data>
+  <data name="Enum.AnchorPoint.BottomLeft" xml:space="preserve">
+    <value>En bas à gauche</value>
+  </data>
+  <data name="Enum.AnchorPoint.BottomCenter" xml:space="preserve">
+    <value>En bas au centre</value>
+  </data>
+  <data name="Enum.AnchorPoint.BottomRight" xml:space="preserve">
+    <value>En bas à droite</value>
+  </data>
+  <data name="Prop.Reference" xml:space="preserve">
+    <value>Relatif à</value>
+  </data>
+  <data name="Prop.Reference.Hint" xml:space="preserve">
+    <value>Ce depuis quoi l’ancrage est mesuré : l’étiquette elle-même ou un autre objet de cette étiquette. Un objet relatif à un autre le suit quand celui-ci se déplace ou change de taille.</value>
+  </data>
+  <data name="Prop.Reference.Label" xml:space="preserve">
+    <value>L’étiquette</value>
+  </data>
+  <data name="Prop.Reference.Missing" xml:space="preserve">
+    <value>(l’objet n’existe plus)</value>
+  </data>
+  <data name="Prop.X.Offset" xml:space="preserve">
+    <value>Décalage X (points)</value>
+  </data>
+  <data name="Prop.Y.Offset" xml:space="preserve">
+    <value>Décalage Y (points)</value>
+  </data>
+  <data name="Prop.Offset.Hint" xml:space="preserve">
+    <value>Distance entre le point d’ancrage de la référence et le point d’ancrage de cet objet. Les valeurs négatives vont vers la gauche ou vers le haut.</value>
+  </data>
+  <data name="Anchor.Cycle" xml:space="preserve">
+    <value>{0} est déjà positionné par rapport à cet objet (directement ou par l’intermédiaire d’un autre objet) ; cet objet ne peut donc pas lui être relatif. Choisissez une autre référence.</value>
+  </data>
+  <data name="Issue.Element.Anchor.Cycle" xml:space="preserve">
+    <value>Cet objet et « {0} » sont positionnés l’un par rapport à l’autre ; aucun des deux n’a donc de place et celui-ci est laissé hors de l’étiquette. Rendez l’un d’eux relatif à l’étiquette.</value>
+  </data>
+  <data name="Issue.Element.Anchor.MissingReference" xml:space="preserve">
+    <value>L’objet par rapport auquel celui-ci est positionné n’existe plus ; il est donc placé par rapport à l’étiquette.</value>
+  </data>
+  <data name="Menu.AlignToLabel" xml:space="preserve">
+    <value>Aligner sur l’étiquette</value>
+  </data>
+  <data name="Zpl.Revert" xml:space="preserve">
+    <value>Revenir à la conception</value>
+  </data>
+  <data name="Zpl.Revert.Tip" xml:space="preserve">
+    <value>Abandonne le texte tapé et affiche de nouveau le ZPL généré à partir de la conception.</value>
+  </data>
+  <data name="Zpl.State.Generated" xml:space="preserve">
+    <value>Généré</value>
+  </data>
+  <data name="Zpl.State.Pending" xml:space="preserve">
+    <value>Modification en cours...</value>
+  </data>
+  <data name="Zpl.State.Edited" xml:space="preserve">
+    <value>Modifié à la main - réimporté</value>
+  </data>
+  <data name="Zpl.Status.Generated" xml:space="preserve">
+    <value>Généré à partir de la conception. Tapez ou collez du ZPL ici ; l’étiquette suit après une courte pause.</value>
+  </data>
+  <data name="Zpl.Status.Pending" xml:space="preserve">
+    <value>En attente d’une pause dans la saisie avant de réimporter...</value>
+  </data>
+  <data name="Zpl.Status.Empty" xml:space="preserve">
+    <value>Rien à importer : le texte est vide. L’étiquette est restée telle quelle.</value>
+  </data>
+  <data name="Zpl.Status.Clean" xml:space="preserve">
+    <value>Réimporté. Toutes les commandes ont été comprises.</value>
+  </data>
+  <data name="Zpl.Status.Kept.One" xml:space="preserve">
+    <value>Réimporté. 1 commande n’est pas prise en charge et a été conservée en ZPL brut : {0}</value>
+  </data>
+  <data name="Zpl.Status.Kept.Many" xml:space="preserve">
+    <value>Réimporté. {0} commandes ne sont pas prises en charge et ont été conservées en ZPL brut : {1}</value>
+  </data>
+  <data name="Zpl.Status.More" xml:space="preserve">
+    <value>{0} de plus</value>
+  </data>
+  <data name="Zpl.Status.Notices.One" xml:space="preserve">
+    <value>1 autre avis (survolez pour voir les détails)</value>
+  </data>
+  <data name="Zpl.Status.Notices.Many" xml:space="preserve">
+    <value>{0} autres avis (survolez pour voir les détails)</value>
+  </data>
+  <data name="Zpl.Status.MultipleLabels" xml:space="preserve">
+    <value>Le texte contient {0} étiquettes ; la première est utilisée</value>
+  </data>
+  <data name="Zpl.Status.Rebound" xml:space="preserve">
+    <value>{0} champ(s) de données lié(s) de nouveau</value>
+  </data>
+  <data name="Zpl.Hint.Idle" xml:space="preserve">
+    <value>Placez le curseur sur une commande (^XX ou ~XX) pour voir ce qu’elle fait et ce que signifient ses paramètres.</value>
+  </data>
+  <data name="Zpl.Hint.Unknown" xml:space="preserve">
+    <value>{0} n’est pas une commande ZPL que Rotula connaît. Elle sera conservée en ZPL brut.</value>
+  </data>
+  <data name="Zpl.Hint.Kept" xml:space="preserve">
+    <value>non modélisée par le concepteur : conservée en ZPL brut</value>
+  </data>
+  <data name="Zpl.Hint.Name" xml:space="preserve">
+    <value>Référence des commandes ZPL</value>
+  </data>
+  <data name="Zpl.Status.Name" xml:space="preserve">
+    <value>Résultat de la dernière réimportation</value>
+  </data>
+  <data name="Undo.ZplSource" xml:space="preserve">
+    <value>la modification du texte ZPL</value>
+  </data>
+  <data name="Issue.Format.Path.Invalid" xml:space="preserve">
+    <value>Le nom de format stocké {0} n’est pas valide. Utilisez une lettre de lecteur, jusqu’à 16 lettres ou chiffres et l’extension .ZPL, par exemple R:SHIP.ZPL.</value>
+  </data>
+  <data name="Issue.Format.Field.Mixed" xml:space="preserve">
+    <value>Ce champ mélange du texte fixe et des champs de données ; le format stocké ne peut donc pas le remplir à l’impression. Il a été écrit avec sa valeur actuelle.</value>
+  </data>
+  <data name="Issue.Format.Field.Picture" xml:space="preserve">
+    <value>Ce texte utilise une police Windows et s’imprime comme une image ; le format stocké ne peut donc pas remplir ses champs de données à l’impression.</value>
+  </data>
+  <data name="Issue.Import.Graphic.TooMuchData" xml:space="preserve">
+    <value>Un graphique de {0} octets n’a pas été décodé, car les graphiques de ce fichier demandent ensemble plus de mémoire qu’une importation ne peut en utiliser. Il a été conservé en ZPL brut. Divisez le fichier en fichiers plus petits pour voir tous les graphiques.</value>
+  </data>
+  <data name="Issue.Variable.Counter.Store.Full" xml:space="preserve">
+    <value>Le fichier des compteurs mémorise déjà {0} compteurs, soit le maximum qu’il peut contenir, donc un nouveau compteur ne peut pas être ajouté. Utilisez un compteur qui existe déjà ou déplacez le fichier des compteurs pour en commencer un nouveau (les numéros recommencent, alors ne le faites que si les anciens numéros ne sont plus sur aucune étiquette).</value>
+  </data>
+  <data name="Issue.Merge.Table.TooWide" xml:space="preserve">
+    <value>Le fichier de données compte {0} colonnes, et Rotula en lit au maximum {1}. Pour un fichier texte, vérifiez que le séparateur est le bon ; sinon, retirez les colonnes en trop. Chargez ensuite de nouveau le fichier.</value>
+  </data>
+  <data name="Issue.Merge.Table.TooLarge" xml:space="preserve">
+    <value>Le fichier de données demanderait {0} cellules (colonnes fois lignes), et Rotula en lit au maximum {1}. Retirez les colonnes inutilisées ou divisez le fichier, puis chargez-le de nouveau.</value>
+  </data>
+  <data name="Issue.Merge.Copies.TooLarge" xml:space="preserve">
+    <value>{0} copies écrites l’une après l’autre sont trop longues à produire (la limite pour cette étiquette est de {1} copies). Utilisez moins de copies ou faites les copies avec la quantité d’impression plutôt que de répéter l’étiquette.</value>
+  </data>
+  <data name="Issue.Image.Size.Pixels" xml:space="preserve">
+    <value>L’image compte trop de points au total (plus de {0} millions). Réduisez l’image.</value>
+  </data>
+  <data name="Issue.Encoding.Unsupported" xml:space="preserve">
+    <value>L’étiquette utilise le jeu de caractères ^CI{0}, que cet ordinateur ne peut pas produire ; aucun ZPL n’a donc été généré. Choisissez un autre jeu de caractères dans les propriétés de l’étiquette.</value>
+  </data>
+  <data name="Issue.Variable.Counter.Store.Failed" xml:space="preserve">
+    <value>Les compteurs de « {0} » n’ont pas pu être lus ni enregistrés ({1}). Aucun numéro de série n’a été perdu ni répété : les numéros déjà pris sont rendus ou sautés. Vérifiez que le disque a de l’espace libre et que vous pouvez écrire dans le dossier des compteurs, puis réessayez.</value>
+  </data>
+  <data name="Print.Error.NotAcknowledged" xml:space="preserve">
+    <value>Rien n’a été envoyé : l’étiquette contient des éléments que le pilote Windows ne peut pas imprimer comme dans l’aperçu. Cochez la case pour l’imprimer quand même, ou corrigez l’étiquette, puis imprimez de nouveau.</value>
+  </data>
+  <data name="Print.Error.DriverRefused" xml:space="preserve">
+    <value>Le pilote Windows de « {0} » a refusé l’étiquette ({1}). Les étiquettes que Windows avait déjà acceptées peuvent quand même s’imprimer, alors vérifiez ce qui est sorti avant d’imprimer de nouveau. Vérifiez que l’imprimante est allumée et qu’elle contient du papier, et que les paramètres de son pilote permettent ce format d’étiquette.</value>
+  </data>
+  <data name="Print.Mode.Label" xml:space="preserve">
+    <value>Mode d’impression</value>
+  </data>
+  <data name="Print.Mode.PrinterLanguage" xml:space="preserve">
+    <value>Langage de l’imprimante (ZPL)</value>
+  </data>
+  <data name="Print.Mode.WindowsDriver" xml:space="preserve">
+    <value>Pilote Windows (image)</value>
+  </data>
+  <data name="Print.Mode.Question" xml:space="preserve">
+    <value>Comment cette imprimante comprend-elle les étiquettes ?</value>
+  </data>
+  <data name="Print.Mode.Suggested" xml:space="preserve">
+    <value>Rotula suggère « {0} » d’après le nom et le pilote de cette imprimante ; choisissez l’autre option si vous savez que votre imprimante fonctionne autrement.</value>
+  </data>
+  <data name="Print.Mode.Explain.PrinterLanguage" xml:space="preserve">
+    <value>Cette imprimante reçoit les étiquettes dans son propre langage (ZPL), la façon la plus rapide et la plus exacte pour les imprimantes Zebra et compatibles.</value>
+  </data>
+  <data name="Print.Mode.Explain.WindowsDriver" xml:space="preserve">
+    <value>Cette imprimante reçoit les étiquettes sous forme d’image par son pilote Windows, ce qui lui permet de les imprimer même si elle ne comprend pas le ZPL.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.DriverUnavailable" xml:space="preserve">
+    <value>Rotula n’a pas pu lire le format de page et la résolution dans le pilote Windows de cette imprimante, alors l’étiquette ne peut pas être imprimée par ce pilote. Vérifiez que l’imprimante est installée, allumée et branchée, puis réessayez, ou choisissez une autre imprimante.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.RawBlocks" xml:space="preserve">
+    <value>{0} parties de cette étiquette sont des commandes ou des fonctions de l’imprimante que le pilote Windows ne peut pas imprimer et n’apparaîtront pas sur l’étiquette (par exemple du ZPL conservé d’un fichier importé, un code-barres que seule l’imprimante peut dessiner ou une marque de certification UL ou CSA). Imprimez quand même seulement si l’étiquette convient sans elles, ou imprimez-la sur une imprimante qui comprend le ZPL.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.RawBlocks.One" xml:space="preserve">
+    <value>1 partie de cette étiquette est une commande ou une fonction de l’imprimante que le pilote Windows ne peut pas imprimer et n’apparaîtra pas sur l’étiquette (par exemple du ZPL conservé d’un fichier importé, un code-barres que seule l’imprimante peut dessiner ou une marque de certification UL ou CSA). Imprimez quand même seulement si l’étiquette convient sans elle, ou imprimez-la sur une imprimante qui comprend le ZPL.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.ModuleOneDot" xml:space="preserve">
+    <value>Le code-barres « {0} » aurait des barres d’un seul point de large à la résolution de cette imprimante, que les lecteurs ne lisent pas de façon fiable, alors il ne peut pas être imprimé ainsi. Agrandissez le code-barres (un module plus large) ou utilisez une imprimante de plus haute résolution.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.ModuleBelowMinimum" xml:space="preserve">
+    <value>Les barres les plus fines du code-barres « {0} » seraient imprimées à {1} mils de large, sous les {2} mils qu’exige ce type de code, alors il pourrait ne pas se lire. Agrandissez le code-barres ou utilisez une imprimante de plus haute résolution.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.ModuleBelowMinimum.Slightly" xml:space="preserve">
+    <value>Les barres les plus fines du code-barres « {0} » seraient imprimées légèrement sous les {2} mils qu’exige ce type de code, alors il pourrait ne pas se lire. Agrandissez un peu le code-barres ou utilisez une imprimante de plus haute résolution.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.LabelLargerThanPaper" xml:space="preserve">
+    <value>L’étiquette ({0} mm) est plus grande que la zone que cette imprimante peut imprimer ({1} mm), alors une partie serait coupée. Choisissez un format de papier plus grand dans les paramètres de l’imprimante ou réduisez l’étiquette.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.PaperMismatch" xml:space="preserve">
+    <value>Le pilote Windows n’a pas accepté le format de l’étiquette ({0} mm) comme format de papier, alors l’étiquette sera imprimée au centre du papier sélectionné dans le pilote (zone imprimable {1} mm). Choisissez le format de l’étiquette dans les paramètres de l’imprimante si l’étiquette doit remplir la page.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.LabelTurned" xml:space="preserve">
+    <value>L’étiquette ({0} mm) est dans le sens contraire de celui du papier que cette imprimante utilise ({1} mm), alors Rotula la tourne d’un quart de tour dans le sens horaire pour qu’elle tienne. Vérifiez la première impression. Si elle sort à l’envers, réglez l’orientation d’impression de l’étiquette à l’envers.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.AxisRatio" xml:space="preserve">
+    <value>Cette imprimante imprime {0} points par pouce en largeur et {1} en hauteur, des nombres qui ne se divisent pas exactement, alors les barres des codes peuvent sortir légèrement inégales. Si un code ne se lit pas, choisissez dans les paramètres de l’imprimante une résolution où les deux nombres sont égaux.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.TooLarge" xml:space="preserve">
+    <value>À la résolution de cette imprimante, l’étiquette serait une image de {0} points, plus que les {1} que Rotula peut dessiner, alors elle ne peut pas être imprimée ainsi. Réduisez l’étiquette ou choisissez une résolution plus basse dans les paramètres de l’imprimante.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.TooManyLabels" xml:space="preserve">
+    <value>Cette impression produirait {0} étiquettes, plus que les {1} que Rotula envoie à un pilote Windows en une seule fois. Chaque copie est une page distincte dans la file d’impression, alors une tâche aussi grosse la saturerait. Imprimez par lots plus petits, par exemple {1} étiquettes ou moins à la fois.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.PrinterCounter" xml:space="preserve">
+    <value>Le champ « {0} » est rempli par l’imprimante elle-même (un compteur, une date ou les données d’un autre champ), ce qu’une image ne peut pas faire, alors l’étiquette afficherait une mauvaise valeur. Utilisez plutôt une variable de compteur ou de date de Rotula, ou imprimez cette étiquette sur une imprimante qui comprend le ZPL.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.PrinterCounter.NoName" xml:space="preserve">
+    <value>Un champ de cette étiquette est rempli par l’imprimante elle-même (un compteur, une date ou les données d’un autre champ), ce qu’une image ne peut pas faire, alors l’étiquette afficherait une mauvaise valeur. Utilisez plutôt une variable de compteur ou de date de Rotula, ou imprimez cette étiquette sur une imprimante qui comprend le ZPL.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.Cancelled" xml:space="preserve">
+    <value>La vérification de l’étiquette pour cette imprimante a été arrêtée avant la réponse du pilote, alors rien n’a été imprimé. Imprimez de nouveau pour refaire la vérification.</value>
+  </data>
+  <data name="Issue.Driver.Render.BarcodeNotDrawn" xml:space="preserve">
+    <value>Le code-barres {0} ne peut pas être dessiné avec les données « {1} », alors cette étiquette n’a pas été imprimée (un mauvais code serait pire que pas de code). Corrigez les données de ce code-barres, puis imprimez de nouveau.</value>
+  </data>
+  <data name="Issue.Driver.Render.ImageNotDrawn" xml:space="preserve">
+    <value>Une image de cette étiquette n’a pas pu être lue ou est trop grande pour être dessinée, alors cette étiquette n’a pas été imprimée. Remplacez l’image ou réduisez-la, puis imprimez de nouveau.</value>
+  </data>
+  <data name="Issue.Driver.Render.ElementNotDrawn" xml:space="preserve">
+    <value>Une partie de cette étiquette n’a pas pu être dessinée comme prévu, alors cette étiquette n’a pas été imprimée. Vérifiez les objets de l’étiquette (par exemple les données d’un code-barres ou une image), puis imprimez de nouveau.</value>
+  </data>
+  <data name="Print.Driver.FindingsTitle" xml:space="preserve">
+    <value>Avant d’imprimer par le pilote Windows</value>
+  </data>
+  <data name="Print.Driver.AcknowledgeBox" xml:space="preserve">
+    <value>Je comprends et je veux imprimer quand même</value>
+  </data>
+  <data name="Print.Driver.TickToContinue" xml:space="preserve">
+    <value>Rien n’a encore été envoyé. Lisez les points en haut de cette fenêtre, cochez « Je comprends et je veux imprimer quand même » si l’étiquette vous convient telle quelle, puis appuyez de nouveau sur Imprimer.</value>
+  </data>
+  <data name="Print.Busy.Checking" xml:space="preserve">
+    <value>Vérification de l’étiquette avec le pilote Windows de l’imprimante...</value>
+  </data>
+  <data name="Print.Mode.AnswerFirst" xml:space="preserve">
+    <value>Rien n’a été envoyé : Rotula ne sait pas encore comment cette imprimante comprend les étiquettes. Choisissez l’une des deux réponses sous le nom de l’imprimante, puis appuyez de nouveau sur Imprimer.</value>
+  </data>
+  <data name="Print.Mode.PrinterNotListed" xml:space="preserve">
+    <value>Rien n’a été envoyé : l’imprimante « {0} » ne figure pas dans la liste des imprimantes installées sur cet ordinateur, alors Rotula ne peut pas demander comment elle comprend les étiquettes. Actualisez la liste des imprimantes ou choisissez une imprimante de la liste, puis appuyez de nouveau sur Imprimer.</value>
+  </data>
+  <data name="Print.Mode.Change.ToWindowsDriver" xml:space="preserve">
+    <value>Passer à « Pilote Windows (image) »</value>
+  </data>
+  <data name="Print.Mode.Change.ToPrinterLanguage" xml:space="preserve">
+    <value>Passer à « Langage de l’imprimante (ZPL) »</value>
+  </data>
+  <data name="Preview.DriverNote" xml:space="preserve">
+    <value>L’aperçu montre ce que cette imprimante va imprimer, sauf les éléments que la fenêtre Imprimer signale avant l’impression : elle imprime cette même image par son pilote Windows, alors le texte utilise des polices Windows au lieu des polices propres à l’imprimante.</value>
+  </data>
+  <data name="Preview.DriverNote.Short" xml:space="preserve">
+    <value>L’aperçu montre l’impression, sauf les éléments signalés</value>
+  </data>
+  <data name="Preview.DriverNote.Name" xml:space="preserve">
+    <value>Remarque : l’aperçu montre l’image imprimée, sauf les éléments que la fenêtre Imprimer signale avant l’impression</value>
+  </data>
+  <data name="Print.Driver.MoreInList" xml:space="preserve">
+    <value>Et {0} de plus, dans la liste en haut de cette fenêtre.</value>
+  </data>
+  <data name="Data.Driver.Confirm" xml:space="preserve">
+    <value>Cette étiquette ne s’imprimera pas exactement comme elle a été conçue par le pilote Windows de cette imprimante :{0}Appuyez sur OK pour imprimer le lot quand même, ou sur Annuler pour ne rien envoyer.</value>
+  </data>
+  <data name="Data.Driver.CannotPrint" xml:space="preserve">
+    <value>Rien n’a été envoyé : cette étiquette ne peut pas être imprimée par le pilote Windows de cette imprimante. Corrigez ce qui est indiqué ci-dessous, ou passez l’imprimante à « Langage de l’imprimante (ZPL) » si elle comprend le ZPL, puis imprimez de nouveau.</value>
+  </data>
+  <data name="Data.Driver.RecordNotDrawn" xml:space="preserve">
+    <value>L’enregistrement {0} n’a pas pu être dessiné pour le pilote Windows, alors le lot s’est arrêté et rien n’a été imprimé à partir de l’enregistrement {1}. Corrigez les données de l’enregistrement {0} (la raison suit), puis imprimez de nouveau les enregistrements à partir de l’enregistrement {1}.</value>
+  </data>
+  <data name="Data.Driver.RecordsNotDrawn" xml:space="preserve">
+    <value>L’un des enregistrements {0} à {1} n’a pas pu être dessiné pour le pilote Windows, alors le lot s’est arrêté et rien n’a été imprimé à partir de l’enregistrement {0}. Corrigez les données de cet enregistrement (la raison suit), puis imprimez de nouveau les enregistrements à partir de l’enregistrement {0}.</value>
+  </data>
+  <data name="Data.Driver.PrintedThrough" xml:space="preserve">
+    <value>Les étiquettes jusqu’à l’enregistrement {0} ont peut-être été imprimées ; ne les imprimez pas de nouveau.</value>
+  </data>
+  <data name="Data.Driver.PrintedInPart" xml:space="preserve">
+    <value>Les étiquettes jusqu’à l’enregistrement {0} ont peut-être été imprimées, et l’enregistrement {0} seulement en partie : {1} de ses {2} copies. Son numéro de série reste utilisé. Ne réimprimez pas ces étiquettes, et vérifiez combien de copies de l’enregistrement {0} sont sorties.</value>
+  </data>
+  <data name="Data.Driver.JobRefused" xml:space="preserve">
+    <value>La vérification du pilote Windows a arrêté le lot à l’enregistrement {0} : l’imprimante signale maintenant pour cette étiquette quelque chose qui n’était pas là au début de l’impression (la raison suit), alors rien n’a été envoyé à partir de l’enregistrement {0}. Vérifiez l’étiquette et l’imprimante, puis imprimez de nouveau les enregistrements à partir de l’enregistrement {0}.</value>
+  </data>
+  <data name="Station.Driver.AskSetupPerson" xml:space="preserve">
+    <value>Cette étiquette comporte des éléments que le pilote Windows ne peut pas imprimer de la même façon. Demandez à la personne qui a configuré ce poste de vérifier l’étiquette et de configurer le poste de nouveau.</value>
+  </data>
+  <data name="Station.Driver.SetupFindings" xml:space="preserve">
+    <value>Ce que le pilote Windows ne peut pas imprimer de la même façon</value>
+  </data>
+  <data name="Station.Driver.CannotPrint" xml:space="preserve">
+    <value>Cette étiquette ne peut pas être imprimée sur cette imprimante telle quelle, alors rien n’a été envoyé. Demandez à la personne qui a configuré ce poste de vérifier l’étiquette. La raison :</value>
+  </data>
+  <data name="Station.Driver.PreviewNote" xml:space="preserve">
+    <value>L’aperçu montre ce que cette imprimante va imprimer, sauf les éléments vérifiés lors de la configuration du poste : elle imprime cette même image par son pilote Windows, alors le texte utilise des polices Windows au lieu des polices propres à l’imprimante.</value>
+  </data>
+  <data name="Menu.StationSetup" xml:space="preserve">
+    <value>Configurer le poste d’impression...</value>
+  </data>
+  <data name="Station.Setup.Title" xml:space="preserve">
+    <value>Configurer le poste d’impression</value>
+  </data>
+  <data name="Station.Setup.Intro" xml:space="preserve">
+    <value>Rotula vérifie chaque étiquette du poste avec l’imprimante qu’elle utilise. Une imprimante qui imprime par son pilote Windows peut ne pas imprimer certains éléments d’une étiquette de la même façon : lisez-les et, si l’étiquette convient telle quelle, cochez la case et enregistrez, pour que les opérateurs puissent l’imprimer. Faites-le sur l’ordinateur où le poste fonctionne, connecté avec le compte sous lequel il s’exécute : la vérification utilise les pilotes d’imprimante et les modes d’impression de cet ordinateur.</value>
+  </data>
+  <data name="Station.Setup.File" xml:space="preserve">
+    <value>Fichier de réglages : {0}</value>
+  </data>
+  <data name="Station.Setup.Check" xml:space="preserve">
+    <value>Vérifier de nouveau</value>
+  </data>
+  <data name="Station.Setup.Save" xml:space="preserve">
+    <value>Enregistrer</value>
+  </data>
+  <data name="Station.Setup.Checking" xml:space="preserve">
+    <value>Vérification des étiquettes...</value>
+  </data>
+  <data name="Station.Setup.Mode" xml:space="preserve">
+    <value>Mode d’impression : {0}</value>
+  </data>
+  <data name="Station.Setup.Zpl" xml:space="preserve">
+    <value>Imprime en langage de l’imprimante (ZPL). Rien à vérifier.</value>
+  </data>
+  <data name="Station.Setup.NoModeYet" xml:space="preserve">
+    <value>Aucun mode d’impression n’est choisi pour cette imprimante sur cet ordinateur, alors le poste imprime en langage de l’imprimante (ZPL). Pour imprimer par son pilote Windows, choisissez ce mode pour cette imprimante dans la fenêtre Imprimer, puis appuyez sur Vérifier de nouveau.</value>
+  </data>
+  <data name="Station.Setup.NoPrinter" xml:space="preserve">
+    <value>Aucune imprimante n’est configurée pour cette étiquette. Ajoutez-en une dans station.json, ou imprimez une fois depuis le concepteur sur cet ordinateur, puis appuyez sur Vérifier de nouveau.</value>
+  </data>
+  <data name="Station.Setup.Driver.Clear" xml:space="preserve">
+    <value>Imprime par le pilote Windows. Rien ne l’empêche.</value>
+  </data>
+  <data name="Station.Setup.Driver.Warnings" xml:space="preserve">
+    <value>Imprime par le pilote Windows, qui ne peut pas imprimer les points ci-dessous de la même façon. Les opérateurs ne peuvent imprimer cette étiquette qu’après que vous avez coché la case et enregistré.</value>
+  </data>
+  <data name="Station.Setup.Driver.Errors" xml:space="preserve">
+    <value>Ne peut pas être imprimée par le pilote Windows. Modifiez l’étiquette comme indiqué ci-dessous, ou passez cette imprimante au langage de l’imprimante (ZPL) si elle comprend le ZPL, puis appuyez sur Vérifier de nouveau.</value>
+  </data>
+  <data name="Station.Setup.Acknowledge" xml:space="preserve">
+    <value>J’ai vérifié ces points. Laisser le poste imprimer cette étiquette quand même.</value>
+  </data>
+  <data name="Station.Setup.Saved" xml:space="preserve">
+    <value>Enregistré dans {0}. Le poste l’utilise à partir de son prochain démarrage.</value>
+  </data>
+  <data name="Station.Setup.Unchanged" xml:space="preserve">
+    <value>Rien n’a changé, alors rien n’a été enregistré.</value>
+  </data>
+  <data name="Station.Setup.NoStationJson" xml:space="preserve">
+    <value>Ce dossier n’a pas encore de station.json. Les étiquettes acceptées sont conservées à côté du station.json du poste, alors créez d’abord station.json dans ce dossier, puis configurez le poste de nouveau.</value>
+  </data>
+  <data name="Station.Setup.SaveFailed" xml:space="preserve">
+    <value>Rotula n’a pas pu enregistrer {0}. Vérifiez que vous pouvez modifier les fichiers de ce dossier, puis appuyez de nouveau sur Enregistrer.</value>
+  </data>
+  <data name="Station.Setup.Cleared" xml:space="preserve">
+    <value>Enregistré. Aucune étiquette n’a plus besoin d’être acceptée, alors {0} a été supprimé. Le poste en tient compte à partir de son prochain démarrage.</value>
+  </data>
+  <data name="Station.Setup.SharedLabel" xml:space="preserve">
+    <value>Enregistré dans {0}, mais le fichier d’étiquette « {1} » est proposé sur deux imprimantes qui trouvent des points différents, et un seul ensemble peut être accepté pour un même fichier. Les opérateurs ne peuvent l’imprimer que sur {2}. Pour l’imprimer sur les deux, donnez à chaque imprimante sa propre copie du fichier d’étiquette, puis configurez le poste de nouveau.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.MarginBand" xml:space="preserve">
+    <value>Cette imprimante ne peut pas imprimer les {2} mm extérieurs de la page, alors tout ce qui, sur l’étiquette, atteint ce bord pourrait être coupé (étiquette de {0} mm, zone imprimable de {1} mm). Vérifiez le format du papier dans les paramètres de l’imprimante, ou laissez une marge d’au moins {2} mm autour du contenu de l’étiquette. Si rien d’important n’est aussi près du bord, vous pouvez imprimer quand même.</value>
+  </data>
+  <data name="Print.Error.InvalidLabel.Partial" xml:space="preserve">
+    <value>Une étiquette comportant des erreurs a arrêté la tâche, alors le reste n’a pas été envoyé. Étiquettes déjà envoyées à l’imprimante avant elle : {0}. Vérifiez quelles étiquettes sont sorties, corrigez les problèmes ci-dessous, puis imprimez seulement celles qui manquent.</value>
   </data>
 </root>

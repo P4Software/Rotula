@@ -25,7 +25,8 @@ gate and the hygiene check, and keeps an unsigned portable zip as a workflow art
    portable zip from the signed programs, writes the winget manifests and `SHA256SUMS.txt`. Everything is in `artifacts\`
    (git-ignored). If you are not logged in, the files are still built but labelled `UNSIGNED` and must not be published.
    Set `ROTULA_NOPAUSE=1` to skip the final "press Enter" (automation only).
-6. Check the output (see "Verifying" below).
+6. Check the output (see "Verifying" below). If the release touches printing, also do the hand checks in
+   [printing.md, "Before a release"](printing.md#before-a-release): they need a real label printer.
 7. Publish. Either set `"publishToGitHub": true` in `packaging\installer\build-settings.json` (created next to the script on
    first run) and build again, or run it by hand:
 

@@ -192,3 +192,60 @@ public class DataMergeBatchTests
         Assert.Contains("^FDBolt^FS", zpl);
     }
 }
+
+/// <summary>The repeated-block copies mode must refuse a copy count whose text could not fit in memory.</summary>
+public class RepeatBlockLimitTests
+{
+    [Fact]
+    public void ARepeatedBlockOfAHugeCopyCount_IsRefusedForThatRecord_NotAllocated()
+    {
+        var doc = CoreTestSupport.NewDoc(new DataFieldElement { Id = "name", VariableName = "Name", X = 20, Y = 20 });
+        var table = CsvReader.Parse("Name,Copies\nBolt,99999999\nNut,2\n");
+        var o = new MergeOptions { CopiesColumn = "Copies", CopiesMode = CopiesMode.RepeatBlock };
+        var report = new MergeReport();
+
+        string zpl = MergeBatch.GenerateSingleStream(doc, new MergeDataSet(doc, table, o), report);
+
+        Assert.Equal(new[] { 1 }, report.SkippedRecords);
+        Assert.Contains(report.Issues, i => i.RecordNumber == 1 && i.Issue.MessageKey == "Merge.Copies.TooLarge" && i.Issue.Severity == ValidationSeverity.Error);
+        Assert.Equal(2, zpl.Split("^XA").Length - 1); // record 2 (two copies) still prints
+    }
+}
+
+/// <summary>A job is one string, so producing jobs starts a new one before the character limit is passed.</summary>
+public class JobCharacterLimitTests
+{
+    [Fact]
+    public void JobsAreSplitBeforeALabelThatWouldPassTheLimit_AndKeepTheirPositions()
+    {
+        var doc = CoreTestSupport.NewDoc(new DataFieldElement { Id = "name", VariableName = "Name", X = 20, Y = 20 });
+        var table = CsvReader.Parse("Name\nBolt\nBolt\nBolt\nBolt\nBolt\n");
+        int one = MergeBatch.Labels(doc, new MergeDataSet(doc, table, new MergeOptions())).First().Zpl.Length;
+        long cap = 2L * one + 1; // room for two labels, not three
+        var o = new MergeOptions { MaxJobCharacters = cap }; // MaxRecordsPerJob stays 0: "one job" would otherwise be unbounded
+
+        var jobs = MergeBatch.JobBlocks(doc, new MergeDataSet(doc, table, o)).ToList();
+
+        Assert.Equal(new[] { 2, 2, 1 }, jobs.Select(j => j.Labels));
+        Assert.Equal(new[] { 2, 4, 5 }, jobs.Select(j => j.ItemsThrough));
+        Assert.Equal(new[] { 2, 4, 5 }, jobs.Select(j => j.LastRecordNumber));
+        Assert.All(jobs, j => Assert.True(j.Zpl.Length <= cap));
+    }
+
+    [Fact]
+    public void ARepeatedBlockOverTheLimit_IsRefused_AndOneUnderItIsKept()
+    {
+        var doc = CoreTestSupport.NewDoc(new DataFieldElement { Id = "name", VariableName = "Name", X = 20, Y = 20 });
+        var table = CsvReader.Parse("Name\nBolt\n");
+        int one = MergeBatch.Labels(doc, new MergeDataSet(doc, table, new MergeOptions())).First().Zpl.Length;
+        var o = new MergeOptions { CopiesPerRecord = 10, CopiesMode = CopiesMode.RepeatBlock, MaxJobCharacters = 10L * one };
+
+        var ok = MergeBatch.GenerateSingleStream(doc, new MergeDataSet(doc, table, o));
+        Assert.Equal(10, ok.Split("^XA").Length - 1);
+
+        o.MaxJobCharacters = 10L * one - 100; // the repeated block is slightly longer than the plain label, but not by 100 characters per copy
+        var report = new MergeReport();
+        MergeBatch.GenerateSingleStream(doc, new MergeDataSet(doc, table, o), report);
+        Assert.Contains(report.Issues, i => i.Issue.MessageKey == "Merge.Copies.TooLarge");
+    }
+}

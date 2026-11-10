@@ -101,7 +101,8 @@ public sealed record MainServices(
     RotulaPolicy? Policy = null,
     UpdateChecker? Updates = null,
     IUrlLauncher? Links = null,
-    TimeProvider? Clock = null);
+    TimeProvider? Clock = null,
+    IDebouncer? Debouncer = null);
 
 /// <summary>
 /// View-model of the main window: the open label, its files, editing commands, view settings (zoom, unit, grid),
@@ -138,11 +139,22 @@ public sealed partial class MainViewModel : ObservableObject
         Variables = services.Variables ?? new VariableServices(null, services.Dialogs);
         Properties = new PropertyPanelViewModel(Session, ChooseImageFor, () => Variables.TextRasterizer);
         Preview = new PreviewCache(Session);
+        // The editable ZPL panel: it re-imports typed text into the session and asks for a fresh text through RefreshZplView.
+        ZplSource = new ZplSourceViewModel(Session, services.Debouncer ?? new DispatcherDebouncer(), () => Preview.Data, RefreshZplView);
         ConnectFormatting();
         // Handles and selection frames are measured with the record shown on the canvas, not only the sample values.
         Session.Bounds.DataProvider = () => Preview.Data;
         Printer = new PrinterSettingsViewModel(services.Printing, _settings.Print, SaveSettings, () => Session.Document, applyLabelDpi: SetLabelDpi,
             defaultPrinter: _policy.DefaultPrinter);
+        // The preview notice depends on the chosen printer's mode: in Windows-driver mode the picture on screen is the one that is printed. The
+        // printer view-model lives exactly as long as this one, so a plain subscription is fine.
+        Printer.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName != nameof(PrinterSettingsViewModel.IsDriverMode)) return;
+            OnPropertyChanged(nameof(ApproximateNotice));
+            OnPropertyChanged(nameof(ApproximateNoticeShort));
+            OnPropertyChanged(nameof(ApproximateNoticeName));
+        };
         Data = new DataMergeViewModel(services.Printing, Printer, () => Session.Document, () => DocumentName, services.Files, services.Messages, services.Database, services.Dialogs, Variables);
         Data.SettingsEdited += (_, _) => Session.MarkDirty();
         Data.PreviewDataChanged += (_, _) => OnPreviewDataChanged();
@@ -229,6 +241,9 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Cache of the rendered preview.</summary>
     public PreviewCache Preview { get; }
 
+    /// <summary>The editable ZPL source panel under the canvas.</summary>
+    public ZplSourceViewModel ZplSource { get; }
+
     /// <summary>Printer and printer profile fields (shared by the Print dialog and the Data window).</summary>
     public PrinterSettingsViewModel Printer { get; }
 
@@ -276,7 +291,7 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private string _title = "Rotula";
 
-    /// <summary>The generated ZPL (read-only code view).</summary>
+    /// <summary>The ZPL generated from the design (with the shown record's values). The panel shows it through <see cref="ZplSource"/>, which may hold edited text instead.</summary>
     [ObservableProperty]
     private string _zplText = string.Empty;
 
@@ -324,11 +339,20 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private int _errorCount;
 
-    /// <summary>The notice that the on-screen text preview is approximate.</summary>
-    public string ApproximateNotice => Loc.Get("Preview.Approximate");
+    /// <summary>
+    /// How close the on-screen preview is to the print. For a printer in printer-language (ZPL) mode the preview is approximate (the printer
+    /// draws text with its own fonts). In Windows-driver (picture) mode the preview is the picture that is printed, except the parts the Print
+    /// dialog lists before printing: raw printer commands, parts the driver cannot draw and certification marks are left out of the print, and a
+    /// label that does not match the paper is centred on it. The note says so, and still says that text uses Windows fonts instead of the
+    /// printer's own fonts.
+    /// </summary>
+    public string ApproximateNotice => Loc.Get(Printer.IsDriverMode ? "Preview.DriverNote" : "Preview.Approximate");
 
-    /// <summary>Short wording of the approximate-preview notice for the status bar (the full text is its tooltip).</summary>
-    public string ApproximateNoticeShort => Loc.Get("Preview.Approximate.Short");
+    /// <summary>Short wording of <see cref="ApproximateNotice"/> for the status bar (the full text is its tooltip).</summary>
+    public string ApproximateNoticeShort => Loc.Get(Printer.IsDriverMode ? "Preview.DriverNote.Short" : "Preview.Approximate.Short");
+
+    /// <summary>Name of the status-bar notice for screen readers.</summary>
+    public string ApproximateNoticeName => Loc.Get(Printer.IsDriverMode ? "Preview.DriverNote.Name" : "Preview.Approximate.Name");
 
     /// <summary>Current zoom.</summary>
     [ObservableProperty]
@@ -705,7 +729,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     /// <summary>Opens a larger preview of the label (what the printer will draw, with the shown record's values).</summary>
     [RelayCommand]
-    private void ShowPreview() => _svc.Dialogs.ShowPreviewDialog(Preview, DocumentName);
+    private void ShowPreview() => _svc.Dialogs.ShowPreviewDialog(Preview, DocumentName, ApproximateNotice);
 
     /// <summary>Reads the installed printers again (the toolbar drop-down and the dialogs share the list).</summary>
     [RelayCommand]
@@ -720,6 +744,7 @@ public sealed partial class MainViewModel : ObservableObject
             _zplResult = ZplGenerator.Generate(Session.Document, null, Variables.TextRasterizer);
             var view = Preview.Data is null ? _zplResult : ZplGenerator.Generate(Session.Document, Preview.Data, Variables.TextRasterizer);
             ZplText = view.Zpl;
+            ZplSource.SetGenerated(view.Zpl);
             Properties.SetIssues(view.Issues);
             ErrorCount = view.Issues.Count(i => i.Severity == ValidationSeverity.Error);
             int warnings = view.Issues.Count - ErrorCount;
@@ -730,6 +755,7 @@ public sealed partial class MainViewModel : ObservableObject
             // The ZPL view must never take the editor down; say what happened instead.
             _zplResult = null;
             ZplText = string.Empty;
+            ZplSource.SetGenerated(string.Empty);
             ProblemsText = Loc.Get("Status.ZplFailed");
         }
     }
@@ -762,8 +788,10 @@ public sealed partial class MainViewModel : ObservableObject
         FillToolbox();
         OnDocumentChanged();
         OnSelectionChanged();
+        ZplSource.OnLanguageChanged();
         OnPropertyChanged(nameof(ApproximateNotice));
         OnPropertyChanged(nameof(ApproximateNoticeShort));
+        OnPropertyChanged(nameof(ApproximateNoticeName));
         OnPropertyChanged(nameof(DataRecordText));
         OnPropertyChanged(nameof(LanguageSetting));
         OnPropertyChanged(nameof(IsLanguageAuto));
@@ -1112,6 +1140,26 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void CreateStationPin() => _svc.Dialogs.ShowStationPinTool(new StationPinViewModel(_svc.Clipboard));
 
+    /// <summary>
+    /// Opens "Set up print station" for a folder you pick: every label of the station is checked with the printer it uses on this PC, and the
+    /// findings of a printer in Windows-driver (picture) mode are accepted once for the operators. The tool reads the designer's printer
+    /// settings (the printer of labels without one, and the saved print modes) and never changes them.
+    /// </summary>
+    [RelayCommand]
+    private void SetUpPrintStation()
+    {
+        string? folder = _svc.Files.PickFolder(Loc.Get("Station.PickFolder"));
+        if (folder is null) return;
+        var load = Rotula.Files.Station.StationConfigLoader.Load(folder);
+        if (!load.CanOpen)
+        {
+            _svc.Messages.ShowError(Loc.Get("Station.Open.Failed"), StationViewModel.DescribeIssues(load.Issues));
+            return;
+        }
+        // The folder, not the file: "Check again" loads the folder again, so a station.json created or changed meanwhile is read.
+        _svc.Dialogs.ShowStationSetup(new StationSetupViewModel(load.Config!, _svc.Printing, _settings.Print, stationPath: folder));
+    }
+
     /// <summary>Opens the Print dialog (printer, printer profile, copies, test label, save as ZPL).</summary>
     [RelayCommand]
     private void Print()
@@ -1196,12 +1244,13 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Record navigator text for the toolbar ("Record 3 of 120").</summary>
     public string DataRecordText => Data.RecordText;
 
-    /// <summary>Copies the ZPL text to the clipboard.</summary>
+    /// <summary>Copies the ZPL text shown in the panel (generated, or as typed by the user) to the clipboard.</summary>
     [RelayCommand]
     private void CopyZpl()
     {
-        if (ZplText.Length == 0) return;
-        _svc.Clipboard.SetText(ZplText);
+        string text = ZplSource.Text.Length > 0 ? ZplSource.Text : ZplText;
+        if (text.Length == 0) return;
+        _svc.Clipboard.SetText(text);
         StatusMessage = Loc.Get("Status.ZplCopied");
     }
 
@@ -1336,6 +1385,14 @@ public sealed partial class MainViewModel : ObservableObject
     private void Align(AlignKind kind)
     {
         Commands.Align(kind);
+        ReportLocked();
+    }
+
+    /// <summary>Align the selection to the label itself, whatever its size (the parameter is an <see cref="AlignKind"/>).</summary>
+    [RelayCommand(CanExecute = nameof(HasSelection))]
+    private void AlignToLabel(AlignKind kind)
+    {
+        Commands.AlignToLabel(kind);
         ReportLocked();
     }
 

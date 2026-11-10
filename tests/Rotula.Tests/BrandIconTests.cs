@@ -108,12 +108,12 @@ public class BrandIconTests
         Assert.Contains(@"'src\Rotula.App\Assets\rotula-document.ico'", File.ReadAllText(Repo("packaging", "installer", "build-installer.ps1")));
     }
 
-    [Fact]
+    [SkippableFact]
     public void BuiltApplication_CarriesTheIconWithAllSizes()
     {
         // The test project references the WPF app, so its apphost (Rotula.App.exe) sits next to Rotula.App.dll.
         string exe = Path.ChangeExtension(typeof(Rotula.App.Views.BrandIcon).Assembly.Location, ".exe");
-        if (!File.Exists(exe)) return;  // no apphost in this build layout; the csproj test above still guards the setting
+        Skip.IfNot(File.Exists(exe), "No apphost (Rotula.App.exe) in this build layout; the csproj test above still guards the setting.");
 
         IntPtr module = LoadLibraryEx(exe, IntPtr.Zero, LoadLibraryAsDatafile);
         Assert.NotEqual(IntPtr.Zero, module);

@@ -2,6 +2,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Rotula.Core\Rotula.Core.csproj" />
+    <!-- Picture-mode printing draws the label with the Skia renderer. Rendering references only Core (never Printing), so there is no cycle. -->
+    <ProjectReference Include="..\Rotula.Rendering\Rotula.Rendering.csproj" />
   </ItemGroup>
 
   <ItemGroup>

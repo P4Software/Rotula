@@ -37,8 +37,11 @@ internal static class LocalDb
     }
 }
 
-/// <summary>A [Fact] that skips itself (xunit 2.9 has no dynamic skip) when LocalDB is absent.</summary>
-internal sealed class LocalDbFactAttribute : FactAttribute
+/// <summary>
+/// A [Fact] that skips itself when LocalDB is absent. It is also a <see cref="SkippableFactAttribute"/>, so a test that needs one more
+/// thing (an ODBC driver, a SQL login) can call <see cref="Skip.If"/> instead of returning early and reporting a pass.
+/// </summary>
+internal sealed class LocalDbFactAttribute : SkippableFactAttribute
 {
     public LocalDbFactAttribute()
     {
@@ -118,7 +121,7 @@ public class DataLocalDbTests
     {
         string? driver = new[] { "ODBC Driver 18 for SQL Server", "ODBC Driver 17 for SQL Server" }
             .FirstOrDefault(d => OdbcDriverInstalled(d));
-        if (driver is null) return; // no driver: nothing to prove here (reported as passed, documented in the test name)
+        Skip.If(driver is null, "No ODBC Driver 17 or 18 for SQL Server is installed.");
         var settings = new DatabaseConnectionSettings
         {
             Name = "odbc", Provider = DatabaseProvider.Odbc,
@@ -160,10 +163,10 @@ public class DataLocalDbTests
         Assert.DoesNotContain("definitely-wrong", ex.Detail ?? "");
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task Odbc_MissingDriverOrDsn_IsDriverNotInstalled_WithoutAnyNetwork()
     {
-        if (!OperatingSystem.IsWindows()) return;
+        Skip.IfNot(OperatingSystem.IsWindows(), "The ODBC driver manager check is Windows only.");
         foreach (var raw in new[] { "Driver={Rotula No Such Driver};Server=127.0.0.1", "Dsn=RotulaNoSuchDsn" })
         {
             var src = DatabaseSource.Create(new DatabaseConnectionSettings { Name = "o", Provider = DatabaseProvider.Odbc, OdbcConnectionString = raw });
@@ -255,8 +258,8 @@ public sealed class DataLocalDbBrowseTests : IAsyncLifetime
     public async Task Odbc_BrowsesWhatTheDriverReports()
     {
         string? driver = new[] { "ODBC Driver 18 for SQL Server", "ODBC Driver 17 for SQL Server" }.FirstOrDefault(DataLocalDbTests.OdbcDriverInstalled);
-        if (driver is null) return;
-        var src = DatabaseSource.Create(Odbc(driver));
+        Skip.If(driver is null, "No ODBC Driver 17 or 18 for SQL Server is installed.");
+        var src = DatabaseSource.Create(Odbc(driver!));
         var tables = await src.ListTablesAsync();
         Assert.Contains(tables, t => t.Name == "Items" && t.Kind == DatabaseObjectKind.Table);
         Assert.Contains(tables, t => t.Name == "ItemView" && t.Kind == DatabaseObjectKind.View);

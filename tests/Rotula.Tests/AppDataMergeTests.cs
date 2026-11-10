@@ -25,6 +25,8 @@ public class AppDataMergeTests : IDisposable
         _fake.Settings.Current.Language = "en";
         _main = new MainViewModel(_fake.Build());
         _main.Printer.SelectedPrinterName = "Test Printer";
+        // A Windows printer with no saved mode does not batch print until the person answers how it understands labels; these batches are ZPL.
+        _main.Printer.ChooseModeCommand.Execute(Rotula.Printing.PrinterOutputMode.PrinterLanguage);
     }
 
     public void Dispose()
@@ -88,6 +90,25 @@ public class AppDataMergeTests : IDisposable
         await Idle(Data);
         Assert.Equal(new[] { "Column1", "Column2" }, Data.PreviewColumns);
         Assert.Equal(2, Data.RecordCount);
+    }
+
+    [Fact]
+    public async Task ALoad_IsStillBusyUntilTheRecordsAreInPlace_AndReloadIsEnabledAfterwards()
+    {
+        string path = Csv("A1,5\nB2,7\n");
+        await Data.LoadAsync(path);
+        // The moment IsBusy turns false, the new records (and not just the new columns) must already be there: a caller that waits
+        // for "not busy" and then reads RecordCount used to see 0, because the data set was rebuilt after the busy flag cleared.
+        var whenNotBusy = new List<(int Records, bool CanReload)>();
+        Data.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(DataMergeViewModel.IsBusy) && !Data.IsBusy) whenNotBusy.Add((Data.RecordCount, Data.CanReload));
+        };
+        Data.HasHeader = false;
+        await Idle(Data);
+        Assert.Single(whenNotBusy);
+        Assert.Equal((2, true), whenNotBusy[0]);
+        Assert.True(Data.CanReload);
     }
 
     [Fact]
@@ -370,7 +391,7 @@ public class AppDataMergeTests : IDisposable
 
     // ------------------------------------------------------------------------------------ checking
 
-    private void AddEanLabel() => _main.Session.Edit("Undo.Property", d => d.Elements.Add(new BarcodeElement { Symbology = BarcodeSymbology.Ean13, Data = "{{code}}" }));
+    private void AddEanLabel() => _main.Session.Edit("Undo.Property", d => d.Elements.Add(new BarcodeElement { Symbology = BarcodeSymbology.Ean13, Data = "{{code}}", X = 100 }));
 
     [Fact]
     public async Task CheckAll_ListsPerRecordProblems_InReadableSentences()

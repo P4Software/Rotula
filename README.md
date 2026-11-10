@@ -4,7 +4,7 @@
 
 # Rotula: free ZPL label designer for Windows
 
-**Free, open-source ZPL label designer and barcode label maker for Zebra and other ZPL printers**
+**Free, open-source ZPL label designer and barcode label maker for Zebra and other ZPL printers, and any Windows printer**
 
 Design it, preview it, merge your data, print it. No account, no cloud, no telemetry.
 
@@ -41,6 +41,7 @@ Design it, preview it, merge your data, print it. No account, no cloud, no telem
 - [Label stocks](#label-stocks)
 - [Database sources](#database-sources)
 - [Printing](#printing)
+- [Printing to any Windows printer](#printing-to-any-windows-printer)
 - [Print station](#print-station)
 - [MCP server](#mcp-server)
 - [Print engine (command line and REST API)](#print-engine-command-line-and-rest-api)
@@ -154,10 +155,13 @@ every record for problems and print the whole batch. The data file itself is nev
 
 ### Read exactly what the printer receives
 
-The ZPL panel shows the generated code, live, read-only, with a Copy button and an Export .zpl button. The output is
-deterministic and plain ASCII, so you can version it, diff it or send it with any other tool.
+The ZPL panel shows the generated code live, with a Copy button and an Export .zpl button. The output is deterministic and
+plain ASCII, so you can version it, diff it or send it with any other tool. The panel is also an editor: type or paste ZPL and,
+after a short pause, the label is rebuilt from it (one undo step per edit); a badge says whether the text is generated or edited
+by hand, "Revert to design" regenerates it, the status line names any command that was kept as raw ZPL, and a hint line explains
+the command under the caret and its parameters.
 
-<p align="center"><img src="docs/images/zpl-panel.png" alt="The read-only ZPL code panel under the canvas showing the generated ZPL" width="800"></p>
+<p align="center"><img src="docs/images/zpl-panel.png" alt="The ZPL code panel under the canvas showing the generated ZPL" width="800"></p>
 
 ### Everything at a glance
 
@@ -173,7 +177,7 @@ deterministic and plain ASCII, so you can version it, diff it or send it with an
 | **Database sources** | SQL Server, PostgreSQL, MySQL/MariaDB, SQLite and ODBC, plus presets for common cloud services ([details](#database-sources)) |
 | **ZPL coverage** | 222 ZPL commands tracked one by one on a [generated coverage page](docs/zpl-coverage.md) |
 | **MCP server** | A separate program that lets MCP-capable clients design and check labels ([details](#mcp-server)) |
-| **Printing** | Windows spooler (RAW, including USB) and TCP port 9100, DPI and paper detection, printer profiles, test label, printer status check before and after a job |
+| **Printing** | Windows spooler (RAW, including USB) and TCP port 9100, DPI and paper detection, printer profiles, test label, printer status check before and after a job. Any other Windows printer through its driver, as a picture ([details](#printing-to-any-windows-printer)) |
 | **Print station** | A locked, print-only screen for the warehouse floor: pick or scan a label, answer its questions with a barcode scanner, print, and read the printer's answer in large plain words ([details](#print-station)) |
 | **Resolution** | Convert a label between 203, 300 and 600 dpi while keeping its physical size |
 | **Languages** | English, Spanish, Portuguese (Brazil) and French (Canada), switchable live |
@@ -236,7 +240,7 @@ differs, not about who is better.
 | **Account or activation** | None | Varies by product and edition |
 | **Network use** | None, except printing to the address you enter | Varies by product |
 | **Source code** | Open, on GitHub | Proprietary |
-| **Printer output** | ZPL (ZPL II compatible printers) | Typically many printer languages and drivers |
+| **Printer output** | ZPL (ZPL II compatible printers), or a picture through any Windows printer driver | Typically many printer languages and drivers |
 | **Data sources** | CSV, Excel (`.xlsx`) and read-only database queries | Typically databases, ERP and other integrations as well |
 | **Label stocks** | Built-in library with part-number lookup | Varies by product; some ship their own stock libraries |
 | **Automation** | MCP server for MCP-capable clients | Varies by product |
@@ -367,7 +371,8 @@ Developer guide: [docs/data-providers.md](docs/data-providers.md).
 
 ## Printing
 
-Rotula sends ZPL as RAW data, so the driver passes it through untouched.
+For a ZPL printer, Rotula sends ZPL as RAW data, so the driver passes it through untouched. A printer that does not
+understand ZPL can still be used: see [Printing to any Windows printer](#printing-to-any-windows-printer).
 
 | Target | Use it for |
 |---|---|
@@ -403,6 +408,32 @@ printer: Letter 30-up (2-5/8 x 1 in), 20-up, 14-up, 10-up shipping (4 x 2 in), 6
 - The result is a PDF at the sheet's real size with every label at its own physical size. Print it at **actual size (100 %)**. The
   layout is saved with the label. Templates are described by their dimensions; sheets of different suppliers can differ by a
   millimetre, so print one test page on plain paper first.
+
+---
+
+## Printing to any Windows printer
+
+Rotula is not limited to Zebra and ZPL printers. A DYMO, Brother, TSC, SATO, Epson or even an office laser printer can print
+your labels through its Windows driver.
+
+- **Two print modes.** *Printer language (ZPL)* sends ZPL, exactly as before. *Windows driver (picture)* draws the label as a
+  picture, at the printer's real resolution and the label's real size, and hands it to the installed driver.
+- **Chosen per printer.** Rotula remembers the mode for each Windows printer by name. The first time you print to a printer
+  that has no saved mode, the Print dialog asks once, "How does this printer understand labels?", and suggests an answer from the
+  printer's name and driver (ZPL for Zebra-style names and "Generic / Text Only" queues; Windows driver for everything else). You
+  decide. Network printers you add in Rotula by address (TCP/IP, port 9100) always get the printer language and are never asked.
+- **Nothing is switched for you.** When you update Rotula, the printer saved in your settings (the one you chose last) stays
+  on ZPL without a question. Other printers you used before this version are asked about once, the first time you print to them,
+  with ZPL already selected for Zebra-style names.
+- **Checked before printing.** Before anything is sent, Rotula checks the label against what the driver reports and lists the
+  problems in the Print dialog: parts a driver cannot draw, a barcode whose bars are narrower than its safe size, a label that
+  does not fit the paper, and similar. A problem that makes the label wrong stops the print. For the others you tick one box,
+  "I understand and want to print anyway", for the whole job. Without the tick, nothing is sent.
+- **Single label, batch and print station.** The same check and the same one tick cover a single label, a whole data-merge
+  batch (checked once for the design, not once per record) and the [print station](#print-station), where whoever sets the
+  station up accepts the points once with **File > Set up print station...**.
+- **No label printer to hand?** Choose "Microsoft Print to PDF", set the mode to Windows driver (picture), print, and open the
+  PDF. Details in [docs/printing.md](docs/printing.md).
 
 ---
 
@@ -523,7 +554,7 @@ for calls only when you start it, only on the addresses in its settings file, an
 
 - Windows 10 version 1809 or later, or Windows 11, 64-bit
 - No separate .NET install: the release builds are self-contained
-- For printing: a ZPL-compatible printer, installed in Windows (USB or network) or reachable on TCP port 9100
+- For printing: a ZPL-compatible printer, installed in Windows (USB or network) or reachable on TCP port 9100; or any other printer installed in Windows
 
 ---
 
@@ -615,7 +646,15 @@ Read these before relying on Rotula for production labels, and **always print a 
 - **Unsupported commands** (see [the coverage page](docs/zpl-coverage.md)) are kept as raw ZPL where possible but are not
   interpreted or previewed.
 - Rotula is tested against decoders and golden files, not against every printer model.
-- ZPL output only, and Windows only.
+- **Printing through a Windows driver.** A label printed through a Windows driver prints at the correct size and passes the barcode size check; the driver's own scaling and margins are outside Rotula's control. Printer commands kept from an imported file (raw ZPL) cannot be drawn in this mode. Printer-side counters, cutter, tear-off and status checks are ZPL-only. MCP and the command line print ZPL only.
+  - Parts the driver cannot draw are left out of the picture and listed (counted) before printing: raw ZPL kept from an imported file, a barcode only a ZPL printer can draw, a recall of a graphic stored on the printer, an image too large to draw, and UL and CSA certification marks.
+  - A field that the printer would number, date or fill in from other fields (`^SN`/`^SF`, `^FC`, `^FE`) cannot be used in this mode, and the print is refused. Use Rotula's own counters and date variables instead; they are worked out on your PC and print correctly.
+  - Bitmap images (logos) are scaled smoothly to the printer's resolution, not dot for dot, so the edges of a black-and-white logo can come out slightly grey or dithered. Print a test label with your logo.
+  - Many label drivers cannot print the outermost millimetre or so of the label. Rotula warns once before printing when the label is larger than the area the driver can print on (every full-size label on such a driver), and names the width of that edge; whatever is in that strip may be cut off.
+  - Labels fed the other way round are turned for you, always clockwise. A label designed 89 x 28 mm, printed on a 28 mm wide roll that feeds it lengthwise, is turned a quarter turn to fit and Rotula says so before printing (one tick). If the printout comes out upside down, set the label's print orientation to upside down. When neither way fits you get the usual paper error.
+  - The print station uses the mode saved for its printer on the PC where it runs.
+- Other printer languages (EPL, TSPL, CPCL) are not written. Picture mode is the way to reach those printers today.
+- Windows only.
 
 ---
 

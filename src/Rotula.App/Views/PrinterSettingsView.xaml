@@ -2,9 +2,12 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ctl="clr-namespace:Rotula.App.Controls"
-             xmlns:loc="clr-namespace:Rotula.App.Localization">
+             xmlns:loc="clr-namespace:Rotula.App.Localization"
+             xmlns:views="clr-namespace:Rotula.App.Views"
+             xmlns:prn="clr-namespace:Rotula.Printing;assembly=Rotula.Printing">
   <UserControl.Resources>
     <BooleanToVisibilityConverter x:Key="B2V" />
+    <ctl:InverseBooleanToVisibilityConverter x:Key="InverseB2V" />
   </UserControl.Resources>
   <StackPanel>
     <!-- Informative note, not a warning: the label is converted to the printer resolution automatically. It sits at the very top so the note and its button are always in view, however long the form below is. -->
@@ -51,6 +54,49 @@
       <ProgressBar IsIndeterminate="True" Margin="0,6,0,0" Visibility="{Binding IsLoadingPrinters, Converter={StaticResource B2V}}"
                    AutomationProperties.Name="{loc:T Print.Printers.Loading}" />
       <TextBlock Text="{Binding PrintersNote}" Style="{StaticResource MutedText}" Margin="0,6,0,0" />
+
+      <!-- ============================== print mode (only where the host asks for it, see ShowModeChoice) -->
+      <StackPanel Visibility="{Binding ShowModeChoice, RelativeSource={RelativeSource AncestorType={x:Type views:PrinterSettingsView}}, Converter={StaticResource B2V}}">
+        <!-- First use of this printer: asked once, in plain words. The two answers carry the two mode names; the suggested one is the main button.
+             Each button passes its mode as an x:Static value: the command is typed (PrinterOutputMode) and would refuse a plain string. -->
+        <Border x:Name="ModeQuestionPanel" Style="{StaticResource InfoBanner}" Margin="0,10,0,0" Visibility="{Binding ShowModeQuestion, Converter={StaticResource B2V}}"
+                AutomationProperties.Name="{Binding ModeQuestion}" AutomationProperties.LiveSetting="Polite">
+          <StackPanel>
+            <TextBlock Text="{Binding ModeQuestion}" FontWeight="SemiBold" TextWrapping="Wrap" AutomationProperties.HeadingLevel="Level3" />
+            <TextBlock Text="{Binding ModeSuggestionText}" Style="{StaticResource MutedText}" Margin="0,4,0,10" />
+            <!-- Two pairs of buttons, one of each pair visible, so the suggested answer gets the primary style without a style switch. -->
+            <WrapPanel>
+              <Button Style="{StaticResource PrimaryButton}" Content="{loc:T Print.Mode.PrinterLanguage}" Margin="0,0,8,6"
+                      Command="{Binding ChooseModeCommand}" CommandParameter="{x:Static prn:PrinterOutputMode.PrinterLanguage}"
+                      Visibility="{Binding SuggestsDriver, Converter={StaticResource InverseB2V}}" AutomationProperties.Name="{loc:T Print.Mode.PrinterLanguage}" />
+              <Button Content="{loc:T Print.Mode.PrinterLanguage}" Margin="0,0,8,6"
+                      Command="{Binding ChooseModeCommand}" CommandParameter="{x:Static prn:PrinterOutputMode.PrinterLanguage}"
+                      Visibility="{Binding SuggestsDriver, Converter={StaticResource B2V}}" AutomationProperties.Name="{loc:T Print.Mode.PrinterLanguage}" />
+              <Button Style="{StaticResource PrimaryButton}" Content="{loc:T Print.Mode.WindowsDriver}" Margin="0,0,8,6"
+                      Command="{Binding ChooseModeCommand}" CommandParameter="{x:Static prn:PrinterOutputMode.WindowsDriver}"
+                      Visibility="{Binding SuggestsDriver, Converter={StaticResource B2V}}" AutomationProperties.Name="{loc:T Print.Mode.WindowsDriver}" />
+              <Button Content="{loc:T Print.Mode.WindowsDriver}" Margin="0,0,8,6"
+                      Command="{Binding ChooseModeCommand}" CommandParameter="{x:Static prn:PrinterOutputMode.WindowsDriver}"
+                      Visibility="{Binding SuggestsDriver, Converter={StaticResource InverseB2V}}" AutomationProperties.Name="{loc:T Print.Mode.WindowsDriver}" />
+            </WrapPanel>
+          </StackPanel>
+        </Border>
+        <!-- The settled mode in one sentence (which one and why), with the way to switch to the other one. -->
+        <StackPanel x:Name="ModeLine" Margin="0,10,0,0" Visibility="{Binding ShowModeLine, Converter={StaticResource B2V}}">
+          <TextBlock Text="{loc:T Print.Mode.Label}" Style="{StaticResource FieldLabel}" />
+          <TextBlock Text="{Binding ModeExplanation}" Style="{StaticResource MutedText}" AutomationProperties.LiveSetting="Polite" />
+          <Button Style="{StaticResource LinkButton}" Margin="0,4,0,0"
+                  Command="{Binding ChooseModeCommand}" CommandParameter="{x:Static prn:PrinterOutputMode.WindowsDriver}"
+                  Visibility="{Binding IsDriverMode, Converter={StaticResource InverseB2V}}" AutomationProperties.Name="{loc:T Print.Mode.Change.ToWindowsDriver}">
+            <TextBlock Text="{loc:T Print.Mode.Change.ToWindowsDriver}" TextWrapping="Wrap" />
+          </Button>
+          <Button Style="{StaticResource LinkButton}" Margin="0,4,0,0"
+                  Command="{Binding ChooseModeCommand}" CommandParameter="{x:Static prn:PrinterOutputMode.PrinterLanguage}"
+                  Visibility="{Binding IsDriverMode, Converter={StaticResource B2V}}" AutomationProperties.Name="{loc:T Print.Mode.Change.ToPrinterLanguage}">
+            <TextBlock Text="{loc:T Print.Mode.Change.ToPrinterLanguage}" TextWrapping="Wrap" />
+          </Button>
+        </StackPanel>
+      </StackPanel>
     </StackPanel>
 
     <!-- Network printer -->
@@ -70,19 +116,22 @@
       </StackPanel>
     </Grid>
 
-    <!-- ============================== printer status (~HS) -->
-    <CheckBox Content="{loc:T Print.Status.Option}" IsChecked="{Binding CheckStatus}" Margin="0,12,0,0" ToolTip="{loc:T Print.Status.Option.Tip}"
-              AutomationProperties.Name="{loc:T Print.Status.Option}" AutomationProperties.HelpText="{loc:T Print.Status.Option.Tip}" />
-    <Button Content="{loc:T Print.Status.Check}" Command="{Binding CheckPrinterStatusCommand}" HorizontalAlignment="Left" Margin="0,10,0,0"
-            Style="{StaticResource ToolButton}" ToolTip="{loc:T Print.Status.Check.Tip}" AutomationProperties.Name="{loc:T Print.Status.Check}" />
-    <ProgressBar IsIndeterminate="True" Margin="0,6,0,0" Visibility="{Binding IsCheckingStatus, Converter={StaticResource B2V}}"
-                 AutomationProperties.Name="{loc:T Print.Status.Checking}" />
-    <Border Style="{StaticResource SuccessBanner}" Margin="0,8,0,0" Visibility="{Binding HasStatusOk, Converter={StaticResource B2V}}" AutomationProperties.LiveSetting="Polite">
-      <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap" Foreground="{StaticResource SuccessBrush}" />
-    </Border>
-    <Border Style="{StaticResource WarningBanner}" Margin="0,8,0,0" Visibility="{Binding HasStatusProblem, Converter={StaticResource B2V}}" AutomationProperties.LiveSetting="Polite">
-      <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap" Foreground="{StaticResource WarningBrush}" />
-    </Border>
+    <!-- ============================== printer status (~HS)
+         Hidden in Windows-driver (picture) mode: ~HS is a ZPL command, and a printer that does not understand ZPL would print it as text. -->
+    <StackPanel Visibility="{Binding IsDriverMode, Converter={StaticResource InverseB2V}}">
+      <CheckBox x:Name="StatusCheckBox" Content="{loc:T Print.Status.Option}" IsChecked="{Binding CheckStatus}" Margin="0,12,0,0" ToolTip="{loc:T Print.Status.Option.Tip}"
+                AutomationProperties.Name="{loc:T Print.Status.Option}" AutomationProperties.HelpText="{loc:T Print.Status.Option.Tip}" />
+      <Button x:Name="StatusCheckButton" Content="{loc:T Print.Status.Check}" Command="{Binding CheckPrinterStatusCommand}" HorizontalAlignment="Left" Margin="0,10,0,0"
+              Style="{StaticResource ToolButton}" ToolTip="{loc:T Print.Status.Check.Tip}" AutomationProperties.Name="{loc:T Print.Status.Check}" />
+      <ProgressBar IsIndeterminate="True" Margin="0,6,0,0" Visibility="{Binding IsCheckingStatus, Converter={StaticResource B2V}}"
+                   AutomationProperties.Name="{loc:T Print.Status.Checking}" />
+      <Border Style="{StaticResource SuccessBanner}" Margin="0,8,0,0" Visibility="{Binding HasStatusOk, Converter={StaticResource B2V}}" AutomationProperties.LiveSetting="Polite">
+        <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap" Foreground="{StaticResource SuccessBrush}" />
+      </Border>
+      <Border Style="{StaticResource WarningBanner}" Margin="0,8,0,0" Visibility="{Binding HasStatusProblem, Converter={StaticResource B2V}}" AutomationProperties.LiveSetting="Polite">
+        <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap" Foreground="{StaticResource WarningBrush}" />
+      </Border>
+    </StackPanel>
 
     <!-- ============================== printer profile -->
     <TextBlock Text="{loc:T Print.Section.Setup}" Style="{StaticResource SectionHeading}" Margin="0,20,0,8" AutomationProperties.HeadingLevel="Level2" />
@@ -122,16 +171,21 @@
         <TextBox Style="{StaticResource MonoTextBox}" Text="{Binding HeightText, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{loc:T Print.Profile.Height}"  ctl:FieldState.HasError="{Binding Text, RelativeSource={RelativeSource Self}, Converter={StaticResource FieldInvalid}, ConverterParameter=double:0.01:100000}" />
       </StackPanel>
 
-      <StackPanel Grid.Row="2" Grid.Column="0">
+      <!-- Darkness and speed are printer-language (ZPL) settings: a printer that is sent a picture through its Windows driver has them in the
+           driver's own dialog. Both are collapsed in driver mode, which also collapses their Auto row, so no gap is left. The typed values stay
+           in the view model (and in settings.json), and the view model ignores them in driver mode, so a hidden box can never block a print. -->
+      <StackPanel Grid.Row="2" Grid.Column="0" Visibility="{Binding IsDriverMode, Converter={StaticResource InverseB2V}}">
         <TextBlock Text="{loc:T Print.Profile.Darkness}" Style="{StaticResource FieldLabel}" />
         <TextBox Style="{StaticResource MonoTextBox}" Text="{Binding DarknessText, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{loc:T Print.Profile.Darkness}"  ctl:FieldState.HasError="{Binding Text, RelativeSource={RelativeSource Self}, Converter={StaticResource FieldInvalid}, ConverterParameter=int:0:30:opt}" />
       </StackPanel>
-      <StackPanel Grid.Row="2" Grid.Column="2">
+      <StackPanel Grid.Row="2" Grid.Column="2" Visibility="{Binding IsDriverMode, Converter={StaticResource InverseB2V}}">
         <TextBlock Text="{loc:T Print.Profile.Speed}" Style="{StaticResource FieldLabel}" />
         <TextBox Style="{StaticResource MonoTextBox}" Text="{Binding SpeedText, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{loc:T Print.Profile.Speed}"  ctl:FieldState.HasError="{Binding Text, RelativeSource={RelativeSource Self}, Converter={StaticResource FieldInvalid}, ConverterParameter=int:1:14:opt}" />
       </StackPanel>
     </Grid>
-    <TextBlock Text="{loc:T Print.Profile.Hint}" Style="{StaticResource MutedText}" Margin="0,8,0,0" FontSize="12" />
+    <!-- The hint is only about darkness and speed ("leave empty to keep the printer's settings"), so it goes with them. -->
+    <TextBlock Text="{loc:T Print.Profile.Hint}" Style="{StaticResource MutedText}" Margin="0,8,0,0" FontSize="12"
+               Visibility="{Binding IsDriverMode, Converter={StaticResource InverseB2V}}" />
     <Button Content="{Binding DetectedSizeText}" Command="{Binding UseDetectedSizeCommand}" HorizontalAlignment="Left" Margin="0,12,0,0" Style="{StaticResource ToolButton}"
             Visibility="{Binding HasDetectedSize, Converter={StaticResource B2V}}" ToolTip="{loc:T Print.UsePrinterSize.Tip}" AutomationProperties.Name="{Binding DetectedSizeText}" />
   </StackPanel>

@@ -9,10 +9,30 @@ public abstract class LabelElement
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
     /// <summary>Optional designer-facing name.</summary>
     public string? Name { get; set; }
-    /// <summary>Horizontal position in dots.</summary>
+    /// <summary>
+    /// Horizontal position in dots. Without an <see cref="Anchor"/> it is the absolute origin (the <c>^FO</c>/<c>^FT</c> value); with one it is
+    /// the horizontal distance from the reference's anchor point to this element's own anchor point (negative goes left).
+    /// </summary>
     public int X { get; set; }
-    /// <summary>Vertical position in dots.</summary>
+    /// <summary>Vertical position in dots; see <see cref="X"/> for what it means with and without an <see cref="Anchor"/>.</summary>
     public int Y { get; set; }
+
+    /// <summary>
+    /// Relative positioning: the point of this element that <see cref="X"/>/<see cref="Y"/> place, measured from the same point of the
+    /// reference (<see cref="RelativeTo"/>). Null means the position is absolute (the top-left or typeset origin from the label home), which is
+    /// how every element behaved before anchors existed. The ZPL always gets absolute coordinates: <see cref="Layout.AnchorResolver"/> works
+    /// them out when the label is generated or drawn, so a label resize or a longer text keeps an anchored object where it was asked to be.
+    /// </summary>
+    public AnchorPoint? Anchor { get; set; }
+
+    /// <summary>What the anchor is measured from: the label (default) or another element. Ignored while <see cref="Anchor"/> is null.</summary>
+    public AnchorReference RelativeTo { get; set; } = AnchorReference.Label;
+
+    /// <summary>Id of the element this one is positioned relative to when <see cref="RelativeTo"/> is <see cref="AnchorReference.Element"/>.</summary>
+    public string? ReferenceElementId { get; set; }
+
+    /// <summary>True when the element has an anchor, so its X/Y are an offset rather than an absolute origin.</summary>
+    public bool IsAnchored => Anchor is not null;
     /// <summary>^FO (top-left) or ^FT (baseline) positioning.</summary>
     public FieldOriginKind OriginKind { get; set; } = FieldOriginKind.Origin;
     /// <summary>Explicit rotation, or null to inherit the document ^FW default.</summary>
@@ -38,7 +58,11 @@ public abstract class LabelElement
     /// </summary>
     public bool Locked { get; set; }
 
-    /// <summary>Copies the printing and locking settings (<see cref="PrintCondition"/>, <see cref="NotPrintable"/>, <see cref="Locked"/>) onto another element, so every copy path keeps them.</summary>
+    /// <summary>
+    /// Copies the printing, locking and anchoring settings (<see cref="PrintCondition"/>, <see cref="NotPrintable"/>, <see cref="Locked"/>,
+    /// <see cref="Anchor"/>, <see cref="RelativeTo"/>, <see cref="ReferenceElementId"/>) onto another element, so every copy path keeps them.
+    /// The position itself (X/Y) is not copied: the copy paths scale or offset it themselves.
+    /// </summary>
     /// <param name="target">The element that receives the settings.</param>
     public void CopyObjectSettingsTo(LabelElement target)
     {
@@ -46,6 +70,9 @@ public abstract class LabelElement
         target.PrintCondition = PrintCondition?.Clone();
         target.NotPrintable = NotPrintable;
         target.Locked = Locked;
+        target.Anchor = Anchor;
+        target.RelativeTo = RelativeTo;
+        target.ReferenceElementId = ReferenceElementId;
     }
 }
 

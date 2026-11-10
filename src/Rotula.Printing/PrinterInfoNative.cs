@@ -51,13 +51,16 @@ internal sealed class Win32PrinterCapsReader : IPrinterCapsReader
         try
         {
             (driver, port) = ReadDriverAndPort(handle);
+            // Each source below is independent and best effort: drivers misbehave in many ways (bad DEVMODE sizes, hung queries), and
+            // a failing source only means one fewer hint. The result is still shown to the operator as "detected" or "unknown" and the
+            // profile keeps its own values when nothing could be read, so swallowing here hides nothing they need to act on.
             try { ReadDevMode(handle, printerName, port, out mx, out my, out paperW, out paperL); } catch { /* keep other sources */ }
         }
         finally { NativeMethods.ClosePrinter(handle); }
 
         int? ix = null, iy = null;
-        try { ReadInfoContext(printerName, out ix, out iy); } catch { }
-        try { enumDpi = ReadSingleEnumResolution(printerName, port); } catch { }
+        try { ReadInfoContext(printerName, out ix, out iy); } catch { /* best effort, see above */ }
+        try { enumDpi = ReadSingleEnumResolution(printerName, port); } catch { /* best effort, see above */ }
 
         return new RawPrinterCaps(driver, mx, my, ix, iy, enumDpi, paperW, paperL);
     }

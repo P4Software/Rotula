@@ -57,6 +57,11 @@ public sealed class AppSettings
     /// <summary>When the release page was last asked (UTC); null before the first check.</summary>
     public DateTimeOffset? LastUpdateCheckUtc { get; set; }
 
+    /// <summary>
+    /// How often, in seconds, a recovery copy of the open label is written while it has unsaved changes (see docs/recovery.md).
+    /// 0 switches the recovery copy off. Values between 1 and 4 count as 5 and values above 3600 as 3600.
+    /// </summary>
+    public int AutosaveSeconds { get; set; } = 30;
     /// <summary>The newer version whose notice the user closed, so that notice is not shown again for the same version.</summary>
     public string? UpdateDismissedVersion { get; set; }
 
@@ -111,6 +116,64 @@ public sealed class PrintSettings
     /// not a ZPL compatible printer would print the query as text.
     /// </summary>
     public bool StatusCheckWindows { get; set; }
+
+    /// <summary>
+    /// The map as read from settings.json. Null means the file had no map (or an explicit null), which only a version before driver printing
+    /// writes: this version always writes the map, even empty, because the getter below creates it before the serializer reads it.
+    /// </summary>
+    private Dictionary<string, string>? _printModes;
+
+    /// <summary>
+    /// How each Windows printer understands labels, by queue name: <c>"PrinterLanguage"</c> (ZPL) or <c>"WindowsDriver"</c> (a picture drawn
+    /// through the driver). A map rather than one value, so choosing a mode for one printer never changes the choice made for another. A
+    /// printer that is missing, or whose value is not one of the two names, has no saved mode and is asked about once. Never null when read; a
+    /// settings file saved by this version always contains it (an empty map is written as <c>{}</c>, not left out), which is how
+    /// <see cref="NormalizePrintModes"/> tells an older file from a new one.
+    /// </summary>
+    public Dictionary<string, string> PrintModes
+    {
+        get => _printModes ??= new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        set => _printModes = value;
+    }
+
+    /// <summary>
+    /// Makes <see cref="PrintModes"/> safe to use and brings a file from an older version up to date. Call it right after loading, before
+    /// anything reads the map or saves the file (the store does; the printer view-model does it again for settings that never came from a
+    /// file). Idempotent.
+    /// <list type="bullet">
+    /// <item>The map is rebuilt to match queue names without regard to case: Windows treats them that way, but System.Text.Json loads an ordinary
+    /// case-sensitive dictionary. The indexer is used, not the copying constructor, so a hand-edited file that spells one queue twice in
+    /// different case cannot throw.</item>
+    /// <item>Only when the map was absent (a file written before driver printing) is the configured printer recorded as
+    /// <c>"PrinterLanguage"</c>: it already printed ZPL, so its user is never asked. A map that is present but empty was written by this
+    /// version for a printer nobody has answered for yet, so it is never seeded; otherwise a person who printed once from the Data window on a
+    /// non-ZPL printer would never be asked.</item>
+    /// </list>
+    /// </summary>
+    public void NormalizePrintModes()
+    {
+        bool writtenBeforePrintModes = _printModes is null;
+        var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        if (_printModes is not null)
+            foreach (var (name, mode) in _printModes) map[name] = mode;
+        _printModes = map;
+        if (writtenBeforePrintModes && Configured && !string.IsNullOrWhiteSpace(PrinterName))
+            map[PrinterName] = nameof(Rotula.Printing.PrinterOutputMode.PrinterLanguage);
+    }
+
+    /// <summary>
+    /// A separate copy of these settings, for a window that must never change the designer's own printer (the print station, the station set-up
+    /// tool). The print-mode map is copied as it is, without reading it through <see cref="PrintModes"/>: reading would create an empty map on
+    /// this object, and a map that is absent (an older settings file) must stay absent so that the copy goes through
+    /// <see cref="NormalizePrintModes"/> exactly as the file itself would, with the same old-file-versus-new-file rule.
+    /// </summary>
+    public PrintSettings Copy()
+    {
+        var copy = (PrintSettings)MemberwiseClone();
+        // Every other field is a value or an immutable string; the map is the only part the copy could share and change.
+        copy._printModes = _printModes is null ? null : new Dictionary<string, string>(_printModes, _printModes.Comparer);
+        return copy;
+    }
 }
 
 /// <summary>Loads and saves <see cref="AppSettings"/>.</summary>
@@ -133,7 +196,10 @@ public sealed class JsonSettingsStore : ISettingsStore
         "// Rotula settings. Edit with the program closed, or change them from the menus.\n" +
         "// language: \"auto\" follows Windows, or use \"en\" / \"es\" / \"pt-BR\" / \"fr-CA\".\n" +
         "// unit: \"Millimeters\", \"Inches\" or \"Dots\".\n" +
-        "// updateCheckEnabled: true asks GitHub once a day whether a newer version exists (off by default; nothing is sent about you).\n";
+        "// updateCheckEnabled: true asks GitHub once a day whether a newer version exists (off by default; nothing is sent about you).\n" +
+        "// autosaveSeconds: how often (in seconds) a recovery copy of a label with unsaved changes is kept, so a crash or power cut does not lose your work.\n" +
+        "//   30 is the default, 0 switches it off. Rotula offers the copy the next time it starts. Your label file is never changed by it.\n" +
+        "// print.printModes: per Windows printer, \"PrinterLanguage\" (ZPL) or \"WindowsDriver\" (picture); a printer not listed is asked about once.\n";
 
     private static readonly JsonSerializerOptions Options = new()
     {
@@ -166,7 +232,11 @@ public sealed class JsonSettingsStore : ISettingsStore
                 Save(fresh);
                 return fresh;
             }
-            return JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(_path), Options) ?? new AppSettings();
+            var loaded = JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(_path), Options) ?? new AppSettings();
+            // Decide here whether the file predates print modes, before any part of Rotula can save it: the first save writes the map, and
+            // the difference between "older file" and "nobody answered yet" would then be lost.
+            (loaded.Print ??= new PrintSettings()).NormalizePrintModes();
+            return loaded;
         }
         catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
         {
@@ -178,14 +248,23 @@ public sealed class JsonSettingsStore : ISettingsStore
     /// <inheritdoc />
     public bool Save(AppSettings settings)
     {
+        // Why a temp file: File.WriteAllText truncates settings.json before it writes, so a crash or power loss in between would leave an
+        // empty file and the user's settings (recent files, printer, language) would be gone. The new text is written beside the real
+        // file first and swapped in with one operation, so the real file is always either the old version or the new one.
+        // The name is unique because two Rotula windows (or the designer and the print engine) can save at the same moment.
+        string temp = _path + "." + Guid.NewGuid().ToString("N")[..8] + ".tmp";
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
-            File.WriteAllText(_path, Header + JsonSerializer.Serialize(settings, Options), new System.Text.UTF8Encoding(false));
+            File.WriteAllText(temp, Header + JsonSerializer.Serialize(settings, Options), new System.Text.UTF8Encoding(false));
+            if (File.Exists(_path)) File.Replace(temp, _path, null);
+            else File.Move(temp, _path);
             return true;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
+            // Never leave a half-written copy next to the settings.
+            try { File.Delete(temp); } catch (Exception cleanup) when (cleanup is IOException or UnauthorizedAccessException) { /* nothing more can be done */ }
             return false;
         }
     }

@@ -21,6 +21,15 @@ public abstract partial class OperationViewModel : ObservableObject
     /// <summary>The opposite of <see cref="IsBusy"/>, for binding to IsEnabled.</summary>
     public bool IsIdle => !IsBusy;
 
+    partial void OnIsBusyChanged(bool value) => OnBusyChanged(value);
+
+    /// <summary>
+    /// Called when <see cref="IsBusy"/> changes, so a derived view model can refresh what it derives from it (a "can do this"
+    /// property bound to a button). The generated hook is private to this class, hence the virtual.
+    /// </summary>
+    /// <param name="busy">The new value.</param>
+    protected virtual void OnBusyChanged(bool busy) { }
+
     /// <summary>What the running operation is doing, for example "Sending to the printer...".</summary>
     [ObservableProperty]
     private string _busyText = string.Empty;

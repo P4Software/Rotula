@@ -40,6 +40,8 @@ public class AppDataSelectionTests : IDisposable
     {
         var main = new MainViewModel(_fake.Build());
         main.Printer.SelectedPrinterName = "Test Printer";
+        // A Windows printer with no saved mode does not batch print until the person answers how it understands labels; these batches are ZPL.
+        main.Printer.ChooseModeCommand.Execute(Rotula.Printing.PrinterOutputMode.PrinterLanguage);
         return main;
     }
 
@@ -673,6 +675,8 @@ public class AppDataSelectionDatabaseTests : IDisposable
         _fake.Database.Store.Add(new DatabaseConnectionSettings { Name = "Warehouse", Provider = DatabaseProvider.SqlServer, Host = "h", Database = "WH" }, "pw");
         var main = new MainViewModel(_fake.Build());
         main.Printer.SelectedPrinterName = "Test Printer";
+        // A Windows printer with no saved mode does not batch print until the person answers how it understands labels; this batch is ZPL.
+        main.Printer.ChooseModeCommand.Execute(Rotula.Printing.PrinterOutputMode.PrinterLanguage);
         main.Session.Edit("Undo.Property", d => d.Elements.Add(new TextElement { Text = "{{Name}} x{{Qty}}" }));
         var data = main.Data;
         data.IsDatabaseMode = true;

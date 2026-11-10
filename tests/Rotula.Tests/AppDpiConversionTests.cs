@@ -33,6 +33,8 @@ public class AppDpiConversionTests : IDisposable
     private PrintViewModel Dialog(PrinterDpi printerDpi)
     {
         _main.Printer.SelectedPrinterName = "ZD621R-300dpi";
+        // A Windows printer with no saved mode does not print until the person answers how it understands labels; the conversion is a ZPL matter.
+        _main.Printer.ChooseModeCommand.Execute(Rotula.Printing.PrinterOutputMode.PrinterLanguage);
         _main.Printer.SelectedDpi = printerDpi;
         return new PrintViewModel(_fake.Printer, _main.Printer, () => _main.Session.Document, () => null, _fake.Build().Files, "x");
     }

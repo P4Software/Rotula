@@ -135,6 +135,19 @@ public sealed class StubZplImporter : IZplImporter
     public ZplImportResult Import(byte[] zpl) => ZplImportResult.Failure("Import.NotAvailable");
 }
 
+/// <summary>
+/// Runs one action after a quiet period, restarting the wait on every call (typing in the ZPL source panel re-imports the label only once
+/// the user pauses). The production implementation ticks on the UI thread; tests fire it by hand.
+/// </summary>
+public interface IDebouncer
+{
+    /// <summary>Forgets any pending action and arranges for <paramref name="action"/> to run once <paramref name="delay"/> has passed without another call.</summary>
+    void Restart(TimeSpan delay, Action action);
+
+    /// <summary>Drops the pending action, if any.</summary>
+    void Cancel();
+}
+
 /// <summary>Opens the tool windows that belong to the main window (print and data merge).</summary>
 public interface IToolDialogService
 {
@@ -145,7 +158,13 @@ public interface IToolDialogService
     void ShowDataWindow(Rotula.App.ViewModels.DataMergeViewModel viewModel);
 
     /// <summary>Shows a larger preview of the label as the printer will draw it.</summary>
-    void ShowPreviewDialog(Rotula.App.Editing.PreviewCache preview, string title);
+    /// <param name="preview">The preview cache of the open label.</param>
+    /// <param name="title">Name of the label, shown in the title.</param>
+    /// <param name="note">
+    /// The sentence under the picture saying how close it is to the print: "approximate" for a printer-language printer, the accurate note for a
+    /// printer in Windows-driver (picture) mode.
+    /// </param>
+    void ShowPreviewDialog(Rotula.App.Editing.PreviewCache preview, string title, string note);
 
     /// <summary>Shows the connection manager modally; returns when it is closed.</summary>
     void ShowConnectionManager(Rotula.App.ViewModels.ConnectionManagerViewModel viewModel);
@@ -170,6 +189,9 @@ public interface IToolDialogService
 
     /// <summary>Shows the tool that makes the exit PIN line for station.json. The default shows nothing.</summary>
     void ShowStationPinTool(Rotula.App.ViewModels.StationPinViewModel viewModel) { }
+
+    /// <summary>Shows "Set up print station" modally (the labels checked for picture mode, the findings accepted once). The default shows nothing.</summary>
+    void ShowStationSetup(Rotula.App.ViewModels.StationSetupViewModel viewModel) { }
 
     /// <summary>Shows the "Label sheets" dialog (office printer sheets as a PDF) modally. The default offers no dialog.</summary>
     void ShowSheetDialog(Rotula.App.ViewModels.SheetLayoutViewModel viewModel) { }

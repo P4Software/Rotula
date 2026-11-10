@@ -53,7 +53,70 @@ again instead of printing a wrong label.
 | **Not printed** | Something else stopped the job (for example an unreachable printer). The reason is shown below. |
 
 The status check uses the same print path as the designer's Print dialog (see [printing.md](printing.md)). It is
-on for every station printer unless that printer sets `"checkStatus": false`.
+on for every station printer unless that printer sets `"checkStatus": false`. A printer that prints through its
+Windows driver (below) is never asked for its status: the question is a ZPL command it would print as text.
+
+### Picture mode (any Windows printer)
+
+A station printer can be an ordinary office or label printer that does not understand ZPL. The station then draws
+each label as a picture and prints it through the printer's Windows driver, exactly as the designer's Print dialog
+does. Which way a printer is used is its **print mode**, saved per Windows printer on this PC (`print.printModes`
+in the designer's settings.json). The station reads the modes of the Windows account it runs under: a printer saved
+as "Windows driver (picture)" prints pictures at the station, every other printer prints ZPL as before. An operator
+is never asked about the mode; a printer with no saved mode prints ZPL. The mode is chosen in the designer's Print
+dialog.
+
+Some labels have parts a Windows driver cannot print the same way (raw ZPL kept from an imported file, a barcode
+whose bars come out narrower than its safe size, a label size the driver does not accept, ...). In the Print dialog
+the person ticks one box to accept them. At the station they are accepted once, by whoever sets the station up:
+
+1. In the designer, on the PC where the station runs and signed in as the account it runs under, choose
+   **File > Set up print station...** and pick the station folder. The check uses that PC's printer drivers, so
+   it must run there.
+2. Rotula checks every label with the printer it uses and shows its print mode. For a label printed through a
+   Windows driver it lists what the driver cannot print the same way, in the same words as the Print dialog.
+3. Read the points. When the label is fine as it is, tick **I checked these points. Let the station print this
+   label anyway.** and press **Save**. A label with a point that cannot be printed at all has no box: change the
+   label, or set the printer to printer language (ZPL) if it understands ZPL, then press **Check again**.
+
+**Check again** reads station.json, every label file and the saved acceptances again, so it checks what is on
+disk now: a label you just changed in the designer, a label added to station.json, a print mode chosen in the
+Print dialog. A tick you have not saved yet stays when the label's points are still the same. If station.json no
+longer opens, the tool says why, shows no results and saves nothing until it is corrected. A label file that no
+longer opens, or a printer that does not answer (switched off, disconnected), is shown as a problem on its own
+row; whatever was accepted for that label before is kept.
+
+Saving writes **`station.acknowledged.json`** next to station.json. station.json itself is never changed, so its
+comments stay as written and an older Rotula still opens it. The file is small and written by the tool, not by hand:
+
+```json
+{
+  "version": 1,
+  "labels": {
+    "pallet.rotula": "3f2a9c..."
+  }
+}
+```
+
+Each key is a label file, relative to `labelFolder` (a label outside that folder keeps its full path), and each
+value is the fingerprint of the points that were accepted for it. The file is written whole through a temporary
+file, so a station that starts at that moment reads either the old or the new version. Nothing is written when
+nothing changed. A label taken out of station.json loses its entry at the next save, and the file is deleted when
+no label is accepted any more, so a station that prints ZPL never gets one. A missing, unreadable or damaged file
+counts as "nothing accepted". The tool needs the station's station.json: for a folder without one it still checks
+the labels, but saves nothing and says to create station.json first.
+
+One label file offered on two picture printers that find different points can be accepted for one of them only
+(the file has one entry per label file). The tool says so when you save; give each printer its own copy of the
+label file to print it on both.
+
+When an operator prints a label whose points were never accepted, or a label that was edited since the set-up (its
+points are no longer the ones accepted), nothing is sent and the status says, in plain words, to ask the person who
+set up the station to check the label and set the station up again. A label with a point that cannot be printed
+at all is never printed. The station reads both files when it starts, so restart it after saving.
+
+The note under the preview says that the preview shows the printed picture (instead of "approximate") when the
+label's printer prints through its Windows driver.
 
 ### Printing the label's data
 
@@ -180,6 +243,12 @@ can remove the PIN.
 ## For developers
 
 - `Rotula.Files.Station.StationConfigLoader` reads and checks the configuration; `StationConfig` is the result.
+- `StationAcknowledgements` reads and writes `station.acknowledged.json` (never throws on read; writes through a
+  temporary file; deletes the file when nothing is accepted). The loader fills `StationConfig.AcknowledgedFindings`
+  from it.
+- `StationPrinting` (app) builds a label's printer and the document it prints, shared by the station and
+  `StationSetupViewModel`, so the set-up checks exactly the target and document the station prints (the fingerprint
+  depends on both, and on the driver's media).
 - `StationPin` makes and checks the PIN codes.
 - `ScanSequencer` holds the scanner rules (which terminator moves where, when a scan prints, which scan opens a label)
   with no UI, so it is tested on its own.

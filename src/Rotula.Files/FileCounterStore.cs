@@ -18,7 +18,8 @@ namespace Rotula.Files;
 /// </remarks>
 internal sealed class LockedTextFile
 {
-    private const int MaxBytes = 4 * 1024 * 1024;
+    // Room for the full counters plus the compacted ones (see CounterBook.MaxRecords and MaxTotalRecords).
+    private const int MaxBytes = 8 * 1024 * 1024;
     private readonly string _path;
     private readonly TimeSpan _timeout;
 
@@ -92,9 +93,12 @@ internal sealed class LockedTextFile
         string temp = _path + ".tmp";
         try
         {
+            var bytes = new UTF8Encoding(false).GetBytes(text);
+            // A file the reader would refuse as too large must never be written: it would lock every counter out on the next read.
+            if (bytes.Length > MaxBytes)
+                throw new CounterStoreException(VariableMessageKeys.CounterStoreFull, null, CounterBook.MaxTotalRecords.ToString(System.Globalization.CultureInfo.InvariantCulture));
             using (var fs = new FileStream(temp, FileMode.Create, FileAccess.Write, FileShare.None))
             {
-                var bytes = new UTF8Encoding(false).GetBytes(text);
                 fs.Write(bytes, 0, bytes.Length);
                 // Flush(true) pushes the data to the disk before the swap; otherwise a power cut could leave a renamed but empty file.
                 fs.Flush(true);

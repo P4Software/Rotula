@@ -47,7 +47,23 @@ public static class LabelDocumentAdapter
         return Build(doc, values, includeNonPrinting: false);
     }
 
-    private static RenderLabel Build(LabelDocument doc, IReadOnlyDictionary<string, string>? data, bool includeNonPrinting)
+    /// <summary>
+    /// Like <see cref="ToRenderLabelResolved(LabelDocument, IReadOnlyDictionary{string, string}?)"/>, but also leaves out every element for which
+    /// <paramref name="leaveOut"/> is true (the Windows-driver picture uses it for the parts only the printer can draw). The elements are left out
+    /// of the picture, not out of the design: anchored positions are still worked out on the whole design, so an object positioned relative to
+    /// a left-out one stays exactly where the printer puts it. Removing the element from a copy of the document instead would move such objects.
+    /// </summary>
+    /// <param name="doc">The design.</param>
+    /// <param name="values">The resolved values of this label, or null for the sample values of a label without definitions.</param>
+    /// <param name="leaveOut">True for an element that must not be drawn.</param>
+    public static RenderLabel ToRenderLabelResolved(LabelDocument doc, IReadOnlyDictionary<string, string>? values, Func<LabelElement, bool> leaveOut)
+    {
+        ArgumentNullException.ThrowIfNull(doc);
+        ArgumentNullException.ThrowIfNull(leaveOut);
+        return Build(doc, values, includeNonPrinting: false, leaveOut);
+    }
+
+    private static RenderLabel Build(LabelDocument doc, IReadOnlyDictionary<string, string>? data, bool includeNonPrinting, Func<LabelElement, bool>? leaveOut = null)
     {
         int dpi = (int)doc.Dpi;
         int homeX = doc.Margins.Left.ToDots(doc.Dpi);
@@ -56,15 +72,21 @@ public static class LabelDocumentAdapter
         // Resolver warnings (unknown variables) are reported by the ZPL validation, not by the preview.
         var ignored = new List<ValidationIssue>();
         var elements = new List<RenderElement>(doc.Elements.Count);
+        // Anchored objects are placed by the same resolver (and the same measurements) the ZPL generator uses for this record, so the picture
+        // shows exactly where the printer puts them.
+        var layout = Core.Layout.AnchorResolver.HasAnchors(doc) ? Core.Layout.AnchorResolver.Resolve(doc, data, FitRasterizer) : null;
         foreach (var e in doc.Elements)
         {
             // Decided on the data that fills this record's placeholders, exactly as the ZPL generator does, so the picture and the print agree.
             bool printed = ElementPrinting.IsPrinted(e, data, doc.Variables);
             if (!printed && !includeNonPrinting) continue;
+            // After the layout above, which saw every element: leaving one out here never moves the others.
+            if (leaveOut?.Invoke(e) == true) continue;
             var mapped = Map(doc, e, data, ignored);
             if (mapped is null) continue;
+            var (x, y) = layout?.OriginOf(e) ?? (e.X, e.Y);
             // ^LS moves everything to the left, ^LT moves the whole format down (or up when negative).
-            elements.Add(mapped with { X = e.X + homeX - doc.LabelShift, Y = e.Y + homeY + doc.LabelTop, Dimmed = !printed });
+            elements.Add(mapped with { X = x + homeX - doc.LabelShift, Y = y + homeY + doc.LabelTop, Dimmed = !printed });
         }
 
         return new RenderLabel(doc.WidthDots, doc.HeightDots, dpi, elements);
@@ -115,10 +137,94 @@ public static class LabelDocumentAdapter
         return doc.Elements.Where(e => !ElementPrinting.IsPrinted(e, resolved, doc.Variables)).Select(e => e.Id).ToHashSet();
     }
 
+    /// <summary>
+    /// True when <paramref name="element"/> is drawn as a labelled stand-in (a hatched box) instead of its real content, because only the printer
+    /// can draw it: a barcode the renderer has no exact encoder for, an image too large to draw, a recall of a graphic stored on the printer that
+    /// the file does not download, or a raw ZPL block that draws something. A picture-mode print (Windows driver) cannot contain such a part, so the
+    /// driver pre-flight reports it. This is the same decision the render input uses (see <see cref="PlaceholderFor"/>); whether the element is
+    /// printed at all (do not print, print conditions) is not looked at here.
+    /// </summary>
+    /// <param name="doc">The design the element belongs to (recalls are looked up in its stored graphics).</param>
+    /// <param name="element">The element.</param>
+    public static bool IsDrawnAsPlaceholder(LabelDocument doc, LabelElement element)
+    {
+        ArgumentNullException.ThrowIfNull(doc);
+        ArgumentNullException.ThrowIfNull(element);
+        return PlaceholderFor(doc, element, typeset: false) is not null;
+    }
+
+    /// <summary>
+    /// The one place that decides which elements become a <see cref="RenderPlaceholder"/>, and builds it. <see cref="Map"/> asks it first and
+    /// <see cref="IsDrawnAsPlaceholder"/> asks it for the driver pre-flight, so the preview, the exports and the pre-flight can never disagree.
+    /// Every rule depends on the design only, never on a record's values. Returns null for an element that is drawn for real (or not at all).
+    /// </summary>
+    private static RenderPlaceholder? PlaceholderFor(LabelDocument doc, LabelElement e, bool typeset)
+    {
+        switch (e)
+        {
+            // Symbologies (or options) without an exact preview are drawn as a labelled placeholder: the printer still
+            // prints the real symbol from the generated ZPL, so the designer must not pretend to show it.
+            case BarcodeElement b when BarcodeCatalog.GetPreviewLimitation(b) is not null:
+                return new RenderPlaceholder
+                {
+                    WidthDots = PlaceholderWidth(b),
+                    HeightDots = Math.Max(40, b.Height),
+                    Caption = BarcodeCatalog.Get(b.Symbology).DisplayName + " - printer draws it",
+                    Typeset = typeset,
+                };
+
+            case ImageElement { Source: not null } img when ImageRenderCache.IsTooLarge(img):
+            {
+                // A visible marker instead of an exception or an out-of-memory crash. The box is limited to the label, because
+                // nothing outside it can be seen and a 40000-dot box would only make the hatch drawing slow.
+                var (tw, th) = ImageRenderCache.ResolveSize(img);
+                bool turned = (img.Rotation ?? FieldRotation.Normal) is FieldRotation.Rotated90 or FieldRotation.Rotated270;
+                return new RenderPlaceholder
+                {
+                    WidthDots = Math.Clamp(turned ? th : tw, 1, Math.Max(1, doc.WidthDots)),
+                    HeightDots = Math.Clamp(turned ? tw : th, 1, Math.Max(1, doc.HeightDots)),
+                    Caption = "Image too large to preview",
+                    Issue = "An image is too large to draw, so a hatched box is shown in its place. Make the image smaller (width and height in dots).",
+                    Typeset = typeset,
+                    Reverse = img.ReverseField,
+                };
+            }
+
+            // The stored object is unknown (not downloaded by this file), so the designer's own size is used. The caption says what is recalled.
+            case RecallPlaceholderElement recall when FindStoredGraphic(doc, recall) is null:
+                return new RenderPlaceholder
+                {
+                    WidthDots = Math.Max(1, recall.WidthDots),
+                    HeightDots = Math.Max(1, recall.HeightDots),
+                    Caption = string.IsNullOrWhiteSpace(recall.Reference)
+                        ? "Stored on printer (^" + recall.Command + ")"
+                        : "Stored on printer: " + recall.Reference,
+                    Typeset = typeset,
+                };
+
+            // Only raw blocks that draw something get a marker; configuration commands have no place on the label.
+            // The real size of the content is unknown, so a small fixed marker is drawn at the field position.
+            case RawZplElement { IsVisual: true }:
+                return new RenderPlaceholder
+                {
+                    WidthDots = RawMarkerWidthDots,
+                    HeightDots = RawMarkerHeightDots,
+                    Caption = "Raw ZPL",
+                    Typeset = typeset,
+                };
+
+            default:
+                return null;
+        }
+    }
+
     private static RenderElement? Map(LabelDocument doc, LabelElement e, IReadOnlyDictionary<string, string>? data, List<ValidationIssue> issues)
     {
         var rotation = ToRotation(e.Rotation ?? doc.DefaultRotation);
         bool typeset = e.OriginKind == FieldOriginKind.Typeset;
+
+        // Stand-ins first: every element that only the printer can draw is decided in one place.
+        if (PlaceholderFor(doc, e, typeset) is { } placeholder) return placeholder;
 
         switch (e)
         {
@@ -166,18 +272,7 @@ public static class LabelDocumentAdapter
                 var info = BarcodeCatalog.Get(b.Symbology);
                 var data1 = Core.Barcodes.QrContent.QrContentBuilder.ResolveForElement(b, data, doc.Variables, issues)
                     ?? VariableResolver.Resolve(b.Data, data, doc.Variables, b.Id, issues);
-                // Symbologies (or options) without an exact preview are drawn as a labelled placeholder: the printer still
-                // prints the real symbol from the generated ZPL, so the designer must not pretend to show it.
-                if (BarcodeCatalog.GetPreviewLimitation(b) is not null)
-                {
-                    return new RenderPlaceholder
-                    {
-                        WidthDots = PlaceholderWidth(b),
-                        HeightDots = Math.Max(40, b.Height),
-                        Caption = info.DisplayName + " - printer draws it",
-                        Typeset = typeset,
-                    };
-                }
+                // A symbology (or option) without an exact preview never gets here: PlaceholderFor already made its stand-in.
                 return new RenderBarcode
                 {
                     Symbology = b.Symbology,
@@ -305,48 +400,39 @@ public static class LabelDocumentAdapter
             case ImageElement img:
             {
                 if (img.Source is null) return null;
-                // Use the exact dots the printer will receive, so dithering is previewed faithfully.
-                var mono = ImageProcessor.ToMonochrome(img);
+                // Use the exact dots the printer will receive, so dithering is previewed faithfully. The work is cached: it is the same
+                // for every re-render while an object is dragged. An image too large to draw never gets here: PlaceholderFor applied the
+                // same size rule (ImageRenderCache.IsTooLarge) and made its stand-in, so nothing huge is ever prepared.
+                var prepared = ImageRenderCache.Prepare(img);
                 return new RenderImage
                 {
-                    EncodedBytes = EncodeMonochrome(mono),
-                    WidthDots = mono.Width,
-                    HeightDots = mono.Height,
+                    EncodedBytes = prepared.EncodedBytes,
+                    WidthDots = prepared.Width,
+                    HeightDots = prepared.Height,
                     // ^GF ignores field rotation (it is applied to the dots already), so none is passed on.
                     Typeset = typeset,
                     Reverse = img.ReverseField,
                 };
             }
 
-            case RecallPlaceholderElement recall when TryMapStoredGraphic(doc, recall, typeset) is { } stored:
-                return stored;
-
+            // Only a recall whose graphic this file downloads gets here (PlaceholderFor made the stand-in for the others), so it is drawn exactly.
             case RecallPlaceholderElement recall:
-                // The stored object is unknown, so the designer's own size is used. The caption says what is recalled.
-                return new RenderPlaceholder
-                {
-                    WidthDots = Math.Max(1, recall.WidthDots),
-                    HeightDots = Math.Max(1, recall.HeightDots),
-                    Caption = string.IsNullOrWhiteSpace(recall.Reference)
-                        ? "Stored on printer (^" + recall.Command + ")"
-                        : "Stored on printer: " + recall.Reference,
-                    Typeset = typeset,
-                };
+                return TryMapStoredGraphic(doc, recall, typeset);
 
-            // Only raw blocks that draw something get a marker; configuration commands have no place on the label.
-            // The real size of the content is unknown, so a small fixed marker is drawn at the field position.
-            case RawZplElement { IsVisual: true }:
-                return new RenderPlaceholder
-                {
-                    WidthDots = RawMarkerWidthDots,
-                    HeightDots = RawMarkerHeightDots,
-                    Caption = "Raw ZPL",
-                    Typeset = typeset,
-                };
-
+            // Raw blocks that draw something were turned into a marker by PlaceholderFor; configuration blocks draw nothing.
             default:
                 return null;
         }
+    }
+
+    /// <summary>
+    /// The graphic a recall prints when it can be drawn: only <c>^XG</c> and <c>^IM</c> recall a graphic, and only one the same file downloads
+    /// with <c>~DG</c> has known dots. Null for every other recall (<c>^IL</c>, <c>^XF</c>, or a graphic that lives only on the printer).
+    /// </summary>
+    private static StoredGraphic? FindStoredGraphic(LabelDocument doc, RecallPlaceholderElement recall)
+    {
+        if (!recall.Command.Equals("XG", StringComparison.OrdinalIgnoreCase) && !recall.Command.Equals("IM", StringComparison.OrdinalIgnoreCase)) return null;
+        return StoredGraphic.Find(doc.StoredGraphics, recall.Reference);
     }
 
     /// <summary>
@@ -355,8 +441,7 @@ public static class LabelDocumentAdapter
     /// </summary>
     private static RenderElement? TryMapStoredGraphic(LabelDocument doc, RecallPlaceholderElement recall, bool typeset)
     {
-        if (!recall.Command.Equals("XG", StringComparison.OrdinalIgnoreCase) && !recall.Command.Equals("IM", StringComparison.OrdinalIgnoreCase)) return null;
-        var graphic = StoredGraphic.Find(doc.StoredGraphics, recall.Reference);
+        var graphic = FindStoredGraphic(doc, recall);
         if (graphic is null) return null;
 
         var (mx, my) = recall.GetMagnification();
@@ -413,7 +498,7 @@ public static class LabelDocumentAdapter
     };
 
     /// <summary>Encodes packed 1-bit dots (1 = black) as a grey PNG.</summary>
-    private static byte[] EncodeMonochrome(MonochromeBitmap mono)
+    internal static byte[] EncodeMonochrome(MonochromeBitmap mono)
     {
         using var bmp = new SKBitmap(new SKImageInfo(mono.Width, mono.Height, SKColorType.Gray8, SKAlphaType.Opaque));
         var pixels = new byte[mono.Width * mono.Height];

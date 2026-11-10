@@ -421,10 +421,11 @@ public class ObjectConditionsTests : IDisposable
     }
 
     [Fact]
-    public void ABuildThatPredatesTheFeature_RefusesAVersionTenFile_AndTheNewestVersionIsStillNine()
+    public void ABuildThatPredatesTheFeature_RefusesAFileNewerThanItKnows()
     {
-        Assert.Equal(RotulaFileSerializer.ObjectConditionsFormatVersion, RotulaFileSerializer.CurrentFormatVersion);
-        Assert.Throws<RotulaFileException>(() => RotulaFileSerializer.Deserialize("{\"formatVersion\":11}"));
+        // Version 10 is read (relative positioning, version 11, came later); anything beyond the newest version is refused.
+        Assert.True(RotulaFileSerializer.CurrentFormatVersion >= RotulaFileSerializer.ObjectConditionsFormatVersion);
+        Assert.Throws<RotulaFileException>(() => RotulaFileSerializer.Deserialize("{\"formatVersion\":" + (RotulaFileSerializer.CurrentFormatVersion + 1) + "}"));
     }
 
     [Fact]

@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Windows;
+using System.Windows.Threading;
 using Rotula.App.ViewModels;
 
 namespace Rotula.App.Views;
@@ -16,6 +17,13 @@ public partial class PrintWindow : DialogWindow
         DataContext = viewModel;
         InitializeComponent();
         viewModel.CloseRequested += (_, _) => Close();
+        viewModel.PropertyChanged += (_, e) =>
+        {
+            // The findings sit at the top of the scrolled content. After pressing Print the person may have scrolled down to the copies, so the
+            // list (and its box) is brought into view; after the layout pass, because the card has only just become visible.
+            if (e.PropertyName == nameof(PrintViewModel.HasPreflightLines) && _vm.HasPreflightLines)
+                Dispatcher.BeginInvoke(() => FindingsCard.BringIntoView(), DispatcherPriority.Loaded);
+        };
         // Printer discovery runs async, so the dialog appears at once and fills in when Windows answers.
         Loaded += async (_, _) =>
         {

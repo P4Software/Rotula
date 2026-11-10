@@ -125,6 +125,28 @@ public sealed record PrinterTarget
     /// <summary>Status queries around a job; <see cref="PrinterStatusOptions.Off"/> unless set with <see cref="WithStatus"/>.</summary>
     public PrinterStatusOptions Status { get; private init; } = PrinterStatusOptions.Off;
 
+    /// <summary>
+    /// How the label reaches the printer. <see cref="PrinterOutputMode.PrinterLanguage"/> unless set with <see cref="WithMode"/>, so every existing target
+    /// keeps sending ZPL byte for byte.
+    /// </summary>
+    public PrinterOutputMode Mode { get; private init; } = PrinterOutputMode.PrinterLanguage;
+
+    /// <summary>
+    /// Fingerprint of the print findings (unprintable raw blocks, barcodes below the safe size...) the person has accepted for this job, or null when
+    /// nothing was acknowledged. Without a matching acknowledgement a picture-mode job is not sent.
+    /// </summary>
+    public string? AcknowledgedFindings { get; private init; }
+
+    /// <summary>
+    /// A copy of this target printing in <paramref name="mode"/>. A TCP target has no driver to draw through, so it always stays
+    /// <see cref="PrinterOutputMode.PrinterLanguage"/> whatever is asked.
+    /// </summary>
+    public PrinterTarget WithMode(PrinterOutputMode mode) =>
+        this with { Mode = Transport == PrinterTransport.Tcp ? PrinterOutputMode.PrinterLanguage : mode };
+
+    /// <summary>A copy of this target that carries the acknowledgement <paramref name="fingerprint"/> (null clears it).</summary>
+    public PrinterTarget WithAcknowledgement(string? fingerprint) => this with { AcknowledgedFindings = fingerprint };
+
     /// <summary>A copy of this target that asks the printer for its status as <paramref name="status"/> says.</summary>
     public PrinterTarget WithStatus(PrinterStatusOptions status) => this with { Status = status ?? PrinterStatusOptions.Off };
 

@@ -93,12 +93,13 @@ public sealed class PrinterTools
 
     /// <summary>Prints the label after a dry run and a confirmation.</summary>
     [McpServerTool(Name = "print_label", Destructive = true, OpenWorld = true, UseStructuredContent = true)]
-    [Description("Prints the current label on a Windows printer, in two steps. Printing is switched off unless the person who installed the server allows it and lists the printer. The FIRST call never prints: it returns exactly what would be sent (printer, copies, label size, any resolution conversion, the start of the ZPL) and a one-time confirmationToken. Show that to the user and, only if they agree, call print_label again with the same printer and copies and that token to send exactly one job. The token expires quickly and stops working if the label, printer or copies change. Variables the label works out itself (dates, computed values, counters that do not remember their value) are worked out when the job is sent; a date from the printer's own clock is sent as the computer's date here. A label with a counter that remembers its last value between sessions is refused (print it from the Rotula app, which records the numbers used). A label that asks questions at print time needs answers: the refusal lists the questions; ask the user, then call again with answers.")]
+    [Description("Prints the current label on a Windows printer, in two steps. Printing is switched off unless the person who installed the server allows it and lists the printer. The FIRST call never prints: it returns exactly what would be sent (printer, copies, label size, any resolution conversion, the start of the ZPL) and a one-time confirmationToken. Show that to the user and, only if they agree, call print_label again with the same printer and copies and that token to send exactly one job. The token expires quickly and stops working if the label, printer or copies change. Variables the label works out itself (dates, computed values, counters that do not remember their value) are worked out when the job is sent; a date from the printer's own clock is sent as the computer's date here. A label with a counter that remembers its last value between sessions is refused (print it from the Rotula app, which records the numbers used). A label that asks questions at print time needs answers: the refusal lists the questions; ask the user, then call again with answers. Imported or loaded labels can carry raw printer commands (cancel all jobs, delete stored objects, factory reset, network changes...): the first call scans ALL of the text that would be sent and lists every such command by name in riskyCommands with requiresAcknowledgement set. Tell the user exactly which commands are listed. Only if they agree, repeat the call with the token AND acknowledgedCommands naming each listed command; without it the job is refused and the token is used up.")]
     public async Task<PrintResultInfo> PrintLabel(
         [Description("Exact Windows printer name from list_printers; it must be on the allowed list.")] string printer,
         [Description("Number of labels. Capped by maxCopies in the settings (default 10).")] int copies = 1,
         [Description("The confirmationToken from the dry run. Leave empty for the first call.")] string? confirmationToken = null,
         [Description("Answers to the label's print-time questions as an object of variable name to answer. Only needed when the label has prompt variables.")] Dictionary<string, string>? answers = null,
+        [Description("Second call only, and only when the dry run listed riskyCommands: the names of those commands (for example [\"~JA\", \"^ID\"]), which the user has agreed to. Never set it without showing the user the list.")] List<string>? acknowledgedCommands = null,
         CancellationToken cancellationToken = default)
     {
         // Rules that need no label come first so a disabled server answers instantly and never touches a printer.
@@ -177,13 +178,17 @@ public sealed class PrinterTools
         }
 
         string fingerprint = PrintGate.Fingerprint(name, copies, fingerprintData is null ? generated.Zpl : ZplGenerator.Generate(doc, fingerprintData).Zpl);
-        var decision = _ctx.Gate.Evaluate(name, copies, fingerprint, confirmationToken);
+        // The scan covers every character that will be sent, so padding in front of a command or a long list of raw blocks hides nothing.
+        // It runs on the ZPL of this call; the fingerprint ties the confirmation to the same text, so what was listed is what is sent.
+        var risky = PrinterCommandScanner.Scan(generated.Zpl);
+        var decision = _ctx.Gate.Evaluate(name, copies, fingerprint, confirmationToken, risky.Select(r => r.Name).ToList(), acknowledgedCommands);
         string size = $"{Units.Express(doc.Width, "mm", doc.Dpi):0.##} x {Units.Express(doc.Height, "mm", doc.Dpi):0.##} mm ({doc.WidthDots} x {doc.HeightDots} dots at {(int)doc.Dpi} DPI)";
         var preview = generated.Zpl.Split('\n').Take(PreviewLines).ToList();
 
         // Imported ZPL that Rotula does not understand is sent to the printer exactly as it was written. The dry run lists every such
-        // block, because the ZPL preview above shows only the first lines and the person confirming should see them all.
-        var rawBlocks = doc.Elements
+        // block in full (up to a large limit), because the ZPL preview above shows only the first lines and the person confirming
+        // should see them all. The scan for dangerous commands does not depend on what is listed here.
+        var rawTexts = doc.Elements
             .Select(e => e switch
             {
                 RawZplElement r => r.Zpl,
@@ -191,11 +196,18 @@ public sealed class PrinterTools
                 _ => null,
             })
             .Where(z => !string.IsNullOrWhiteSpace(z))
-            .Select(z => Summarise(z!))
+            .Select(z => z!)
             .ToList();
-        string rawNote = rawBlocks.Count == 0
+        var rawBlocks = ListRawBlocks(rawTexts);
+        string rawNote = rawTexts.Count == 0
             ? ""
-            : $" This label also contains {rawBlocks.Count} block(s) of imported raw ZPL that are sent to the printer unchanged and were not checked by Rotula: {string.Join("; ", rawBlocks.Take(10))}{(rawBlocks.Count > 10 ? "; ..." : "")}.";
+            : $" This label also contains {rawTexts.Count} block(s) of imported raw ZPL that are sent to the printer unchanged and were not checked by Rotula; they are listed in full in rawZplBlocks.";
+        string riskNote = risky.Count == 0
+            ? ""
+            : " WARNING: THIS JOB CONTAINS COMMANDS THAT CHANGE OR ERASE THINGS IN THE PRINTER, not only print a label: " +
+              string.Join("; ", risky.Select(r => $"{r.Name} ({r.Meaning}){(r.Count > 1 ? $" x{r.Count}" : "")}")) +
+              ". Tell the user exactly this. Only if they agree, send it by repeating the call with the confirmationToken AND acknowledgedCommands set to " +
+              "[" + string.Join(", ", risky.Select(r => "\"" + r.Name + "\"")) + "]. Otherwise do not print; the commands can be removed with delete_element.";
 
         switch (decision.Decision)
         {
@@ -204,8 +216,8 @@ public sealed class PrinterTools
 
             case GateDecision.DryRun:
                 return new PrintResultInfo("dry-run",
-                    $"NOTHING WAS PRINTED. This is a preview of the job. If the user confirms, call print_label again with printer \"{name}\", copies {copies} and confirmationToken \"{decision.Token}\" before it expires." + rawNote,
-                    name, copies, size, caps.Dpi is { } d ? (int)d : null, conversion, preview, decision.Token, decision.ExpiresAt?.ToUniversalTime(), issues, rawBlocks);
+                    $"NOTHING WAS PRINTED. This is a preview of the job. If the user confirms, call print_label again with printer \"{name}\", copies {copies} and confirmationToken \"{decision.Token}\" before it expires." + riskNote + rawNote,
+                    name, copies, size, caps.Dpi is { } d ? (int)d : null, conversion, preview, decision.Token, decision.ExpiresAt?.ToUniversalTime(), issues, rawBlocks, risky, risky.Count > 0);
 
             default:
                 // Exactly one job. The result is a value, never an exception; a failure is reported and nothing is retried.
@@ -215,17 +227,35 @@ public sealed class PrinterTools
                 if (!result.Succeeded)
                     throw new McpException("The printer did not accept the job: " + Messages.Describe(result.Error!));
                 return new PrintResultInfo("sent", $"Sent one print job of {copies} label(s) to \"{name}\" ({result.BytesSent:N0} bytes).",
-                    name, copies, size, caps.Dpi is { } d2 ? (int)d2 : null, conversion, preview, null, null, issues, rawBlocks);
+                    name, copies, size, caps.Dpi is { } d2 ? (int)d2 : null, conversion, preview, null, null, issues, rawBlocks, risky, false);
         }
     }
 
     // ---- helpers ---------------------------------------------------------------------------
 
-    /// <summary>A short, single-line form of a raw ZPL block for the confirmation message.</summary>
-    private static string Summarise(string zpl)
+    /// <summary>Longest raw block shown whole, in characters. A longer one is cut and says how much is missing.</summary>
+    internal const int MaxShownBlockChars = 4000;
+
+    /// <summary>Most raw blocks listed one by one. The rest are counted in a last entry.</summary>
+    internal const int MaxShownBlocks = 100;
+
+    /// <summary>
+    /// The raw blocks for the confirmation, each as one line and in full up to <see cref="MaxShownBlockChars"/> characters. Whatever is not
+    /// shown is said so; it was still scanned for printer-changing commands, so a cut never hides one.
+    /// </summary>
+    internal static List<string> ListRawBlocks(IReadOnlyList<string> blocks)
     {
-        string oneLine = string.Join(" ", zpl.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)).Trim();
-        return oneLine.Length > 60 ? oneLine[..60] + "..." : oneLine;
+        var shown = new List<string>(Math.Min(blocks.Count, MaxShownBlocks + 1));
+        foreach (var zpl in blocks.Take(MaxShownBlocks))
+        {
+            string oneLine = string.Join(" ", zpl.Split(["\r", "\n"], StringSplitOptions.RemoveEmptyEntries)).Trim();
+            shown.Add(oneLine.Length <= MaxShownBlockChars
+                ? oneLine
+                : oneLine[..MaxShownBlockChars] + $"... [{oneLine.Length - MaxShownBlockChars:N0} more characters not shown; the whole block was checked for printer-changing commands]");
+        }
+        if (blocks.Count > MaxShownBlocks)
+            shown.Add($"... [{blocks.Count - MaxShownBlocks:N0} more raw block(s) not listed here; all of them were checked for printer-changing commands]");
+        return shown;
     }
 
     private async Task<IReadOnlyList<PrinterInfo>> SafeListAsync(CancellationToken ct)

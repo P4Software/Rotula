@@ -11,6 +11,12 @@ public sealed class CsvOptions
 
     /// <summary>True when the first record holds column names; false generates <c>Column1</c>, <c>Column2</c>...</summary>
     public bool HasHeader { get; set; } = true;
+
+    /// <summary>Most columns the file may have; a wider file is refused with a <c>Merge.Table.TooWide</c> issue instead of being padded.</summary>
+    public int MaxColumns { get; set; } = MergeLimits.DefaultMaxColumns;
+
+    /// <summary>Most cells (columns times data rows) the table may have; a larger file is refused with a <c>Merge.Table.TooLarge</c> issue.</summary>
+    public long MaxCells { get; set; } = MergeLimits.DefaultMaxCells;
 }
 
 /// <summary>
@@ -67,6 +73,9 @@ public static class CsvReader
         {
             header = new List<string>();
         }
+        // Checked before any padding: padding every row to the widest one is what multiplies the size of a hostile file.
+        if (MergeLimits.Check(width, records.Count - start, options.MaxColumns, options.MaxCells) is { } tooBig)
+            return MergeLimits.Refuse(tooBig);
         // Header shorter than the widest row: pad with blanks (named ColumnN) so no data is lost.
         while (header.Count < width) header.Add(string.Empty);
 

@@ -86,8 +86,18 @@ public static class RotulaFileSerializer
     /// </summary>
     public const int ObjectConditionsFormatVersion = 10;
 
+    /// <summary>
+    /// Version 11: adds relative positioning: "anchor" (one of nine points), "relativeTo" (label or element) and "referenceElementId" on an element,
+    /// whose X/Y are then an offset from the reference's anchor point. An older build would read the offset as an absolute position and print the
+    /// object in the wrong place, so it must refuse the file. Labels without anchors stay at the lower versions.
+    /// </summary>
+    public const int RelativePositionFormatVersion = 11;
+
     /// <summary>The newest format version this build can read. Files are written with the lowest version that can hold their content.</summary>
-    public const int CurrentFormatVersion = ObjectConditionsFormatVersion;
+    public const int CurrentFormatVersion = RelativePositionFormatVersion;
+
+    /// <summary>Longest element id accepted as an anchor reference (ids are 32-character GUIDs; hand-written ones are short words).</summary>
+    private const int MaxReferenceIdLength = 64;
 
     // Limits for untrusted values of the version 6 fields.
     private const int MaxStoredGraphics = 256;
@@ -161,6 +171,9 @@ public static class RotulaFileSerializer
         // An older build would print an object that is marked "do not print", ignore its condition and forget its lock, so it must refuse the file instead.
         if (dto.Elements.Any(e => e.PrintCondition is not null || e.NotPrintable is not null || e.Locked is not null))
             dto.FormatVersion = Math.Max(dto.FormatVersion, ObjectConditionsFormatVersion);
+        // An older build would take the offset of an anchored object for an absolute position and print it elsewhere, so it must refuse the file.
+        if (dto.Elements.Any(e => e.Anchor is not null))
+            dto.FormatVersion = Math.Max(dto.FormatVersion, RelativePositionFormatVersion);
         return JsonSerializer.Serialize(dto, Options);
     }
 
@@ -228,8 +241,17 @@ public static class RotulaFileSerializer
         string? folder = Path.GetDirectoryName(Path.GetFullPath(path));
         if (!string.IsNullOrEmpty(folder)) Directory.CreateDirectory(folder);
         string temp = path + ".tmp";
-        File.WriteAllText(temp, json, new System.Text.UTF8Encoding(false));
-        File.Move(temp, path, overwrite: true);
+        try
+        {
+            File.WriteAllText(temp, json, new System.Text.UTF8Encoding(false));
+            File.Move(temp, path, overwrite: true);
+        }
+        catch
+        {
+            // A failed save must not leave a half-written copy next to the label (the name is fixed, so it would also be reused and mislead the user).
+            try { File.Delete(temp); } catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { /* nothing more can be done */ }
+            throw;
+        }
     }
 
     /// <summary>Reads a document from a file.</summary>
@@ -254,6 +276,10 @@ public static class RotulaFileSerializer
         dto.Id = string.Empty;
         dto.X = 0;
         dto.Y = 0;
+        // An anchor only moves the element; it never changes its size or look.
+        dto.Anchor = null;
+        dto.RelativeTo = null;
+        dto.ReferenceElementId = null;
         return JsonSerializer.Serialize(dto, FingerprintOptions);
     }
 
@@ -544,6 +570,11 @@ public static class RotulaFileSerializer
             : new PrintConditionDto { Field = e.PrintCondition.Field, Operator = e.PrintCondition.Operator.ToString(), Value = e.PrintCondition.Value };
         dto.NotPrintable = e.NotPrintable ? true : null;
         dto.Locked = e.Locked ? true : null;
+        // The reference only means something with an anchor; "Label" is the default and is left out so the file stays short.
+        dto.Anchor = e.Anchor?.ToString();
+        bool toElement = e.Anchor is not null && e.RelativeTo == AnchorReference.Element && e.ReferenceElementId is not null;
+        dto.RelativeTo = toElement ? AnchorReference.Element.ToString() : null;
+        dto.ReferenceElementId = toElement ? e.ReferenceElementId : null;
         return dto;
     }
 
@@ -622,8 +653,9 @@ public static class RotulaFileSerializer
             MediaTracking = Parse<MediaTracking>(l.MediaTracking),
             DefaultRotation = Parse<FieldRotation>(l.DefaultRotation),
             DefaultFont = l.DefaultFont is null ? null : new FontSpec(ParseChar(l.DefaultFont.FontId), l.DefaultFont.Height, l.DefaultFont.Width),
-            Encoding = l.Encoding.CodePage is { } cp ? ZplEncoding.Legacy(l.Encoding.CiCode, cp)
-                : l.Encoding.CiCode == 28 ? ZplEncoding.Utf8
+            // Only the pairs Rotula writes itself are accepted: a code page that does not exist on this machine would make every later ZPL
+            // generation throw, and one that does not belong to the ^CI number would print other characters than the label shows.
+            Encoding = ZplEncoding.TryFromStored(l.Encoding.CiCode, l.Encoding.CodePage, out var storedEncoding) ? storedEncoding
                 : throw new ArgumentException("Unsupported encoding."),
             Print = new PrintOptions { Quantity = l.Print.Quantity, PauseEvery = l.Print.PauseEvery, Replicates = l.Print.Replicates, OverridePause = l.Print.OverridePause },
         };
@@ -650,8 +682,11 @@ public static class RotulaFileSerializer
         doc.MediaDarkness = l.MediaDarkness;
         if (l.FontAliases is not null)
             foreach (var a in l.FontAliases.Take(MaxFontAliases))
+                // ^ ~ and the comma are refused because the path is written into a ^CW command unescaped and would end it. A name that merely
+                // does not look like a printer font file is kept: the generator reports it (Font.Alias.Invalid) so the user sees and fixes it,
+                // instead of the alias silently disappearing from the file.
                 if (a?.Letter is { Length: 1 } letter && char.IsAsciiLetterOrDigit(letter[0]) && a.Path is { Length: > 0 and <= MaxPathLength } path
-                    && path.All(c => c >= ' ' && c <= '~'))
+                    && path.All(c => c >= ' ' && c <= '~' && c is not ('^' or '~' or ',')))
                     doc.FontAliases.Add(new FontAlias(letter[0], path));
         if (l.StoredGraphics is not null)
         {
@@ -751,6 +786,14 @@ public static class RotulaFileSerializer
         e.PrintCondition = dto.PrintCondition is { } pc && TryParse<ConditionOperator>(pc.Operator, out var op)
             ? new PrintCondition { Field = Clip(pc.Field ?? string.Empty, PrintCondition.MaxTextLength), Operator = op, Value = Clip(pc.Value ?? string.Empty, PrintCondition.MaxTextLength) }
             : null;
+        // An anchor name that is not known (a newer build, or a hand edit) leaves the element absolute rather than failing the file; a reference
+        // to an element needs a usable id, otherwise the label stands in.
+        e.Anchor = TryParse<AnchorPoint>(dto.Anchor, out var anchor) ? anchor : null;
+        e.ReferenceElementId = dto.ReferenceElementId is { Length: > 0 and <= MaxReferenceIdLength } refId && refId.All(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_')
+            ? refId : null;
+        e.RelativeTo = e.Anchor is not null && TryParse<AnchorReference>(dto.RelativeTo, out var reference) && reference == AnchorReference.Element && e.ReferenceElementId is not null
+            ? AnchorReference.Element : AnchorReference.Label;
+        if (e.RelativeTo == AnchorReference.Label) e.ReferenceElementId = null;
         return e;
     }
 

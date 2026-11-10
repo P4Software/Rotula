@@ -3,6 +3,7 @@ using System.Text;
 using Rotula.Core.Barcodes;
 using Rotula.Core.Elements;
 using Rotula.Core.Imaging;
+using Rotula.Core.Layout;
 using Rotula.Core.Model;
 using Rotula.Core.Text;
 using Rotula.Core.Validation;
@@ -25,13 +26,22 @@ public sealed class ZplValidationException : Exception
     public IReadOnlyList<ValidationIssue> Issues { get; }
 }
 
+/// <summary>
+/// A numbered field of a stored format: the <c>^FN</c> number the format uses for a placeholder and the variable it stands for.
+/// </summary>
+/// <param name="Number">The field number written as <c>^FN</c>, 0 to 9999.</param>
+/// <param name="Name">The variable name of the placeholder the field holds.</param>
+/// <param name="ElementId">Id of the element the field was written for.</param>
+public sealed record StoredFormatField(int Number, string Name, string ElementId);
+
 /// <summary>Output of <see cref="ZplGenerator.Generate"/>.</summary>
 public sealed class ZplGenerationResult
 {
-    internal ZplGenerationResult(string zpl, IReadOnlyList<ValidationIssue> issues)
+    internal ZplGenerationResult(string zpl, IReadOnlyList<ValidationIssue> issues, IReadOnlyList<StoredFormatField>? formatFields = null)
     {
         Zpl = zpl;
         Issues = issues;
+        FormatFields = formatFields ?? Array.Empty<StoredFormatField>();
     }
 
     /// <summary>The ZPL program (^XA...^XZ, LF line endings, pure ASCII). Elements with errors are omitted.</summary>
@@ -39,6 +49,12 @@ public sealed class ZplGenerationResult
 
     /// <summary>Errors and warnings found while generating.</summary>
     public IReadOnlyList<ValidationIssue> Issues { get; }
+
+    /// <summary>
+    /// The numbered fields written by <see cref="ZplGenerator.GenerateStoredFormat"/>, in label order; empty for an ordinary label.
+    /// A recall of the format (<see cref="ZplGenerator.GenerateFormatRecall"/>) fills exactly these numbers.
+    /// </summary>
+    public IReadOnlyList<StoredFormatField> FormatFields { get; }
 
     /// <summary>True when at least one issue is an error (the ZPL then lacks the offending elements).</summary>
     public bool HasErrors => Issues.Any(i => i.Severity == ValidationSeverity.Error);
@@ -92,21 +108,179 @@ public static class ZplGenerator
         return GenerateCore(doc, resolution.Values, resolution, quantity, rasterizer);
     }
 
-    private static ZplGenerationResult GenerateCore(LabelDocument doc, IReadOnlyDictionary<string, string>? data, VariableResolution? resolution, int? quantity, ITextRasterizer? rasterizer)
+    // ---- stored formats (^DF) and their recalls (^XF) ---------------------------------------
+
+    /// <summary>
+    /// Writes the label as a format stored on the printer: <c>^DF</c> right after <c>^XA</c>, and every text or barcode whose content is exactly one
+    /// <c>{{placeholder}}</c> written as a numbered field (<c>^FN</c> with the variable name as its prompt) without data, so the printer fills it
+    /// in when the format is recalled. The numbers are the elements' own field numbers where they have one, otherwise the lowest free numbers in
+    /// label order; placeholders of the same name share a number, as they share their data on the printer. Fixed text, graphics and barcodes
+    /// without a placeholder are written as usual. A field that mixes fixed text with placeholders cannot be numbered (the printer replaces the
+    /// whole data), so it is written with its sample value and reported as <c>Format.Field.Mixed</c>; the same goes for a Windows-font text,
+    /// which prints as a picture (<c>Format.Field.Picture</c>). The print quantity is left out: it belongs to the recall.
+    /// </summary>
+    /// <param name="doc">The label.</param>
+    /// <param name="formatPath">Where the printer stores the format, for example <c>R:SHIP.ZPL</c>; the drive defaults to <c>R:</c> and the extension to <c>.ZPL</c>.</param>
+    /// <param name="rasterizer">Draws the text of Windows fonts (see <see cref="Generate"/>).</param>
+    public static ZplGenerationResult GenerateStoredFormat(LabelDocument doc, string formatPath, ITextRasterizer? rasterizer = null)
+    {
+        ArgumentNullException.ThrowIfNull(doc);
+        return GenerateCore(doc, null, null, null, rasterizer, new FormatPlan(doc, NormalizeFormatPath(formatPath)));
+    }
+
+    /// <summary>
+    /// Writes the label that prints a stored format: <c>^XF</c> followed by one <c>^FN</c> field per placeholder with the value from
+    /// <paramref name="data"/> (or the sample value), then the print quantity. The numbering is the one <see cref="GenerateStoredFormat"/> gives
+    /// the same label, so the two always match. The recall is self-contained: it states the character set so accents are read as the format expects.
+    /// </summary>
+    /// <param name="doc">The label the format was made from.</param>
+    /// <param name="formatPath">The stored format to print, written as for <see cref="GenerateStoredFormat"/>.</param>
+    /// <param name="data">Values for the placeholders; names missing here use the declared sample values.</param>
+    /// <param name="quantity">When set, replaces the label's own print quantity.</param>
+    public static ZplGenerationResult GenerateFormatRecall(LabelDocument doc, string formatPath, IReadOnlyDictionary<string, string>? data = null, int? quantity = null)
+    {
+        ArgumentNullException.ThrowIfNull(doc);
+        string path = NormalizeFormatPath(formatPath);
+        // The format run decides the numbers; its issues about the path and the fields apply to the recall just as much.
+        var format = GenerateStoredFormat(doc, path);
+        var issues = new List<ValidationIssue>(format.Issues.Where(i => i.MessageKey.StartsWith("Format.", StringComparison.Ordinal)));
+        var sb = new StringBuilder();
+        void Line(string s) => sb.Append(s).Append('\n');
+        Line("^XA");
+        Line("^XF" + path + "^FS");
+        Line(Invariant($"^CI{doc.Encoding.CiCode}"));
+        var written = new HashSet<int>();
+        foreach (var field in format.FormatFields)
+        {
+            // Two elements that share a name share a number: one value is enough and the printer prints it in both.
+            if (!written.Add(field.Number)) continue;
+            var element = doc.Elements.FirstOrDefault(e => e.Id == field.ElementId);
+            string value = VariableResolver.Resolve("{{" + field.Name + "}}", data, doc.Variables, field.ElementId, issues);
+            bool lineBreaks = element is TextElement { Block: not null };
+            var esc = ZplText.Escape(value, doc.Encoding, lineBreaks);
+            foreach (var ch in esc.Unmappable) issues.Add(new ValidationIssue(ValidationSeverity.Warning, "Text.UnmappableChar", field.ElementId, ch));
+            Line((esc.NeedsHexEscape ? "^FH_" : string.Empty) + "^FN" + field.Number.ToString(CultureInfo.InvariantCulture) + "^FD" + esc.Text + "^FS");
+        }
+        var p = doc.Print;
+        Line(Invariant($"^PQ{quantity ?? p.Quantity},{p.PauseEvery},{p.Replicates},{(p.OverridePause ? 'Y' : 'N')}"));
+        Line("^XZ");
+        return new ZplGenerationResult(sb.ToString(), issues, format.FormatFields);
+    }
+
+    // A stored format name: a drive letter, up to 16 characters and the .ZPL extension (older printers accept 8 characters).
+    private static readonly System.Text.RegularExpressions.Regex FormatPathShape = new(@"^[REBA]:[A-Z0-9_\-]{1,16}\.ZPL$",
+        System.Text.RegularExpressions.RegexOptions.CultureInvariant | System.Text.RegularExpressions.RegexOptions.Compiled);
+
+    /// <summary>
+    /// Normalises a stored format name the way the printer reads it: upper case, drive <c>R:</c> when none is given, extension <c>.ZPL</c> when none is
+    /// given. <c>ship</c> becomes <c>R:SHIP.ZPL</c>.
+    /// </summary>
+    public static string NormalizeFormatPath(string? path)
+    {
+        string p = (path ?? string.Empty).Trim().ToUpperInvariant();
+        string device = "R:";
+        int colon = p.IndexOf(':');
+        if (colon == 1) { device = p[..2]; p = p[2..]; }
+        else if (colon > 1) { p = p[(colon + 1)..]; }
+        if (!p.Contains('.')) p += ".ZPL";
+        return device + p;
+    }
+
+    /// <summary>True when <paramref name="path"/> (as returned by <see cref="NormalizeFormatPath"/>) is a name a printer accepts for a stored format.</summary>
+    public static bool IsValidFormatPath(string? path) => FormatPathShape.IsMatch(path ?? string.Empty);
+
+    /// <summary>
+    /// The bookkeeping of one stored-format run: the format's name and the field number given to each placeholder name. Numbers already
+    /// used by elements of the label are reserved first, so an allocated number never collides with one the designer chose.
+    /// </summary>
+    private sealed class FormatPlan
+    {
+        private readonly Dictionary<string, int> _numbers = new(StringComparer.Ordinal);
+        private readonly HashSet<int> _used;
+        public FormatPlan(LabelDocument doc, string path)
+        {
+            Path = path;
+            _used = doc.Elements.OfType<FieldDataElement>().Where(e => e.FieldNumber is not null).Select(e => e.FieldNumber!.Value).ToHashSet();
+            // An element that carries both a number and a placeholder fixes the number of that name; the first one in label order wins.
+            foreach (var e in doc.Elements.OfType<FieldDataElement>())
+                if (e.FieldNumber is { } n && PureVariable(e) is { } name && !_numbers.ContainsKey(name)) _numbers[name] = n;
+        }
+        public string Path { get; }
+        public List<StoredFormatField> Fields { get; } = new();
+
+        /// <summary>The number for a placeholder name: the one it already has, or the lowest number no element uses.</summary>
+        public int NumberFor(string name)
+        {
+            if (_numbers.TryGetValue(name, out int n)) return n;
+            n = 1;
+            while (_used.Contains(n)) n++;
+            _used.Add(n);
+            _numbers[name] = n;
+            return n;
+        }
+    }
+
+    /// <summary>The variable name when the element's content is exactly one placeholder and nothing else; otherwise null.</summary>
+    private static string? PureVariable(FieldDataElement e)
+    {
+        string template = e switch
+        {
+            TextElement t => t.GetTemplate(),
+            // A QR code built by the content builder carries structure the printer cannot fill in, so only hand-typed data counts.
+            BarcodeElement { QrContentSpec.Length: 0 } b => b.Data,
+            _ => string.Empty,
+        };
+        var names = VariableResolver.FindVariables(template);
+        if (names.Count != 1 || names[0].StartsWith('#')) return null;
+        return template.Trim() == "{{" + names[0] + "}}" ? names[0] : null;
+    }
+
+    /// <summary>
+    /// Decides how a data field is written in a stored format: the numbered field to use, or null when the field keeps its data. A field that
+    /// has placeholders but cannot be numbered is reported, because its sample value would otherwise be stored as if it were fixed text.
+    /// </summary>
+    private static (int Number, string Name)? FormatFieldFor(FormatPlan? format, FieldDataElement e, List<ValidationIssue> issues)
+    {
+        if (format is null) return null;
+        string template = e is TextElement t ? t.GetTemplate() : ((BarcodeElement)e).Data;
+        if (PureVariable(e) is { } name && e.Serial is null)
+        {
+            int number = e.FieldNumber ?? format.NumberFor(name);
+            format.Fields.Add(new StoredFormatField(number, name, e.Id));
+            return (number, name);
+        }
+        if (VariableResolver.FindVariables(template).Count > 0)
+            issues.Add(new ValidationIssue(ValidationSeverity.Warning, "Format.Field.Mixed", e.Id));
+        return null;
+    }
+
+    private static ZplGenerationResult GenerateCore(LabelDocument doc, IReadOnlyDictionary<string, string>? data, VariableResolution? resolution, int? quantity, ITextRasterizer? rasterizer, FormatPlan? format = null)
     {
         ArgumentNullException.ThrowIfNull(doc);
         var issues = new List<ValidationIssue>();
         if (resolution is not null) issues.AddRange(resolution.Issues);
+        // Text and barcode data are turned into bytes with the label's encoding all through generation; one that cannot be built would throw
+        // from deep inside, so it is reported once here and nothing is generated.
+        if (!doc.Encoding.IsUsable)
+        {
+            issues.Add(new ValidationIssue(ValidationSeverity.Error, "Encoding.Unsupported", null, doc.Encoding.CiCode.ToString(CultureInfo.InvariantCulture)));
+            return new ZplGenerationResult(string.Empty, issues, format?.Fields);
+        }
         int widthDots = doc.WidthDots, heightDots = doc.HeightDots;
         ValidateDocument(doc, widthDots, heightDots, issues);
+        if (format is not null && !IsValidFormatPath(format.Path))
+            issues.Add(new ValidationIssue(ValidationSeverity.Error, "Format.Path.Invalid", null, format.Path));
 
         var sb = new StringBuilder();
         void Line(string s) => sb.Append(s).Append('\n');
 
         // Downloaded graphics are immediate (tilde) commands: they go before the label format, not inside it.
-        foreach (var g in doc.StoredGraphics) Line(StoredGraphicCommand(g));
+        // Only graphics that pass validation are written (ValidateDocument reports the others): the name goes into the command unescaped.
+        foreach (var g in doc.StoredGraphics.Where(IsWritableStoredGraphic)) Line(StoredGraphicCommand(g));
 
         Line("^XA");
+        // The store command must come first: the printer stores everything that follows it instead of printing.
+        if (format is not null) Line("^DF" + format.Path + "^FS");
         Line("^MN" + doc.MediaTracking switch { MediaTracking.Continuous => "N", MediaTracking.Mark => "M", _ => "Y" });
         Line("^MT" + (doc.MediaType == MediaType.DirectThermal ? "D" : "T"));
         Line(Invariant($"^CI{doc.Encoding.CiCode}"));
@@ -125,26 +299,38 @@ public static class ZplGenerator
         if (doc.MediaDarkness is { } darkness) Line("^MD" + darkness.ToString(CultureInfo.InvariantCulture));
         Line("^FW" + RotationChar(doc.DefaultRotation));
         if (doc.DefaultFont is { } f) Line(Invariant($"^CF{f.FontId},{f.Height},{f.Width}"));
-        foreach (var alias in doc.FontAliases) Line("^CW" + alias.Letter + "," + alias.Path);
+        foreach (var alias in doc.FontAliases.Where(a => FontAlias.IsValid(a.Letter, a.Path))) Line("^CW" + alias.Letter + "," + alias.Path);
         // Offsets of the printer's secondary and third clock, defined once for the whole label before any field uses them.
         if (resolution is not null)
             foreach (var (clockSet, offset) in resolution.ClockOffsets.OrderBy(kv => kv.Key)) Line(PrinterClock.OffsetCommand(clockSet, offset));
+
+        // Anchored objects get their absolute origin here, for this record: a text that is wider on one record moves its right-anchored
+        // neighbour on that record only. Labels without anchors skip the whole step, so their output is byte-for-byte as before.
+        AnchorLayout? layout = AnchorResolver.HasAnchors(doc) ? AnchorResolver.Resolve(doc, data, rasterizer) : null;
+        if (layout is not null) issues.AddRange(layout.Issues);
 
         foreach (var element in doc.Elements)
         {
             // An object that is switched off for this record is not emitted and not validated: a barcode that is only invalid on a record
             // where it is hidden must not stop that record from printing. The same data that fills the placeholders decides the condition.
             if (!ElementPrinting.IsPrinted(element, data, doc.Variables, issues)) continue;
+            // An object on a reference circle has no position (its error is already in the issues) and is left out like any other invalid field.
+            if (layout is not null && layout.IsOnCycle(element)) continue;
+            var at = layout?.OriginOf(element) ?? (element.X, element.Y);
             int before = issues.Count;
-            string? field = EmitElement(doc, element, data, resolution, issues, rasterizer);
+            string? field = EmitElement(doc, element, at, data, resolution, issues, rasterizer, format);
             bool failed = issues.Skip(before).Any(i => i.Severity == ValidationSeverity.Error);
             if (field is not null && !failed) Line(field);
         }
 
-        var p = doc.Print;
-        Line(Invariant($"^PQ{quantity ?? p.Quantity},{p.PauseEvery},{p.Replicates},{(p.OverridePause ? 'Y' : 'N')}"));
+        // A stored format has no quantity of its own; the recall that prints it says how many.
+        if (format is null)
+        {
+            var p = doc.Print;
+            Line(Invariant($"^PQ{quantity ?? p.Quantity},{p.PauseEvery},{p.Replicates},{(p.OverridePause ? 'Y' : 'N')}"));
+        }
         Line("^XZ");
-        return new ZplGenerationResult(sb.ToString(), issues);
+        return new ZplGenerationResult(sb.ToString(), issues, format?.Fields);
     }
 
     // ---- document / element validation ----------------------------------------------------
@@ -163,17 +349,16 @@ public static class ZplGenerator
         if (doc.PrintRate is { } pr && new[] { pr.Speed, pr.SlewSpeed, pr.BackfeedSpeed }.Any(v => v is < 1 or > 14))
             issues.Add(new ValidationIssue(ValidationSeverity.Error, "Print.Rate.Range", null, "1", "14"));
         foreach (var alias in doc.FontAliases)
-            if (!(char.IsAsciiLetterOrDigit(alias.Letter) && FontPath.IsMatch(alias.Path)))
+            if (!FontAlias.IsValid(alias.Letter, alias.Path))
                 issues.Add(new ValidationIssue(ValidationSeverity.Error, "Font.Alias.Invalid", null, alias.Letter.ToString(), alias.Path));
         foreach (var g in doc.StoredGraphics)
-            if (!StoredGraphic.IsValidPath(g.Path) || g.Data.Length > 4 * 1024 * 1024)
+            if (!IsWritableStoredGraphic(g))
                 issues.Add(new ValidationIssue(ValidationSeverity.Error, "Graphic.Stored.Invalid", null, g.Path));
         if (doc.DefaultFont is { } f && (f.Height < 10 || f.Height > 32000 || f.Width < 0 || f.Width > 32000))
             issues.Add(new ValidationIssue(ValidationSeverity.Error, "Font.Size.Range", null, "10", "32000"));
     }
 
-    // Font file names: an optional device letter, a name of up to 8 characters and a font extension.
-    private static readonly System.Text.RegularExpressions.Regex FontPath = new(@"^(?:[REBA]:)?[A-Za-z0-9_\-]{1,8}\.(?:FNT|TTF|TTE|fnt|ttf|tte)$", System.Text.RegularExpressions.RegexOptions.CultureInvariant | System.Text.RegularExpressions.RegexOptions.Compiled);
+    private static bool IsWritableStoredGraphic(StoredGraphic g) => StoredGraphic.IsValidPath(g.Path) && g.Data.Length <= 4 * 1024 * 1024;
 
     private static string StoredGraphicCommand(StoredGraphic g) =>
         Invariant($"~DG{g.Path},{g.Data.Length},{g.BytesPerRow},") + Convert.ToHexString(g.Data);
@@ -190,42 +375,44 @@ public static class ZplGenerator
         _ => 'T',
     };
 
-    private static void CheckPosition(LabelElement e, LabelDocument doc, int extentW, int extentH, List<ValidationIssue> issues)
+    /// <summary>Checks the absolute origin <paramref name="at"/> (the resolved position, which for an anchored object is not its X/Y).</summary>
+    private static void CheckPosition(LabelElement e, (int X, int Y) at, LabelDocument doc, int extentW, int extentH, List<ValidationIssue> issues)
     {
-        if (e.X < 0 || e.Y < 0 || e.X > 32000 || e.Y > 32000)
+        if (at.X < 0 || at.Y < 0 || at.X > 32000 || at.Y > 32000)
             issues.Add(new ValidationIssue(ValidationSeverity.Error, "Element.Position.Range", e.Id, "0", "32000"));
-        else if (e.X + extentW > doc.WidthDots || e.Y + extentH > doc.HeightDots)
+        else if (at.X + extentW > doc.WidthDots || at.Y + extentH > doc.HeightDots)
             // Only a warning: printers clip silently, and the extent of text/barcodes is unknown here.
             issues.Add(new ValidationIssue(ValidationSeverity.Warning, "Element.OutsideLabel", e.Id));
     }
 
     // ---- element emission ------------------------------------------------------------------
 
-    private static string? EmitElement(LabelDocument doc, LabelElement e, IReadOnlyDictionary<string, string>? data, VariableResolution? resolution, List<ValidationIssue> issues, ITextRasterizer? rasterizer)
+    private static string? EmitElement(LabelDocument doc, LabelElement e, (int X, int Y) at, IReadOnlyDictionary<string, string>? data, VariableResolution? resolution, List<ValidationIssue> issues, ITextRasterizer? rasterizer, FormatPlan? format)
     {
         switch (e)
         {
-            case TextElement t: return EmitText(doc, t, data, resolution, issues, rasterizer);
-            case BarcodeElement b: return EmitBarcode(doc, b, data, issues);
-            case BoxElement box: return EmitBox(doc, box, issues);
-            case LineElement line: return EmitLine(doc, line, issues);
-            case CircleElement c: return EmitCircle(doc, c, issues);
-            case EllipseElement el: return EmitEllipse(doc, el, issues);
-            case DiagonalLineElement dl: return EmitDiagonal(doc, dl, issues);
-            case SymbolElement sy: return EmitSymbol(doc, sy, issues);
-            case ImageElement img: return EmitImage(doc, img, issues);
+            case TextElement t: return EmitText(doc, t, at, data, resolution, issues, rasterizer, format);
+            case BarcodeElement b: return EmitBarcode(doc, b, at, data, issues, format);
+            case BoxElement box: return EmitBox(doc, box, at, issues);
+            case LineElement line: return EmitLine(doc, line, at, issues);
+            case CircleElement c: return EmitCircle(doc, c, at, issues);
+            case EllipseElement el: return EmitEllipse(doc, el, at, issues);
+            case DiagonalLineElement dl: return EmitDiagonal(doc, dl, at, issues);
+            case SymbolElement sy: return EmitSymbol(doc, sy, at, issues);
+            case ImageElement img: return EmitImage(doc, img, at, issues);
             // Imported content the designer cannot model is written back unchanged.
             case RawZplElement raw: return raw.Zpl.Length == 0 ? null : raw.Zpl;
             case RecallPlaceholderElement recall:
-                return recall.Zpl.Length == 0 ? null : recall.EmitAsField ? Origin(recall) + recall.Zpl + "^FS" : recall.Zpl;
+                return recall.Zpl.Length == 0 ? null : recall.EmitAsField ? Origin(recall, at) + recall.Zpl + "^FS" : recall.Zpl;
             default:
                 issues.Add(new ValidationIssue(ValidationSeverity.Error, "Element.Unsupported", e.Id, e.GetType().Name));
                 return null;
         }
     }
 
-    internal static string Origin(LabelElement e) =>
-        Invariant($"^F{(e.OriginKind == FieldOriginKind.Typeset ? 'T' : 'O')}{e.X},{e.Y}") + (e.ReverseField ? "^FR" : string.Empty);
+    /// <summary>The field origin command for an element placed at the absolute point <paramref name="at"/>.</summary>
+    internal static string Origin(LabelElement e, (int X, int Y) at) =>
+        Invariant($"^F{(e.OriginKind == FieldOriginKind.Typeset ? 'T' : 'O')}{at.X},{at.Y}") + (e.ReverseField ? "^FR" : string.Empty);
 
     internal static string RotationChar(FieldRotation r) => r switch
     {
@@ -247,15 +434,21 @@ public static class ZplGenerator
 
     private static string YN(bool v) => v ? "Y" : "N";
 
-    private static string? EmitText(LabelDocument doc, TextElement t, IReadOnlyDictionary<string, string>? data, VariableResolution? resolution, List<ValidationIssue> issues, ITextRasterizer? rasterizer)
+    private static string? EmitText(LabelDocument doc, TextElement t, (int X, int Y) at, IReadOnlyDictionary<string, string>? data, VariableResolution? resolution, List<ValidationIssue> issues, ITextRasterizer? rasterizer, FormatPlan? format = null)
     {
         // A Windows font cannot exist on the printer: the text is drawn to a picture and the label carries the picture.
         if (t.Font is { IsWindows: true } windowsFont)
-            return RasterTextEmitter.Emit(doc, t, windowsFont, data, resolution, issues, rasterizer);
+        {
+            // A picture is fixed once drawn, so a stored format cannot fill its placeholders in later.
+            if (format is not null && VariableResolver.FindVariables(t.GetTemplate()).Count > 0)
+                issues.Add(new ValidationIssue(ValidationSeverity.Warning, "Format.Field.Picture", t.Id));
+            return RasterTextEmitter.Emit(doc, t, at, windowsFont, data, resolution, issues, rasterizer);
+        }
 
-        CheckPosition(t, doc, 0, 0, issues);
+        CheckPosition(t, at, doc, 0, 0, issues);
+        var formatField = FormatFieldFor(format, t, issues);
         string resolved = ResolveTextWithClock(doc, t, data, resolution, issues, out FieldClockOptions? autoClock);
-        var sb = new StringBuilder(Origin(t));
+        var sb = new StringBuilder(Origin(t, at));
 
         // Text fit: decided here, for this record's own text, so every label of a data merge gets the size its content needs. The printer only
         // ever sees the computed ^A / ^FB values; the fit mode itself is Rotula metadata.
@@ -314,16 +507,31 @@ public static class ZplGenerator
             if (fit != TextOverflow.None) issues.Add(new ValidationIssue(ValidationSeverity.Warning, "Text.Overflow.Estimated", t.Id));
         }
 
-        AppendDataField(sb, doc, t, resolved, allowLineBreaks: t.Block is not null, textBox: t.TextBox is not null, fdPrefix: string.Empty, issues, autoClock);
+        AppendDataField(sb, doc, t, resolved, allowLineBreaks: t.Block is not null, textBox: t.TextBox is not null, fdPrefix: string.Empty, issues, autoClock, formatField);
         return sb.ToString();
     }
 
     /// <summary>
     /// Writes the part of a data field after its command: field options, then the data (<c>^FD</c>, or <c>^SN</c> for a counting
-    /// number) and finally <c>^FS</c>. Shared by text and barcodes so both support the same options.
+    /// number) and finally <c>^FS</c>. Shared by text and barcodes so both support the same options. In a stored format
+    /// (<paramref name="formatField"/> set) the field is numbered and written without data, for the recall to fill in.
     /// </summary>
-    private static void AppendDataField(StringBuilder sb, LabelDocument doc, FieldDataElement e, string text, bool allowLineBreaks, bool textBox, string fdPrefix, List<ValidationIssue> issues, FieldClockOptions? derivedClock = null)
+    private static void AppendDataField(StringBuilder sb, LabelDocument doc, FieldDataElement e, string text, bool allowLineBreaks, bool textBox, string fdPrefix, List<ValidationIssue> issues, FieldClockOptions? derivedClock = null, (int Number, string Name)? formatField = null)
     {
+        if (formatField is { } numbered)
+        {
+            // The printer puts the recalled value where the data would be, so the field carries only its number and a prompt. The prompt is the
+            // variable name with underscores as spaces, which is what the importer turns back into the same name.
+            if (e.EmbedCharacter is { } embedChar) sb.Append("^FE").Append(embedChar);
+            if (e.Clock is { } fieldClock) sb.Append("^FC").Append(Params(fieldClock.Primary.ToString(), fieldClock.Secondary?.ToString() ?? string.Empty, fieldClock.Third?.ToString() ?? string.Empty));
+            sb.Append("^FN").Append(numbered.Number.ToString(CultureInfo.InvariantCulture));
+            string prompt = (e.FieldPrompt is { Length: > 0 } own ? own : numbered.Name.Replace('_', ' ')).Trim();
+            if (prompt.Length > 0 && prompt.Length <= 255 && prompt.All(ch => char.IsAsciiLetterOrDigit(ch) || ch == ' '))
+                sb.Append('"').Append(prompt).Append('"');
+            sb.Append("^FS");
+            return;
+        }
+
         var serial = e.Serial;
         string? body = null; // the ^SN replacement for ^FD
 
@@ -452,58 +660,76 @@ public static class ZplGenerator
         });
     }
 
-    private static string? EmitBarcode(LabelDocument doc, BarcodeElement b, IReadOnlyDictionary<string, string>? data, List<ValidationIssue> issues)
+    private static string? EmitBarcode(LabelDocument doc, BarcodeElement b, (int X, int Y) at, IReadOnlyDictionary<string, string>? data, List<ValidationIssue> issues, FormatPlan? format = null)
     {
         // A QR Code made by the content builder is built from its structured definition per record, so escaping is applied to the values
         // after substitution; Data (the template) is only used when there is no definition.
         string resolved = Barcodes.QrContent.QrContentBuilder.ResolveForElement(b, data, doc.Variables, issues)
             ?? VariableResolver.Resolve(b.Data, data, doc.Variables, b.Id, issues);
-        var found = BarcodeValidator.Validate(b, resolved);
+        var formatField = FormatFieldFor(format, b, issues);
+        // A numbered field of a stored format carries no data, so its sample value (often empty) is not what the printer will encode.
+        IReadOnlyList<ValidationIssue> found = formatField is null ? BarcodeValidator.Validate(b, resolved) : Array.Empty<ValidationIssue>();
         issues.AddRange(found);
-        CheckPosition(b, doc, 0, 0, issues);
+        CheckPosition(b, at, doc, 0, 0, issues);
         if (found.Any(i => i.Severity == ValidationSeverity.Error)) return null;
+        // Size advice (module too small for the printer, symbol plus quiet zone wider than the label). Only for data that is valid, so
+        // the symbol width is computed from something the printer can actually encode.
+        issues.AddRange(BarcodeSizing.Check(b, resolved, doc));
 
         string payload = BarcodeValidator.NormalizeForPrinter(b, resolved);
-        var sb = new StringBuilder(Origin(b));
+        var sb = new StringBuilder(Origin(b, at));
         sb.Append(ZplBarcodeEmitter.Command(b, RotationOrEmpty(b.Rotation), RotationChar(doc.DefaultRotation), out string fdPrefix));
         if (fdPrefix.Contains(ZplBarcodeEmitter.QrByteCountToken, StringComparison.Ordinal))
+        {
             // Manual byte input states how many bytes follow, counted in the label's encoding (UTF-8 under ^CI28).
+            // Lenient count: a character the code page cannot hold goes out as one '?', exactly as ZplText.Escape writes it, so the count matches
+            // the bytes and the generator no longer throws; the substitution is reported like it is for a text field.
             fdPrefix = fdPrefix.Replace(ZplBarcodeEmitter.QrByteCountToken,
-                Math.Min(9999, doc.Encoding.GetEncoding().GetByteCount(payload)).ToString("0000", CultureInfo.InvariantCulture), StringComparison.Ordinal);
-        AppendDataField(sb, doc, b, payload, allowLineBreaks: false, textBox: false, fdPrefix, issues);
+                Math.Min(9999, doc.Encoding.GetByteCountLenient(payload)).ToString("0000", CultureInfo.InvariantCulture), StringComparison.Ordinal);
+            foreach (var ch in ZplText.Escape(payload, doc.Encoding, allowLineBreaks: false).Unmappable)
+                issues.Add(new ValidationIssue(ValidationSeverity.Warning, "Text.UnmappableChar", b.Id, ch));
+        }
+        // A symbology whose data starts with a fixed header (a QR Code's "QA,") cannot be filled in by number: the recall would supply data without it.
+        if (formatField is not null && fdPrefix.Length > 0)
+        {
+            issues.Add(new ValidationIssue(ValidationSeverity.Warning, "Format.Field.Mixed", b.Id));
+            format!.Fields.RemoveAll(f => f.ElementId == b.Id);
+            formatField = null;
+        }
+        AppendDataField(sb, doc, b, payload, allowLineBreaks: false, textBox: false, fdPrefix, issues, null, formatField);
         return sb.ToString();
     }
 
-    private static string? EmitBox(LabelDocument doc, BoxElement b, List<ValidationIssue> issues)
+    private static string? EmitBox(LabelDocument doc, BoxElement b, (int X, int Y) at, List<ValidationIssue> issues)
     {
-        CheckPosition(b, doc, b.WidthDots, b.HeightDots, issues);
+        CheckPosition(b, at, doc, b.WidthDots, b.HeightDots, issues);
         if (b.WidthDots < 1 || b.HeightDots < 1 || b.WidthDots > 32000 || b.HeightDots > 32000 || b.ThicknessDots < 1 || b.ThicknessDots > 32000)
             issues.Add(new ValidationIssue(ValidationSeverity.Error, "Graphic.Size.Range", b.Id, "1", "32000"));
         if (b.CornerRounding < 0 || b.CornerRounding > 8)
             issues.Add(new ValidationIssue(ValidationSeverity.Error, "Graphic.Rounding.Range", b.Id, "0", "8"));
-        return Origin(b) + "^GB" + Params(b.WidthDots.ToString(CultureInfo.InvariantCulture), b.HeightDots.ToString(CultureInfo.InvariantCulture),
+        return Origin(b, at) + "^GB" + Params(b.WidthDots.ToString(CultureInfo.InvariantCulture), b.HeightDots.ToString(CultureInfo.InvariantCulture),
             b.ThicknessDots.ToString(CultureInfo.InvariantCulture), ColorChar(b.Color), b.CornerRounding.ToString(CultureInfo.InvariantCulture)) + "^FS";
     }
 
-    private static string? EmitLine(LabelDocument doc, LineElement l, List<ValidationIssue> issues)
+    private static string? EmitLine(LabelDocument doc, LineElement l, (int X, int Y) at, List<ValidationIssue> issues)
     {
         bool horizontal = l.Direction == LineDirection.Horizontal;
-        CheckPosition(l, doc, horizontal ? l.LengthDots : l.ThicknessDots, horizontal ? l.ThicknessDots : l.LengthDots, issues);
+        CheckPosition(l, at, doc, horizontal ? l.LengthDots : l.ThicknessDots, horizontal ? l.ThicknessDots : l.LengthDots, issues);
         if (l.LengthDots < 1 || l.ThicknessDots < 1 || l.LengthDots > 32000 || l.ThicknessDots > 32000)
             issues.Add(new ValidationIssue(ValidationSeverity.Error, "Graphic.Size.Range", l.Id, "1", "32000"));
         int w = horizontal ? l.LengthDots : l.ThicknessDots, h = horizontal ? l.ThicknessDots : l.LengthDots;
-        return Origin(l) + Invariant($"^GB{w},{h},{l.ThicknessDots},{ColorChar(l.Color)}^FS");
+        return Origin(l, at) + Invariant($"^GB{w},{h},{l.ThicknessDots},{ColorChar(l.Color)}^FS");
     }
 
-    private static string? EmitCircle(LabelDocument doc, CircleElement c, List<ValidationIssue> issues)
+    private static string? EmitCircle(LabelDocument doc, CircleElement c, (int X, int Y) at, List<ValidationIssue> issues)
     {
-        CheckPosition(c, doc, c.DiameterDots, c.DiameterDots, issues);
+        CheckPosition(c, at, doc, c.DiameterDots, c.DiameterDots, issues);
         if (c.DiameterDots < 3 || c.DiameterDots > 4095 || c.ThicknessDots < 1 || c.ThicknessDots > 4095)
             issues.Add(new ValidationIssue(ValidationSeverity.Error, "Graphic.Circle.Range", c.Id, "3", "4095"));
-        return Origin(c) + Invariant($"^GC{c.DiameterDots},{c.ThicknessDots},{ColorChar(c.Color)}^FS");
+        return Origin(c, at) + Invariant($"^GC{c.DiameterDots},{c.ThicknessDots},{ColorChar(c.Color)}^FS");
     }
 
-    private static string? EmitImage(LabelDocument doc, ImageElement img, List<ValidationIssue> issues)
+    private static string? EmitImage(LabelDocument doc, ImageElement img, (int X, int Y) at, List<ValidationIssue> issues)
     {
         if (img.Source is null)
         {
@@ -521,37 +747,43 @@ public static class ZplGenerator
             issues.Add(new ValidationIssue(ValidationSeverity.Error, "Image.Size.Range", img.Id, "9999", "32000"));
             return null;
         }
+        // Each axis can be within its limit while the total is not; the check comes before the scaling buffers are allocated.
+        if ((long)rw * rh > ImageProcessor.MaxPixels)
+        {
+            issues.Add(new ValidationIssue(ValidationSeverity.Error, "Image.Size.Pixels", img.Id, (ImageProcessor.MaxPixels / 1_000_000).ToString(CultureInfo.InvariantCulture)));
+            return null;
+        }
         var mono = ImageProcessor.ToMonochrome(img);
-        CheckPosition(img, doc, mono.Width, mono.Height, issues);
+        CheckPosition(img, at, doc, mono.Width, mono.Height, issues);
         int total = mono.PackedRows.Length;
         // ^GF ignores ^FW and ^FO orientation, so rotation was already applied to the dots.
-        return Origin(img) + Invariant($"^GFA,{total},{total},{mono.BytesPerRow},{mono.ToHex()}^FS");
+        return Origin(img, at) + Invariant($"^GFA,{total},{total},{mono.BytesPerRow},{mono.ToHex()}^FS");
     }
 
-    private static string? EmitEllipse(LabelDocument doc, EllipseElement e, List<ValidationIssue> issues)
+    private static string? EmitEllipse(LabelDocument doc, EllipseElement e, (int X, int Y) at, List<ValidationIssue> issues)
     {
-        CheckPosition(e, doc, e.WidthDots, e.HeightDots, issues);
+        CheckPosition(e, at, doc, e.WidthDots, e.HeightDots, issues);
         if (e.WidthDots < 3 || e.WidthDots > 4095 || e.HeightDots < 3 || e.HeightDots > 4095 || e.ThicknessDots < 1 || e.ThicknessDots > 4095)
             issues.Add(new ValidationIssue(ValidationSeverity.Error, "Graphic.Ellipse.Range", e.Id, "3", "4095"));
-        return Origin(e) + Invariant($"^GE{e.WidthDots},{e.HeightDots},{e.ThicknessDots},{ColorChar(e.Color)}^FS");
+        return Origin(e, at) + Invariant($"^GE{e.WidthDots},{e.HeightDots},{e.ThicknessDots},{ColorChar(e.Color)}^FS");
     }
 
-    private static string? EmitDiagonal(LabelDocument doc, DiagonalLineElement d, List<ValidationIssue> issues)
+    private static string? EmitDiagonal(LabelDocument doc, DiagonalLineElement d, (int X, int Y) at, List<ValidationIssue> issues)
     {
-        CheckPosition(d, doc, d.WidthDots, d.HeightDots, issues);
+        CheckPosition(d, at, doc, d.WidthDots, d.HeightDots, issues);
         if (d.WidthDots < 3 || d.WidthDots > 32000 || d.HeightDots < 3 || d.HeightDots > 32000 || d.ThicknessDots < 1 || d.ThicknessDots > 32000)
             issues.Add(new ValidationIssue(ValidationSeverity.Error, "Graphic.Diagonal.Range", d.Id, "3", "32000"));
-        return Origin(d) + Invariant($"^GD{d.WidthDots},{d.HeightDots},{d.ThicknessDots},{ColorChar(d.Color)},{(d.Lean == DiagonalLean.Left ? 'L' : 'R')}^FS");
+        return Origin(d, at) + Invariant($"^GD{d.WidthDots},{d.HeightDots},{d.ThicknessDots},{ColorChar(d.Color)},{(d.Lean == DiagonalLean.Left ? 'L' : 'R')}^FS");
     }
 
-    private static string? EmitSymbol(LabelDocument doc, SymbolElement s, List<ValidationIssue> issues)
+    private static string? EmitSymbol(LabelDocument doc, SymbolElement s, (int X, int Y) at, List<ValidationIssue> issues)
     {
-        CheckPosition(s, doc, s.WidthDots, s.HeightDots, issues);
+        CheckPosition(s, at, doc, s.WidthDots, s.HeightDots, issues);
         if (s.HeightDots < 0 || s.HeightDots > 32000 || s.WidthDots < 0 || s.WidthDots > 32000)
             issues.Add(new ValidationIssue(ValidationSeverity.Error, "Graphic.Symbol.Range", s.Id, "0", "32000"));
         char letter = (char)('A' + (int)s.Symbol);
         // Height and width are always written: without them the printer would use whatever ^CF last set.
-        return Origin(s) + Invariant($"^GS{RotationOrEmpty(s.Rotation)},{s.HeightDots},{s.WidthDots}^FD{letter}^FS");
+        return Origin(s, at) + Invariant($"^GS{RotationOrEmpty(s.Rotation)},{s.HeightDots},{s.WidthDots}^FD{letter}^FS");
     }
 
     private static string ColorChar(GraphicColor c) => c == GraphicColor.White ? "W" : "B";

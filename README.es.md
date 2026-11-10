@@ -4,7 +4,7 @@
 
 # Rotula
 
-**Diseñador gratuito de códigos de barras y etiquetas para Windows (ZPL)**
+**Diseñador gratuito de códigos de barras y etiquetas para Windows (ZPL y cualquier impresora de Windows)**
 
 Diséñala, previsualízala, combina tus datos e imprímela. Sin cuenta, sin nube, sin telemetría.
 
@@ -41,6 +41,7 @@ Diséñala, previsualízala, combina tus datos e imprímela. Sin cuenta, sin nub
 - [Etiquetas y rollos de la biblioteca](#etiquetas-y-rollos-de-la-biblioteca)
 - [Fuentes de bases de datos](#fuentes-de-bases-de-datos)
 - [Impresión](#impresión)
+- [Impresión en cualquier impresora de Windows](#impresión-en-cualquier-impresora-de-windows)
 - [Puesto de impresión](#puesto-de-impresión)
 - [Servidor MCP](#servidor-mcp)
 - [Códigos de barras compatibles](#códigos-de-barras-compatibles)
@@ -158,10 +159,13 @@ dentro de la etiqueta.
 
 ### Lee exactamente lo que recibe la impresora
 
-El panel ZPL muestra el código generado, en vivo y de solo lectura, con un botón Copiar ZPL y un botón Exportar .zpl. La
-salida es determinista y en ASCII puro, así que puedes versionarla, compararla o enviarla con cualquier otra herramienta.
+El panel ZPL muestra el código generado en vivo, con un botón Copiar ZPL y un botón Exportar .zpl. La salida es determinista y
+en ASCII puro, así que puedes versionarla, compararla o enviarla con cualquier otra herramienta. El panel también es un editor:
+escribe o pega ZPL y, tras una breve pausa, la etiqueta se reconstruye a partir de él (un paso de deshacer por edición); una
+insignia indica si el texto está generado o editado a mano, "Volver al diseño" lo regenera, la línea de estado nombra cualquier
+comando que se conservó como ZPL sin procesar, y una línea de ayuda explica el comando bajo el cursor y sus parámetros.
 
-<p align="center"><img src="docs/images/zpl-panel.png" alt="El panel de código ZPL de solo lectura bajo el lienzo, con el ZPL generado" width="800"></p>
+<p align="center"><img src="docs/images/zpl-panel.png" alt="El panel de código ZPL bajo el lienzo, con el ZPL generado" width="800"></p>
 
 ### Todo de un vistazo
 
@@ -177,7 +181,7 @@ salida es determinista y en ASCII puro, así que puedes versionarla, compararla 
 | **Bases de datos** | SQL Server, PostgreSQL, MySQL/MariaDB, SQLite y ODBC, más ajustes predefinidos para servicios en la nube comunes ([detalles](#fuentes-de-bases-de-datos)) |
 | **Cobertura ZPL** | 222 comandos ZPL revisados uno por uno en una [página de cobertura generada](docs/zpl-coverage.md) (en inglés) |
 | **Servidor MCP** | Un programa aparte que permite a los clientes compatibles con MCP diseñar y revisar etiquetas ([detalles](#servidor-mcp)) |
-| **Impresión** | Cola de Windows (RAW, incluido USB) y puerto TCP 9100, detección de DPI y papel, perfiles de impresora, etiqueta de prueba, comprobación del estado de la impresora antes y después de cada trabajo |
+| **Impresión** | Cola de Windows (RAW, incluido USB) y puerto TCP 9100, detección de DPI y papel, perfiles de impresora, etiqueta de prueba, comprobación del estado de la impresora antes y después de cada trabajo. Cualquier otra impresora de Windows mediante su controlador, como imagen ([detalles](#impresión-en-cualquier-impresora-de-windows)) |
 | **Puesto de impresión** | Una pantalla bloqueada, solo para imprimir, pensada para el almacén: elige o escanea una etiqueta, responde a sus preguntas con un lector de códigos, imprime y lee la respuesta de la impresora en letra grande y palabras sencillas ([detalles](#puesto-de-impresión)) |
 | **Resolución** | Convierte una etiqueta entre 203, 300 y 600 dpi conservando su tamaño físico |
 | **Idiomas** | Español, inglés, portugués (Brasil) y francés (Canadá), con cambio en vivo |
@@ -240,7 +244,7 @@ trata de en qué se diferencia Rotula, no de quién es mejor.
 | **Cuenta o activación** | Ninguna | Depende del producto y la edición |
 | **Uso de la red** | Ninguno, salvo imprimir a la dirección que indicas | Depende del producto |
 | **Código fuente** | Abierto, en GitHub | Propietario |
-| **Salida a la impresora** | ZPL (impresoras compatibles con ZPL II) | Normalmente muchos lenguajes y controladores de impresora |
+| **Salida a la impresora** | ZPL (impresoras compatibles con ZPL II), o una imagen mediante el controlador de cualquier impresora de Windows | Normalmente muchos lenguajes y controladores de impresora |
 | **Fuentes de datos** | CSV, Excel (`.xlsx`) y consultas de solo lectura a bases de datos | Normalmente también bases de datos, ERP y otras integraciones |
 | **Medios de etiqueta** | Biblioteca integrada con búsqueda por número de parte | Depende del producto; algunos traen sus propias bibliotecas |
 | **Automatización** | Servidor MCP para clientes compatibles con MCP | Depende del producto |
@@ -374,7 +378,8 @@ Guía para desarrolladores: [docs/data-providers.md](docs/data-providers.md) (en
 
 ## Impresión
 
-Rotula envía el ZPL como datos RAW, así que el controlador lo transmite sin tocarlo.
+Para una impresora ZPL, Rotula envía el ZPL como datos RAW, así que el controlador lo transmite sin tocarlo. Una impresora que
+no entiende ZPL también se puede usar: consulta [Impresión en cualquier impresora de Windows](#impresión-en-cualquier-impresora-de-windows).
 
 | Destino | Úsalo para |
 |---|---|
@@ -415,6 +420,35 @@ a lo ancho y a lo alto, distancia entre etiquetas).
 - El resultado es un PDF al tamaño real de la hoja, con cada etiqueta a su propio tamaño físico. Imprímelo a **tamaño real (100 %)**.
   El diseño de la hoja se guarda con la etiqueta. Las plantillas se describen por sus medidas; las hojas de distintos proveedores
   pueden variar un milímetro, así que imprime primero una página de prueba en papel normal.
+
+---
+
+## Impresión en cualquier impresora de Windows
+
+Rotula no se limita a las impresoras Zebra y ZPL. Una DYMO, Brother, TSC, SATO, Epson o incluso una impresora láser de oficina
+puede imprimir tus etiquetas mediante su controlador de Windows.
+
+- **Dos modos de impresión.** *Lenguaje de la impresora (ZPL)* envía ZPL, igual que siempre. *Controlador de Windows (imagen)*
+  dibuja la etiqueta como una imagen, a la resolución real de la impresora y al tamaño real de la etiqueta, y se la entrega al
+  controlador instalado.
+- **Se elige por impresora.** Rotula recuerda el modo de cada impresora de Windows por su nombre. La primera vez que imprimes en
+  una impresora sin modo guardado, el cuadro Imprimir pregunta una sola vez "¿Cómo entiende las etiquetas esta impresora?" y
+  sugiere una respuesta según el nombre y el controlador de la impresora (ZPL para nombres tipo Zebra y colas "Generic / Text
+  Only"; controlador de Windows para todo lo demás). Decides tú. Las impresoras de red que agregas en Rotula por su dirección
+  (TCP/IP, puerto 9100) siempre reciben el lenguaje de la impresora y nunca se pregunta por ellas.
+- **No se cambia nada por ti.** Al actualizar Rotula, la impresora guardada en tu configuración (la última que elegiste)
+  sigue en ZPL sin preguntar. Las demás impresoras que usabas antes de esta versión se preguntan una sola vez, la primera vez que
+  imprimes en ellas, con ZPL ya seleccionado para los nombres tipo Zebra.
+- **Se revisa antes de imprimir.** Antes de enviar nada, Rotula compara la etiqueta con lo que informa el controlador y lista los
+  problemas en el cuadro Imprimir: partes que un controlador no puede dibujar, un código de barras con barras más angostas que su
+  tamaño seguro, una etiqueta que no cabe en el papel y similares. Lo que dejaría la etiqueta mal impresa detiene la impresión.
+  Para los demás avisos marcas una sola casilla, "Lo entiendo y quiero imprimir de todos modos", para todo el trabajo. Sin la
+  marca no se envía nada.
+- **Una etiqueta, un lote y el puesto de impresión.** La misma revisión y la misma casilla valen para una etiqueta, para un lote
+  completo de combinación de datos (se revisa una vez el diseño, no cada registro) y para el [puesto de impresión](#puesto-de-impresión),
+  donde quien lo configura acepta los avisos una sola vez con **Archivo > Configurar puesto de impresión...**.
+- **¿Sin impresora de etiquetas a mano?** Elige "Microsoft Print to PDF", pon el modo en Controlador de Windows (imagen),
+  imprime y abre el PDF. Los detalles están en [docs/printing.md](docs/printing.md) (en inglés).
 
 ---
 
@@ -512,7 +546,7 @@ administrador puede activarla o desactivarla para todos ([instalación en empres
 
 - Windows 10 versión 1809 o posterior, o Windows 11, de 64 bits
 - No hace falta instalar .NET por separado: las versiones publicadas son autocontenidas
-- Para imprimir: una impresora compatible con ZPL, instalada en Windows (USB o red) o accesible por el puerto TCP 9100
+- Para imprimir: una impresora compatible con ZPL, instalada en Windows (USB o red) o accesible por el puerto TCP 9100; o cualquier otra impresora instalada en Windows
 
 ---
 
@@ -605,7 +639,15 @@ Léelas antes de depender de Rotula para etiquetas de producción, e **imprime s
 - **Los comandos no compatibles** (consulta [la página de cobertura](docs/zpl-coverage.md)) se conservan como ZPL sin
   procesar cuando es posible, pero no se interpretan ni se previsualizan.
 - Rotula se prueba con decodificadores y archivos de referencia, no con todos los modelos de impresora.
-- Solo salida ZPL, y solo Windows.
+- **Impresión mediante un controlador de Windows.** Una etiqueta impresa mediante un controlador de Windows se imprime al tamaño correcto y pasa la comprobación del tamaño del código de barras; el escalado y los márgenes propios del controlador quedan fuera del control de Rotula. Los comandos de impresora conservados de un archivo importado (ZPL sin procesar) no se pueden dibujar en este modo. Los contadores de la impresora, el cortador, el tear-off y las comprobaciones de estado solo funcionan con ZPL. MCP y la línea de comandos imprimen solo ZPL.
+  - Las partes que el controlador no puede dibujar se dejan fuera de la imagen y se listan (contadas) antes de imprimir: el ZPL sin procesar conservado de un archivo importado, un código de barras que solo una impresora ZPL puede dibujar, la llamada a un gráfico guardado en la impresora, una imagen demasiado grande para dibujarla y las marcas de certificación UL y CSA.
+  - Un campo que la impresora numeraría, fecharía o completaría con datos de otros campos (`^SN`/`^SF`, `^FC`, `^FE`) no se puede usar en este modo y la impresión se rechaza. Usa en su lugar los contadores y las variables de fecha de Rotula, que se calculan en tu PC y se imprimen correctamente.
+  - Las imágenes de mapa de bits (logotipos) se escalan de forma suave a la resolución de la impresora, no punto por punto, así que los bordes de un logotipo en blanco y negro pueden salir un poco grises o tramados. Imprime una etiqueta de prueba con tu logotipo.
+  - Muchos controladores de etiquetas no pueden imprimir el último milímetro, más o menos, del borde de la etiqueta. Rotula avisa una sola vez antes de imprimir cuando la etiqueta es más grande que el área que el controlador puede imprimir (toda etiqueta de tamaño completo en ese controlador) e indica el ancho de ese borde; lo que quede en esa franja puede salir cortado.
+  - Las etiquetas que avanzan al revés de como se diseñaron no se giran por ti. Una etiqueta diseñada de 89 x 28 mm, impresa en un rollo de 28 mm de ancho que la hace avanzar a lo largo, no se gira automáticamente: recibes un aviso o un error del papel. Diseña la etiqueta tal como sale el material de la impresora.
+  - El puesto de impresión usa el modo guardado para su impresora en el PC donde se ejecuta.
+- Otros lenguajes de impresora (EPL, TSPL, CPCL) no se escriben. Hoy, el modo imagen es la forma de usar esas impresoras.
+- Solo Windows.
 
 ---
 

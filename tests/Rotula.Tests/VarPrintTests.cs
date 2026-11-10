@@ -308,6 +308,8 @@ public class VarPrintTests
             _fake.Variables = variables;
             var main = new MainViewModel(_fake.Build());
             main.Printer.SelectedPrinterName = "Test Printer";
+            // A Windows printer with no saved mode does not print until the person answers how it understands labels; these tests are ZPL.
+            main.Printer.ChooseModeCommand.Execute(Rotula.Printing.PrinterOutputMode.PrinterLanguage);
             return main;
         }
 

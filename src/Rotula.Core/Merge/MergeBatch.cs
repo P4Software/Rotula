@@ -58,6 +58,18 @@ public sealed record MergedLabel(int RecordNumber, string Zpl, int ItemNumber = 
 public sealed record MergedJob(string Zpl, int LastRecordNumber, int Labels, int ItemsThrough = 0);
 
 /// <summary>
+/// One print job of a batch printed as pictures (Windows-driver mode): the labels of consecutive records, each with the values that fill it and
+/// its number of copies, instead of their joined ZPL text. Grouped exactly like <see cref="MergedJob"/> (see <see cref="MergeBatch.JobLabels"/>).
+/// </summary>
+/// <param name="Labels">The labels of this job, in print order. Their <see cref="MergedLabel.Zpl"/> is empty: a picture job never sends ZPL, so
+/// the text is not kept (only its length was needed, to cut the jobs like the ZPL ones).</param>
+/// <param name="LastRecordNumber">1-based data row number of the last record in the job (what to show the user).</param>
+/// <param name="LabelCount">How many records produced a label in this job (the number of entries in <paramref name="Labels"/>).</param>
+/// <param name="ItemsThrough">1-based batch position of the last label in the job: the value to confirm a <see cref="VariableJob"/> with once
+/// the job was really sent, exactly as <see cref="MergedJob.ItemsThrough"/>.</param>
+public sealed record MergedPictureJob(IReadOnlyList<MergedLabel> Labels, int LastRecordNumber, int LabelCount, int ItemsThrough);
+
+/// <summary>
 /// Turns a <see cref="MergeDataSet"/> into ZPL. Everything is lazy (<see cref="IEnumerable{T}"/>) so 100k rows
 /// never need one giant string unless <see cref="GenerateSingleStream"/> is called. A record that fails
 /// validation never throws: it is recorded in the <see cref="MergeReport"/> and skipped or the batch stops,
@@ -145,7 +157,7 @@ public static class MergeBatch
                     // Variable warnings are the same for every record; say each of them once.
                     problems.AddRange(result.Issues.Where(p => job is null || p.Severity == ValidationSeverity.Error || warned.Add(p.MessageKey + "|" + string.Join("|", p.Args))));
                     if (!problems.Any(p => p.Severity == ValidationSeverity.Error))
-                        zpl = ApplyCopies(result.Zpl, copies, options.CopiesMode);
+                        zpl = ApplyCopies(result.Zpl, copies, options.CopiesMode, options.MaxJobCharacters, problems);
                 }
                 catch (Exception ex) when (ex is not OutOfMemoryException)
                 {
@@ -192,23 +204,81 @@ public static class MergeBatch
     /// </summary>
     public static IEnumerable<MergedJob> JobBlocks(LabelDocument doc, MergeDataSet data, MergeReport? report = null)
     {
-        int max = Math.Max(0, data.Options.MaxRecordsPerJob);
+        // An iterator, so every enumeration gets its own builder: the text of a job is joined as the labels arrive, never kept per label.
         var sb = new StringBuilder();
+        foreach (var job in GroupJobs(doc, data, report,
+                     label => sb.Append(label.Zpl),
+                     (last, labels, itemsThrough) =>
+                     {
+                         var block = new MergedJob(sb.ToString(), last, labels, itemsThrough);
+                         sb.Clear();
+                         return block;
+                     }))
+            yield return job;
+    }
+
+    /// <summary>
+    /// Like <see cref="JobBlocks"/>, but each job hands over its labels (values and copies per record) instead of their ZPL, for batch printing
+    /// as pictures through a Windows driver. The jobs are cut by the same code as <see cref="JobBlocks"/>, so both print modes get the same jobs:
+    /// the same <see cref="MergedPictureJob.LastRecordNumber"/> and <see cref="MergedPictureJob.ItemsThrough"/>, the same skipped records and the
+    /// same <paramref name="report"/>. The ZPL of every label is still generated, because it is what validates a record and sizes a job, but it
+    /// is not kept: the labels handed over carry an empty <see cref="MergedLabel.Zpl"/>.
+    /// </summary>
+    /// <param name="doc">The label design.</param>
+    /// <param name="data">The bound data.</param>
+    /// <param name="report">Optional report filled while enumerating.</param>
+    public static IEnumerable<MergedPictureJob> JobLabels(LabelDocument doc, MergeDataSet data, MergeReport? report = null)
+    {
+        // An iterator, so every enumeration collects into its own list. GroupJobs has already read the ZPL's length when a label is added, so the
+        // text itself is dropped: a job of many labels never holds their ZPL, only the values the pictures are drawn from.
+        var labels = new List<MergedLabel>();
+        foreach (var job in GroupJobs(doc, data, report,
+                     label => labels.Add(label with { Zpl = string.Empty }),
+                     (last, count, itemsThrough) =>
+                     {
+                         var pictures = new MergedPictureJob(labels.ToArray(), last, count, itemsThrough);
+                         labels.Clear();
+                         return pictures;
+                     }))
+            yield return job;
+    }
+
+    /// <summary>
+    /// The one place that decides where a job ends, shared by <see cref="JobBlocks"/> and <see cref="JobLabels"/> so the two print modes can
+    /// never group a batch differently. A job ends after <see cref="MergeOptions.MaxRecordsPerJob"/> labels (never, when it is 0), and before
+    /// the label whose ZPL would push the job past <see cref="MergeOptions.MaxJobCharacters"/>. The caller keeps the job's content:
+    /// <paramref name="add"/> receives each label of the job in progress, and <paramref name="close"/> turns that content into a job (and
+    /// starts the next one empty), from the last record number, the number of labels and the batch position of the last label.
+    /// </summary>
+    private static IEnumerable<TJob> GroupJobs<TJob>(LabelDocument doc, MergeDataSet data, MergeReport? report, Action<MergedLabel> add,
+        Func<int, int, int, TJob> close)
+    {
+        int max = Math.Max(0, data.Options.MaxRecordsPerJob);
         int inJob = 0, last = 0, lastItem = 0;
+        long chars = 0; // characters of ZPL in the job in progress
+        long maxChars = Math.Max(1, data.Options.MaxJobCharacters);
         foreach (var label in Labels(doc, data, report))
         {
-            sb.Append(label.Zpl);
+            // Close the job before the label that would push it past the size limit; last/lastItem still describe the previous label here.
+            if (inJob > 0 && chars + label.Zpl.Length > maxChars)
+            {
+                yield return close(last, inJob, lastItem);
+                chars = 0;
+                inJob = 0;
+            }
+            add(label);
+            chars += label.Zpl.Length;
             inJob++;
             last = label.RecordNumber;
             lastItem = label.ItemNumber;
             if (max > 0 && inJob >= max)
             {
-                yield return new MergedJob(sb.ToString(), last, inJob, lastItem);
-                sb.Clear();
+                yield return close(last, inJob, lastItem);
+                chars = 0;
                 inJob = 0;
             }
         }
-        if (inJob > 0) yield return new MergedJob(sb.ToString(), last, inJob, lastItem);
+        if (inJob > 0) yield return close(last, inJob, lastItem);
     }
 
     /// <summary>Streams every label to <paramref name="writer"/> without building the whole text in memory.</summary>
@@ -250,7 +320,7 @@ public static class MergeBatch
     /// Rewrites the generator's trailing <c>^PQ</c> line. The generator always ends with "\n^PQ...\n^XZ\n", so the
     /// last occurrence is ours; imported raw ZPL elsewhere in the block can never be hit.
     /// </summary>
-    private static string ApplyCopies(string zpl, int? copies, CopiesMode mode)
+    private static string? ApplyCopies(string zpl, int? copies, CopiesMode mode, long maxChars, List<ValidationIssue> problems)
     {
         if (copies is null) return zpl;
         int pq = zpl.LastIndexOf("\n^PQ", StringComparison.Ordinal);
@@ -262,7 +332,15 @@ public static class MergeBatch
         if (mode == CopiesMode.RepeatBlock)
         {
             string block = head + "^PQ1,0,1,N\n" + tail;
-            var sb = new StringBuilder(block.Length * copies.Value);
+            // long arithmetic: the product of a block and 99,999,999 copies does not fit an int. Refused before anything is allocated.
+            long total = (long)block.Length * copies.Value;
+            if (total > maxChars)
+            {
+                problems.Add(new ValidationIssue(ValidationSeverity.Error, "Merge.Copies.TooLarge", null,
+                    copies.Value.ToString(CultureInfo.InvariantCulture), (maxChars / Math.Max(1, block.Length)).ToString(CultureInfo.InvariantCulture)));
+                return null;
+            }
+            var sb = new StringBuilder((int)total);
             for (int i = 0; i < copies.Value; i++) sb.Append(block);
             return sb.ToString();
         }

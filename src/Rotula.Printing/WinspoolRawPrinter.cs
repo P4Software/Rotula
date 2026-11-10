@@ -45,51 +45,60 @@ public sealed class WinspoolRawPrinter : IRawPrinter, IPrinterDiscovery
         return Task.Run(() => (IReadOnlyList<PrinterInfo>)Enumerate(cancellationToken), cancellationToken);
     }
 
-    private static PrintResult SendCore(string printerName, string documentName, byte[] data, CancellationToken ct)
+    private static PrintResult SendCore(string printerName, string documentName, byte[] data, CancellationToken ct) =>
+        SendCore(Win32SpoolerApi.Instance, printerName, documentName, data, ct);
+
+    /// <summary>
+    /// The whole spooler job against an <see cref="ISpoolerApi"/>, so the order of the winspool calls can be tested without a printer.
+    /// A job that did not finish is aborted, never ended: <c>EndDocPrinter</c> would commit the truncated bytes, and a printer that
+    /// received <c>^XA</c> but not <c>^XZ</c> keeps waiting for the rest of the format and swallows the next job.
+    /// </summary>
+    internal static PrintResult SendCore(ISpoolerApi api, string printerName, string documentName, byte[] data, CancellationToken ct)
     {
-        if (!NativeMethods.OpenPrinter(printerName, out var handle, IntPtr.Zero))
-            return PrintResult.Fail(PrinterErrors.FromWin32(Marshal.GetLastWin32Error(), printerName));
+        if (!api.Open(printerName, out var handle))
+            return PrintResult.Fail(PrinterErrors.FromWin32(api.LastError(), printerName));
 
         int written = 0;
+        bool jobStarted = false, jobEnded = false;
         try
         {
             // Check status first: Windows happily accepts jobs for an unplugged USB printer and they then
             // sit in the queue forever, which is worse for the user than an immediate "offline" message.
-            if (TryGetState(handle, out _, out _, out bool offline) && offline)
+            if (api.IsOffline(handle))
                 return PrintResult.Fail(PrintErrorKind.Offline, printerName);
 
-            var doc = new NativeMethods.DOC_INFO_1 { pDocName = string.IsNullOrEmpty(documentName) ? "Rotula label" : documentName, pOutputFile = null, pDatatype = "RAW" };
-            if (NativeMethods.StartDocPrinter(handle, 1, ref doc) == 0)
-                return PrintResult.Fail(PrinterErrors.FromWin32(Marshal.GetLastWin32Error(), printerName));
-            try
+            if (!api.StartDoc(handle, string.IsNullOrEmpty(documentName) ? "Rotula label" : documentName))
+                return PrintResult.Fail(PrinterErrors.FromWin32(api.LastError(), printerName));
+            jobStarted = true;
+
+            if (!api.StartPage(handle))
+                return PrintResult.Fail(PrinterErrors.FromWin32(api.LastError(), printerName));
+
+            while (written < data.Length)
             {
-                if (!NativeMethods.StartPagePrinter(handle))
-                    return PrintResult.Fail(PrinterErrors.FromWin32(Marshal.GetLastWin32Error(), printerName));
-                try
-                {
-                    var buffer = GCHandle.Alloc(data, GCHandleType.Pinned);
-                    try
-                    {
-                        while (written < data.Length)
-                        {
-                            if (ct.IsCancellationRequested) return PrintResult.Fail(PrintError.Create(PrintErrorKind.Cancelled), written);
-                            int n = Math.Min(WriteChunk, data.Length - written);
-                            var ptr = Marshal.UnsafeAddrOfPinnedArrayElement(data, written);
-                            if (!NativeMethods.WritePrinter(handle, ptr, n, out int done) || done <= 0)
-                                return PrintResult.Fail(PrinterErrors.FromWin32(Marshal.GetLastWin32Error(), printerName), written);
-                            written += done;
-                        }
-                    }
-                    finally { buffer.Free(); }
-                }
-                finally { NativeMethods.EndPagePrinter(handle); }
+                if (ct.IsCancellationRequested) return PrintResult.Fail(PrintError.Create(PrintErrorKind.Cancelled), written);
+                int n = Math.Min(WriteChunk, data.Length - written);
+                if (!api.Write(handle, data, written, n, out int done) || done <= 0)
+                    return PrintResult.Fail(PrinterErrors.FromWin32(api.LastError(), printerName), written);
+                written += done;
             }
-            finally { NativeMethods.EndDocPrinter(handle); }
+
+            api.EndPage(handle);
+            if (!api.EndDoc(handle))
+            {
+                // The spooler could not close the document, so whether it prints is unknown. Reporting the written bytes makes the
+                // caller treat any serial numbers as used, which is the safe side.
+                return PrintResult.Fail(PrinterErrors.FromWin32(api.LastError(), printerName), written);
+            }
+            jobEnded = true;
             return PrintResult.Ok(written);
         }
         finally
         {
-            NativeMethods.ClosePrinter(handle);
+            // Any exit that is not a finished document discards the spool file. The failure result keeps the bytes already written so
+            // that serial numbers are not given back for a printer that was fed directly (no spooling) and may have printed.
+            if (jobStarted && !jobEnded) api.Abort(handle);
+            api.Close(handle);
         }
     }
 
@@ -235,6 +244,10 @@ internal static class NativeMethods
     [DllImport("winspool.drv", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static extern bool EndDocPrinter(IntPtr hPrinter);
+
+    [DllImport("winspool.drv", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool AbortPrinter(IntPtr hPrinter);
 
     [DllImport("winspool.drv", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]

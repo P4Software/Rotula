@@ -101,6 +101,8 @@ public sealed partial class PrinterSettingsViewModel : ObservableObject
         OnPropertyChanged(nameof(CheckStatus));
         ClearStatus();
         NotifyToolbar();
+        // A network printer is always ZPL, a Windows printer has its own saved mode: switching transport can switch the mode.
+        NotifyMode();
         RefreshDpiMismatch();
     }
 
@@ -111,6 +113,8 @@ public sealed partial class PrinterSettingsViewModel : ObservableObject
     {
         NotifyToolbar();
         ClearStatus();
+        // Each printer has its own saved mode (or none yet, which brings the question); DetectAsync refreshes the resolution note afterwards.
+        NotifyMode();
         _ = DetectAsync();
     }
     partial void OnHostChanged(string value)
@@ -235,10 +239,18 @@ public sealed partial class PrinterSettingsViewModel : ObservableObject
     /// <summary>True when the status result is a problem (drives the amber note).</summary>
     public bool HasStatusProblem => HasStatusText && StatusIsProblem;
 
+    /// <summary>
+    /// True when "Check printer status" may run: not in Windows-driver (picture) mode, where <c>~HS</c>, a ZPL command, would be printed as text.
+    /// The view hides the button in that mode as well; the command is off on its own so a key binding or UI automation cannot send it either.
+    /// </summary>
+    public bool CanCheckPrinterStatus => !IsDriverMode;
+
     /// <summary>Asks the chosen printer for its status (<c>~HS</c>) and shows the answer. A second click while waiting starts over.</summary>
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanCheckPrinterStatus))]
     private async Task CheckPrinterStatusAsync()
     {
+        // ExecuteAsync does not consult CanExecute, so the rule is enforced here too: in picture mode nothing is asked and nothing is shown.
+        if (!CanCheckPrinterStatus) return;
         string? error = TryBuildTarget(out var target);
         if (error is not null)
         {
@@ -277,6 +289,188 @@ public sealed partial class PrinterSettingsViewModel : ObservableObject
         _statusCts?.Cancel();
         StatusText = string.Empty;
         StatusIsProblem = false;
+    }
+
+    // ------------------------------------------------------------------------------- print mode (Printer language or Windows driver)
+
+    /// <summary>
+    /// How the selected printer gets the label. A network printer is always <see cref="PrinterOutputMode.PrinterLanguage"/>: it has no Windows driver to
+    /// draw through. A Windows printer uses the mode saved for it. A Windows printer with no saved mode also prints as
+    /// <see cref="PrinterOutputMode.PrinterLanguage"/>, as every printer did before driver printing existed. A suggestion never switches a printer on its
+    /// own; the person answers <see cref="ModeQuestion"/> first (see <see cref="NeedsModeQuestion"/>).
+    /// Setting it stores the choice in the map for the selected Windows printer only. Other printers keep their own choice. Persist, or any save
+    /// of the settings, writes it to settings.json. It is ignored for a network printer or when no printer is selected.
+    /// </summary>
+    public PrinterOutputMode Mode
+    {
+        get => KnownMode() ?? PrinterOutputMode.PrinterLanguage;
+        set
+        {
+            if (StoreMode(value)) RefreshDpiMismatch();
+            // Raised even when nothing was stored, so a bound control that offered a refused value snaps back to the real one.
+            NotifyMode();
+        }
+    }
+
+    /// <summary>True when the mode of the selected printer is settled: a network printer (always ZPL) or a Windows printer with a saved mode.</summary>
+    public bool ModeKnown => KnownMode() is not null;
+
+    /// <summary>
+    /// The mode to pre-select in the question, read from the names Windows reports for the selected printer (queue, driver and port, through
+    /// <see cref="PrinterOutputModeSuggestion"/>). Before the printer list is read only the queue name is known. Only a suggestion: it never becomes
+    /// <see cref="Mode"/> until the person chooses it. Always <see cref="PrinterOutputMode.PrinterLanguage"/> for a network printer.
+    /// </summary>
+    public PrinterOutputMode SuggestedMode
+    {
+        get
+        {
+            string? name = SelectedPrinterName;
+            if (UseNetwork || string.IsNullOrWhiteSpace(name)) return PrinterOutputMode.PrinterLanguage;
+            var info = _printers.FirstOrDefault(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase));
+            return info is null
+                ? PrinterOutputModeSuggestion.For(name, string.Empty, string.Empty)
+                : PrinterOutputModeSuggestion.For(info.Name, info.DriverName, info.PortName);
+        }
+    }
+
+    /// <summary>
+    /// True when <see cref="ModeQuestion"/> must be answered before anything is printed (the Print dialog, and batch printing from the Data
+    /// window or the Print dialog): a Windows printer is selected and has no saved mode. That is a printer never used with Rotula, a new
+    /// installation, or a printer added since. It is also a printer configured in this version whose question was never answered, for example
+    /// one only chosen in a window and never printed to. A printer configured by an earlier version is recorded as ZPL when the settings are
+    /// loaded, so its user is never asked. A network printer is never asked about.
+    /// </summary>
+    public bool NeedsModeQuestion => !UseNetwork && !string.IsNullOrWhiteSpace(SelectedPrinterName) && !ModeKnown;
+
+    /// <summary>
+    /// Why nothing may be printed yet while <see cref="NeedsModeQuestion"/> is true, in plain words: answer the question shown under the printer
+    /// name, or, for a queue that is not installed (no question is shown for it), refresh the list or choose another printer. Empty when the
+    /// mode is settled. The Print dialog and batch printing say the same sentence, so the person reads one instruction wherever they print.
+    /// </summary>
+    public string PendingModeText()
+    {
+        if (!NeedsModeQuestion) return string.Empty;
+        return ShowModeQuestion
+            ? Loc.Get("Print.Mode.AnswerFirst")
+            : Loc.Get("Print.Mode.PrinterNotListed", SelectedPrinterName ?? string.Empty);
+    }
+
+    /// <summary>True when the label is drawn as a picture and printed through the Windows driver (never for a network printer).</summary>
+    public bool IsDriverMode => Mode == PrinterOutputMode.WindowsDriver;
+
+    /// <summary>The one-time question for a printer with no saved mode ("How does this printer understand labels?").</summary>
+    public string ModeQuestion => Loc.Get("Print.Mode.Question");
+
+    /// <summary>One sentence that names <see cref="SuggestedMode"/> and why it is suggested, shown with the question.</summary>
+    public string ModeSuggestionText => Loc.Get("Print.Mode.Suggested", ModeName(SuggestedMode));
+
+    /// <summary>One plain sentence for the Print dialog: which mode is in use and why.</summary>
+    public string ModeExplanation => Loc.Get(IsDriverMode ? "Print.Mode.Explain.WindowsDriver" : "Print.Mode.Explain.PrinterLanguage");
+
+    /// <summary>
+    /// True when the selected Windows printer is in the list Windows reported (<see cref="Printers"/>). False before the list was read, when
+    /// discovery failed, or for a queue remembered from another session that is no longer installed.
+    /// </summary>
+    public bool IsSelectedPrinterListed =>
+        !string.IsNullOrWhiteSpace(SelectedPrinterName)
+        && _printers.Any(p => string.Equals(p.Name, SelectedPrinterName, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>
+    /// True when the Print dialog shows <see cref="ModeQuestion"/> with its two answers: the printer has no saved mode and is really installed.
+    /// For a queue that is not in the list the question would be about a printer Rotula cannot reach, so it stays hidden and printing says
+    /// to refresh the list or choose another printer instead.
+    /// </summary>
+    public bool ShowModeQuestion => NeedsModeQuestion && IsSelectedPrinterListed;
+
+    /// <summary>
+    /// True when the Print dialog shows the mode line (<see cref="ModeExplanation"/> and the control that switches to the other mode): a Windows
+    /// printer whose mode is settled. Never for a network printer: it is always printer language, so there is nothing to change.
+    /// </summary>
+    public bool ShowModeLine => !UseNetwork && !string.IsNullOrWhiteSpace(SelectedPrinterName) && ModeKnown;
+
+    /// <summary>True when <see cref="SuggestedMode"/> is the Windows driver; the question then shows that answer as the main button.</summary>
+    public bool SuggestsDriver => SuggestedMode == PrinterOutputMode.WindowsDriver;
+
+    /// <summary>
+    /// The answer to <see cref="ModeQuestion"/>: stores <paramref name="mode"/> for the selected Windows printer and saves settings.json at
+    /// once. Saving at once means that closing the dialog without printing does not bring the question back next time. Ignored for a network
+    /// printer. The command is typed (<c>IRelayCommand&lt;PrinterOutputMode&gt;</c>), so the view passes <c>{x:Static}</c> values: a plain string
+    /// parameter is refused.
+    /// </summary>
+    [RelayCommand]
+    private void ChooseMode(PrinterOutputMode mode)
+    {
+        bool stored = StoreMode(mode);
+        NotifyMode();
+        if (!stored) return;
+        RefreshDpiMismatch();
+        _save();
+    }
+
+    /// <summary>The settled mode of the selection: ZPL for a network printer, the saved mode of a Windows printer, or null when none is saved.</summary>
+    private PrinterOutputMode? KnownMode() => UseNetwork ? PrinterOutputMode.PrinterLanguage : SavedMode(SelectedPrinterName);
+
+    /// <summary>The valid mode saved for <paramref name="printerName"/>, or null when there is none.</summary>
+    private PrinterOutputMode? SavedMode(string? printerName)
+    {
+        if (string.IsNullOrWhiteSpace(printerName) || !_settings.PrintModes.TryGetValue(printerName, out string? text)) return null;
+        return ParseMode(text);
+    }
+
+    /// <summary>
+    /// Reads a stored mode. Only the two names count (any letter case, for a hand-edited file). Enum.TryParse is not used: it also accepts
+    /// digits and comma lists, so "1" would pick the Windows driver nobody chose and "7" would give no mode at all. Anything else reads as "not
+    /// answered yet" instead of crashing.
+    /// </summary>
+    private static PrinterOutputMode? ParseMode(string? text)
+    {
+        string trimmed = text?.Trim() ?? string.Empty;
+        foreach (var mode in Enum.GetValues<PrinterOutputMode>())
+            if (string.Equals(trimmed, mode.ToString(), StringComparison.OrdinalIgnoreCase)) return mode;
+        return null;
+    }
+
+    /// <summary>Writes <paramref name="mode"/> into the map for the selected Windows printer. Returns false when nothing changed or nothing may be stored.</summary>
+    private bool StoreMode(PrinterOutputMode mode)
+    {
+        string? name = SelectedPrinterName;
+        // A network printer has no driver to draw through, so there is no choice to remember for it.
+        if (UseNetwork || string.IsNullOrWhiteSpace(name)) return false;
+        if (SavedMode(name) == mode) return false;
+        _settings.PrintModes[name] = mode.ToString();
+        return true;
+    }
+
+    /// <summary>The name shown for a mode: "Printer language (ZPL)" or "Windows driver (picture)".</summary>
+    private static string ModeName(PrinterOutputMode mode) =>
+        Loc.Get(mode == PrinterOutputMode.WindowsDriver ? "Print.Mode.WindowsDriver" : "Print.Mode.PrinterLanguage");
+
+    /// <summary>
+    /// Makes the saved map safe to use, through the same rule the settings store applies on load (see
+    /// <see cref="PrintSettings.NormalizePrintModes"/>). The store has normally done it already, so this changes nothing then. It matters for
+    /// settings built in memory, such as the print station's copy. A settings object whose map was never present stands for a file from before
+    /// driver printing, and its configured printer is recorded as ZPL. A present but empty map is never seeded.
+    /// </summary>
+    private void NormalizeModeMap() => _settings.NormalizePrintModes();
+
+    /// <summary>Raises the change of every mode-related property; they are all computed from the selection and the map.</summary>
+    private void NotifyMode()
+    {
+        OnPropertyChanged(nameof(Mode));
+        OnPropertyChanged(nameof(ModeKnown));
+        OnPropertyChanged(nameof(SuggestedMode));
+        OnPropertyChanged(nameof(NeedsModeQuestion));
+        OnPropertyChanged(nameof(IsDriverMode));
+        OnPropertyChanged(nameof(ModeQuestion));
+        OnPropertyChanged(nameof(ModeSuggestionText));
+        OnPropertyChanged(nameof(ModeExplanation));
+        OnPropertyChanged(nameof(IsSelectedPrinterListed));
+        OnPropertyChanged(nameof(ShowModeQuestion));
+        OnPropertyChanged(nameof(ShowModeLine));
+        OnPropertyChanged(nameof(SuggestsDriver));
+        OnPropertyChanged(nameof(CanCheckPrinterStatus));
+        // The status check is off in picture mode; a button bound to the command greys out (or back) with the mode.
+        CheckPrinterStatusCommand.NotifyCanExecuteChanged();
     }
 
     // ------------------------------------------------------------------------------- driver detection
@@ -334,7 +528,8 @@ public sealed partial class PrinterSettingsViewModel : ObservableObject
 
     /// <summary>
     /// Returns the label to send to the printer: the same object when its resolution already equals the chosen one, otherwise a
-    /// converted copy that keeps the physical size and layout. The source is never modified.
+    /// converted copy that keeps the physical size and layout. The source is never modified. In picture mode (<see cref="IsDriverMode"/>) it is
+    /// always the same object: no ZPL resolution conversion happens.
     /// </summary>
     /// <param name="source">The label (or a private copy of it).</param>
     /// <param name="issues">Notes raised by the conversion; empty when nothing was converted.</param>
@@ -344,6 +539,9 @@ public sealed partial class PrinterSettingsViewModel : ObservableObject
     {
         issues = Array.Empty<ValidationIssue>();
         error = null;
+        // Picture mode draws the label at the driver's own resolution when it prints, so the ZPL dots conversion does not apply: the label goes
+        // as designed. The ZPL path below is untouched.
+        if (IsDriverMode) return source;
         if (!LabelDpiConverter.NeedsConversion(source, SelectedDpi)) return source;
         try
         {
@@ -431,8 +629,9 @@ public sealed partial class PrinterSettingsViewModel : ObservableObject
     public void RefreshDpiMismatch()
     {
         var doc = _document();
-        // While the driver is still being read the resolution box may hold a stale value, so say nothing yet.
-        if (PrinterChosen && !IsDetecting && LabelDpiConverter.NeedsConversion(doc, SelectedDpi))
+        // While the driver is still being read the resolution box may hold a stale value, so say nothing yet. In picture mode nothing is
+        // converted (see ConvertForPrinter), so a ZPL resolution note would describe something that does not happen.
+        if (PrinterChosen && !IsDetecting && !IsDriverMode && LabelDpiConverter.NeedsConversion(doc, SelectedDpi))
         {
             DpiMismatchText = Loc.Get("Print.DpiConvert", (int)doc.Dpi, (int)SelectedDpi);
             SwitchLabelDpiText = _applyLabelDpi is null ? string.Empty : Loc.Get("Print.SwitchLabelDpi", (int)SelectedDpi);
@@ -473,6 +672,8 @@ public sealed partial class PrinterSettingsViewModel : ObservableObject
     private void LoadFromSettings()
     {
         var s = _settings;
+        // Before the first-run branch: a printer the person answers for before ever printing must find a usable map too.
+        NormalizeModeMap();
         if (!s.Configured)
         {
             // First run: start from the open label so width and resolution are sensible without typing anything.
@@ -554,6 +755,9 @@ public sealed partial class PrinterSettingsViewModel : ObservableObject
             Printers.Add(new PrinterItem(p.Name, display));
         }
         SelectedPrinterName = keep;
+        // A fresh list brings the driver and port names the suggestion reads, and a language change brings new texts; the selection itself may
+        // not have changed, so its change handler would not raise these.
+        NotifyMode();
     }
 
     /// <summary>Parses a number the way people type it (current culture first, then invariant).</summary>
@@ -572,15 +776,17 @@ public sealed partial class PrinterSettingsViewModel : ObservableObject
             if (string.IsNullOrWhiteSpace(Host)) return Loc.Get("Print.Field.NoHost");
             if (!int.TryParse(PortText.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out int port) || port is < 1 or > 65535)
                 return Loc.Get("Print.Field.Port");
-            target = PrinterTarget.TcpIp(Host.Trim(), port).WithStatus(StatusOptions);
+            // WithMode keeps a TCP target on ZPL whatever is asked; Mode is ZPL for a network printer anyway.
+            target = PrinterTarget.TcpIp(Host.Trim(), port).WithStatus(StatusOptions).WithMode(Mode);
             return null;
         }
         if (string.IsNullOrWhiteSpace(SelectedPrinterName)) return Loc.Get("Print.Field.NoPrinter");
-        target = PrinterTarget.Spooler(SelectedPrinterName).WithStatus(StatusOptions);
+        target = PrinterTarget.Spooler(SelectedPrinterName).WithStatus(StatusOptions).WithMode(Mode);
         return null;
     }
 
-    private PrinterStatusOptions StatusOptions => CheckStatus ? PrinterStatusOptions.Default : PrinterStatusOptions.Off;
+    // ~HS is a ZPL command. A printer in picture mode does not understand it and would print it as text, so picture mode never asks around a job.
+    private PrinterStatusOptions StatusOptions => CheckStatus && !IsDriverMode ? PrinterStatusOptions.Default : PrinterStatusOptions.Off;
 
     /// <summary>Builds and validates the printer profile from the fields.</summary>
     /// <param name="profile">The profile when valid.</param>
@@ -592,13 +798,15 @@ public sealed partial class PrinterSettingsViewModel : ObservableObject
         if (!TryParseDouble(WidthText, out double w)) return Loc.Get("Print.Field.Number", Loc.Get("Print.Profile.Width"));
         if (!TryParseDouble(HeightText, out double h)) return Loc.Get("Print.Field.Number", Loc.Get("Print.Profile.Height"));
         int? darkness = null, speed = null;
-        if (!string.IsNullOrWhiteSpace(DarknessText))
+        // Darkness and speed are printer-language settings; in driver (picture) mode their boxes are hidden and nothing sends them, so whatever
+        // is typed there (even something invalid left from before) must neither be read nor block the print. The typed text itself is kept.
+        if (!IsDriverMode && !string.IsNullOrWhiteSpace(DarknessText))
         {
             if (!int.TryParse(DarknessText.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out int d))
                 return Loc.Get("Print.Field.Number", Loc.Get("Print.Profile.Darkness"));
             darkness = d;
         }
-        if (!string.IsNullOrWhiteSpace(SpeedText))
+        if (!IsDriverMode && !string.IsNullOrWhiteSpace(SpeedText))
         {
             if (!int.TryParse(SpeedText.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out int sp))
                 return Loc.Get("Print.Field.Number", Loc.Get("Print.Profile.Speed"));
@@ -632,8 +840,13 @@ public sealed partial class PrinterSettingsViewModel : ObservableObject
         if (TryParseDouble(WidthText, out double w) && w > 0) _settings.WidthMm = w;
         if (TryParseDouble(HeightText, out double h) && h > 0) _settings.HeightMm = h;
         _settings.MediaTracking = SelectedMedia.ToString();
-        _settings.Darkness = int.TryParse(DarknessText.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out int d) ? d : null;
-        _settings.SpeedIps = int.TryParse(SpeedText.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out int sp) ? sp : null;
+        // Not in driver mode: the boxes are hidden there, and writing them would clear a value the person set for printer-language mode
+        // (an empty or ignored box would store null). The stored values stay, so switching back restores them.
+        if (!IsDriverMode)
+        {
+            _settings.Darkness = int.TryParse(DarknessText.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out int d) ? d : null;
+            _settings.SpeedIps = int.TryParse(SpeedText.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out int sp) ? sp : null;
+        }
         _settings.StatusCheckNetwork = _statusCheckNetwork;
         _settings.StatusCheckWindows = _statusCheckWindows;
         _save();

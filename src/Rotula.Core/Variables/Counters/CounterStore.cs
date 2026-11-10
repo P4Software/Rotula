@@ -47,7 +47,9 @@ public sealed record PendingRange(string Id, long First, long Count, DateTimeOff
 /// <param name="Fingerprint">The counter settings the positions were counted under (see <see cref="CounterVariableOptions.Fingerprint"/>).</param>
 /// <param name="Pending">Reservations that were never confirmed or cancelled.</param>
 /// <param name="UpdatedUtc">When the record last changed.</param>
-public sealed record CounterRecord(long Next, long LastUsedIndex, string? LastValue, string Fingerprint, IReadOnlyList<PendingRange> Pending, DateTimeOffset UpdatedUtc);
+/// <param name="Compact">True for a counter the book moved out of its full records to save room (see <see cref="CounterBook.MaxRecords"/>). It
+/// keeps only what is needed so no number is ever reissued - <paramref name="Next"/> and <paramref name="Fingerprint"/> - and has no last value and no pending blocks.</param>
+public sealed record CounterRecord(long Next, long LastUsedIndex, string? LastValue, string Fingerprint, IReadOnlyList<PendingRange> Pending, DateTimeOffset UpdatedUtc, bool Compact = false);
 
 /// <summary>A block of positions reserved for one print job.</summary>
 /// <param name="Key">The counter key.</param>
@@ -101,18 +103,43 @@ public interface ICounterStore
 /// <summary>The counter bookkeeping shared by every store: a dictionary of records and the operations on it.</summary>
 public sealed class CounterBook
 {
-    /// <summary>Most records kept; the least recently updated are dropped beyond this (their numbers are then not remembered).</summary>
+    /// <summary>
+    /// Most counters kept in full (last value, pending blocks). Beyond this the least recently updated ones are compacted, never dropped: a
+    /// compacted counter still remembers its next position, so the numbers it already issued are not issued again.
+    /// </summary>
     public const int MaxRecords = 5000;
+    /// <summary>
+    /// Most counters the book remembers at all, compacted ones included. Beyond this a new counter is refused with
+    /// <see cref="VariableMessageKeys.CounterStoreFull"/> rather than forgetting an old one, because forgetting a counter would restart its numbers.
+    /// </summary>
+    public const int MaxTotalRecords = 25_000;
     /// <summary>Most pending blocks kept per counter; older ones are dropped (their numbers stay skipped).</summary>
     public const int MaxPending = 64;
     /// <summary>Most positions one reservation may take.</summary>
     public const long MaxReservation = 100_000_000;
     /// <summary>Highest position the book stores.</summary>
     public const long MaxIndex = long.MaxValue / 4;
-    /// <summary>The newest file format version this build writes and reads.</summary>
-    public const int FormatVersion = 1;
+    /// <summary>
+    /// The newest file format version this build writes and reads. Version 2 only differs from 1 by the optional <c>compact</c> counters;
+    /// a file without any is still written as version 1, so it stays readable by earlier builds.
+    /// </summary>
+    public const int FormatVersion = 2;
 
     private readonly Dictionary<string, CounterRecord> _records = new(StringComparer.Ordinal);
+    private readonly int _maxRecords;
+    private readonly int _maxTotalRecords;
+    private int _compactCount;
+
+    /// <summary>Creates an empty book. The limits are parameters so tests can exercise the eviction with a handful of counters.</summary>
+    /// <param name="maxRecords">Counters kept in full (at least 1).</param>
+    /// <param name="maxTotalRecords">Counters kept at all (at least <paramref name="maxRecords"/>).</param>
+    public CounterBook(int maxRecords = MaxRecords, int maxTotalRecords = MaxTotalRecords)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(maxRecords, 1);
+        ArgumentOutOfRangeException.ThrowIfLessThan(maxTotalRecords, maxRecords);
+        _maxRecords = maxRecords;
+        _maxTotalRecords = maxTotalRecords;
+    }
 
     /// <summary>The record for <paramref name="key"/>, or null.</summary>
     public CounterRecord? Get(string key) => _records.GetValueOrDefault(key);
@@ -128,6 +155,7 @@ public sealed class CounterBook
         string counterName = key[(key.LastIndexOf('/') + 1)..];
         if (rec is not null && !string.Equals(rec.Fingerprint, fingerprint, StringComparison.Ordinal))
             throw new CounterStoreException(VariableMessageKeys.CounterSettingsChanged, null, counterName, rec.LastValue ?? string.Empty);
+        if (rec is null) EnsureRoomForNewCounter();
         long first = rec?.Next ?? 0;
         if (first > MaxIndex - count) throw new CounterStoreException(VariableMessageKeys.CounterOverflow, null, counterName);
         string id = Guid.NewGuid().ToString("N");
@@ -174,6 +202,7 @@ public sealed class CounterBook
     public void Reset(string key, string fingerprint, long nextIndex, DateTimeOffset now)
     {
         if (nextIndex < 0 || nextIndex > MaxIndex) throw new ArgumentOutOfRangeException(nameof(nextIndex));
+        if (!_records.ContainsKey(key)) EnsureRoomForNewCounter();
         Put(key, new CounterRecord(nextIndex, -1, null, fingerprint, Array.Empty<PendingRange>(), now));
     }
 
@@ -183,12 +212,44 @@ public sealed class CounterBook
         if (_records.GetValueOrDefault(key) is { } rec) Put(key, rec with { Fingerprint = fingerprint, UpdatedUtc = now });
     }
 
+    /// <summary>Refuses a counter the book has no room to remember. Forgetting an older one instead would let its numbers repeat.</summary>
+    private void EnsureRoomForNewCounter()
+    {
+        if (_records.Count >= _maxTotalRecords)
+            throw new CounterStoreException(VariableMessageKeys.CounterStoreFull, null, _maxTotalRecords.ToString(CultureInfo.InvariantCulture));
+    }
+
     private void Put(string key, CounterRecord record)
     {
+        if (_records.TryGetValue(key, out var previous) && previous.Compact) _compactCount--;
         _records[key] = record;
-        if (_records.Count <= MaxRecords) return;
-        foreach (var old in _records.OrderBy(kv => kv.Value.UpdatedUtc).Take(_records.Count - MaxRecords).Select(kv => kv.Key).ToList())
-            if (old != key) _records.Remove(old);
+        if (record.Compact) _compactCount++;
+
+        // Over the limit of full records: shrink the least recently updated ones to their high-water mark. Counters that still have an
+        // unconfirmed block go last, since a print that is in progress may be about to confirm it. The record just written is never touched.
+        while (_records.Count - _compactCount > _maxRecords)
+        {
+            string? victim = null;
+            CounterRecord? best = null;
+            foreach (var (k, r) in _records)
+            {
+                if (r.Compact || k == key) continue;
+                if (best is null || Older(r, k, best, victim!)) { best = r; victim = k; }
+            }
+            if (victim is null || best is null) break;
+            // Everything dropped here lies below Next, so those numbers stay used or skipped. A block of that counter still pending can no
+            // longer be confirmed or reclaimed (Complete reports false), which is the safe direction: its numbers stay skipped.
+            _records[victim] = new CounterRecord(best.Next, -1, null, best.Fingerprint, Array.Empty<PendingRange>(), best.UpdatedUtc, Compact: true);
+            _compactCount++;
+        }
+    }
+
+    private static bool Older(CounterRecord a, string aKey, CounterRecord b, string bKey)
+    {
+        bool aPending = a.Pending.Count > 0, bPending = b.Pending.Count > 0;
+        if (aPending != bPending) return !aPending;
+        int byTime = a.UpdatedUtc.CompareTo(b.UpdatedUtc);
+        return byTime != 0 ? byTime < 0 : string.CompareOrdinal(aKey, bKey) < 0;
     }
 
     // ---- JSON -------------------------------------------------------------------------------
@@ -199,6 +260,18 @@ public sealed class CounterBook
         var counters = new JsonObject();
         foreach (var (key, r) in _records.OrderBy(kv => kv.Key, StringComparer.Ordinal))
         {
+            if (r.Compact)
+            {
+                // Only what keeps numbers from repeating; this is what lets tens of thousands of counters fit in a small file.
+                counters[key] = new JsonObject
+                {
+                    ["next"] = r.Next,
+                    ["fingerprint"] = r.Fingerprint,
+                    ["updated"] = r.UpdatedUtc.ToString("o", CultureInfo.InvariantCulture),
+                    ["compact"] = true,
+                };
+                continue;
+            }
             var pending = new JsonArray();
             foreach (var p in r.Pending)
                 pending.Add(new JsonObject { ["id"] = p.Id, ["first"] = p.First, ["count"] = p.Count, ["created"] = p.CreatedUtc.ToString("o", CultureInfo.InvariantCulture) });
@@ -215,7 +288,9 @@ public sealed class CounterBook
         var root = new JsonObject
         {
             ["comment"] = "Rotula remembers the last serial number of counters that are set to remember. Do not edit by hand while Rotula is running.",
-            ["version"] = FormatVersion,
+            // An earlier build ignores unknown fields and would restart a compacted counter at 0. Version 2 makes it refuse the file instead
+            // (CounterStoreNewer); a file without compacted counters stays version 1 so nothing changes for it.
+            ["version"] = _compactCount > 0 ? FormatVersion : 1,
             ["counters"] = counters,
         };
         return root.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
@@ -239,10 +314,10 @@ public sealed class CounterBook
                 throw new CounterStoreException(VariableMessageKeys.CounterStoreNewer, null, pathForMessages, version.ToString(CultureInfo.InvariantCulture));
             if (!root.TryGetProperty("counters", out var counters) || counters.ValueKind != JsonValueKind.Object)
                 throw new CounterStoreException(VariableMessageKeys.CounterStoreCorrupt, null, pathForMessages);
-            int n = 0;
+            int n = 0, full = 0;
             foreach (var entry in counters.EnumerateObject())
             {
-                if (++n > MaxRecords) throw new CounterStoreException(VariableMessageKeys.CounterStoreCorrupt, null, pathForMessages);
+                if (++n > MaxTotalRecords) throw new CounterStoreException(VariableMessageKeys.CounterStoreCorrupt, null, pathForMessages);
                 var e = entry.Value;
                 long next = Num(e, "next", 0), last = Num(e, "lastUsedIndex", -1);
                 if (next < 0 || next > MaxIndex || last < -1 || last >= next) throw new CounterStoreException(VariableMessageKeys.CounterStoreCorrupt, null, pathForMessages);
@@ -258,7 +333,12 @@ public sealed class CounterBook
                         pending.Add(new PendingRange(Str(pe, "id") ?? Guid.NewGuid().ToString("N"), first, cnt, Date(pe, "created")));
                     }
                 }
-                book._records[entry.Name] = new CounterRecord(next, last, Str(e, "lastValue"), fingerprint, pending, Date(e, "updated"));
+                bool compact = e.TryGetProperty("compact", out var cp) && cp.ValueKind == JsonValueKind.True;
+                // A compacted counter carries nothing but its position; anything else in it would be a hand edit.
+                if (compact && (last != -1 || pending.Count > 0)) throw new CounterStoreException(VariableMessageKeys.CounterStoreCorrupt, null, pathForMessages);
+                if (!compact && ++full > MaxRecords) throw new CounterStoreException(VariableMessageKeys.CounterStoreCorrupt, null, pathForMessages);
+                book._records[entry.Name] = new CounterRecord(next, last, compact ? null : Str(e, "lastValue"), fingerprint, pending, Date(e, "updated"), compact);
+                if (compact) book._compactCount++;
             }
             return book;
         }

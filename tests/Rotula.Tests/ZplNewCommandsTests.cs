@@ -398,8 +398,18 @@ public class ZplNewCommandsTests
         string body = Body(doc);
         Assert.Contains("^FN7\"Customer name\"^FDSample^FS", body);
         Assert.Contains("^FN8^FD123^FS", body);
-        var back = RoundTrip(doc);
-        Assert.Equal((7, "Customer name"), ((FieldDataElement)back.Elements[0]).FieldNumber is { } n ? (n, ((FieldDataElement)back.Elements[0]).FieldPrompt) : (-1, null));
+
+        // Reading it back: the numbered fields come back as placeholders (named after the prompt, or Field plus the number) whose declared
+        // sample values are the data, so the label prints the same and the fields can be merged. The number and prompt stay on the element.
+        var result = ZplGenerator.Generate(doc);
+        var back = ZplParser.Parse(result.Zpl).Document;
+        var text = Assert.IsType<TextElement>(back.Elements[0]);
+        Assert.Equal(("{{Customer_name}}", 7, "Customer name"), (text.Text, text.FieldNumber, text.FieldPrompt));
+        var barcode = Assert.IsType<BarcodeElement>(back.Elements[1]);
+        Assert.Equal(("{{Field8}}", 8), (barcode.Data, barcode.FieldNumber));
+        Assert.Equal(new[] { ("Customer_name", "Sample"), ("Field8", "123") }, back.Variables.Select(v => (v.Name, v.SampleValue)).ToArray());
+        // And once more: generating from the re-read document gives the same text (a fixpoint).
+        Assert.Equal(result.Zpl, ZplGenerator.Generate(back).Zpl);
     }
 
     [Fact]
@@ -407,7 +417,9 @@ public class ZplNewCommandsTests
     {
         var r = Parse("^FO10,10^A0N,30,30^FN3^FS");
         var t = Assert.IsType<TextElement>(Assert.Single(r.Document.Elements));
-        Assert.Equal((3, ""), (t.FieldNumber, t.Text));
+        // The placeholder's sample value is empty, so the field is written back without data, exactly as it came in.
+        Assert.Equal((3, "{{Field3}}"), (t.FieldNumber, t.Text));
+        Assert.Equal("", Assert.Single(r.Document.Variables).SampleValue);
         Assert.Contains("^FN3^FS", Body(r.Document));
         Assert.DoesNotContain("^FD", Body(r.Document));
     }

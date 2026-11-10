@@ -1,4 +1,5 @@
 using Rotula.App.Localization;
+using Rotula.App.Services;
 using Rotula.Core.Validation;
 using Rotula.Printing;
 
@@ -21,6 +22,15 @@ public static class PrintMessages
                 // The detail differs per transport (queue, code, host...), so it is joined into one argument.
                 args = new object[] { string.Join(", ", error.Args.Where(a => a.Length > 0)) };
                 break;
+            case PrintErrorKind.DriverRefused:
+                // Arguments: the printer, then the driver call that failed with its Windows error code. The text does not claim that nothing
+                // was sent: pages the driver accepted before it refused one may still print.
+                return Loc.Get(error.Key, error.Args.Count > 0 ? error.Args[0] : string.Empty, error.Args.Count > 1 ? error.Args[1] : string.Empty);
+            case PrintErrorKind.InvalidLabel or PrintErrorKind.NotAcknowledged:
+                // The arguments are message keys only (Core validation keys, or the picture-mode Driver.* finding keys), without the names and
+                // sizes those sentences need. The full findings travel as the result's notices, which the caller lists below this sentence
+                // (DescribeNotices), so the sentence itself takes no arguments.
+                return Loc.Get(error.Key);
             case PrintErrorKind.HeadOpen or PrintErrorKind.PaperOut or PrintErrorKind.RibbonOut or PrintErrorKind.HeadTooHot
                 or PrintErrorKind.DiagnosticMode or PrintErrorKind.BufferFull or PrintErrorKind.Paused:
             {
@@ -35,8 +45,21 @@ public static class PrintMessages
         return Loc.Instance.HasKey(error.Key) ? Loc.Get(error.Key, args) : Loc.Get("Print.Error.Unknown", string.Join(", ", error.Args));
     }
 
-    /// <summary>Describes a print result: null on success.</summary>
-    public static string? Describe(PrintResult result) => result.Error is null ? null : Describe(result.Error);
+    /// <summary>
+    /// Describes a print result: null on success. Use this rather than <see cref="Describe(PrintError)"/> whenever the result is at hand: one case
+    /// needs more than the error. A label with errors that stopped a picture-mode job after the driver had already taken pages
+    /// (<see cref="PrintResult.PagesSent"/> above 0: a later label could not be resolved or drawn) gets
+    /// <c>Print.Error.InvalidLabel.Partial</c> with that count, because "nothing was sent" would be false and would invite printing those labels
+    /// twice. The printer-language path never counts pages, so its texts are unchanged.
+    /// </summary>
+    public static string? Describe(PrintResult result)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+        if (result.Error is null) return null;
+        if (result.Error.Kind == PrintErrorKind.InvalidLabel && result.PagesSent > 0)
+            return Loc.Get("Print.Error.InvalidLabel.Partial", result.PagesSent);
+        return Describe(result.Error);
+    }
 
     /// <summary>
     /// Lists every note a print result carries (skipped serial numbers, a counter file problem, the errors that stopped a label), one per line;
@@ -47,11 +70,13 @@ public static class PrintMessages
 
     /// <summary>
     /// One note of a print result. The printer status notes carry condition and reason names, which are translated here into a phrase;
-    /// every other note goes through the usual issue text.
+    /// the picture-mode findings (pre-flight and renderer, <c>Driver.*</c> keys) are worded by <see cref="DriverPreflightGate"/> exactly as in
+    /// the Print dialog's findings list; every other note goes through the usual issue text.
     /// </summary>
     public static string DescribeNotice(ValidationIssue notice)
     {
         ArgumentNullException.ThrowIfNull(notice);
+        if (notice.MessageKey.StartsWith("Driver.", StringComparison.Ordinal)) return DriverPreflightGate.FormatFinding(notice);
         string? arg = notice.MessageKey switch
         {
             PrinterStatusKeys.Warning or PrinterStatusKeys.FaultAfterJob => Conditions(notice.Args),

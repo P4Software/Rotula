@@ -34,7 +34,12 @@ public class AppPrintTests : IDisposable
 
     private PrintViewModel Dialog(bool windowsPrinter = true)
     {
-        if (windowsPrinter) _main.Printer.SelectedPrinterName = "Test Printer";
+        if (windowsPrinter)
+        {
+            _main.Printer.SelectedPrinterName = "Test Printer";
+            // A Windows printer with no saved mode does not print until the person answers how it understands labels; these tests are ZPL.
+            _main.Printer.ChooseModeCommand.Execute(Rotula.Printing.PrinterOutputMode.PrinterLanguage);
+        }
         else { _main.Printer.UseNetwork = true; _main.Printer.Host = "192.168.1.50"; }
         return new PrintViewModel(_fake.Printer, _main.Printer, () => _main.Session.Document, () => _main.Data.CurrentData, _fake.Build().Files, "my-label");
     }
@@ -221,6 +226,8 @@ public class AppPrintTests : IDisposable
     [InlineData(PrintErrorKind.EncodingFailed)]
     [InlineData(PrintErrorKind.Unsupported)]
     [InlineData(PrintErrorKind.Unknown)]
+    [InlineData(PrintErrorKind.NotAcknowledged)]
+    [InlineData(PrintErrorKind.DriverRefused)]
     public async Task EveryPrintError_BecomesAPlainSentence_InEveryLanguage(PrintErrorKind kind)
     {
         foreach (var lang in Loc.SupportedLanguages)

@@ -68,6 +68,32 @@
           <TextBlock Text="{loc:T Print.UsesRecord}" Foreground="{StaticResource WarningBrush}" TextWrapping="Wrap" />
         </Border>
 
+        <!-- ============================== Windows-driver findings: what the picture cannot do the way the printer would. Shown only after a
+             pre-flight found something (never for a ZPL printer). The box accepts warnings for this job; it is hidden when any finding is an error,
+             because nothing lets such a label through. Inside the scrolled area so it never squeezes the footer at the minimum window size;
+             the window scrolls it into view when it appears. -->
+        <Border x:Name="FindingsCard" Style="{StaticResource WarningBanner}" Margin="0,0,0,16" Visibility="{Binding HasPreflightLines, Converter={StaticResource B2V}}"
+                AutomationProperties.Name="{loc:T Print.Driver.FindingsTitle}" AutomationProperties.LiveSetting="Polite">
+          <StackPanel>
+            <TextBlock Text="{loc:T Print.Driver.FindingsTitle}" FontWeight="SemiBold" Foreground="{StaticResource WarningBrush}" TextWrapping="Wrap"
+                       AutomationProperties.HeadingLevel="Level2" />
+            <ItemsControl ItemsSource="{Binding PreflightLines}" Margin="0,6,0,0" Focusable="False">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <DockPanel Margin="0,0,0,6">
+                    <TextBlock DockPanel.Dock="Left" Text="•" Margin="0,0,8,0" Foreground="{StaticResource WarningBrush}" />
+                    <TextBlock x:Name="FindingLine" Text="{Binding}" TextWrapping="Wrap" Foreground="{StaticResource TextBrush}" />
+                  </DockPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <CheckBox x:Name="AcknowledgeBox" IsChecked="{Binding Acknowledged}" Margin="0,4,0,0"
+                      Visibility="{Binding NeedsAcknowledgement, Converter={StaticResource B2V}}" AutomationProperties.Name="{loc:T Print.Driver.AcknowledgeBox}">
+              <TextBlock Text="{loc:T Print.Driver.AcknowledgeBox}" TextWrapping="Wrap" />
+            </CheckBox>
+          </StackPanel>
+        </Border>
+
         <!-- ============================== records: the place where the operator decides what is printed -->
         <Border Style="{StaticResource Card}" Margin="0,0,0,16" Visibility="{Binding HasRecords, Converter={StaticResource B2V}}"
                 AutomationProperties.Name="{loc:T Print.Records.Title}">
@@ -82,7 +108,8 @@
         </Border>
 
         <Border Style="{StaticResource Card}">
-          <views:PrinterSettingsView DataContext="{Binding Printer}" />
+          <!-- The Print dialog honours both print modes, so it shows the mode line and the one-time question. -->
+          <views:PrinterSettingsView DataContext="{Binding Printer}" ShowModeChoice="True" />
         </Border>
 
         <Border Style="{StaticResource Card}" Margin="0,16,0,0">

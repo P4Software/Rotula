@@ -88,6 +88,46 @@ public interface IPrintService
     /// </summary>
     Task<IReadOnlyList<ValidationIssue>> VerifyPrintedAsync(PrinterTarget target, CancellationToken ct = default) =>
         Task.FromResult<IReadOnlyList<ValidationIssue>>(Array.Empty<ValidationIssue>());
+
+    /// <summary>
+    /// Checks <paramref name="document"/> against what the Windows driver of <paramref name="target"/> reports, before anything is printed in
+    /// picture mode (<see cref="PrinterOutputMode.WindowsDriver"/>). The findings are what the person acknowledges in the Print dialog; the job prints
+    /// only when <see cref="PrinterTarget.AcknowledgedFindings"/> equals the <see cref="DriverPreflightResult.Fingerprint"/> worked out again at
+    /// print time. A printer-language (ZPL) target, or a TCP target, needs no pre-flight and gets <see cref="DriverPreflightResult.None"/>.
+    /// Never throws for a printer problem. The default implementation returns <see cref="DriverPreflightResult.None"/> so existing fakes keep compiling.
+    /// </summary>
+    /// <param name="target">The printer and its print mode.</param>
+    /// <param name="document">The label design (checked once for a whole job or batch).</param>
+    /// <param name="ct">Cancellation.</param>
+    Task<DriverPreflightResult> PreflightAsync(PrinterTarget target, LabelDocument document, CancellationToken ct = default) =>
+        Task.FromResult(DriverPreflightResult.None);
+
+    /// <summary>
+    /// Like the plain overload, and in addition refuses a job that would print too many pictures: when <paramref name="labelCount"/> is more than
+    /// <see cref="DriverPreflight.MaxLabelsPerJob"/> the result is the single error <see cref="DriverPreflight.TooManyLabels"/>, without the driver
+    /// being asked anything. The count is the whole job (every record times its copies, so a batch merge, the ticked records and the print station
+    /// count all of it), which the design alone does not tell. The default implementation ignores the count and answers like the plain overload, so
+    /// existing fakes keep compiling; <see cref="PrintService"/> honours it.
+    /// </summary>
+    /// <param name="target">The printer and its print mode.</param>
+    /// <param name="document">The label design (checked once for a whole job or batch).</param>
+    /// <param name="labelCount">How many labels the whole job prints, copies included.</param>
+    /// <param name="ct">Cancellation.</param>
+    Task<DriverPreflightResult> PreflightAsync(PrinterTarget target, LabelDocument document, long labelCount, CancellationToken ct = default) =>
+        PreflightAsync(target, document, ct);
+
+    /// <summary>
+    /// Prints labels whose variable values were already worked out by the caller (batch printing), one page per copy, through the Windows
+    /// driver of <paramref name="target"/>. It runs the same pre-flight and acknowledgement check as <see cref="PrintAsync(PrinterTarget, LabelDocument, IReadOnlyDictionary{string, string}?, PrinterProfile?, PrintVariableOptions?, CancellationToken)"/>
+    /// but handles no serial numbers: the caller reserved them and confirms them from <see cref="PrintResult.PagesSent"/>. The default
+    /// implementation fails with <see cref="PrintErrorKind.Unsupported"/> so existing fakes keep compiling.
+    /// </summary>
+    /// <param name="target">A Windows queue in <see cref="PrinterOutputMode.WindowsDriver"/> mode.</param>
+    /// <param name="document">The label design.</param>
+    /// <param name="labels">The labels in print order, each with its resolved values and its number of copies (at least 1).</param>
+    /// <param name="ct">Cancellation; pages the driver already accepted stay counted in <see cref="PrintResult.PagesSent"/>.</param>
+    Task<PrintResult> PrintResolvedAsync(PrinterTarget target, LabelDocument document, IReadOnlyList<ResolvedLabel> labels, CancellationToken ct = default) =>
+        Task.FromResult(PrintResult.Fail(PrintErrorKind.Unsupported));
 }
 
 /// <summary>Message keys of the notices the status check and the verification add to a <see cref="PrintResult"/>.</summary>
@@ -109,13 +149,17 @@ public static class PrinterStatusKeys
     public const string Stopped = "Stopped";
 }
 
-/// <summary>Default <see cref="IPrintService"/>: ZPL from Core, bytes from <see cref="ZplEncoding"/>, transport by target.</summary>
-public sealed class PrintService : IPrintService
+/// <summary>
+/// Default <see cref="IPrintService"/>: ZPL from Core, bytes from <see cref="ZplEncoding"/>, transport by target. A Windows queue in
+/// <see cref="PrinterOutputMode.WindowsDriver"/> mode is printed as pictures through its driver instead (see <c>PrintService.Driver.cs</c>).
+/// </summary>
+public sealed partial class PrintService : IPrintService
 {
     private readonly IRawPrinter _spooler;
     private readonly INetworkPrinter _network;
     private readonly IPrinterDiscovery _discovery;
     private readonly IPrinterStatusReader _status;
+    private readonly IDriverPrinter _driver;
 
     /// <summary>Creates the service with the real winspool and TCP implementations.</summary>
     public PrintService() : this(new WinspoolRawPrinter(), new TcpRawPrinter(), new WinspoolRawPrinter()) { }
@@ -127,13 +171,26 @@ public sealed class PrintService : IPrintService
     public PrintService(IRawPrinter spooler, INetworkPrinter network, IPrinterDiscovery discovery)
         : this(spooler, network, discovery, new PrinterStatusReader()) { }
 
-    /// <summary>Creates the service with explicit transports and status reader (tests pass fakes).</summary>
+    /// <summary>
+    /// Creates the service with explicit transports and status reader (tests pass fakes). Picture-mode printing uses the real
+    /// <see cref="GdiDriverPrinter"/>; it is only reached for a target in <see cref="PrinterOutputMode.WindowsDriver"/> mode.
+    /// </summary>
     public PrintService(IRawPrinter spooler, INetworkPrinter network, IPrinterDiscovery discovery, IPrinterStatusReader status)
+        : this(spooler, network, discovery, status, new GdiDriverPrinter()) { }
+
+    /// <summary>Creates the service with explicit transports, status reader and Windows-driver printer (tests pass fakes).</summary>
+    /// <param name="spooler">Raw ZPL to a Windows queue.</param>
+    /// <param name="network">Raw ZPL to a TCP endpoint.</param>
+    /// <param name="discovery">Lists printers and reads their driver settings.</param>
+    /// <param name="status">Asks a ZPL printer for its host status.</param>
+    /// <param name="driver">Prints pictures through a Windows driver (picture mode).</param>
+    public PrintService(IRawPrinter spooler, INetworkPrinter network, IPrinterDiscovery discovery, IPrinterStatusReader status, IDriverPrinter driver)
     {
         _spooler = spooler ?? throw new ArgumentNullException(nameof(spooler));
         _network = network ?? throw new ArgumentNullException(nameof(network));
         _discovery = discovery ?? throw new ArgumentNullException(nameof(discovery));
         _status = status ?? throw new ArgumentNullException(nameof(status));
+        _driver = driver ?? throw new ArgumentNullException(nameof(driver));
     }
 
     /// <inheritdoc />
@@ -146,11 +203,33 @@ public sealed class PrintService : IPrintService
         PrintAsync(target, document, data, profile, null, cancellationToken);
 
     /// <inheritdoc />
-    public async Task<PrintResult> PrintAsync(PrinterTarget target, LabelDocument document, IReadOnlyDictionary<string, string>? data,
-        PrinterProfile? profile, PrintVariableOptions? variables, CancellationToken cancellationToken = default)
+    /// <remarks>
+    /// A Windows queue in <see cref="PrinterOutputMode.WindowsDriver"/> mode is printed as pictures through its driver: pre-flight, the acknowledgement
+    /// check, then one page per label copy (see <c>PrintService.Driver.cs</c>); <paramref name="profile"/> and the target's status options are
+    /// not used there, because they are printer-language commands. Every other target takes the printer-language path, byte for byte as before.
+    /// </remarks>
+    public Task<PrintResult> PrintAsync(PrinterTarget target, LabelDocument document, IReadOnlyDictionary<string, string>? data,
+        PrinterProfile? profile, PrintVariableOptions? variables, CancellationToken cancellationToken = default) =>
+        IsDriverTarget(target)
+            ? PrintDriverAsync(target, document, data, variables, cancellationToken)
+            : PrintLanguageAsync(target, document, data, profile, variables, cancellationToken);
+
+    /// <summary>
+    /// The printer-language (ZPL) path of <see cref="PrintAsync(PrinterTarget, LabelDocument, IReadOnlyDictionary{string, string}?, PrinterProfile?, PrintVariableOptions?, CancellationToken)"/>,
+    /// kept exactly as it was before picture mode existed: its bytes must not change.
+    /// </summary>
+    private async Task<PrintResult> PrintLanguageAsync(PrinterTarget target, LabelDocument document, IReadOnlyDictionary<string, string>? data,
+        PrinterProfile? profile, PrintVariableOptions? variables, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(document);
-        var run = LabelPrintRun.Begin(document, data, variables);
+        LabelPrintRun run;
+        try { run = LabelPrintRun.Begin(document, data, variables); }
+        catch (Exception ex) when (ex is not OutOfMemoryException and not OperationCanceledException)
+        {
+            // Starting reads the counter file and generates the first label; a locked file, a full disk or a failing font engine must
+            // reach the operator as a result with the reason, not as a crash of the caller. Begin gives back what it reserved.
+            return PrintResult.Fail(PrintError.Create(PrintErrorKind.Unknown, target?.DisplayName ?? string.Empty, ex.GetType().Name, ex.Message));
+        }
         if (!run.CanPrint)
         {
             // Begin gave any reserved numbers back; the error keys tell the operator what to fix.
@@ -221,17 +300,24 @@ public sealed class PrintService : IPrintService
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// A Windows queue in <see cref="PrinterOutputMode.WindowsDriver"/> mode is refused with <see cref="PrintErrorKind.Unsupported"/> and nothing is sent:
+    /// its driver would print the ZPL as text. Every caller in the app already keeps raw ZPL away from such a queue; this is the second guard,
+    /// for a caller that forgets.
+    /// </remarks>
     public Task<PrintResult> PrintZplAsync(PrinterTarget target, string zpl, ZplEncoding encoding, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(target);
         ArgumentNullException.ThrowIfNull(zpl);
         ArgumentNullException.ThrowIfNull(encoding);
+        if (IsDriverTarget(target)) return Task.FromResult(PrintResult.Fail(PrintErrorKind.Unsupported));
         if (!TryEncode(zpl, encoding, out var bytes))
             return Task.FromResult(PrintResult.Fail(PrintErrorKind.EncodingFailed, encoding.ToString()));
         return SendCheckedAsync(target, bytes, cancellationToken);
     }
 
     /// <inheritdoc />
+    /// <remarks>A Windows queue in <see cref="PrinterOutputMode.WindowsDriver"/> mode is refused with <see cref="PrintErrorKind.Unsupported"/>, as by the other overload.</remarks>
     public Task<PrintResult> PrintZplAsync(PrinterTarget target, string zpl, ZplEncoding encoding, IReadOnlyCollection<string> byteExactBlocks,
         CancellationToken cancellationToken = default)
     {
@@ -239,15 +325,21 @@ public sealed class PrintService : IPrintService
         ArgumentNullException.ThrowIfNull(zpl);
         ArgumentNullException.ThrowIfNull(encoding);
         ArgumentNullException.ThrowIfNull(byteExactBlocks);
+        if (IsDriverTarget(target)) return Task.FromResult(PrintResult.Fail(PrintErrorKind.Unsupported));
         if (!TryEncode(zpl, encoding, byteExactBlocks, out var bytes))
             return Task.FromResult(PrintResult.Fail(PrintErrorKind.EncodingFailed, encoding.ToString()));
         return SendCheckedAsync(target, bytes, cancellationToken);
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// A Windows queue in <see cref="PrinterOutputMode.WindowsDriver"/> mode is refused with <see cref="PrintErrorKind.Unsupported"/> and nothing is sent:
+    /// the set-up commands are ZPL, which its driver would print as text (darkness and speed are set in the driver's own dialog there).
+    /// </remarks>
     public Task<PrintResult> ApplyProfileAsync(PrinterTarget target, PrinterProfile profile, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(profile);
+        if (IsDriverTarget(target)) return Task.FromResult(PrintResult.Fail(PrintErrorKind.Unsupported));
         var bad = profile.Validate();
         if (bad.Count > 0) return Task.FromResult(PrintResult.Fail(PrintError.Create(PrintErrorKind.InvalidProfile, bad.ToArray())));
         ArgumentNullException.ThrowIfNull(target);
@@ -259,6 +351,11 @@ public sealed class PrintService : IPrintService
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// The test label is an ordinary <see cref="LabelDocument"/> printed through <see cref="PrintAsync(PrinterTarget, LabelDocument, IReadOnlyDictionary{string, string}?, PrinterProfile?, CancellationToken)"/>,
+    /// so a target in <see cref="PrinterOutputMode.WindowsDriver"/> mode prints it as a picture: it needs the same acknowledgement as any other label,
+    /// and the profile then only sizes the label (no set-up commands are sent to a driver).
+    /// </remarks>
     public async Task<PrintResult> PrintTestLabelAsync(PrinterTarget target, PrinterProfile profile, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(profile);
@@ -283,10 +380,17 @@ public sealed class PrintService : IPrintService
     private async Task<PrinterCapabilities> SafeInfoAsync(string name, CancellationToken ct)
     {
         try { return await _discovery.GetPrinterInfoAsync(name, ct).ConfigureAwait(false); }
-        catch { return PrinterCapabilities.Unknown(name); }
+        // By contract detection never throws; if a custom discovery does, "unknown" is the honest answer. The caller keeps the
+        // profile's own resolution and paper size, and the print test label still works, so there is nothing the operator must act on.
+        catch (Exception ex) when (ex is not OutOfMemoryException) { return PrinterCapabilities.Unknown(name); }
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// A Windows queue in <see cref="PrinterOutputMode.WindowsDriver"/> mode is never asked: the query is the ZPL command <c>~HS</c>, which its driver
+    /// would print as text. The answer is "status unavailable" (<see cref="StatusUnavailableReason.NotSupported"/>), the same as for a queue that
+    /// cannot read replies. <see cref="VerifyPrintedAsync"/> goes through the same guard.
+    /// </remarks>
     public Task<PrinterStatus> GetStatusAsync(PrinterTarget target, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(target);
@@ -363,9 +467,14 @@ public sealed class PrintService : IPrintService
         return sent.WithNotices(notes);
     }
 
-    /// <summary>Asks the reader; a reader that breaks its contract and throws is treated as "no status", never as a crash of the print.</summary>
+    /// <summary>
+    /// Asks the reader; a reader that breaks its contract and throws is treated as "no status", never as a crash of the print. Every status query
+    /// of the service passes here, so this is where a queue in <see cref="PrinterOutputMode.WindowsDriver"/> mode is kept from receiving <c>~HS</c>
+    /// (a ZPL command its driver would print as text): it answers "not supported" without asking.
+    /// </summary>
     private async Task<PrinterStatus> SafeStatusAsync(PrinterTarget target, CancellationToken ct)
     {
+        if (IsDriverTarget(target)) return PrinterStatus.Unavailable(StatusUnavailableReason.NotSupported);
         try { return await _status.ReadStatusAsync(target, target.Status.QueryTimeout, ct).ConfigureAwait(false); }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
         catch (OperationCanceledException) { return PrinterStatus.Unavailable(StatusUnavailableReason.NoReply); }

@@ -274,15 +274,19 @@ public class DataDatabaseListingTests
 public sealed class DataDatabaseListingLocalDbTests : IAsyncLifetime
 {
     // A private LocalDB instance: the shared one may hold dozens of auto-closing databases, which makes HAS_DBACCESS take minutes.
-    private const string Inst = "RotulaListTest";
+    // The name is unique per run on purpose. A fixed name let one killed run leave an instance whose master database crashed on every start
+    // ("SQL Server process failed to start"), and then every later run on that PC failed; a fresh instance cannot inherit that, and two test
+    // runs at the same time (two checkouts, say) no longer delete each other's instance.
+    private static readonly string Inst = "RotulaListTest" + Guid.NewGuid().ToString("N")[..8];
 
     private static string? Exe() => Directory.GetDirectories(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Microsoft SQL Server"))
         .Select(d => Path.Combine(d, "Tools", "Binn", "SqlLocalDB.exe")).Where(File.Exists).OrderByDescending(p => p).FirstOrDefault();
 
-    private static void LocalDbCommand(string args)
+    /// <summary>Runs SqlLocalDB.exe and returns whether it finished in time with exit code 0.</summary>
+    private static bool LocalDbCommand(string args)
     {
         using var p = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(Exe()!, args) { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, CreateNoWindow = true })!;
-        p.WaitForExit(60_000);
+        return p.WaitForExit(60_000) && p.ExitCode == 0;
     }
 
     private readonly string _online = "rotula_list_on_" + Guid.NewGuid().ToString("N");
@@ -304,9 +308,11 @@ public sealed class DataDatabaseListingLocalDbTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        if (LocalDb.Reason is not null) return;
-        LocalDbCommand("create " + Inst);
-        LocalDbCommand("start " + Inst);
+        if (LocalDb.Reason is not null) return; // fixture setup only: every test of this class is a [LocalDbFact] and is reported as skipped
+        // A new instance that will not create or start is a real problem on this PC (the probe above already started the default one), so it fails
+        // the run with a plain message instead of being hidden as a skip.
+        if (!LocalDbCommand("create " + Inst) || !LocalDbCommand("start " + Inst))
+            throw new InvalidOperationException("SQL Server LocalDB could not create and start its own test instance '" + Inst + "'. Run 'SqlLocalDB.exe info' to see the instances on this PC.");
         await Run($"CREATE DATABASE [{_online}]");
         await Run($"CREATE DATABASE [{_offline}]");
         await Run($"ALTER DATABASE [{_offline}] SET OFFLINE WITH ROLLBACK IMMEDIATE");
@@ -320,7 +326,7 @@ public sealed class DataDatabaseListingLocalDbTests : IAsyncLifetime
 
     public async Task DisposeAsync()
     {
-        if (LocalDb.Reason is not null) return;
+        if (LocalDb.Reason is not null) return; // fixture setup only: every test of this class is a [LocalDbFact] and is reported as skipped
         LocalDbCommand("stop " + Inst + " -k");
         LocalDbCommand("delete " + Inst);
     }
@@ -356,13 +362,13 @@ public sealed class DataDatabaseListingLocalDbTests : IAsyncLifetime
     [LocalDbFact]
     public async Task ALoginThatCannotOpenADatabase_DoesNotSeeIt()
     {
-        if (!_loginCreated) return;
+        Skip.IfNot(_loginCreated, "The test account could not create a SQL login on this LocalDB instance (it needs rights to do so).");
         var settings = Windows() with { Authentication = DatabaseAuthentication.UserPassword, UserName = _login };
         DatabaseListResult r;
         try { r = await DatabaseLister.ListDatabasesAsync(settings, LoginPassword); }
         catch (DatabaseException ex) when (ex.Key == DataKeys.AuthenticationFailed)
         {
-            return; // this LocalDB instance accepts Windows sign-in only, so there is no SQL login to try
+            throw new SkipTestException("This LocalDB instance accepts Windows sign-in only, so there is no SQL login to try.");
         }
         Assert.Contains(r.Databases, d => d.Name == "master");
         Assert.DoesNotContain(r.Databases, d => d.Name == _online);    // HAS_DBACCESS = 0: the login has no user there

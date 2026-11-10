@@ -376,12 +376,12 @@ public class VarCounterTests : IDisposable
         Assert.Equal(VariableMessageKeys.CounterStoreBusy, ex.MessageKey);
     }
 
-    [Fact]
+    [SkippableFact]
     public void ALockHeldByAnotherProgram_IsRespected_UntilThatProgramEnds()
     {
         // A second operating-system process holds the lock file; this is the real cross-process case, not a thread.
         string ps = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "WindowsPowerShell", "v1.0", "powershell.exe");
-        if (!File.Exists(ps)) return; // not Windows: nothing to start
+        Skip.IfNot(File.Exists(ps), "Windows PowerShell is not available to hold the lock from a second process.");
         File.WriteAllText(CountersPath, new CounterBook().ToJson());
         string ready = Path.Combine(_dir, "ready.txt");
         string lockFile = CountersPath.Replace("'", "''") + ".lock";
@@ -523,9 +523,11 @@ public class VarCounterTests : IDisposable
         var book = new CounterBook();
         var t = DateTimeOffset.UnixEpoch;
         for (int i = 0; i < CounterBook.MaxRecords + 50; i++) book.Reset("k" + i, "f", 1, t.AddSeconds(i));
-        Assert.Equal(CounterBook.MaxRecords, book.Count);
-        Assert.Null(book.Get("k0"));
-        Assert.NotNull(book.Get("k" + (CounterBook.MaxRecords + 49)));
+        // Counters beyond the limit of full records are compacted, never forgotten: forgetting one would restart its serial numbers.
+        Assert.Equal(CounterBook.MaxRecords + 50, book.Count);
+        Assert.True(book.Get("k0")!.Compact);
+        Assert.Equal(1, book.Get("k0")!.Next);
+        Assert.False(book.Get("k" + (CounterBook.MaxRecords + 49))!.Compact);
         for (int i = 0; i < CounterBook.MaxPending + 10; i++) book.Reserve("p", "f", 1, t);
         Assert.Equal(CounterBook.MaxPending, book.Get("p")!.Pending.Count);
         Assert.Throws<ArgumentOutOfRangeException>(() => book.Reserve("p", "f", 0, t));
