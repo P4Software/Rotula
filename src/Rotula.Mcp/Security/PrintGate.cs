@@ -76,7 +76,7 @@ public sealed class PrintGate
     /// <param name="fingerprint">A hash of everything the job consists of; see <see cref="Fingerprint"/>.</param>
     /// <param name="token">The token from an earlier dry run, or null.</param>
     /// <param name="requiredAcknowledgements">
-    /// Names of printer-changing commands the job contains (see <see cref="PrinterCommandScanner"/>). When there are any, a confirmation is
+    /// Names of printer-changing commands the job contains (see <see cref="Rotula.Printing.PrinterCommandScanner"/>). When there are any, a confirmation is
     /// only accepted if <paramref name="acknowledged"/> names every one of them. Null or empty means the job has none.
     /// </param>
     /// <param name="acknowledged">The command names the caller says the user agreed to, or null.</param>

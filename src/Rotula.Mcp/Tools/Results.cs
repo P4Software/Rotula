@@ -3,6 +3,7 @@
 using Rotula.Mcp.Hosting;
 using Rotula.Mcp.Security;
 using Rotula.Mcp.Session;
+using Rotula.Printing;
 
 namespace Rotula.Mcp.Tools;
 

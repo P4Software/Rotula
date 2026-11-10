@@ -192,7 +192,7 @@ to the assistant that asked for the print, so it cannot by itself prove that a p
 - `rawZplBlocks` shows each raw block whole, on one line. A block longer than 4,000 characters is cut and says how many characters
   are missing; more than 100 blocks are counted in a last entry. The scan does not depend on what is displayed.
 
-The scanned commands are listed in `PrinterCommandScanner` (job control `~JA ~JB ~JC ~JD ~JL ~JP ~JR ~JX ~PP ~PS ^JJ ^JU`, stored
+The scanned commands are listed in `PrinterCommandScanner` (in the Rotula.Printing project; job control `~JA ~JB ~JC ~JD ~JL ~JP ~JR ~JX ~PP ~PS ^JJ ^JU`, stored
 objects `^ID ~EG ^EG ^TO ~DY ~DB ~DS ~DT ~DU ~DE ~DG(flash) ^DF ^CW`, settings `~WC ~RO ^MP ^MM ^MF ~SD ~TA ^SS ^SZ ^ST ^KP ^KN ^KL`,
 network and wireless `^NI ^NS ^ND ^NN ^NP ^NT ^NW ^NB ~NC ~NR ~NT ^WA ^WE ^WI ^WL ^WP ^WR ^WS ~WR`, other state changes
 `^CM ^IS ^JI ~JI ^SX ^SC ^ZZ ^XS`, and the command-character changes above). `^CM` remaps the memory letters, so once it appears every
