@@ -154,11 +154,11 @@ public class VarDateTests
         Assert.Equal("28060", Vars.EvalDate(FakeTime.AtLocal(2028, 2, 29), "julianYear"));
     }
 
-    [Fact]
+    [SkippableFact]
     public void CultureNames_FollowTheCulture_NotTheMachine()
     {
         var culture = DateFormats.ResolveCulture("es-ES");
-        if (culture is null || culture.Name.Length == 0) return; // globalization-invariant runtime: nothing to compare
+        Skip.If(culture is null || culture.Name.Length == 0, "The runtime is globalization-invariant, so there are no culture names to compare.");
         var o = new DateVariableOptions { Format = "MMM", Culture = "es-ES" };
         string expected = culture.DateTimeFormat.GetAbbreviatedMonthName(3);
         Assert.Equal(expected, Vars.EvalDate(FakeTime.AtLocal(2026, 3, 7), o, out _));

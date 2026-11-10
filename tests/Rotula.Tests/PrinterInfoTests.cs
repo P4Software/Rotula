@@ -202,10 +202,10 @@ public class PrinterInfoTests
     }
 
     /// <summary>Read-only smoke test against the real spooler: enumerates and queries every installed queue, asserts only "no exception".</summary>
-    [Fact]
+    [SkippableFact]
     public async Task Real_api_smoke_reads_every_installed_printer_without_throwing()
     {
-        if (!OperatingSystem.IsWindows()) return;
+        Skip.IfNot(OperatingSystem.IsWindows(), "The spooler is Windows only.");
         var printer = new WinspoolRawPrinter();
         var list = await printer.GetPrintersAsync();
         var lines = new List<string>();
