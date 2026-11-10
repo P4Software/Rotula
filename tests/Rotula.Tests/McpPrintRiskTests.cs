@@ -1,6 +1,7 @@
 using ModelContextProtocol;
 using Rotula.Core.Elements;
 using Rotula.Mcp.Security;
+using Rotula.Printing;
 
 namespace Rotula.Tests;
 
