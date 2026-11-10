@@ -5,6 +5,8 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-10
+
 ### Added
 - **Print to any Windows printer.** A DYMO, Brother, TSC, SATO, Epson or office printer that does not understand ZPL can now print your labels through its Windows driver. Each printer has a **print mode**: *Printer language (ZPL)*, as before, or *Windows driver (picture)*, which draws the label at the printer's real resolution and the label's real size. The mode is remembered per printer. The first time you print to a printer with no saved mode, the Print dialog asks once "How does this printer understand labels?" and suggests an answer from the printer's name and driver (ZPL for Zebra-style names and "Generic / Text Only" queues); network printers added in Rotula by address (TCP/IP, port 9100) always get ZPL. Nothing is switched for you: the printer saved in your settings stays on ZPL without a question, and other printers you used before this version are asked about once, with ZPL already selected for Zebra-style names. Before a picture print, Rotula lists what a driver cannot print the same way (raw ZPL kept from an imported file, barcodes only a ZPL printer can draw, recalls of graphics stored on the printer, images too large to draw, UL and CSA marks, a barcode whose bars are narrower than their safe size, a label larger than the area the printer can print on, whose outer edge may be cut off) and asks for one tick for the whole job; a label larger than the paper the driver uses is refused; a field the printer would number, date or fill in itself (`^SN`/`^SF`, `^FC`, `^FE`) cannot be printed this way and is refused. It works for a single label, for a whole data-merge batch (checked once, not per record) and for the print station. Because every copy is a page of its own in the Windows print queue, one job may print at most 100,000 labels (all the ticked records times their copies); more is refused with a plain message that says to print in smaller batches, and no tick lets it through. A label that does not fit the driver's paper but fits it turned a quarter turn (sideways stock) is turned clockwise for you, pixel for pixel so barcodes stay exact, and Rotula says so before printing (one tick); when neither way fits you get the usual paper error. The preview says it shows the printed picture. Printer-side counters, cutter, tear-off and status checks stay ZPL-only; the MCP server and the command line print ZPL only, and ZPL output does not change. No label printer to hand? Choose "Microsoft Print to PDF" and the Windows driver mode to try it. See [docs/printing.md](docs/printing.md).
 - **Set up print station** (File > Set up print station...): checks every label of a print station with the printer it uses and, for a printer in Windows driver mode, shows the points a driver cannot print the same way. When the label is fine as it is, you tick one box and save, and operators can print it. The acceptance is kept in `station.acknowledged.json` next to `station.json` (which is never changed). If the points found for a label change after you accepted them, operators are told to ask you to check it again. See [docs/print-station.md](docs/print-station.md).
@@ -29,6 +31,14 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Fixed
 - **Windows fonts that are named after a style now draw in that style.** "Arial Black", "Segoe UI Semibold", "Segoe UI Black", "Bahnschrift Condensed" and similar names used to be replaced by the default font in the preview, PNG/PDF export and print picture; they now resolve to their parent family at the weight and width the name says.
 - **Arial Narrow, Franklin Gothic Medium and other families Windows lists only under their own name now draw in that font** instead of the default one: when the font manager does not know the family, Rotula loads the installed font file.
+- **Serial numbers are never reissued, and are given back when a job cannot start.** A number that may have reached the printer is never used again. If the counter store cannot be read or saved (full disk, locked file, no permission), the run stops before anything prints, the numbers already taken are given back, and the message says what happened and what to check, instead of an error window.
+- **Printing is more careful when something goes wrong.** An unfinished job is cancelled in the Windows print queue instead of being left behind, bytes still on their way to a network printer are counted, and a printer that cannot start the job is reported as a result with a reason.
+- **Settings are saved safely.** `settings.json` is written to a temporary file first and then swapped in, so a crash or power cut during the save cannot leave it half written.
+- **Very large or hostile input no longer exhausts memory.** Images above 40 million pixels are refused with a placeholder (the same limit in the preview, exports and printing), and imports and data loads are bounded.
+
+### Security
+- **The read-only guard for database sources is stricter.** It now refuses spellings of a query that different SQL readers could understand differently, and refuses PostgreSQL functions that run text or read files on ODBC connections too. A few unusual but valid queries may be refused: for example `SELECT 1AS x` (no space) must be written `SELECT 1 AS x`.
+- **The MCP server checks every label it is asked to print.** All the ZPL is scanned for commands that change the printer itself (memory, network, stored settings); such a job needs an explicit acknowledgement, and raw ZPL blocks are shown in full before printing.
 
 ## [0.3.5] - 2026-10-12
 
@@ -149,6 +159,15 @@ First public version.
 - Releases are signed with Azure Artifact Signing, but Windows SmartScreen can still show a reputation warning for a new,
   little-downloaded file until downloads build trust (More info, then Run anyway).
 
-[Unreleased]: https://github.com/P4Software/Rotula/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/P4Software/Rotula/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/P4Software/Rotula/compare/v0.3.5...v0.4.0
+[0.3.5]: https://github.com/P4Software/Rotula/compare/v0.3.4...v0.3.5
+[0.3.4]: https://github.com/P4Software/Rotula/compare/v0.3.3...v0.3.4
+[0.3.3]: https://github.com/P4Software/Rotula/compare/v0.3.2...v0.3.3
+[0.3.2]: https://github.com/P4Software/Rotula/compare/v0.3.1...v0.3.2
+[0.3.1]: https://github.com/P4Software/Rotula/compare/v0.3.0...v0.3.1
+[0.3.0]: https://github.com/P4Software/Rotula/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/P4Software/Rotula/compare/v0.1.2...v0.2.0
+[0.1.2]: https://github.com/P4Software/Rotula/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/P4Software/Rotula/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/P4Software/Rotula/releases/tag/v0.1.0
