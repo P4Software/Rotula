@@ -6891,4 +6891,223 @@ Hash to add to apiKeyHashes in the settings file: {1}</value>
   <data name="Issue.Variable.Counter.Store.Failed" xml:space="preserve">
     <value>The counters could not be read or saved for "{0}" ({1}). No serial number was lost or repeated: numbers already taken are given back or skipped. Check that the disk has free space and that you can write to the counters folder, then try again.</value>
   </data>
+  <data name="Print.Error.NotAcknowledged" xml:space="preserve">
+    <value>Nothing was sent: the label has parts the Windows driver cannot print the same way as the preview. Tick the box to print it anyway, or fix the label, then print again.</value>
+  </data>
+  <data name="Print.Error.DriverRefused" xml:space="preserve">
+    <value>The Windows driver for "{0}" would not accept the label ({1}). Labels that Windows had already accepted may still print, so check what came out before printing again. Check that the printer is on and has paper, and that its driver settings allow this label size.</value>
+  </data>
+  <data name="Print.Mode.Label" xml:space="preserve">
+    <value>Print mode</value>
+  </data>
+  <data name="Print.Mode.PrinterLanguage" xml:space="preserve">
+    <value>Printer language (ZPL)</value>
+  </data>
+  <data name="Print.Mode.WindowsDriver" xml:space="preserve">
+    <value>Windows driver (picture)</value>
+  </data>
+  <data name="Print.Mode.Question" xml:space="preserve">
+    <value>How does this printer understand labels?</value>
+  </data>
+  <data name="Print.Mode.Suggested" xml:space="preserve">
+    <value>Rotula suggests "{0}" from this printer's name and driver; choose the other one if you know your printer works differently.</value>
+  </data>
+  <data name="Print.Mode.Explain.PrinterLanguage" xml:space="preserve">
+    <value>This printer gets labels in its own language (ZPL), the fastest and most exact way for Zebra and compatible printers.</value>
+  </data>
+  <data name="Print.Mode.Explain.WindowsDriver" xml:space="preserve">
+    <value>This printer gets labels as a picture through its Windows driver, so it can print them even though it does not understand ZPL.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.DriverUnavailable" xml:space="preserve">
+    <value>Rotula could not read the page size and resolution from this printer's Windows driver, so the label cannot be printed through it. Check that the printer is installed, switched on and connected, then try again, or choose another printer.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.RawBlocks" xml:space="preserve">
+    <value>{0} parts of this label are printer commands or features the Windows driver cannot print and will not appear on the label (such as ZPL kept from an imported file, a barcode only the printer can draw, or a UL or CSA certification mark). Print anyway only if the label is fine without them, or print it on a printer that understands ZPL.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.RawBlocks.One" xml:space="preserve">
+    <value>1 part of this label is a printer command or feature the Windows driver cannot print and will not appear on the label (such as ZPL kept from an imported file, a barcode only the printer can draw, or a UL or CSA certification mark). Print anyway only if the label is fine without it, or print it on a printer that understands ZPL.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.ModuleOneDot" xml:space="preserve">
+    <value>The barcode "{0}" would have bars only one printer dot wide at this printer's resolution, which scanners cannot read reliably, so it cannot be printed this way. Make the barcode larger (a wider module) or use a printer with a higher resolution.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.ModuleBelowMinimum" xml:space="preserve">
+    <value>The narrowest bars of the barcode "{0}" would print {1} mils wide, under the {2} mils this kind of barcode needs, so it may not scan. Make the barcode larger or use a printer with a higher resolution.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.ModuleBelowMinimum.Slightly" xml:space="preserve">
+    <value>The narrowest bars of the barcode "{0}" would print slightly under the {2} mils this kind of barcode needs, so it may not scan. Make the barcode a little larger or use a printer with a higher resolution.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.LabelLargerThanPaper" xml:space="preserve">
+    <value>The label ({0} mm) is larger than the area this printer can print on ({1} mm), so part of it would be cut off. Choose a larger paper size in the printer's settings, or make the label smaller.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.PaperMismatch" xml:space="preserve">
+    <value>The Windows driver did not accept the label size ({0} mm) as a paper size, so the label will be printed in the middle of the paper the driver has selected (printable area {1} mm). Choose the label size in the printer's settings if the label should fill the page.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.LabelTurned" xml:space="preserve">
+    <value>The label ({0} mm) is the other way round from the paper this printer uses ({1} mm), so Rotula turns it a quarter turn clockwise to fit. Check the first printout. If it comes out upside down, set the label's print orientation to upside down.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.AxisRatio" xml:space="preserve">
+    <value>This printer prints {0} dots per inch across and {1} down, which do not divide evenly, so barcode bars may come out slightly uneven. If a barcode does not scan, choose a resolution in the printer's settings where both numbers are the same.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.TooLarge" xml:space="preserve">
+    <value>At this printer's resolution the label would be a picture of {0} dots, more than the {1} Rotula can draw, so it cannot be printed this way. Make the label smaller or choose a lower resolution in the printer's settings.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.TooManyLabels" xml:space="preserve">
+    <value>This print would produce {0} labels, more than the {1} Rotula sends to a Windows driver in one go. Every copy is a page of its own in the print queue, so a job this large would overload it. Print in smaller batches, for example {1} labels or fewer at a time.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.PrinterCounter" xml:space="preserve">
+    <value>The field "{0}" is filled in by the printer itself (a counter, a date or another field's data), which a picture cannot do, so the label would show the wrong value. Use a Rotula counter or date variable instead, or print this label on a printer that understands ZPL.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.PrinterCounter.NoName" xml:space="preserve">
+    <value>A field on this label is filled in by the printer itself (a counter, a date or another field's data), which a picture cannot do, so the label would show the wrong value. Use a Rotula counter or date variable instead, or print this label on a printer that understands ZPL.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.Cancelled" xml:space="preserve">
+    <value>The check of the label for this printer was stopped before the driver answered, so nothing was printed. Print again to run the check.</value>
+  </data>
+  <data name="Issue.Driver.Render.BarcodeNotDrawn" xml:space="preserve">
+    <value>The {0} barcode cannot be drawn with the data "{1}", so this label was not printed (a wrong barcode would be worse than none). Correct the data for this barcode, then print again.</value>
+  </data>
+  <data name="Issue.Driver.Render.ImageNotDrawn" xml:space="preserve">
+    <value>An image on this label could not be read or is too large to draw, so this label was not printed. Replace the image or make it smaller, then print again.</value>
+  </data>
+  <data name="Issue.Driver.Render.ElementNotDrawn" xml:space="preserve">
+    <value>Part of this label could not be drawn as designed, so this label was not printed. Check the objects on the label (for example a barcode's data or an image), then print again.</value>
+  </data>
+  <data name="Print.Driver.FindingsTitle" xml:space="preserve">
+    <value>Before printing through the Windows driver</value>
+  </data>
+  <data name="Print.Driver.AcknowledgeBox" xml:space="preserve">
+    <value>I understand and want to print anyway</value>
+  </data>
+  <data name="Print.Driver.TickToContinue" xml:space="preserve">
+    <value>Nothing was sent yet. Read the points listed at the top of this window, tick "I understand and want to print anyway" if the label is fine as it is, then press Print again.</value>
+  </data>
+  <data name="Print.Busy.Checking" xml:space="preserve">
+    <value>Checking the label with the printer's Windows driver...</value>
+  </data>
+  <data name="Print.Mode.AnswerFirst" xml:space="preserve">
+    <value>Nothing was sent: Rotula does not know yet how this printer understands labels. Choose one of the two answers under the printer name, then press Print again.</value>
+  </data>
+  <data name="Print.Mode.PrinterNotListed" xml:space="preserve">
+    <value>Nothing was sent: the printer "{0}" is not in the list of printers installed on this PC, so Rotula cannot ask how it understands labels. Refresh the printer list or choose a printer from the list, then press Print again.</value>
+  </data>
+  <data name="Print.Mode.Change.ToWindowsDriver" xml:space="preserve">
+    <value>Change to "Windows driver (picture)"</value>
+  </data>
+  <data name="Print.Mode.Change.ToPrinterLanguage" xml:space="preserve">
+    <value>Change to "Printer language (ZPL)"</value>
+  </data>
+  <data name="Preview.DriverNote" xml:space="preserve">
+    <value>The preview shows what this printer will print, except the parts the Print dialog lists before printing: it prints this same picture through its Windows driver, so text uses Windows fonts instead of the printer's own fonts.</value>
+  </data>
+  <data name="Preview.DriverNote.Short" xml:space="preserve">
+    <value>Preview shows the print, except listed parts</value>
+  </data>
+  <data name="Preview.DriverNote.Name" xml:space="preserve">
+    <value>Note: the preview shows the printed picture, except the parts the Print dialog lists before printing</value>
+  </data>
+  <data name="Print.Driver.MoreInList" xml:space="preserve">
+    <value>Plus {0} more, listed at the top of this window.</value>
+  </data>
+  <data name="Data.Driver.Confirm" xml:space="preserve">
+    <value>This label will not print exactly as designed through this printer's Windows driver:{0}Press OK to print the batch anyway, or Cancel to send nothing.</value>
+  </data>
+  <data name="Data.Driver.CannotPrint" xml:space="preserve">
+    <value>Nothing was sent: this label cannot be printed through this printer's Windows driver. Fix what is listed below, or switch the printer to "Printer language (ZPL)" if it understands ZPL, then print again.</value>
+  </data>
+  <data name="Data.Driver.RecordNotDrawn" xml:space="preserve">
+    <value>Record {0} could not be drawn for the Windows driver, so the batch stopped and nothing from record {1} on was printed. Correct the data of record {0} (the reason follows), then print the records from record {1} on again.</value>
+  </data>
+  <data name="Data.Driver.RecordsNotDrawn" xml:space="preserve">
+    <value>One of records {0} to {1} could not be drawn for the Windows driver, so the batch stopped and nothing from record {0} on was printed. Correct that record's data (the reason follows), then print the records from record {0} on again.</value>
+  </data>
+  <data name="Data.Driver.PrintedThrough" xml:space="preserve">
+    <value>Labels up to record {0} may have printed; do not print those again.</value>
+  </data>
+  <data name="Data.Driver.PrintedInPart" xml:space="preserve">
+    <value>Labels up to record {0} may have printed, record {0} itself only in part: {1} of its {2} copies. Its serial number stays used. Do not print those labels again, and check how many copies of record {0} came out.</value>
+  </data>
+  <data name="Data.Driver.JobRefused" xml:space="preserve">
+    <value>The Windows driver check stopped the batch at record {0}: the printer now reports something about this label that was not there when printing started (the reason follows), so nothing from record {0} on was sent. Check the label and the printer, then print the records from record {0} on again.</value>
+  </data>
+  <data name="Station.Driver.AskSetupPerson" xml:space="preserve">
+    <value>This label has parts that the Windows driver cannot print the same way. Ask the person who set up this station to check the label and set the station up again.</value>
+  </data>
+  <data name="Station.Driver.SetupFindings" xml:space="preserve">
+    <value>What the Windows driver cannot print the same way</value>
+  </data>
+  <data name="Station.Driver.CannotPrint" xml:space="preserve">
+    <value>This label cannot be printed on this printer as it is, so nothing was sent. Ask the person who set up this station to check the label. The reason:</value>
+  </data>
+  <data name="Station.Driver.PreviewNote" xml:space="preserve">
+    <value>The preview shows what this printer will print, except the parts checked when the station was set up: it prints this same picture through its Windows driver, so text uses Windows fonts instead of the printer's own fonts.</value>
+  </data>
+  <data name="Menu.StationSetup" xml:space="preserve">
+    <value>Set up print station...</value>
+  </data>
+  <data name="Station.Setup.Title" xml:space="preserve">
+    <value>Set up print station</value>
+  </data>
+  <data name="Station.Setup.Intro" xml:space="preserve">
+    <value>Rotula checks every label of the station with the printer it uses. A printer that prints through its Windows driver may not print some parts of a label the same way: read them and, when the label is fine as it is, tick the box and save, so operators can print it. Do this on the PC where the station runs, signed in as the account it runs under: the check uses that PC's printer drivers and print modes.</value>
+  </data>
+  <data name="Station.Setup.File" xml:space="preserve">
+    <value>Settings file: {0}</value>
+  </data>
+  <data name="Station.Setup.Check" xml:space="preserve">
+    <value>Check again</value>
+  </data>
+  <data name="Station.Setup.Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Station.Setup.Checking" xml:space="preserve">
+    <value>Checking the labels...</value>
+  </data>
+  <data name="Station.Setup.Mode" xml:space="preserve">
+    <value>Print mode: {0}</value>
+  </data>
+  <data name="Station.Setup.Zpl" xml:space="preserve">
+    <value>Prints in printer language (ZPL). Nothing to check.</value>
+  </data>
+  <data name="Station.Setup.NoModeYet" xml:space="preserve">
+    <value>No print mode is chosen for this printer on this PC, so the station prints in printer language (ZPL). To print through its Windows driver instead, choose that mode for this printer in the Print dialog, then press Check again.</value>
+  </data>
+  <data name="Station.Setup.NoPrinter" xml:space="preserve">
+    <value>No printer is set up for this label. Add one to station.json, or print once from the designer on this PC, then press Check again.</value>
+  </data>
+  <data name="Station.Setup.Driver.Clear" xml:space="preserve">
+    <value>Prints through the Windows driver. Nothing stands in the way.</value>
+  </data>
+  <data name="Station.Setup.Driver.Warnings" xml:space="preserve">
+    <value>Prints through the Windows driver, which cannot print the points below the same way. Operators can print this label only after you tick the box and save.</value>
+  </data>
+  <data name="Station.Setup.Driver.Errors" xml:space="preserve">
+    <value>Cannot be printed through the Windows driver. Change the label as described below, or set this printer to printer language (ZPL) if it understands ZPL, then press Check again.</value>
+  </data>
+  <data name="Station.Setup.Acknowledge" xml:space="preserve">
+    <value>I checked these points. Let the station print this label anyway.</value>
+  </data>
+  <data name="Station.Setup.Saved" xml:space="preserve">
+    <value>Saved in {0}. The station uses it from the next time it starts.</value>
+  </data>
+  <data name="Station.Setup.Unchanged" xml:space="preserve">
+    <value>Nothing changed, so nothing was saved.</value>
+  </data>
+  <data name="Station.Setup.NoStationJson" xml:space="preserve">
+    <value>This folder has no station.json yet. The accepted labels are kept next to the station's station.json, so create station.json in this folder first, then set up the station again.</value>
+  </data>
+  <data name="Station.Setup.SaveFailed" xml:space="preserve">
+    <value>Rotula could not save {0}. Check that you may change files in that folder, then press Save again.</value>
+  </data>
+  <data name="Station.Setup.Cleared" xml:space="preserve">
+    <value>Saved. No label needs to be accepted any more, so {0} was removed. The station uses this from the next time it starts.</value>
+  </data>
+  <data name="Station.Setup.SharedLabel" xml:space="preserve">
+    <value>Saved in {0}, but the label file "{1}" is offered on two printers that find different points, and only one set can be accepted for one file. Operators can print it on {2} only. To print it on both, give each printer its own copy of the label file, then set up the station again.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.MarginBand" xml:space="preserve">
+    <value>This printer cannot print the outer {2} mm of the page, so anything on the label that reaches that edge may be cut off (label {0} mm, printable area {1} mm). Check the paper size in the printer's settings, or leave a margin of at least {2} mm around the label's content. If nothing that matters is that close to the edge, you can print anyway.</value>
+  </data>
+  <data name="Print.Error.InvalidLabel.Partial" xml:space="preserve">
+    <value>A label with errors stopped the job, so the rest was not sent. Labels already sent to the printer before it: {0}. Check which labels came out, fix the problems below, then print only the ones that are missing.</value>
+  </data>
 </root>

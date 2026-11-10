@@ -60,6 +60,21 @@ public sealed record BarcodeSizeReport(
 }
 
 /// <summary>
+/// Whether a module (narrow bar) width is big enough to scan at a given printer resolution, as judged by
+/// <see cref="BarcodeSizing.ModuleSafetyOf(BarcodeSymbology, int, int, bool)"/>. Used before printing through the Windows driver, where the label is drawn as a picture and
+/// the printer's own dot pattern is no longer under the designer's control.
+/// </summary>
+public enum ModuleSafety
+{
+    /// <summary>The module is at least as wide as the symbology's minimum X-dimension.</summary>
+    Safe,
+    /// <summary>The module is two or more dots wide but narrower than the symbology's minimum X-dimension (typical on high-resolution office printers).</summary>
+    BelowMinimum,
+    /// <summary>The module is a single device dot: no tolerance for dot gain or head wear, whatever the symbology.</summary>
+    SingleDot,
+}
+
+/// <summary>
 /// Pure sizing helper for barcodes: turns the dot-based module width and the label resolution into the figures printers and
 /// scanner specifications use (X-dimension in mils and mm), measures the symbol where the width follows from the symbology rules,
 /// and checks the printer reality (is the module big enough to print and scan) and the quiet zone (does the symbol fit on the label).
@@ -122,6 +137,175 @@ public static class BarcodeSizing
             BarcodeCategory.Postal => new BarcodeQuietZone(0, 0, false, "default"),
             _ => new BarcodeQuietZone(10, 10, false, "default"),
         };
+    }
+
+    /// <summary>Millimetres per mil (1/1000 inch): 0.0254.</summary>
+    private const double MmPerMil = 0.0254;
+
+    /// <summary>Converts the millimetre figure a specification states to mils, so the table keeps the standard's own number instead of a rounded inch value.</summary>
+    private static double MilsFromMm(double mm) => mm / MmPerMil;
+
+    /// <summary>
+    /// Smallest module (X-dimension) per symbology, in mils (1/1000 inch), with the document it comes from. Each figure is the hard floor the
+    /// cited specification gives for ordinary on-demand (thermal or laser) label printing, in millimetres converted exactly; going below it is
+    /// outside what the standard accepts, so a scanner can no longer be expected to read the symbol. It is a floor, not the recommended size:
+    /// the GS1 target sizes are larger. Only the symbologies that have a citable figure are listed here; every other symbology gets a labelled
+    /// family fallback from <see cref="MinimumModuleOf"/>.
+    ///
+    /// Sources (GS1 General Specifications are quoted from the copies that could be read: Version 14 of Jan 2014, GSCN 16-434 effective
+    /// 20 Dec 2016 and GSCN 22-031 ratified Jul 2022, which becomes Release 23; later releases may move the figures):
+    /// - EAN-13, EAN-8, UPC-A, UPC-E, add-ons, GS1 DataBar: symbol specification table 1 (v14 Figure 5.5.2.7-2, Release 23 section 5.12.3.1)
+    ///   gives a minimum X of 0.264 mm (0.0104 in, 80 percent magnification) and, in note (*), allows 0.249 mm (0.0098 in, 75 percent)
+    ///   for on-demand printing (thermal, laser), which is the case here; the 0.249 mm figure is used.
+    /// - Code 128 and Interleaved 2 of 5: GS1-128 and ITF-14 tables 2 and 5 (v14 Figures 5.5.2.7-3 and 5.5.2.7-6, as revised by GSCN 16-434
+    ///   in 5.5.2.7.2 note (*) and 5.5.2.7.5 note (*)): the table minimum is 0.495 mm (0.0195 in) but when the symbol is physically too small
+    ///   the X-dimension "SHALL NOT be less than 0.250 mm (0.0098 in)". That absolute floor is used. ISO/IEC 15417 and ISO/IEC 16390 state no
+    ///   minimum of their own, so a plain Code 128 or Interleaved 2 of 5 label gets the same floor by analogy.
+    /// - QR Code is not in this table, because its figure depends on the content (see <see cref="MinimumModuleOf"/>): a GS1 QR Code (a GS1
+    ///   Digital Link URI) takes GS1 symbol specification table 1 (Release 23 section 5.12.3.1, GSCN 22-031): 0.375 mm (0.0148 in); the
+    ///   addenda for retail URLs (AI 8200) use 0.396 mm. Any other QR Code has no citable figure: ISO/IEC 18004 states no minimum module size,
+    ///   so it gets the matrix-2D family fallback.
+    /// - Data Matrix: GS1 symbol specification tables 6 (regulated healthcare non-retail) and 7 (direct part marking), v14 Figures 5.5.2.7-7
+    ///   and 5.5.2.7-8: 0.255 mm (0.0100 in). The retail tables ask 0.375 to 0.396 mm. ISO/IEC 16022 states no minimum.
+    /// - Code 39: AIM Uniform Symbology Specification Code 39 (USS-39) states a minimum standard X-dimension of 0.0075 in (0.191 mm); ISO/IEC
+    ///   16388 itself could not be read. The clause number of USS-39 was not retrievable, only the sentence quoting it.
+    /// - LOGMARS is Code 39 with a mandatory check character (MIL-STD-1189), so it takes the Code 39 figure.
+    /// - PDF417: 0.01 in (0.254 mm) minimum narrow element, as quoted from the US DLA DLMS manual 0206.35 in a search excerpt (the document
+    ///   itself could not be opened), ISO/IEC 15438 is paywalled and states no figure in the readable previews.
+    /// - POSTNET: USPS DMM archive (Aug 2017) 204, section 1.2.5: bars are 0.020 in plus or minus 0.005 in wide, so the narrowest allowed bar
+    ///   is 0.015 in (0.381 mm). Applies to the bar width, which is the module of this symbology.
+    /// </summary>
+    private static readonly Dictionary<BarcodeSymbology, (double Mils, string Source)> MinimumModules = new()
+    {
+        [BarcodeSymbology.Code128] = (MilsFromMm(0.250), "GS1 General Specifications 5.5.2.7.2 and 5.5.2.7.5 note (*), GSCN 16-434 (GS1-128 absolute minimum X-dimension 0.250 mm); ISO/IEC 15417 states none"),
+        [BarcodeSymbology.Interleaved2Of5] = (MilsFromMm(0.250), "GS1 General Specifications 5.5.2.7.2 note (*), GSCN 16-434 (ITF-14 absolute minimum X-dimension 0.250 mm); ISO/IEC 16390 states none"),
+        [BarcodeSymbology.Ean13] = (MilsFromMm(0.249), "GS1 General Specifications symbol specification table 1 note (*): 0.249 mm (75 percent) for on-demand printing, 0.264 mm otherwise"),
+        [BarcodeSymbology.UpcA] = (MilsFromMm(0.249), "GS1 General Specifications symbol specification table 1 note (*): 0.249 mm (75 percent) for on-demand printing, 0.264 mm otherwise"),
+        [BarcodeSymbology.Ean8] = (MilsFromMm(0.249), "GS1 General Specifications symbol specification table 1 note (*): 0.249 mm (75 percent) for on-demand printing, 0.264 mm otherwise"),
+        [BarcodeSymbology.UpcE] = (MilsFromMm(0.249), "GS1 General Specifications symbol specification table 1 note (*): 0.249 mm (75 percent) for on-demand printing, 0.264 mm otherwise"),
+        [BarcodeSymbology.UpcEanExtension] = (MilsFromMm(0.249), "GS1 General Specifications symbol specification table 1 (EAN/UPC plus add-on rows) note (*): 0.249 mm (75 percent) for on-demand printing"),
+        [BarcodeSymbology.DataBar] = (MilsFromMm(0.249), "GS1 General Specifications symbol specification table 1 (GS1 DataBar rows) note (*): 0.249 mm (75 percent) for on-demand printing, 0.264 mm otherwise"),
+        [BarcodeSymbology.DataMatrix] = (MilsFromMm(0.255), "GS1 General Specifications symbol specification tables 6 and 7 (v14 5.5.2.7): GS1 DataMatrix minimum X-dimension 0.255 mm; ISO/IEC 16022 states none"),
+        [BarcodeSymbology.Code39] = (7.5, "AIM Uniform Symbology Specification Code 39 (USS-39): minimum standard X-dimension 0.0075 in (0.191 mm), clause not retrieved; ISO/IEC 16388 not readable"),
+        [BarcodeSymbology.Logmars] = (7.5, "Code 39 variant (MIL-STD-1189), takes the AIM USS-39 minimum X-dimension 0.0075 in (0.191 mm)"),
+        [BarcodeSymbology.Pdf417] = (MilsFromMm(0.254), "US DLA DLMS manual 0206.35: minimum narrow element X-dimension 0.01 in (0.254 mm), read from a search excerpt; ISO/IEC 15438 not readable"),
+        [BarcodeSymbology.Postnet] = (15.0, "USPS DMM 204 section 1.2.5 (archive Aug 2017): bar width 0.020 +/- 0.005 in, narrowest allowed bar 0.015 in"),
+    };
+
+    /// <summary>
+    /// GS1 QR Code, the form a GS1 Digital Link URI takes in a QR Code: GS1 General Specifications symbol specification table 1 (Release 23
+    /// section 5.12.3.1, GSCN 22-031), minimum X-dimension 0.375 mm. Used only for QR Codes whose content is a GS1 Digital Link
+    /// (<see cref="HasGs1DigitalLinkContent"/>): GS1 sets this figure for its own symbols, not for every QR Code.
+    /// </summary>
+    private static readonly (double Mils, string Source) Gs1QrMinimum =
+        (MilsFromMm(0.375), "GS1 General Specifications 5.12.3.1 symbol specification table 1 (GSCN 22-031): GS1 QR Code (GS1 Digital Link URI) minimum X-dimension 0.375 mm");
+
+    /// <summary>
+    /// Any other QR Code. ISO/IEC 18004 states no minimum module size, so it takes the matrix-2D family fallback, the GS1 DataMatrix figure of
+    /// 0.255 mm, labelled "Fallback" like every other family default. Settled before the first release of picture printing because the minimum
+    /// is an argument of the pre-flight warning, and so part of the acknowledgement fingerprint: the stricter GS1 figure made every 4-dot QR
+    /// Code at 300 dpi (13.3 mils, a common, scannable size) ask for a tick.
+    /// </summary>
+    private static readonly (double Mils, string Source) GenericQrMinimum =
+        (MilsFromMm(0.255), "Fallback (matrix 2D family): GS1 DataMatrix minimum X-dimension 0.255 mm, because ISO/IEC 18004 states no minimum module size for QR Code; GS1 Digital Link content takes the GS1 QR Code 0.375 mm");
+
+    /// <summary>
+    /// The minimum module and its source for <paramref name="symbology"/>: the table entry when the symbology has a citable figure, otherwise a
+    /// family fallback chosen by <see cref="BarcodeCategory"/>. QR Code depends on its content: <paramref name="gs1DigitalLink"/> selects the
+    /// GS1 QR Code figure, otherwise a generic QR gets the matrix-2D fallback with a source that names ISO/IEC 18004. For every other symbology
+    /// <paramref name="gs1DigitalLink"/> changes nothing: Data Matrix has one GS1 figure, and the others have no Digital Link form.
+    /// Every fallback is labelled "Fallback" in its source text and is a documented value of a related symbology, never an invented number:
+    /// linear 7.5 mils (the AIM USS-39 Code 39 figure; Code 93 and Codabar are quoted at 7.5 mils by secondary sources only, and Code 11, MSI,
+    /// Plessey and the 2 of 5 variants have no figure that could be read);
+    /// matrix 2D the GS1 DataMatrix 0.255 mm (Aztec Code has no figure that could be read, and a MaxiCode symbol has a fixed size set by ISO/IEC
+    /// 16023, so it never has an adjustable module);
+    /// stacked the PDF417 0.254 mm (MicroPDF417, Codablock, Code 49 and TLC39 have no figure that could be read);
+    /// postal the POSTNET 0.015 in (PLANET uses the same bar dimensions in USPS practice, but Publication 25 could not be read).
+    /// </summary>
+    private static (double Mils, string Source) MinimumModuleOf(BarcodeSymbology symbology, bool gs1DigitalLink)
+    {
+        if (symbology == BarcodeSymbology.QrCode) return gs1DigitalLink ? Gs1QrMinimum : GenericQrMinimum;
+        if (MinimumModules.TryGetValue(symbology, out var known)) return known;
+        var category = Enum.IsDefined(symbology) ? BarcodeCatalog.Get(symbology).Category : BarcodeCategory.Linear;
+        return category switch
+        {
+            BarcodeCategory.Matrix2D => (MilsFromMm(0.255), "Fallback (matrix 2D family): GS1 DataMatrix minimum X-dimension 0.255 mm; no figure found for this symbology"),
+            BarcodeCategory.Stacked => (MilsFromMm(0.254), "Fallback (stacked family): PDF417 minimum X-dimension 0.254 mm; no figure found for this symbology"),
+            BarcodeCategory.Postal => (15.0, "Fallback (postal family): POSTNET narrowest bar 0.015 in; no figure found for this symbology"),
+            _ => (7.5, "Fallback (linear family): AIM USS-39 Code 39 minimum X-dimension 7.5 mils; no figure found for this symbology"),
+        };
+    }
+
+    /// <summary>
+    /// The smallest module (X-dimension) in mils (1/1000 inch) at which <paramref name="symbology"/> can still be expected to scan, for generic
+    /// content (a QR Code that is not a GS1 Digital Link). A symbology without its own citable figure gets a family fallback (see
+    /// <see cref="MinimumModuleSourceOf(BarcodeSymbology)"/> for which).
+    /// </summary>
+    public static double MinimumModuleMils(BarcodeSymbology symbology) => MinimumModuleOf(symbology, gs1DigitalLink: false).Mils;
+
+    /// <summary>
+    /// The smallest module in mils for <paramref name="symbology"/> carrying the given kind of content. Only QR Code differs: a GS1 Digital
+    /// Link takes the GS1 QR Code figure (0.375 mm), any other content the matrix-2D fallback (0.255 mm).
+    /// </summary>
+    /// <param name="symbology">The symbology.</param>
+    /// <param name="gs1DigitalLink">True when the content is a GS1 Digital Link URI (see <see cref="HasGs1DigitalLinkContent"/>).</param>
+    public static double MinimumModuleMils(BarcodeSymbology symbology, bool gs1DigitalLink) => MinimumModuleOf(symbology, gs1DigitalLink).Mils;
+
+    /// <summary>
+    /// The standard or specification behind <see cref="MinimumModuleMils(BarcodeSymbology)"/> (plain text, English), or a "Fallback" note when it is
+    /// a family default.
+    /// </summary>
+    public static string MinimumModuleSourceOf(BarcodeSymbology symbology) => MinimumModuleOf(symbology, gs1DigitalLink: false).Source;
+
+    /// <summary>The source behind <see cref="MinimumModuleMils(BarcodeSymbology, bool)"/> for the given kind of content (plain text, English).</summary>
+    /// <param name="symbology">The symbology.</param>
+    /// <param name="gs1DigitalLink">True when the content is a GS1 Digital Link URI.</param>
+    public static string MinimumModuleSourceOf(BarcodeSymbology symbology, bool gs1DigitalLink) => MinimumModuleOf(symbology, gs1DigitalLink).Source;
+
+    /// <summary>
+    /// True when <paramref name="barcode"/> carries GS1 Digital Link content: a QR Code or Data Matrix with the Digital Link option (its data is
+    /// checked as a GS1 Digital Link URI), or a QR Code made with the content builder's GS1 Digital Link kind (the builder does not set the
+    /// option, so both are read). A content definition that cannot be read counts as generic content.
+    /// </summary>
+    /// <param name="barcode">The barcode.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="barcode"/> is null.</exception>
+    public static bool HasGs1DigitalLinkContent(BarcodeElement barcode)
+    {
+        ArgumentNullException.ThrowIfNull(barcode);
+        if (barcode.Symbology is not (BarcodeSymbology.QrCode or BarcodeSymbology.DataMatrix)) return false;
+        if (barcode.DigitalLink) return true;
+        return barcode.Symbology == BarcodeSymbology.QrCode
+            && QrContent.QrContentSpec.TryParse(barcode.QrContentSpec, out var spec)
+            && spec.Kind == QrContent.QrContentKind.GS1DigitalLink;
+    }
+
+    /// <summary>
+    /// Judges a module of <paramref name="moduleDots"/> device dots at <paramref name="dpi"/> for generic content (see
+    /// <see cref="ModuleSafetyOf(BarcodeSymbology, int, int, bool)"/>).
+    /// </summary>
+    /// <param name="symbology">The symbology (its minimum comes from <see cref="MinimumModuleMils(BarcodeSymbology)"/>).</param>
+    /// <param name="moduleDots">Module (narrow bar) width in device dots.</param>
+    /// <param name="dpi">Resolution of the printer the label will be printed on.</param>
+    public static ModuleSafety ModuleSafetyOf(BarcodeSymbology symbology, int moduleDots, int dpi) => ModuleSafetyOf(symbology, moduleDots, dpi, gs1DigitalLink: false);
+
+    /// <summary>
+    /// Judges a module of <paramref name="moduleDots"/> device dots at <paramref name="dpi"/>. The check is on the physical width in mils, not on the
+    /// dot count: a 2-dot module is plenty at 203 dpi (9.9 mils) but only 1.7 mils at 1200 dpi, where no reader will resolve it.
+    /// A single dot is reported on its own because it has no tolerance for dot gain at any resolution. The minimum is the same one
+    /// <see cref="MinimumModuleMils(BarcodeSymbology, bool)"/> returns for this content, so a caller that shows the minimum next to the verdict
+    /// shows the figure the verdict was made against.
+    /// </summary>
+    /// <param name="symbology">The symbology.</param>
+    /// <param name="moduleDots">Module (narrow bar) width in device dots.</param>
+    /// <param name="dpi">Resolution of the printer the label will be printed on.</param>
+    /// <param name="gs1DigitalLink">True when the content is a GS1 Digital Link URI (only QR Code has a different minimum then).</param>
+    public static ModuleSafety ModuleSafetyOf(BarcodeSymbology symbology, int moduleDots, int dpi, bool gs1DigitalLink)
+    {
+        // Validate first so a bad resolution is never hidden by the single-dot shortcut.
+        if (dpi <= 0) throw new ArgumentOutOfRangeException(nameof(dpi));
+        if (moduleDots <= 1) return ModuleSafety.SingleDot;
+        // The tolerance keeps a module that lands exactly on the minimum from being rejected by floating point noise.
+        return MilsOf(moduleDots, dpi) + 1e-9 < MinimumModuleMils(symbology, gs1DigitalLink) ? ModuleSafety.BelowMinimum : ModuleSafety.Safe;
     }
 
     /// <summary>

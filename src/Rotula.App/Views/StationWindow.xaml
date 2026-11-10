@@ -230,8 +230,9 @@
 
           <DockPanel Grid.Column="2">
             <TextBlock DockPanel.Dock="Top" Text="{loc:T Station.Preview}" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,8" />
-            <TextBlock DockPanel.Dock="Bottom" Text="{loc:T Preview.Approximate}" Style="{StaticResource MutedText}" FontStyle="Italic" FontSize="15" Margin="0,8,0,0"
-                       TextWrapping="Wrap" />
+            <!-- "Approximate" for a printer-language printer; for a printer in picture mode, that the preview is the printed picture. -->
+            <TextBlock x:Name="PreviewNote" DockPanel.Dock="Bottom" Text="{Binding PreviewNote}" Style="{StaticResource MutedText}" FontStyle="Italic" FontSize="15"
+                       Margin="0,8,0,0" TextWrapping="Wrap" />
             <Border Background="{StaticResource WorkspaceDotBrush}" CornerRadius="8" Padding="24">
               <Border Background="White" BorderBrush="{StaticResource BorderBrushLight}" BorderThickness="1" HorizontalAlignment="Center" VerticalAlignment="Center">
                 <Image Source="{Binding Preview, Converter={StaticResource StationImage}}" Stretch="Uniform" StretchDirection="Both"

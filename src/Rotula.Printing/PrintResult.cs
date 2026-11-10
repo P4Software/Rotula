@@ -41,6 +41,10 @@ public enum PrintErrorKind
     BufferFull,
     /// <summary>The status check found the printer paused; nothing was sent. Arguments as for <see cref="HeadOpen"/>.</summary>
     Paused,
+    /// <summary>The job needs the print findings acknowledged (see <see cref="PrinterTarget.AcknowledgedFindings"/>) and they were not; nothing was sent.</summary>
+    NotAcknowledged,
+    /// <summary>The Windows driver would not open or accept the page. Arguments: printer, then the technical detail.</summary>
+    DriverRefused,
 }
 
 /// <summary>
@@ -104,7 +108,16 @@ public sealed class PrintResult
 
     /// <summary>A copy of this result that also carries <paramref name="notices"/>.</summary>
     public PrintResult WithNotices(IReadOnlyList<Rotula.Core.Validation.ValidationIssue> notices) =>
-        notices.Count == 0 ? this : new PrintResult(BytesSent, Error) { Notices = notices };
+        notices.Count == 0 ? this : new PrintResult(BytesSent, Error) { Notices = notices, PagesSent = PagesSent };
+
+    /// <summary>
+    /// Number of pages (pictures) handed to the Windows driver; 0 for ZPL jobs and for results that never set it. Set only through
+    /// <see cref="WithPages"/>, so <see cref="Ok"/> and <see cref="Fail(PrintError, int)"/> behave exactly as before.
+    /// </summary>
+    public int PagesSent { get; private init; }
+
+    /// <summary>A copy of this result (error, bytes and notices kept) that reports <paramref name="pages"/> pages sent.</summary>
+    public PrintResult WithPages(int pages) => new(BytesSent, Error) { Notices = Notices, PagesSent = pages };
 
     /// <summary>Creates a success result.</summary>
     public static PrintResult Ok(int bytesSent) => new(bytesSent, null);

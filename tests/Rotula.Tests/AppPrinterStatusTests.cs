@@ -35,7 +35,12 @@ public class AppPrinterStatusTests : IDisposable
     private PrintViewModel Dialog(bool network, bool withRecords = false)
     {
         if (network) { _main.Printer.UseNetwork = true; _main.Printer.Host = "192.168.1.50"; }
-        else _main.Printer.SelectedPrinterName = "Test Printer";
+        else
+        {
+            _main.Printer.SelectedPrinterName = "Test Printer";
+            // A Windows printer with no saved mode does not print until the person answers how it understands labels; these tests are ZPL.
+            _main.Printer.ChooseModeCommand.Execute(Rotula.Printing.PrinterOutputMode.PrinterLanguage);
+        }
         return new PrintViewModel(_fake.Printer, _main.Printer, () => _main.Session.Document, () => _main.Data.CurrentData, _fake.Build().Files, "my-label",
             _main.Variables, withRecords ? _main.Data : null);
     }
@@ -131,6 +136,32 @@ public class AppPrinterStatusTests : IDisposable
         await p.CheckPrinterStatusCommand.ExecuteAsync(null);
         Assert.Empty(_fake.Printer.StatusQueries);
         Assert.True(p.HasStatusProblem);
+    }
+
+    [Fact]
+    public async Task CheckStatus_InWindowsDriverMode_IsDisabled_AndSendsNothing()
+    {
+        // ~HS would print as text on a printer driven as pictures. The view hides the button, and the command itself is off too, so a key
+        // binding or automation can never send it.
+        var p = _main.Printer;
+        p.SelectedPrinterName = "Test Printer";
+        p.ChooseModeCommand.Execute(Rotula.Printing.PrinterOutputMode.PrinterLanguage);
+        Assert.True(p.CheckPrinterStatusCommand.CanExecute(null));
+
+        var changes = 0;
+        p.CheckPrinterStatusCommand.CanExecuteChanged += (_, _) => changes++;
+        p.ChooseModeCommand.Execute(Rotula.Printing.PrinterOutputMode.WindowsDriver);
+        Assert.True(changes > 0);
+        Assert.False(p.CheckPrinterStatusCommand.CanExecute(null));
+
+        await p.CheckPrinterStatusCommand.ExecuteAsync(null);
+        Assert.Empty(_fake.Printer.StatusQueries);
+        Assert.False(p.HasStatusText);
+        Assert.False(p.IsCheckingStatus);
+
+        // Back in printer-language mode the check is available again.
+        p.ChooseModeCommand.Execute(Rotula.Printing.PrinterOutputMode.PrinterLanguage);
+        Assert.True(p.CheckPrinterStatusCommand.CanExecute(null));
     }
 
     [Fact]

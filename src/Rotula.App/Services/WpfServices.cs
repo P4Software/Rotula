@@ -187,9 +187,9 @@ public sealed class WpfToolDialogService : IToolDialogService
     }
 
     /// <inheritdoc />
-    public void ShowPreviewDialog(Rotula.App.Editing.PreviewCache preview, string title)
+    public void ShowPreviewDialog(Rotula.App.Editing.PreviewCache preview, string title, string note)
     {
-        var window = new PreviewWindow(preview, title) { Owner = Application.Current?.MainWindow };
+        var window = new PreviewWindow(preview, title, note) { Owner = Application.Current?.MainWindow };
         window.ShowDialog();
     }
 
@@ -240,6 +240,13 @@ public sealed class WpfToolDialogService : IToolDialogService
     public void ShowStationPinTool(Rotula.App.ViewModels.StationPinViewModel viewModel)
     {
         var window = new StationPinWindow(viewModel) { Owner = Application.Current?.MainWindow };
+        window.ShowDialog();
+    }
+
+    /// <inheritdoc />
+    public void ShowStationSetup(Rotula.App.ViewModels.StationSetupViewModel viewModel)
+    {
+        var window = new StationSetupWindow(viewModel) { Owner = Application.Current?.MainWindow };
         window.ShowDialog();
     }
 

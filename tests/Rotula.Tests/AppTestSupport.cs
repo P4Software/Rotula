@@ -128,6 +128,8 @@ internal sealed class FakeServices
     public string? OpenPath, SavePath, ExportPath, ZplPath, ImagePath, DataPath, DbFilePath, FolderPath;
     public readonly FakeDatabaseServices Database = new();
     public bool ConfirmAnswer = true;
+    /// <summary>Answers for the next questions, in order (one per question); when it runs empty, <see cref="ConfirmAnswer"/> answers.</summary>
+    public readonly Queue<bool> ConfirmAnswers = new();
     public readonly List<string> Confirms = new();
     public readonly List<(string Title, string Message)> Errors = new();
     public readonly List<(string Title, string Message)> Infos = new();
@@ -165,7 +167,11 @@ internal sealed class FakeServices
         public void ShowError(string title, string message) => f.Errors.Add((title, message));
         public void ShowInfo(string title, string message) => f.Infos.Add((title, message));
         public SaveChangesAnswer AskSaveChanges(string documentName) { f.SaveQuestions++; return f.SaveAnswer; }
-        public bool Confirm(string title, string message) { f.Confirms.Add(message); return f.ConfirmAnswer; }
+        public bool Confirm(string title, string message)
+        {
+            f.Confirms.Add(message);
+            return f.ConfirmAnswers.Count > 0 ? f.ConfirmAnswers.Dequeue() : f.ConfirmAnswer;
+        }
     }
 
     private sealed class Clip(FakeServices f) : IClipboardService
@@ -246,8 +252,17 @@ internal sealed class FakeToolDialogs : IToolDialogService
     public readonly List<Rotula.App.ViewModels.StationPinViewModel> PinTools = new();
     public void ShowPrintStation(Rotula.App.ViewModels.StationViewModel viewModel) => Stations.Add(viewModel);
     public void ShowStationPinTool(Rotula.App.ViewModels.StationPinViewModel viewModel) => PinTools.Add(viewModel);
+    /// <summary>The print station set-up tools that were opened (never shown).</summary>
+    public readonly List<Rotula.App.ViewModels.StationSetupViewModel> StationSetups = new();
+    public void ShowStationSetup(Rotula.App.ViewModels.StationSetupViewModel viewModel) => StationSetups.Add(viewModel);
     public int Previews;
-    public void ShowPreviewDialog(Rotula.App.Editing.PreviewCache preview, string title) => Previews++;
+    /// <summary>The note the last preview window was opened with (approximate preview, or the Windows-driver note).</summary>
+    public string? LastPreviewNote;
+    public void ShowPreviewDialog(Rotula.App.Editing.PreviewCache preview, string title, string note)
+    {
+        Previews++;
+        LastPreviewNote = note;
+    }
     /// <summary>What the "user" does inside the QR content builder; the fake dialog returns whether the builder was applied.</summary>
     public Action<Rotula.App.ViewModels.QrContentBuilderViewModel>? OnQrBuilder;
     public readonly List<Rotula.App.ViewModels.QrContentBuilderViewModel> QrBuilders = new();
@@ -361,5 +376,46 @@ internal sealed class FakePrintService : IPrintService
     {
         Verifications.Add(target);
         return Task.FromResult(VerifyNotes);
+    }
+
+    /// <summary>Every driver pre-flight that was asked for: the target and the exact document instance that was checked.</summary>
+    public readonly List<(PrinterTarget Target, LabelDocument Doc)> Preflights = new();
+
+    /// <summary>The pre-flight answer for a target and document; nothing found by default (what a printer-language target gets).</summary>
+    public Func<PrinterTarget, LabelDocument, DriverPreflightResult> Preflight = (_, _) => DriverPreflightResult.None;
+
+    public Task<DriverPreflightResult> PreflightAsync(PrinterTarget target, LabelDocument document, CancellationToken ct = default)
+    {
+        Preflights.Add((target, document));
+        return Task.FromResult(Preflight(target, document));
+    }
+
+    /// <summary>The whole-job label count each pre-flight was asked with, in the same order as <see cref="Preflights"/> (the app always asks with a count).</summary>
+    public readonly List<long> PreflightLabelCounts = new();
+
+    /// <summary>
+    /// Records the count. Like the real service, a picture-mode target with a job over the limit gets the single size error without being
+    /// pre-flighted (the real check is proved against <see cref="PrintService"/> in the library tests); anything else answers like the overload
+    /// without a count, where the scripted <see cref="Preflight"/> decides what is found.
+    /// </summary>
+    public Task<DriverPreflightResult> PreflightAsync(PrinterTarget target, LabelDocument document, long labelCount, CancellationToken ct = default)
+    {
+        PreflightLabelCounts.Add(labelCount);
+        if (target is { Transport: PrinterTransport.Spooler, Mode: PrinterOutputMode.WindowsDriver } && DriverPreflight.CheckJobSize(labelCount) is { } tooMany)
+        {
+            Preflights.Add((target, document));
+            return Task.FromResult(new DriverPreflightResult(new[] { tooMany }, null));
+        }
+        return PreflightAsync(target, document, ct);
+    }
+
+    /// <summary>Every picture-mode batch job: the target, the exact document instance and the labels (values and copies per record) it was given.</summary>
+    public readonly List<(PrinterTarget Target, LabelDocument Doc, IReadOnlyList<ResolvedLabel> Labels)> Resolved = new();
+
+    /// <summary>Recorded like every other call and answered by <see cref="Result"/> (and held by <see cref="Gate"/>), counted with them.</summary>
+    public Task<PrintResult> PrintResolvedAsync(PrinterTarget target, LabelDocument document, IReadOnlyList<ResolvedLabel> labels, CancellationToken ct = default)
+    {
+        Resolved.Add((target, document, labels));
+        return Respond(ct);
     }
 }

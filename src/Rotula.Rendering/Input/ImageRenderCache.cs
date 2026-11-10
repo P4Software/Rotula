@@ -83,15 +83,27 @@ internal static class ImageRenderCache
     }
 
     /// <summary>
+    /// True when the target size of <paramref name="img"/> is empty or above <see cref="MaxPixels"/>, so nothing may be dithered and the image is
+    /// shown as a stand-in. Only arithmetic: it can be asked (by the driver pre-flight, through the adapter) without preparing the picture.
+    /// The element must have a source.
+    /// </summary>
+    internal static bool IsTooLarge(ImageElement img)
+    {
+        var (w, h) = ResolveSize(img);
+        // Both sides are below the cap before multiplying, so the product cannot overflow a long either.
+        return w < 1 || h < 1 || w > MaxPixels || h > MaxPixels || w * h > MaxPixels;
+    }
+
+    /// <summary>
     /// Returns the printable dots of an image element as a PNG, from the cache when the same picture was prepared before.
-    /// Never throws for a size problem: an oversize target comes back with <see cref="Prepared.TooLarge"/> set. The element must have a source.
+    /// Never throws for a size problem: an oversize target (see <see cref="IsTooLarge"/>) comes back with <see cref="Prepared.TooLarge"/> set.
+    /// The element must have a source.
     /// </summary>
     internal static Prepared Prepare(ImageElement img)
     {
         var src = img.Source ?? throw new ArgumentException("The image element has no source.", nameof(img));
+        if (IsTooLarge(img)) return new Prepared([], 0, 0, true);
         var (w, h) = ResolveSize(img);
-        // Both sides are below the cap before multiplying, so the product cannot overflow a long either.
-        if (w < 1 || h < 1 || w > MaxPixels || h > MaxPixels || w * h > MaxPixels) return new Prepared([], 0, 0, true);
 
         var rotation = img.Rotation ?? FieldRotation.Normal;
         var key = new Key(Ids.GetValue(src, _ => new SourceId()).Value, (int)w, (int)h, img.Dither, img.Threshold, img.Invert, rotation);

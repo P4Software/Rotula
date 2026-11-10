@@ -177,6 +177,7 @@
         <Separator />
         <MenuItem Header="{loc:T Menu.PrintStation}" Command="{Binding OpenPrintStationCommand}" />
         <MenuItem Header="{loc:T Menu.StationPin}" Command="{Binding CreateStationPinCommand}" />
+        <MenuItem Header="{loc:T Menu.StationSetup}" Command="{Binding SetUpPrintStationCommand}" />
         <Separator />
         <MenuItem Header="{loc:T Menu.Exit}" Command="{Binding ExitCommand}" InputGestureText="Alt+F4" />
       </MenuItem>
@@ -763,7 +764,7 @@
         </StackPanel>
         <StackPanel Grid.Column="3" Orientation="Horizontal" ToolTip="{Binding ApproximateNotice}" Background="Transparent">
           <Border Style="{StaticResource StatusSeparator}" />
-          <TextBlock Text="{Binding ApproximateNoticeShort}" Style="{StaticResource StatusText}" TextTrimming="None" FontStyle="Italic" AutomationProperties.Name="{loc:T Preview.Approximate.Name}"
+          <TextBlock Text="{Binding ApproximateNoticeShort}" Style="{StaticResource StatusText}" TextTrimming="None" FontStyle="Italic" AutomationProperties.Name="{Binding ApproximateNoticeName}"
                      AutomationProperties.HelpText="{Binding ApproximateNotice}" />
           <!-- What the preview does differently for the selected barcode; hidden when the preview is exact. -->
           <StackPanel Orientation="Horizontal" ToolTip="{Binding BarcodePreviewNote}">

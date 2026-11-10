@@ -656,6 +656,20 @@ leaving by accident; it is not a security boundary, because anyone who can edit 
 Keyboard-wedge scanners end a code with Enter or Tab, which `ScanSequencer` turns into "stay", "next field", "focus Print" or "print". Timing
 heuristics (telling a scan from typing by speed) were left out: they misfire on slow PCs and remote sessions, and the terminator already works for
 both people and scanners.
+
+### Picture mode: the findings are accepted at set-up, never by the operator
+A station printer in Windows-driver (picture) mode is pre-flighted like the Print dialog, but the operator cannot judge findings, so the person
+who sets the station up accepts them once with **File > Set up print station...**, and the fingerprint is stored per label in
+`station.acknowledged.json` next to station.json. The station compares it with the fingerprint worked out at print time: equal prints, anything else (never accepted, or
+the label was edited since) refuses with one plain sentence, and an error finding never prints. The set-up builds the printer and the document
+with the same code as the station (`StationPrinting`), because the fingerprint depends on both and on the driver's media; it must therefore run on
+the station PC. The print mode itself comes from the per-printer map in the settings of the account the station runs under, read through a copy
+(`PrintSettings.Copy`) so the station never changes the designer's settings; a queue with no saved mode prints ZPL and the operator is never
+asked. The acknowledgements are a file of their own rather than a setting in station.json (ruling of 2026-11-09): station.json refuses
+unknown settings, so an older Rotula would refuse a station.json that held them, and station.json is written by hand, so Rotula never rewrites
+it or its comments. `StationAcknowledgements` writes the file whole through a temporary file, deletes it when nothing is accepted (a ZPL
+station never gets one), and reads a missing, unreadable, damaged or newer file as "nothing accepted", so the operator is refused with the
+plain message rather than the label printed unchecked. The tool never creates station.json; a bare folder of labels is told to create it first.
 ## Print orientation preview (Rotula.Rendering)
 
 ### ^PO and ^PM are shown "as printed" only in the Preview window
@@ -748,3 +762,22 @@ bounds, so an anchored object keeps its anchored edge where the handle rule says
 copied reference. The .rotula file stores `anchor`, `relativeTo` and `referenceElementId` (version 11, stamped only when an anchor is used; the
 field is `relativeTo` rather than `reference` because a recall element already writes its stored-object name as `reference`). ZPL import never
 creates anchors; the MCP server reads and writes X/Y as they are (offsets for an anchored object) and does not expose anchors yet.
+
+## Printing through the Windows driver (Rotula.Printing/Driver)
+
+Rulings of 2026-11-09, one per line; the details are in [printing.md](printing.md#printing-through-the-windows-driver-any-printer).
+- **Coarser axis**: when the X and Y resolutions differ, the picture is drawn at the coarser one and the device stretches it; a ratio that is not whole is a warning.
+- **Physical-page fit**: an accepted label size is judged against the physical page (larger is an error); more than 1 mm larger than the printable area is the MarginBand warning, whatever the design.
+- **MarginBand arguments**: label size, printable area and the widest of the four unprintable edges (mm, one decimal), all from the library, so no formatter computes anything.
+- **Refused size**: judged against the printable area of the driver's own paper, and always reported as PaperMismatch.
+- **1 mm tolerance** for every size comparison (pre-flight, negotiation, probe against print), because drivers round paper sizes; except the DriverUnavailable rule, where a physical page smaller than the printable area is unusable with no tolerance.
+- **Parts left out and counted**, never replaced by a stand-in: raw blocks, barcodes only the printer draws, stored-graphic recalls, oversize images, UL/CSA marks.
+- **Printer-side fields refused**: `^SN`/`^SF`, `^FC` and `^FE` are an error no acknowledgement passes, because a picture drawn once repeats one value.
+- **Render error mark = failed label**: a label the renderer would draw with an error mark fails before its document is sent.
+- **128 MB per driver document** of distinct pictures; ending a document early only adds a boundary, which is safe for serial numbers.
+- **The driver's page count is the authority for serial numbers**: a page counts once the driver accepted it; without a count, every picture handed over counts.
+- **Probe and print agree**: each document is printed against the probed media; another resolution or a changed accepted page is refused before StartDoc.
+- **Mode per printer name** in `settings.json`; only a settings file from before driver printing is seeded (its configured printer as ZPL), other printers are asked once.
+- **Station acknowledgements** live in `station.acknowledged.json` next to `station.json`, accepted by whoever sets the station up, never by the operator.
+- **QR minimum**: a generic QR Code takes the matrix fallback of 0.255 mm (ISO/IEC 18004 states none); 0.375 mm only for GS1 Digital Link content.
+- **The fingerprint covers the findings only** (keys and arguments), not the printer, the media or the rest of the design.

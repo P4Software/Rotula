@@ -67,7 +67,10 @@ public sealed record StationImage(int Width, int Height, byte[] Pixels, int Stri
 /// <param name="Printing">The print service (the only way anything is printed).</param>
 /// <param name="Variables">Counter memory, remembered answers and the text rasterizer, shared with the designer.</param>
 /// <param name="Messages">Message boxes (the "Print N labels?" question of a data print).</param>
-/// <param name="DesignerPrinter">The printer last used in the designer; labels without a printer of their own use it.</param>
+/// <param name="DesignerPrinter">
+/// The printer last used in the designer; labels without a printer of their own use it. Its per-printer print modes decide which station printers
+/// print pictures through their Windows driver. Only read (through a copy), never changed.
+/// </param>
 /// <param name="Database">Saved database connections, for labels whose data comes from a database; null uses the real ones.</param>
 /// <param name="LoadLabel">Reads a .rotula file; null uses <see cref="RotulaFileSerializer.LoadFile"/>.</param>
 /// <param name="Time">Clock for the PIN lock-out; null uses the computer's.</param>
@@ -117,6 +120,7 @@ public sealed partial class StationLabelViewModel : ObservableObject
 /// The print station: a locked, print-only screen for the warehouse floor. The operator picks a label (or scans its code), answers its questions
 /// (typed or scanned; Enter or Tab moves on), sets the quantity and prints. Printing goes through <see cref="IPrintService"/> exactly like the Print
 /// dialog, with the printer status check, and the result is shown in large plain words. Leaving the station needs the PIN when one is set.
+/// A printer in Windows-driver (picture) mode prints pictures; its findings are accepted once by whoever set the station up, never by the operator.
 /// </summary>
 public sealed partial class StationViewModel : OperationViewModel
 {
@@ -164,6 +168,8 @@ public sealed partial class StationViewModel : OperationViewModel
         WarningsText = string.Join(Environment.NewLine, notes);
         RefreshVisible();
         PropertyChanged += (_, e) => { if (e.PropertyName == nameof(IsBusy)) { OnPropertyChanged(nameof(CanPrint)); OnPropertyChanged(nameof(CanPrintRecords)); } };
+        // The preview note is worded in code (it depends on the print mode), so a change of language must refresh it like the {loc:T} texts.
+        Loc.Instance.SubscribeWeak(this, static self => self.OnPropertyChanged(nameof(PreviewNote)));
     }
 
     /// <summary>Lists configuration problems in plain language, one per line (errors first).</summary>
@@ -319,6 +325,13 @@ public sealed partial class StationViewModel : OperationViewModel
     [ObservableProperty]
     private StationImage? _preview;
 
+    /// <summary>
+    /// The sentence under the preview: for a printer in Windows-driver (picture) mode, that the preview is the picture the printer prints (except
+    /// the parts accepted when the station was set up); otherwise that the preview is approximate. The designer's driver note points at the
+    /// Print dialog, which an operator never sees, so the station has its own wording.
+    /// </summary>
+    public string PreviewNote => Loc.Get(Printer is { IsDriverMode: true } ? "Station.Driver.PreviewNote" : "Preview.Approximate");
+
     /// <summary>True when Print may run.</summary>
     public bool CanPrint => IsIdle && Current is not null && Printer is not null;
 
@@ -361,7 +374,7 @@ public sealed partial class StationViewModel : OperationViewModel
         var doc = label.Document!;
         _session = new EditorSession(doc);
         _previewCache = new PreviewCache(_session);
-        Printer = BuildPrinter(label, doc);
+        Printer = StationPrinting.BuildPrinter(_service, label.Entry, doc, _services.DesignerPrinter, out _);
         _set = PromptSet.Build(doc, null, _services.Variables.PromptMemory);
         foreach (var item in _set.Items)
         {
@@ -369,13 +382,13 @@ public sealed partial class StationViewModel : OperationViewModel
             field.PropertyChanged += OnFieldChanged;
             Fields.Add(field);
         }
-        int copies = label.Entry.DefaultCopies ?? Math.Max(1, doc.Print.Quantity);
-        CopiesText = Math.Clamp(copies, 1, label.Entry.MaxCopies).ToString(CultureInfo.InvariantCulture);
+        CopiesText = StationPrinting.DefaultCopies(label.Entry, doc).ToString(CultureInfo.InvariantCulture);
         Current = label;
         ResultText = string.Empty;
         SetStatus(StationStatusKind.None, string.Empty, string.Empty);
         OnPropertyChanged(nameof(HasNoFields));
         OnPropertyChanged(nameof(PrinterText));
+        OnPropertyChanged(nameof(PreviewNote));
         OnPropertyChanged(nameof(MaxCopies));
         OnPropertyChanged(nameof(CopiesHint));
         OnPropertyChanged(nameof(CanPrint));
@@ -414,44 +427,8 @@ public sealed partial class StationViewModel : OperationViewModel
         OnPropertyChanged(nameof(RecordsText));
         OnPropertyChanged(nameof(CanPrintRecords));
         OnPropertyChanged(nameof(HasNoFields));
+        OnPropertyChanged(nameof(PreviewNote));
         SetStatus(StationStatusKind.None, string.Empty, string.Empty);
-    }
-
-    private PrinterSettingsViewModel? BuildPrinter(StationLabelViewModel label, LabelDocument doc)
-    {
-        PrintSettings settings;
-        if (label.Entry.Printer is { } p)
-        {
-            settings = new PrintSettings
-            {
-                Configured = true,
-                Transport = p.Host is null ? "Spooler" : "Tcp",
-                PrinterName = p.WindowsPrinter ?? string.Empty,
-                Host = p.Host ?? string.Empty,
-                Port = p.Port,
-                Dpi = (p.Dpi is { } dpi ? (PrinterDpi)dpi : doc.Dpi).ToString(),
-                MediaTracking = doc.MediaTracking.ToString(),
-                Darkness = p.Darkness,
-                SpeedIps = p.Speed,
-                StatusCheckNetwork = p.CheckStatus,
-                StatusCheckWindows = p.CheckStatus,
-            };
-        }
-        else if (_services.DesignerPrinter is { Configured: true } d)
-        {
-            // A copy: the station never changes the designer's own settings.
-            settings = new PrintSettings
-            {
-                Configured = true, Transport = d.Transport, PrinterName = d.PrinterName, Host = d.Host, Port = d.Port, Dpi = d.Dpi, WidthMm = d.WidthMm,
-                HeightMm = d.HeightMm, MediaTracking = d.MediaTracking, Darkness = d.Darkness, SpeedIps = d.SpeedIps,
-                StatusCheckNetwork = d.StatusCheckNetwork, StatusCheckWindows = d.StatusCheckWindows,
-            };
-        }
-        else return null;
-        // No driver detection: the station prints at the resolution it was set up with, the same on every PC.
-        var vm = new PrinterSettingsViewModel(_service, settings, () => { }, () => doc, (_, _) => Task.FromResult(PrinterDetection.None));
-        vm.UseDesignSize();
-        return vm;
     }
 
     private void OnFieldChanged(object? sender, PropertyChangedEventArgs e)
@@ -536,7 +513,11 @@ public sealed partial class StationViewModel : OperationViewModel
 
     // ------------------------------------------------------------------------------------ printing
 
-    /// <summary>Prints the open label with the answers and the quantity, through the print service with the printer status check.</summary>
+    /// <summary>
+    /// Prints the open label with the answers and the quantity, through the print service with the printer status check. A printer in
+    /// Windows-driver (picture) mode is pre-flighted first (see <see cref="GateDriverAsync"/>): the operator never accepts findings; only the
+    /// acknowledgement stored when the station was set up lets a label with warnings through.
+    /// </summary>
     [RelayCommand]
     public async Task PrintAsync()
     {
@@ -559,12 +540,10 @@ public sealed partial class StationViewModel : OperationViewModel
         error ??= Printer.TryBuildProfile(out profile, source.Encoding);
         if (error is not null) { SetStatus(StationStatusKind.Problem, Loc.Get("Station.Status.Problem"), error); return; }
 
-        // A private copy: the quantity and the resolution conversion never touch the label the station keeps.
-        var doc = ElementCloner.CloneDocument(source);
-        doc.Print.Quantity = copies;
-        var converted = Printer.ConvertForPrinter(doc, out _, out string? convertError);
-        if (converted is null) { SetStatus(StationStatusKind.Problem, Loc.Get("Station.Status.Problem"), convertError!); return; }
-        doc = converted;
+        // A private copy: the quantity and the resolution conversion never touch the label the station keeps. The set-up tool builds its copy
+        // with the same code, so the fingerprint it stored is worked out from the same document.
+        var doc = StationPrinting.PrepareDocument(Printer, source, copies, out string? convertError);
+        if (doc is null) { SetStatus(StationStatusKind.Problem, Loc.Get("Station.Status.Problem"), convertError!); return; }
         // The design is checked with the answers before anything is reserved or sent, so the operator sees the real reason.
         var variables = _services.Variables;
         var gen = VariableEngine.HasDefinitions(doc)
@@ -579,6 +558,13 @@ public sealed partial class StationViewModel : OperationViewModel
         var options = VariableServices.Options(variables, answers);
         _statusVersion++;
         SetStatus(StationStatusKind.Printing, Loc.Get("Station.Status.Printing"), target!.Status.Enabled ? Loc.Get("Station.Status.Printing.Checked") : string.Empty);
+        if (StationPrinting.IsDriverTarget(target))
+        {
+            // On exactly the document printed below: the service works the fingerprint out again from what it receives.
+            var gated = await GateDriverAsync(target, doc, Math.Max(1, doc.Print.Quantity));
+            if (gated is null) return; // the gate showed why
+            target = gated;
+        }
         PrintResult? result = null;
         bool finished = await RunAsync(Loc.Get("Station.Status.Printing"), async ct => result = await _service.PrintAsync(target, doc, null, profile, options, ct));
         if (!finished || result is null)
@@ -605,14 +591,81 @@ public sealed partial class StationViewModel : OperationViewModel
             return;
         }
         SetStatus(StationStatusKind.Printing, Loc.Get("Station.Status.Printing"), string.Empty);
-        var outcome = await records.PrintBatchAsync(RunAsync, p => Progress = p, copies);
+        // The station's own picture-mode gate: without it the batch would ask the operator to accept the findings (the Data window's question).
+        _gateShowedOutcome = false;
+        var outcome = await records.PrintBatchAsync(RunAsync, p => Progress = p, copies, GateDriverAsync);
         if (outcome is not { } o)
         {
+            // Refused or stopped by the picture-mode gate: it already put the reason in the status panel, which the lines below would overwrite.
+            if (_gateShowedOutcome) return;
             SetStatus(ResultIsError ? StationStatusKind.Problem : StationStatusKind.None, ResultIsError ? Loc.Get("Station.Status.Problem") : string.Empty, ResultText);
             return;
         }
         SetStatus(o.IsError ? StationStatusKind.Problem : StationStatusKind.Printed, Loc.Get(o.IsError ? "Station.Status.Problem" : "Station.Status.Printed"), o.Text);
         if (!o.IsError) ResetFields();
+    }
+
+    /// <summary>Set by <see cref="GateDriverAsync"/> when it stopped a print and put the reason in the status panel itself.</summary>
+    private bool _gateShowedOutcome;
+
+    /// <summary>
+    /// The station's picture-mode gate, for a single print and for the label's data (passed to the batch print as its gate). It runs the driver
+    /// pre-flight on <paramref name="doc"/>, which must be the very document that is then printed, and decides without asking the operator:
+    /// <list type="bullet">
+    /// <item>an error finding never prints: the status lists it and tells the operator to ask the person who set up the station;</item>
+    /// <item>warnings print only when their fingerprint equals the one stored for this label at set-up
+    /// (<see cref="StationConfig.AcknowledgedFindings"/>); with none stored, or another one (the design changed since), the operator reads
+    /// <c>Station.Driver.AskSetupPerson</c> and nothing is sent;</item>
+    /// <item>no findings print as they are.</item>
+    /// </list>
+    /// </summary>
+    /// <returns>The target to print to (carrying the stored acknowledgement when there are warnings), or null when nothing may be sent; the
+    /// reason is then in the status panel.</returns>
+    /// <param name="target">The printer to print to.</param>
+    /// <param name="doc">The document that will be printed, the very instance.</param>
+    /// <param name="labelCount">How many labels the whole job prints, copies included (for the label's data: every ticked record times its
+    /// copies). More than the pre-flight's limit is an error finding like any other.</param>
+    private async Task<PrinterTarget?> GateDriverAsync(PrinterTarget target, LabelDocument doc, long labelCount)
+    {
+        if (!StationPrinting.IsDriverTarget(target)) return target;
+        DriverPreflightResult? preflight = null;
+        // Inside RunAsync: asking a driver can take a moment, and the operator can stop it like any print (the status panel shows Stop).
+        bool finished = await RunAsync(Loc.Get("Station.Status.Printing"), async ct => preflight = await _service.PreflightAsync(target, doc, labelCount, ct));
+        _gateShowedOutcome = true;
+        if (!finished || preflight is null)
+        {
+            // Stopped or crashed: RunAsync wrote the reason, shown the way a stopped print is shown.
+            SetStatus(ResultIsError ? StationStatusKind.Problem : StationStatusKind.None, ResultIsError ? Loc.Get("Station.Status.Problem") : string.Empty, ResultText);
+            return null;
+        }
+        if (preflight.Findings.Count == 1 && preflight.Findings[0].MessageKey == DriverPreflight.Cancelled)
+        {
+            // Stopped before the driver answered: a calm stop, not a problem with the label.
+            SetStatus(StationStatusKind.None, string.Empty, Loc.Get("Common.OperationCancelled"));
+            return null;
+        }
+        if (preflight.HasErrors)
+        {
+            var errors = preflight.Findings.Where(f => f.Severity == ValidationSeverity.Error).ToList();
+            // A printer that did not answer (switched off, disconnected) says nothing about the label: only its own sentence (check that the
+            // printer is on and connected) is shown, never "ask the person who set up the station to check the label".
+            string detail = errors is [{ MessageKey: DriverPreflight.DriverUnavailable }] && preflight.Findings.Count == 1
+                ? DriverPreflightGate.FormatFinding(errors[0])
+                // Nothing lets such a label through, not even an acknowledgement: whom to ask, then what cannot be printed.
+                : Loc.Get("Station.Driver.CannotPrint") + Environment.NewLine + DriverPreflightGate.Describe(errors);
+            SetStatus(StationStatusKind.Problem, Loc.Get("Station.Status.Problem"), detail);
+            return null;
+        }
+        _gateShowedOutcome = false;
+        if (!preflight.NeedsAcknowledgement) return target;
+        string fingerprint = preflight.Fingerprint;
+        if (Current is { } label && _config.AcknowledgedFindings.TryGetValue(label.Entry.Path, out string? stored)
+            && string.Equals(stored, fingerprint, StringComparison.Ordinal))
+            return target.WithAcknowledgement(fingerprint);
+        // Never acknowledged, or acknowledged for other findings (the label was edited since the set-up): the operator cannot decide this.
+        _gateShowedOutcome = true;
+        SetStatus(StationStatusKind.Problem, Loc.Get("Station.Status.Problem"), Loc.Get("Station.Driver.AskSetupPerson"));
+        return null;
     }
 
     /// <summary>Shows a print result in the status panel. Returns true when the labels went out (the questions are then reset for the next item).</summary>
@@ -622,7 +675,16 @@ public sealed partial class StationViewModel : OperationViewModel
         if (!result.Succeeded)
         {
             var error = result.Error!;
-            string text = PrintMessages.Describe(error) + (notes.Length > 0 ? Environment.NewLine + notes : string.Empty);
+            if (error.Kind == PrintErrorKind.NotAcknowledged)
+            {
+                // The service worked out findings that were not accepted (the driver or the label changed after the station's own check). The
+                // Print dialog's text tells the person to tick a box, which an operator does not have: the station says whom to ask, exactly as
+                // its own check does (GateDriverAsync). Nothing was sent and nothing was reserved.
+                SetStatus(StationStatusKind.Problem, Loc.Get("Station.Status.Problem"), Loc.Get("Station.Driver.AskSetupPerson"));
+                return false;
+            }
+            // The result, not only its error: a picture-mode job that stopped after pages went out says how many (see PrintMessages.Describe).
+            string text = PrintMessages.Describe(result) + (notes.Length > 0 ? Environment.NewLine + notes : string.Empty);
             bool heldBack = error.Kind is PrintErrorKind.HeadOpen or PrintErrorKind.PaperOut or PrintErrorKind.RibbonOut or PrintErrorKind.HeadTooHot
                 or PrintErrorKind.DiagnosticMode or PrintErrorKind.BufferFull or PrintErrorKind.Paused;
             SetStatus(heldBack ? StationStatusKind.HeldBack : StationStatusKind.Problem, Loc.Get(heldBack ? "Station.Status.HeldBack" : "Station.Status.Problem"), text);

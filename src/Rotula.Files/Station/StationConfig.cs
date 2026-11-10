@@ -122,6 +122,17 @@ public sealed class StationConfig
 
     /// <summary>The station fills the whole screen without a title bar.</summary>
     public bool FullScreen { get; init; } = true;
+
+    /// <summary>
+    /// The Windows-driver (picture mode) findings that the person who set up the station accepted, per label: the label's full path (as in
+    /// <see cref="StationLabel.Path"/>, matched without regard to letter case) to the fingerprint of the findings they saw. The station prints a
+    /// label whose pre-flight has warnings only when the fingerprint worked out at print time equals the one stored here, so an operator is
+    /// never asked to accept findings, and a label edited since the set-up (other findings, another fingerprint) is refused until the station is
+    /// set up again. Read when the configuration is loaded, from <c>station.acknowledged.json</c> next to it (<see cref="StationAcknowledgements"/>,
+    /// written by the "Set up print station" tool; its keys are relative to <see cref="LabelFolder"/>). Never null: no file, an unreadable or
+    /// damaged file, or a station without a configuration file is an empty map.
+    /// </summary>
+    public Dictionary<string, string> AcknowledgedFindings { get; init; } = new(StringComparer.OrdinalIgnoreCase);
 }
 
 /// <summary>Outcome of reading a station configuration: the configuration (null when an error stops it) and every problem found.</summary>

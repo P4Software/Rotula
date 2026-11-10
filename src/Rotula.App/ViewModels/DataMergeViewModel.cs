@@ -1071,21 +1071,64 @@ public sealed partial class DataMergeViewModel : OperationViewModel
     /// <summary>
     /// The batch print shared by this window and the Print dialog, so both go through one tested path (serial numbers reserved first and confirmed
     /// only for labels that reached the printer, print-time questions, jobs, partial and cancel handling).
+    /// <para>
+    /// The printer's mode decides what leaves. A printer whose mode question was never answered prints nothing. In printer-language (ZPL) mode
+    /// the jobs are ZPL, exactly as before. In Windows-driver (picture) mode the same jobs (<see cref="MergeBatch.JobLabels"/>, cut like the ZPL
+    /// jobs) are drawn as pictures through <see cref="IPrintService.PrintResolvedAsync"/>: the design is pre-flighted once, before the batch
+    /// question, the print-time questions and any serial number reservation; no printer commands or status checks (<c>~HS</c>) are sent; and
+    /// the pages the driver reports as possibly printed decide which serial numbers stay used (an error that escapes the service keeps the whole
+    /// job's numbers used).
+    /// </para>
     /// </summary>
     /// <param name="run">The host window's single-operation runner (busy state and cancel); it shows its own message when the work is cancelled or crashes.</param>
     /// <param name="progress">Receives 0-100 while jobs go out.</param>
     /// <param name="labelCopies">The Print dialog's copies per record, used when the copies setting is the label's own quantity; null keeps the label's own.</param>
+    /// <param name="driverGate">
+    /// The host's own picture-mode gate (the Print dialog's findings card and tick): given the target, the exact document that will be printed and
+    /// how many labels the whole batch prints (the ticked records times their copies, which the pre-flight refuses above its limit), it returns the
+    /// target to print to (carrying the acknowledgement) or null when printing must stop, having shown why itself. Null uses this window's gate:
+    /// one question listing the findings (OK acknowledges them, Cancel sends nothing).
+    /// </param>
     /// <returns>The result line to show, or null when nothing more is to be said (declined, cancelled, or the host already showed the outcome).</returns>
-    internal async Task<BatchOutcome?> PrintBatchAsync(Func<string, Func<CancellationToken, Task>, Task<bool>> run, Action<double> progress, int? labelCopies)
+    internal async Task<BatchOutcome?> PrintBatchAsync(Func<string, Func<CancellationToken, Task>, Task<bool>> run, Action<double> progress, int? labelCopies,
+        Func<PrinterTarget, LabelDocument, long, Task<PrinterTarget?>>? driverGate = null)
     {
+        // Whether this printer gets ZPL or a picture is the person's answer: without it nothing leaves, not even the question about the batch.
+        if (Printer.NeedsModeQuestion) return new BatchOutcome(Printer.PendingModeText(), true);
         string? error = Snapshot(out var doc, out var ds, convertToPrinter: true, quantity: labelCopies);
         PrinterTarget? target = null;
         PrinterProfile? profile = null;
         error ??= Printer.TryBuildTarget(out target);
         error ??= Printer.TryBuildProfile(out profile, doc.Encoding);
         if (error is not null) return new BatchOutcome(error, true);
-        // The question says exactly what will leave: the ticked records, and how many labels that is once copies are counted.
+
+        var batchTarget = target!;
+        bool pictures = IsDriverTarget(batchTarget);
+        // The whole batch: the ticked records and how many labels that is once copies are counted. It is what the question below says, and in
+        // picture mode what the pre-flight limits (every copy is a page of its own in the Windows queue), so it is worked out before the gate.
         long labels = CountLabels(ds, doc.Print.Quantity);
+        if (pictures)
+        {
+            // Picture mode: the design is checked once for the whole batch (a 500-record batch is not checked 500 times), before the batch
+            // question and the print-time questions. A label the driver cannot print is reported before anything is asked, and in the Print dialog
+            // the findings and the tick come first, so the batch question is asked once, after the tick. Nothing is reserved before this check
+            // passes (the serial numbers are reserved below). The very document checked here is the one every job prints: the service works the
+            // fingerprint out again from what it receives and refuses a job whose findings were not acknowledged.
+            if (driverGate is not null)
+            {
+                var gated = await driverGate(batchTarget, doc, labels);
+                if (gated is null) return null; // the host already showed why
+                batchTarget = gated;
+            }
+            else
+            {
+                var (accepted, refusal) = await ConfirmDriverFindingsAsync(run, batchTarget, doc, labels);
+                if (accepted is null) return refusal;
+                batchTarget = accepted;
+            }
+        }
+
+        // The question says exactly what will leave: the ticked records, and how many labels that is once copies are counted.
         string question = ds.BatchCount < ds.RecordCount
             ? Loc.Get("Data.PrintAll.ConfirmSelected", ds.BatchCount, Printer.Summary, labels, ds.RecordCount)
             : labels != ds.BatchCount
@@ -1097,6 +1140,9 @@ public sealed partial class DataMergeViewModel : OperationViewModel
         var report = new MergeReport();
         int jobs = 0;
         PrintError? failure = null;
+        // Picture mode only: the failed job and the service's result, kept to say which records may have printed and which record stopped it.
+        MergedPictureJob? failedPictureJob = null;
+        PrintResult? failedPictureResult = null;
         bool cancelled = false;
         // The run owns the serial-number reservation, so only labels that really reached the printer are confirmed. MergeBatch alone would
         // count every label as used the moment it is generated, and a failed send would then burn the numbers of the labels after it.
@@ -1106,25 +1152,58 @@ public sealed partial class DataMergeViewModel : OperationViewModel
             serials = VariableJob.Begin(doc, ds.CreateBatchContext(), ds.BatchCount);
             ds.Options.Job = serials;
         }
-        int confirmedThrough = 0; // record number of the last label that was sent, or may have been (a send in doubt counts as sent)
+        // Batch position (not row number: with ticked records the two differ) of the last label that was sent, or may have been (a send in doubt
+        // counts as sent). Both print modes confirm the serial numbers with it.
+        int confirmedThrough = 0;
         var closing = new List<ValidationIssue>();
-        // The printer set-up (darkness, speed...) goes out once, in front of the first job.
-        string setup = PrinterSetup.BuildSetupZpl(profile!);
+        // Printer language only. The printer set-up (darkness, speed...) goes out once, in front of the first job; a printer that prints pictures
+        // would print these commands as text, so picture mode never sends them.
+        string setup = pictures ? string.Empty : PrinterSetup.BuildSetupZpl(profile!);
         // Raw ZPL imported from bytes must reach the printer byte for byte; collected once, not per record.
         var rawBlocks = ByteExactBlocks.From(doc);
         var progressReporter = new Progress<double>(progress);
         // Every job is checked before it goes out (paper running out halfway stops the batch cleanly); the printer is asked whether it
-        // finished only once, after the last job, instead of waiting for each job to come out.
-        var batchTarget = target!;
+        // finished only once, after the last job, instead of waiting for each job to come out. (A picture-mode target has every status check
+        // off already: ~HS is a ZPL command.)
         var jobTarget = batchTarget.WithStatus(batchTarget.Status with { VerifyAfterPrinting = false });
         var verification = new List<ValidationIssue>();
         bool ok = await run(Loc.Get("Data.Busy.Printing"), async ct =>
         {
-            int inFlight = 0; // last record of the job being sent right now
+            int inFlight = 0; // batch position of the last label of the job being sent right now
             try
             {
                 await Task.Run(async () =>
                 {
+                    if (pictures)
+                    {
+                        foreach (var job in MergeBatch.JobLabels(doc, ds, report))
+                        {
+                            ct.ThrowIfCancellationRequested();
+                            inFlight = job.ItemsThrough;
+                            // Each record's values and copies, exactly as its ZPL would carry them: page i shows the serial number of label i.
+                            var resolved = job.Labels.Select(l => new ResolvedLabel(l.Values, l.Copies)).ToList();
+                            var result = await _service.PrintResolvedAsync(batchTarget, doc, resolved, ct);
+                            // By key and arguments: two barcodes that cannot be drawn give two findings with the same key, and both must be read.
+                            foreach (var note in result.Notices)
+                                if (!verification.Any(v => v.MessageKey == note.MessageKey && v.Args.SequenceEqual(note.Args))) verification.Add(note);
+                            if (!result.Succeeded)
+                            {
+                                failure = result.Error;
+                                failedPictureJob = job;
+                                failedPictureResult = result;
+                                // The driver reports the pages that may have printed, which makes the ZPL rule ("a send that moved bytes keeps
+                                // its numbers") exact: every record with a page out keeps its number, including one whose copies were cut short
+                                // (the safe side), and the records after it get theirs back. No page out: the whole job's numbers go back.
+                                if (result.PagesSent > 0) confirmedThrough = LastLabelOut(job.Labels, result.PagesSent).Label.ItemNumber;
+                                break;
+                            }
+                            confirmedThrough = inFlight;
+                            inFlight = 0;
+                            jobs++;
+                            ((IProgress<double>)progressReporter).Report(100.0 * report.Processed / ds.BatchCount);
+                        }
+                        return;
+                    }
                     foreach (var job in MergeBatch.JobBlocks(doc, ds, report))
                     {
                         ct.ThrowIfCancellationRequested();
@@ -1152,13 +1231,22 @@ public sealed partial class DataMergeViewModel : OperationViewModel
                 // Cancelled while a job was on its way: it may have printed, so its numbers are not given back.
                 if (inFlight > 0) confirmedThrough = inFlight;
             }
+            catch (Exception) when (pictures && inFlight > 0)
+            {
+                // Picture mode only. The print service lets a few errors through (out of memory) instead of reporting them, possibly after earlier
+                // driver documents of the same call were accepted, and then the count of their pages never comes back. Every number of the job in
+                // flight stays used (the safe side); the error goes on to the runner, which reports it, after the finally below confirmed them.
+                confirmedThrough = inFlight;
+                throw;
+            }
             finally
             {
                 // Always confirms (also when the run failed or was cancelled), so a reservation is never left hanging.
                 if (serials is not null) closing.AddRange(serials.Complete(confirmedThrough));
             }
-            // After the numbers are confirmed: a fault reported now leaves them used, because the labels may have printed.
-            if (failure is null && !cancelled && jobs > 0 && batchTarget.Status.VerifyAfterPrinting)
+            // After the numbers are confirmed: a fault reported now leaves them used, because the labels may have printed. Never in picture mode:
+            // the check is a ZPL command (~HS) the printer would print as text.
+            if (failure is null && !cancelled && jobs > 0 && !pictures && batchTarget.Status.VerifyAfterPrinting)
                 verification.AddRange(await _service.VerifyPrintedAsync(batchTarget, ct));
         });
         if (!ok) return null;
@@ -1166,8 +1254,10 @@ public sealed partial class DataMergeViewModel : OperationViewModel
         string notes = string.Join(" ", closing.Select(Loc.FormatIssue).Concat(verification.Select(PrintMessages.DescribeNotice)));
         if (failure is not null)
         {
-            return new BatchOutcome(PrintMessages.Describe(failure) + " " + Loc.Get("Data.Batch.Partial", jobs) + (notes.Length > 0 ? " " + notes : string.Empty),
-                failure.Kind != PrintErrorKind.Cancelled);
+            string headline = failedPictureJob is not null && failedPictureResult is not null
+                ? DescribePictureFailure(failedPictureJob, failedPictureResult, jobs)
+                : PrintMessages.Describe(failure) + " " + Loc.Get("Data.Batch.Partial", jobs);
+            return new BatchOutcome(headline + (notes.Length > 0 ? " " + notes : string.Empty), failure.Kind != PrintErrorKind.Cancelled);
         }
         if (cancelled)
             return new BatchOutcome(Loc.Get("Data.Batch.CancelledPartial", jobs) + (notes.Length > 0 ? " " + notes : string.Empty), false);
@@ -1178,6 +1268,143 @@ public sealed partial class DataMergeViewModel : OperationViewModel
 
     /// <summary>The result line of a batch print or export, and whether it reports a problem.</summary>
     internal readonly record struct BatchOutcome(string Text, bool IsError);
+
+    /// <summary>Prefix of the message keys of the picture renderer: a label that could not be drawn for one record's values.</summary>
+    private const string RenderKeyPrefix = "Driver.Render.";
+
+    /// <summary>True for a target printed as pictures through its Windows driver; every other target gets ZPL.</summary>
+    private static bool IsDriverTarget(PrinterTarget target) => target is { Transport: PrinterTransport.Spooler, Mode: PrinterOutputMode.WindowsDriver };
+
+    /// <summary>
+    /// This window's picture-mode gate, used when the host has none of its own: runs the driver pre-flight on <paramref name="doc"/> (the very
+    /// document every job will print) and lets the batch through only when nothing stands in the way. An error finding never prints and is
+    /// reported; warnings are listed in one question, where OK is the acknowledgement of exactly those findings and Cancel sends nothing.
+    /// </summary>
+    /// <returns>The target to print to (carrying the acknowledgement when warnings were accepted), or no target and the result to show (null when
+    /// nothing more is to be said: the person declined, or the runner already reported a stop or a failure).</returns>
+    private async Task<(PrinterTarget? Target, BatchOutcome? Refusal)> ConfirmDriverFindingsAsync(Func<string, Func<CancellationToken, Task>, Task<bool>> run,
+        PrinterTarget target, LabelDocument doc, long labelCount)
+    {
+        DriverPreflightResult? preflight = null;
+        // Through the runner: asking a driver can take a moment, and the person can stop it like the batch itself. The count is the whole batch,
+        // so a job with too many labels is refused here, as an error, before anything is asked or drawn.
+        bool finished = await run(Loc.Get("Print.Busy.Checking"), async ct => preflight = await _service.PreflightAsync(target, doc, labelCount, ct));
+        if (!finished || preflight is null) return (null, null);
+        if (preflight.Findings.Count == 1 && preflight.Findings[0].MessageKey == DriverPreflight.Cancelled)
+        {
+            // The person stopped the check before the driver answered: a calm stop, not a list of problems to fix (as in the Print dialog).
+            return (null, new BatchOutcome(Loc.Get("Common.OperationCancelled"), false));
+        }
+        if (preflight.HasErrors)
+        {
+            var errors = preflight.Findings.Where(f => f.Severity == ValidationSeverity.Error).ToList();
+            return (null, new BatchOutcome(Loc.Get("Data.Driver.CannotPrint") + Environment.NewLine + DriverPreflightGate.Describe(errors), true));
+        }
+        if (!preflight.NeedsAcknowledgement) return (target, null);
+        // The findings stand between the sentence that introduces them and the one that says what OK and Cancel do, one finding per line.
+        string findings = Environment.NewLine + Environment.NewLine + DriverPreflightGate.Describe(preflight.Findings) + Environment.NewLine + Environment.NewLine;
+        if (!_messages.Confirm(DriverPreflightGate.Title, Loc.Get("Data.Driver.Confirm", findings))) return (null, null);
+        return (target.WithAcknowledgement(preflight.Fingerprint), null);
+    }
+
+    /// <summary>
+    /// The last label of a picture job with a page that may have printed, given <paramref name="pagesSent"/> (at least 1), and how many of its
+    /// copies those pages are. The service prints the labels in order, each as many pages in a row as it has copies (one page per copy), so the
+    /// label is the one that owns the last page out; fewer pages out than its copies means it printed only in part (a document boundary, or a
+    /// driver that refused a page, fell inside its copies). A page count past the end of the job, which a driver should never report, gives the
+    /// last label with all its copies, so the whole job counts as printed (the safe side).
+    /// </summary>
+    internal static (MergedLabel Label, long PagesOut) LastLabelOut(IReadOnlyList<MergedLabel> labels, long pagesSent)
+    {
+        long before = 0; // pages of the labels before this one; long, because one record may ask for up to 99,999,999 copies
+        foreach (var label in labels)
+        {
+            if (before + label.Copies >= pagesSent) return (label, pagesSent - before);
+            before += label.Copies;
+        }
+        return (labels[^1], labels[^1].Copies);
+    }
+
+    /// <summary>
+    /// The index of the first label of a picture job that the driver never received, given the pages that may have printed, or -1 when every
+    /// page went out. A label starts on the page after the copies of the labels before it.
+    /// </summary>
+    private static int FirstUnsentLabel(IReadOnlyList<MergedLabel> labels, long pagesSent)
+    {
+        long start = 0; // 0-based page on which the label starts
+        for (int i = 0; i < labels.Count; i++)
+        {
+            if (start >= pagesSent) return i;
+            start += labels[i].Copies;
+        }
+        return -1;
+    }
+
+    /// <summary>
+    /// The result line of a picture job that failed: what happened, how many jobs went out before it, and up to which record labels may have
+    /// printed (saying so when the last of them printed only in part). A record that could not be drawn (the renderer's errors, for example a
+    /// barcode value that cannot be encoded) is named when the data allows it. A job the service's own check refused (the driver now reports
+    /// other findings, or an error) gets a sentence that says so, never the Print dialog's "tick the box": in a batch, jobs may already be on
+    /// paper and the Data window has no box. The reason itself follows in the notes, worded like the Print dialog's findings.
+    /// </summary>
+    private static string DescribePictureFailure(MergedPictureJob job, PrintResult result, int jobsSent)
+    {
+        var error = result.Error!;
+        var parts = new List<string>();
+        int firstUnsent = FirstUnsentLabel(job.Labels, result.PagesSent);
+        bool notDrawn = result.Notices.Any(n => n.MessageKey.StartsWith(RenderKeyPrefix, StringComparison.Ordinal));
+        if (error.Kind == PrintErrorKind.InvalidLabel && firstUnsent >= 0 && notDrawn)
+        {
+            // "The label has errors, so nothing was sent" would be false here: the labels before this record may be on paper.
+            var first = job.Labels[firstUnsent];
+            var culprit = FindNotDrawnRecord(job.Labels, firstUnsent, result.Notices);
+            parts.Add(culprit is not null
+                ? Loc.Get("Data.Driver.RecordNotDrawn", culprit.RecordNumber, first.RecordNumber)
+                : first.RecordNumber == job.LastRecordNumber
+                    ? Loc.Get("Data.Driver.RecordNotDrawn", first.RecordNumber, first.RecordNumber)
+                    : Loc.Get("Data.Driver.RecordsNotDrawn", first.RecordNumber, job.LastRecordNumber));
+        }
+        else if ((error.Kind is PrintErrorKind.NotAcknowledged or PrintErrorKind.InvalidLabel) && firstUnsent >= 0)
+        {
+            // The service checks every job again before it sends a page of it; this one was refused, so nothing from its first unsent record on
+            // went out. The texts for a single print ("Nothing was sent", "Tick the box") would be wrong here.
+            parts.Add(Loc.Get("Data.Driver.JobRefused", job.Labels[firstUnsent].RecordNumber));
+        }
+        else parts.Add(PrintMessages.Describe(result)!);
+        parts.Add(Loc.Get("Data.Batch.Partial", jobsSent));
+        // The person needs to know where to start again: the pages out of the failed job belong to the records up to this one, the last of them
+        // possibly cut short within its copies (its number stays used all the same).
+        if (result.PagesSent > 0)
+        {
+            var (last, pagesOut) = LastLabelOut(job.Labels, result.PagesSent);
+            parts.Add(pagesOut < last.Copies
+                ? Loc.Get("Data.Driver.PrintedInPart", last.RecordNumber, pagesOut, last.Copies)
+                : Loc.Get("Data.Driver.PrintedThrough", last.RecordNumber));
+        }
+        return string.Join(" ", parts);
+    }
+
+    /// <summary>
+    /// The record whose label could not be drawn, when the data says so beyond doubt: the renderer names the barcode value it could not encode,
+    /// and the record is named only when exactly one label from <paramref name="from"/> on holds exactly that value in one of its fields. A short
+    /// value such as "12" can also sit in another record's quantity or number column, and sending the person to correct the wrong record is
+    /// worse than naming the range. Null when the reason carries no value (an image, another part), when no label holds it (a value built from
+    /// several fields) or when several do; the caller then names the records it can be in.
+    /// </summary>
+    private static MergedLabel? FindNotDrawnRecord(IReadOnlyList<MergedLabel> labels, int from, IReadOnlyList<ValidationIssue> notices)
+    {
+        var barcode = notices.FirstOrDefault(n => n.MessageKey == DevicePictureRenderer.BarcodeNotDrawn && n.Args.Count >= 2 && n.Args[1].Length > 0);
+        if (barcode is null) return null;
+        string value = barcode.Args[1];
+        MergedLabel? match = null;
+        for (int i = from; i < labels.Count; i++)
+        {
+            if (labels[i].Values is not { } values || !values.Values.Any(v => string.Equals(v, value, StringComparison.Ordinal))) continue;
+            if (match is not null) return null; // two records hold the value: which one failed cannot be told
+            match = labels[i];
+        }
+        return match;
+    }
 
     private static string BatchSummary(string doneKey, MergeReport report, int units)
     {

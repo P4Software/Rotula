@@ -488,7 +488,8 @@
             <ColumnDefinition Width="*" />
           </Grid.ColumnDefinitions>
           <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
-            <Border Style="{StaticResource Card}"><views:PrinterSettingsView DataContext="{Binding Printer}" /></Border>
+            <!-- Batch printing honours both print modes, so the printer card shows the mode line and the one-time question, as in the Print dialog. -->
+            <Border Style="{StaticResource Card}"><views:PrinterSettingsView DataContext="{Binding Printer}" ShowModeChoice="True" /></Border>
           </ScrollViewer>
           <DockPanel Grid.Column="2">
             <Border DockPanel.Dock="Top" Style="{StaticResource Card}">

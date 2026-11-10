@@ -6891,4 +6891,223 @@ Hash que debe agregar a apiKeyHashes en el archivo de configuración: {1}</value
   <data name="Issue.Variable.Counter.Store.Failed" xml:space="preserve">
     <value>No se pudieron leer ni guardar los contadores de "{0}" ({1}). No se perdió ni se repitió ningún número de serie: los números ya tomados se devuelven o se omiten. Compruebe que el disco tiene espacio libre y que puede escribir en la carpeta de los contadores, y vuelva a intentarlo.</value>
   </data>
+  <data name="Print.Error.NotAcknowledged" xml:space="preserve">
+    <value>No se envió nada: la etiqueta tiene partes que el controlador de Windows no puede imprimir igual que en la vista previa. Marque la casilla para imprimirla de todos modos o corrija la etiqueta, y vuelva a imprimir.</value>
+  </data>
+  <data name="Print.Error.DriverRefused" xml:space="preserve">
+    <value>El controlador de Windows de "{0}" no aceptó la etiqueta ({1}). Las etiquetas que Windows ya había aceptado pueden imprimirse igualmente, así que revise lo que salió antes de volver a imprimir. Compruebe que la impresora esté encendida y tenga papel, y que la configuración de su controlador permita este tamaño de etiqueta.</value>
+  </data>
+  <data name="Print.Mode.Label" xml:space="preserve">
+    <value>Modo de impresión</value>
+  </data>
+  <data name="Print.Mode.PrinterLanguage" xml:space="preserve">
+    <value>Lenguaje de la impresora (ZPL)</value>
+  </data>
+  <data name="Print.Mode.WindowsDriver" xml:space="preserve">
+    <value>Controlador de Windows (imagen)</value>
+  </data>
+  <data name="Print.Mode.Question" xml:space="preserve">
+    <value>¿Cómo entiende las etiquetas esta impresora?</value>
+  </data>
+  <data name="Print.Mode.Suggested" xml:space="preserve">
+    <value>Rotula sugiere "{0}" por el nombre y el controlador de esta impresora; elija la otra opción si sabe que su impresora funciona de otra manera.</value>
+  </data>
+  <data name="Print.Mode.Explain.PrinterLanguage" xml:space="preserve">
+    <value>Esta impresora recibe las etiquetas en su propio lenguaje (ZPL), la forma más rápida y exacta para las impresoras Zebra y compatibles.</value>
+  </data>
+  <data name="Print.Mode.Explain.WindowsDriver" xml:space="preserve">
+    <value>Esta impresora recibe las etiquetas como una imagen a través de su controlador de Windows, así puede imprimirlas aunque no entienda ZPL.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.DriverUnavailable" xml:space="preserve">
+    <value>Rotula no pudo leer el tamaño de página ni la resolución del controlador de Windows de esta impresora, así que la etiqueta no se puede imprimir con él. Compruebe que la impresora esté instalada, encendida y conectada, y vuelva a intentarlo, o elija otra impresora.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.RawBlocks" xml:space="preserve">
+    <value>{0} partes de esta etiqueta son comandos o funciones de la impresora que el controlador de Windows no puede imprimir y no aparecerán en la etiqueta (por ejemplo, ZPL conservado de un archivo importado, un código de barras que solo dibuja la impresora o una marca de certificación UL o CSA). Imprima de todos modos solo si la etiqueta sirve sin ellas, o imprímala en una impresora que entienda ZPL.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.RawBlocks.One" xml:space="preserve">
+    <value>1 parte de esta etiqueta es un comando o una función de la impresora que el controlador de Windows no puede imprimir y no aparecerá en la etiqueta (por ejemplo, ZPL conservado de un archivo importado, un código de barras que solo dibuja la impresora o una marca de certificación UL o CSA). Imprima de todos modos solo si la etiqueta sirve sin ella, o imprímala en una impresora que entienda ZPL.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.ModuleOneDot" xml:space="preserve">
+    <value>El código de barras "{0}" tendría barras de un solo punto de ancho con la resolución de esta impresora, y los lectores no pueden leerlas con seguridad, así que no se puede imprimir de esta forma. Agrande el código de barras (un módulo más ancho) o use una impresora de mayor resolución.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.ModuleBelowMinimum" xml:space="preserve">
+    <value>Las barras más finas del código de barras "{0}" se imprimirían con {1} mils de ancho, por debajo de los {2} mils que necesita este tipo de código, así que podría no leerse. Agrande el código de barras o use una impresora de mayor resolución.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.ModuleBelowMinimum.Slightly" xml:space="preserve">
+    <value>Las barras más finas del código de barras "{0}" se imprimirían ligeramente por debajo de los {2} mils que necesita este tipo de código, así que podría no leerse. Agrande un poco el código de barras o use una impresora de mayor resolución.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.LabelLargerThanPaper" xml:space="preserve">
+    <value>La etiqueta ({0} mm) es más grande que el área que esta impresora puede imprimir ({1} mm), así que una parte quedaría cortada. Elija un tamaño de papel mayor en la configuración de la impresora o haga la etiqueta más pequeña.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.PaperMismatch" xml:space="preserve">
+    <value>El controlador de Windows no aceptó el tamaño de la etiqueta ({0} mm) como tamaño de papel, así que la etiqueta se imprimirá centrada en el papel que tiene seleccionado el controlador (área imprimible {1} mm). Elija el tamaño de la etiqueta en la configuración de la impresora si la etiqueta debe ocupar toda la página.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.LabelTurned" xml:space="preserve">
+    <value>La etiqueta ({0} mm) está en sentido contrario al del papel que usa esta impresora ({1} mm), así que Rotula la gira un cuarto de vuelta en sentido horario para que quepa. Revise la primera impresión. Si sale al revés, ponga la orientación de impresión de la etiqueta en boca abajo.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.AxisRatio" xml:space="preserve">
+    <value>Esta impresora imprime {0} puntos por pulgada a lo ancho y {1} a lo alto, que no se dividen de forma exacta, así que las barras de los códigos pueden salir algo desiguales. Si un código no se lee, elija en la configuración de la impresora una resolución en la que ambos números sean iguales.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.TooLarge" xml:space="preserve">
+    <value>Con la resolución de esta impresora, la etiqueta sería una imagen de {0} puntos, más de los {1} que Rotula puede dibujar, así que no se puede imprimir de esta forma. Haga la etiqueta más pequeña o elija una resolución menor en la configuración de la impresora.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.TooManyLabels" xml:space="preserve">
+    <value>Esta impresión produciría {0} etiquetas, más de las {1} que Rotula envía a un controlador de Windows de una sola vez. Cada copia es una página propia en la cola de impresión, así que un trabajo tan grande la saturaría. Imprima en lotes más pequeños, por ejemplo de {1} etiquetas o menos cada vez.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.PrinterCounter" xml:space="preserve">
+    <value>El campo "{0}" lo completa la propia impresora (un contador, una fecha o los datos de otro campo), algo que una imagen no puede hacer, así que la etiqueta mostraría un valor equivocado. Use en su lugar una variable de contador o de fecha de Rotula, o imprima esta etiqueta en una impresora que entienda ZPL.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.PrinterCounter.NoName" xml:space="preserve">
+    <value>Un campo de esta etiqueta lo completa la propia impresora (un contador, una fecha o los datos de otro campo), algo que una imagen no puede hacer, así que la etiqueta mostraría un valor equivocado. Use en su lugar una variable de contador o de fecha de Rotula, o imprima esta etiqueta en una impresora que entienda ZPL.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.Cancelled" xml:space="preserve">
+    <value>La revisión de la etiqueta para esta impresora se detuvo antes de que respondiera el controlador, así que no se imprimió nada. Vuelva a imprimir para repetir la revisión.</value>
+  </data>
+  <data name="Issue.Driver.Render.BarcodeNotDrawn" xml:space="preserve">
+    <value>El código de barras {0} no se puede dibujar con los datos "{1}", así que esta etiqueta no se imprimió (un código equivocado sería peor que ninguno). Corrija los datos de este código de barras y vuelva a imprimir.</value>
+  </data>
+  <data name="Issue.Driver.Render.ImageNotDrawn" xml:space="preserve">
+    <value>Una imagen de esta etiqueta no se pudo leer o es demasiado grande para dibujarla, así que esta etiqueta no se imprimió. Sustituya la imagen o hágala más pequeña y vuelva a imprimir.</value>
+  </data>
+  <data name="Issue.Driver.Render.ElementNotDrawn" xml:space="preserve">
+    <value>Una parte de esta etiqueta no se pudo dibujar como está diseñada, así que esta etiqueta no se imprimió. Revise los objetos de la etiqueta (por ejemplo, los datos de un código de barras o una imagen) y vuelva a imprimir.</value>
+  </data>
+  <data name="Print.Driver.FindingsTitle" xml:space="preserve">
+    <value>Antes de imprimir con el controlador de Windows</value>
+  </data>
+  <data name="Print.Driver.AcknowledgeBox" xml:space="preserve">
+    <value>Lo entiendo y quiero imprimir de todos modos</value>
+  </data>
+  <data name="Print.Driver.TickToContinue" xml:space="preserve">
+    <value>Todavía no se envió nada. Lea los puntos de la parte superior de esta ventana, marque "Lo entiendo y quiero imprimir de todos modos" si la etiqueta le sirve así y vuelva a pulsar Imprimir.</value>
+  </data>
+  <data name="Print.Busy.Checking" xml:space="preserve">
+    <value>Revisando la etiqueta con el controlador de Windows de la impresora...</value>
+  </data>
+  <data name="Print.Mode.AnswerFirst" xml:space="preserve">
+    <value>No se envió nada: Rotula todavía no sabe cómo entiende las etiquetas esta impresora. Elija una de las dos respuestas debajo del nombre de la impresora y vuelva a pulsar Imprimir.</value>
+  </data>
+  <data name="Print.Mode.PrinterNotListed" xml:space="preserve">
+    <value>No se envió nada: la impresora "{0}" no está en la lista de impresoras instaladas en este equipo, así que Rotula no puede preguntar cómo entiende las etiquetas. Actualice la lista de impresoras o elija una impresora de la lista y vuelva a pulsar Imprimir.</value>
+  </data>
+  <data name="Print.Mode.Change.ToWindowsDriver" xml:space="preserve">
+    <value>Cambiar a "Controlador de Windows (imagen)"</value>
+  </data>
+  <data name="Print.Mode.Change.ToPrinterLanguage" xml:space="preserve">
+    <value>Cambiar a "Lenguaje de la impresora (ZPL)"</value>
+  </data>
+  <data name="Preview.DriverNote" xml:space="preserve">
+    <value>La vista previa muestra lo que imprimirá esta impresora, salvo las partes que la ventana Imprimir indica antes de imprimir: imprime esta misma imagen con su controlador de Windows, así que el texto usa fuentes de Windows en lugar de las fuentes propias de la impresora.</value>
+  </data>
+  <data name="Preview.DriverNote.Short" xml:space="preserve">
+    <value>La vista previa muestra la impresión, salvo lo indicado</value>
+  </data>
+  <data name="Preview.DriverNote.Name" xml:space="preserve">
+    <value>Nota: la vista previa muestra la imagen impresa, salvo las partes que la ventana Imprimir indica antes de imprimir</value>
+  </data>
+  <data name="Print.Driver.MoreInList" xml:space="preserve">
+    <value>Y {0} más, en la lista de la parte superior de esta ventana.</value>
+  </data>
+  <data name="Data.Driver.Confirm" xml:space="preserve">
+    <value>Esta etiqueta no se imprimirá exactamente como se diseñó con el controlador de Windows de esta impresora:{0}Pulse Aceptar para imprimir el lote de todos modos, o Cancelar para no enviar nada.</value>
+  </data>
+  <data name="Data.Driver.CannotPrint" xml:space="preserve">
+    <value>No se envió nada: esta etiqueta no se puede imprimir con el controlador de Windows de esta impresora. Corrija lo que se indica abajo, o cambie la impresora a "Lenguaje de la impresora (ZPL)" si entiende ZPL, y vuelva a imprimir.</value>
+  </data>
+  <data name="Data.Driver.RecordNotDrawn" xml:space="preserve">
+    <value>El registro {0} no se pudo dibujar para el controlador de Windows, así que el lote se detuvo y no se imprimió nada a partir del registro {1}. Corrija los datos del registro {0} (el motivo se indica a continuación) y vuelva a imprimir los registros a partir del registro {1}.</value>
+  </data>
+  <data name="Data.Driver.RecordsNotDrawn" xml:space="preserve">
+    <value>Uno de los registros del {0} al {1} no se pudo dibujar para el controlador de Windows, así que el lote se detuvo y no se imprimió nada a partir del registro {0}. Corrija los datos de ese registro (el motivo se indica a continuación) y vuelva a imprimir los registros a partir del registro {0}.</value>
+  </data>
+  <data name="Data.Driver.PrintedThrough" xml:space="preserve">
+    <value>Las etiquetas hasta el registro {0} pueden haberse impreso; no las vuelva a imprimir.</value>
+  </data>
+  <data name="Data.Driver.PrintedInPart" xml:space="preserve">
+    <value>Las etiquetas hasta el registro {0} pueden haberse impreso, y el registro {0} solo en parte: {1} de sus {2} copias. Su número de serie sigue usado. No vuelva a imprimir esas etiquetas y compruebe cuántas copias del registro {0} salieron.</value>
+  </data>
+  <data name="Data.Driver.JobRefused" xml:space="preserve">
+    <value>La comprobación del controlador de Windows detuvo el lote en el registro {0}: la impresora ahora informa algo sobre esta etiqueta que no había cuando empezó la impresión (el motivo se indica a continuación), así que no se envió nada a partir del registro {0}. Revise la etiqueta y la impresora y vuelva a imprimir los registros a partir del registro {0}.</value>
+  </data>
+  <data name="Station.Driver.AskSetupPerson" xml:space="preserve">
+    <value>Esta etiqueta tiene partes que el controlador de Windows no puede imprimir de la misma manera. Pida a quien configuró este puesto que revise la etiqueta y vuelva a configurar el puesto.</value>
+  </data>
+  <data name="Station.Driver.SetupFindings" xml:space="preserve">
+    <value>Lo que el controlador de Windows no puede imprimir de la misma manera</value>
+  </data>
+  <data name="Station.Driver.CannotPrint" xml:space="preserve">
+    <value>Esta etiqueta no se puede imprimir en esta impresora tal como está, así que no se envió nada. Pida a quien configuró este puesto que revise la etiqueta. El motivo:</value>
+  </data>
+  <data name="Station.Driver.PreviewNote" xml:space="preserve">
+    <value>La vista previa muestra lo que imprimirá esta impresora, salvo las partes revisadas al configurar el puesto: imprime esta misma imagen con su controlador de Windows, así que el texto usa fuentes de Windows en lugar de las fuentes propias de la impresora.</value>
+  </data>
+  <data name="Menu.StationSetup" xml:space="preserve">
+    <value>Configurar puesto de impresión...</value>
+  </data>
+  <data name="Station.Setup.Title" xml:space="preserve">
+    <value>Configurar puesto de impresión</value>
+  </data>
+  <data name="Station.Setup.Intro" xml:space="preserve">
+    <value>Rotula revisa cada etiqueta del puesto con la impresora que usa. Una impresora que imprime con su controlador de Windows puede no imprimir algunas partes de una etiqueta de la misma manera: léalas y, si la etiqueta está bien así, marque la casilla y guarde, para que los operarios puedan imprimirla. Hágalo en el equipo donde funciona el puesto, con la sesión iniciada en la cuenta con la que se ejecuta: la revisión usa los controladores de impresora y los modos de impresión de ese equipo.</value>
+  </data>
+  <data name="Station.Setup.File" xml:space="preserve">
+    <value>Archivo de configuración: {0}</value>
+  </data>
+  <data name="Station.Setup.Check" xml:space="preserve">
+    <value>Volver a revisar</value>
+  </data>
+  <data name="Station.Setup.Save" xml:space="preserve">
+    <value>Guardar</value>
+  </data>
+  <data name="Station.Setup.Checking" xml:space="preserve">
+    <value>Revisando las etiquetas...</value>
+  </data>
+  <data name="Station.Setup.Mode" xml:space="preserve">
+    <value>Modo de impresión: {0}</value>
+  </data>
+  <data name="Station.Setup.Zpl" xml:space="preserve">
+    <value>Imprime en lenguaje de la impresora (ZPL). No hay nada que revisar.</value>
+  </data>
+  <data name="Station.Setup.NoModeYet" xml:space="preserve">
+    <value>No se eligió ningún modo de impresión para esta impresora en este equipo, así que el puesto imprime en lenguaje de la impresora (ZPL). Para imprimir con su controlador de Windows, elija ese modo para esta impresora en la ventana Imprimir y pulse Volver a revisar.</value>
+  </data>
+  <data name="Station.Setup.NoPrinter" xml:space="preserve">
+    <value>No hay ninguna impresora configurada para esta etiqueta. Añada una en station.json, o imprima una vez desde el diseñador en este equipo, y pulse Volver a revisar.</value>
+  </data>
+  <data name="Station.Setup.Driver.Clear" xml:space="preserve">
+    <value>Imprime con el controlador de Windows. Nada lo impide.</value>
+  </data>
+  <data name="Station.Setup.Driver.Warnings" xml:space="preserve">
+    <value>Imprime con el controlador de Windows, que no puede imprimir de la misma manera los puntos de abajo. Los operarios solo pueden imprimir esta etiqueta después de que usted marque la casilla y guarde.</value>
+  </data>
+  <data name="Station.Setup.Driver.Errors" xml:space="preserve">
+    <value>No se puede imprimir con el controlador de Windows. Cambie la etiqueta como se indica abajo, o ponga esta impresora en lenguaje de la impresora (ZPL) si entiende ZPL, y pulse Volver a revisar.</value>
+  </data>
+  <data name="Station.Setup.Acknowledge" xml:space="preserve">
+    <value>Revisé estos puntos. Permitir que el puesto imprima esta etiqueta de todos modos.</value>
+  </data>
+  <data name="Station.Setup.Saved" xml:space="preserve">
+    <value>Se guardó en {0}. El puesto lo usa a partir de la próxima vez que se inicie.</value>
+  </data>
+  <data name="Station.Setup.Unchanged" xml:space="preserve">
+    <value>No cambió nada, así que no se guardó nada.</value>
+  </data>
+  <data name="Station.Setup.NoStationJson" xml:space="preserve">
+    <value>Esta carpeta todavía no tiene station.json. Las etiquetas aceptadas se guardan junto al station.json del puesto, así que cree primero station.json en esta carpeta y vuelva a configurar el puesto.</value>
+  </data>
+  <data name="Station.Setup.SaveFailed" xml:space="preserve">
+    <value>Rotula no pudo guardar {0}. Compruebe que puede modificar archivos en esa carpeta y vuelva a pulsar Guardar.</value>
+  </data>
+  <data name="Station.Setup.Cleared" xml:space="preserve">
+    <value>Se guardó. Ya no hay ninguna etiqueta que aceptar, así que se eliminó {0}. El puesto lo tiene en cuenta a partir de la próxima vez que se inicie.</value>
+  </data>
+  <data name="Station.Setup.SharedLabel" xml:space="preserve">
+    <value>Se guardó en {0}, pero el archivo de etiqueta "{1}" se ofrece en dos impresoras que encuentran puntos distintos, y para un mismo archivo solo se puede aceptar uno de ellos. Los operarios solo pueden imprimirlo en {2}. Para imprimirlo en las dos, dé a cada impresora su propia copia del archivo de etiqueta y vuelva a configurar el puesto.</value>
+  </data>
+  <data name="Issue.Driver.Preflight.MarginBand" xml:space="preserve">
+    <value>Esta impresora no puede imprimir los {2} mm exteriores de la página, así que todo lo de la etiqueta que llegue a ese borde puede quedar cortado (etiqueta de {0} mm, área imprimible de {1} mm). Revise el tamaño de papel en la configuración de la impresora o deje un margen de al menos {2} mm alrededor del contenido de la etiqueta. Si no hay nada importante tan cerca del borde, puede imprimir de todos modos.</value>
+  </data>
+  <data name="Print.Error.InvalidLabel.Partial" xml:space="preserve">
+    <value>Una etiqueta con errores detuvo el trabajo, así que el resto no se envió. Etiquetas ya enviadas a la impresora antes de ella: {0}. Compruebe qué etiquetas salieron, corrija los problemas indicados y luego imprima solo las que faltan.</value>
+  </data>
 </root>

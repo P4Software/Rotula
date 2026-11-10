@@ -18,10 +18,15 @@ public partial class PreviewWindow : DialogWindow
     /// <summary>Creates the window and draws the label.</summary>
     /// <param name="preview">The preview cache of the open label (its current record data is used).</param>
     /// <param name="title">Name of the label, shown in the title.</param>
-    public PreviewWindow(PreviewCache preview, string title)
+    /// <param name="note">
+    /// The sentence under the picture: the "approximate" notice, or the accurate one when the chosen printer prints this very picture through its
+    /// Windows driver. A snapshot taken when the window opens, like the picture itself.
+    /// </param>
+    public PreviewWindow(PreviewCache preview, string title, string note)
     {
         InitializeComponent();
         Title = Loc.Get("Preview.TitleFor", title);
+        NoteText.Text = note;
         _viewModel = new PreviewViewModel(preview);
         DataContext = _viewModel;
         _viewModel.PictureChanged += (_, _) => Draw();

@@ -25,6 +25,8 @@ public class AppDataMergeTests : IDisposable
         _fake.Settings.Current.Language = "en";
         _main = new MainViewModel(_fake.Build());
         _main.Printer.SelectedPrinterName = "Test Printer";
+        // A Windows printer with no saved mode does not batch print until the person answers how it understands labels; these batches are ZPL.
+        _main.Printer.ChooseModeCommand.Execute(Rotula.Printing.PrinterOutputMode.PrinterLanguage);
     }
 
     public void Dispose()

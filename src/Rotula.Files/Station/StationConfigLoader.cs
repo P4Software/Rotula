@@ -172,6 +172,12 @@ public static class StationConfigLoader
         if (labels.Count == 0 && !issues.Any(x => x.Severity == ValidationSeverity.Error)) Error(StationKeys.NoLabels);
 
         if (issues.Any(x => x.Severity == ValidationSeverity.Error)) return new StationLoadResult(null, issues);
+        // ---- picture-mode acknowledgements: their own file next to the configuration, written by the set-up tool. A station without a
+        // configuration file has none (the set-up tool never creates station.json). Missing or damaged reads as nothing accepted: the station
+        // then refuses those labels with a plain message, which is the safe side.
+        var acknowledged = fileExists
+            ? StationAcknowledgements.Read(StationAcknowledgements.PathFor(configPath), folder)
+            : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         var config = new StationConfig
         {
             ConfigPath = fileExists ? Path.GetFullPath(configPath) : null,
@@ -182,6 +188,7 @@ public static class StationConfigLoader
             PrintOnLastScan = dto.PrintOnLastScan ?? true,
             ScanToSelect = dto.ScanToSelect ?? true,
             FullScreen = dto.FullScreen ?? true,
+            AcknowledgedFindings = acknowledged,
         };
         return new StationLoadResult(config, issues);
     }
@@ -191,7 +198,9 @@ public static class StationConfigLoader
 
     private static bool IsLabelFile(string path) => path.EndsWith(".rotula", StringComparison.OrdinalIgnoreCase);
 
-    private static string Resolve(string baseDir, string path)
+    /// <summary>A path from the configuration as a full path: relative ones start at <paramref name="baseDir"/>. Also used for the keys of
+    /// <see cref="StationAcknowledgements"/>, so a key finds its label exactly as the label's <c>file</c> does.</summary>
+    internal static string Resolve(string baseDir, string path)
     {
         string p = path.Trim();
         try { return Path.GetFullPath(Path.IsPathRooted(p) ? p : Path.Combine(baseDir, p)); }
