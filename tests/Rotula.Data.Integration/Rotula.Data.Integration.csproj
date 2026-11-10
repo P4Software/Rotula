@@ -11,7 +11,7 @@
   <ItemGroup>
     <!-- No coverlet.collector on purpose: the build workflow takes the FIRST cobertura report it finds for the Rotula.Core
          coverage gate, and a second project that loads Rotula.Core with almost no coverage must not be picked. -->
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
   </ItemGroup>
