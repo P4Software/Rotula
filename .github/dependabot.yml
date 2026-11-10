@@ -1,0 +1,22 @@
+# Keeps third-party dependencies current. Dependabot only opens pull requests; nothing here builds, publishes or signs anything.
+version: 2
+updates:
+  # NuGet: one grouped pull request per week for minor and patch updates, so the review stays small.
+  # Major versions are left as separate pull requests on purpose: they can change behaviour and deserve their own look
+  # (and, for a dependency that ships inside the app, a licence check against THIRD-PARTY-NOTICES.md).
+  - package-ecosystem: "nuget"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      nuget-minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+
+  # GitHub Actions: the workflows pin actions by version tag, so a monthly check is enough to pick up new releases.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
