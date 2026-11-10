@@ -41,9 +41,9 @@
 
   <ItemGroup>
     <!-- Official C# MCP SDK: MIT. -->
-    <PackageReference Include="ModelContextProtocol" Version="2.2.0" />
+    <PackageReference Include="ModelContextProtocol" Version="2.4.0" />
     <!-- Generic host (MIT): runs the MCP stdio transport and gives dependency injection. -->
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.14" />
   </ItemGroup>
 
 </Project>
