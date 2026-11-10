@@ -184,6 +184,26 @@ public class RelativePositionTests : IDisposable
         Assert.Equal(800 - measured, OriginOf(doc, bc).X);
     }
 
+    [Fact]
+    public void ACode128WithATrailingDigitRun_IsMeasuredWithSubsetC_AsThePrinterPrintsIt()
+    {
+        // The golden label prints SKU-0042 in ^BC mode A. Zebra documents that mode: "a string of four or more numeric digits causes an
+        // automatic shift to Subset C". So the symbol is Start B, S, K, U, '-', Code C, "00", "42", check, Stop = 10 symbol characters,
+        // not the 11 a subset-B-only reading gives (8 data characters). Width = 9 x 11 + 13 = 112 modules, 224 dots at module 2.
+        var bc = new BarcodeElement { Id = "bc", Symbology = BarcodeSymbology.Code128, Data = "SKU-0042", ModuleWidth = 2, Height = 90, Anchor = AnchorPoint.BottomRight };
+        var doc = NewDoc(bc);
+
+        int[] symbols = Rotula.Core.Barcodes.Code128.Encode(bc.Data)!;
+        Assert.Equal(new[] { Rotula.Core.Barcodes.Code128.StartB, 51, 43, 53, 13, 99, 0, 42 }, symbols.Take(8));
+        Assert.Equal(10, symbols.Length);
+        // Ground truth independent of the formula in BarcodeSizing: add up the real bar and space widths of every symbol.
+        int modules = Rotula.Core.Barcodes.Code128.ToRuns(symbols).Sum();
+        Assert.Equal(112, modules);
+
+        Assert.Equal(modules * 2, ElementSizeEstimator.Estimate(doc, bc).Width);
+        Assert.Equal(modules * 2, Rotula.Core.Barcodes.BarcodeSizing.Analyze(bc, bc.Data, (int)doc.Dpi)!.SymbolWidthDots);
+    }
+
     // ------------------------------------------------------------------------------------ cycles and missing references
 
     [Fact]
