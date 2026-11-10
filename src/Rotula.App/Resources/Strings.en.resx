@@ -6888,4 +6888,7 @@ Hash to add to apiKeyHashes in the settings file: {1}</value>
   <data name="Issue.Encoding.Unsupported" xml:space="preserve">
     <value>The label uses character set ^CI{0}, which this computer cannot produce, so no ZPL was generated. Choose another character set in the label properties.</value>
   </data>
+  <data name="Issue.Variable.Counter.Store.Failed" xml:space="preserve">
+    <value>The counters could not be read or saved for "{0}" ({1}). No serial number was lost or repeated: numbers already taken are given back or skipped. Check that the disk has free space and that you can write to the counters folder, then try again.</value>
+  </data>
 </root>

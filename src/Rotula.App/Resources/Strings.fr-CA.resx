@@ -6888,4 +6888,7 @@ Hachage à ajouter dans apiKeyHashes du fichier de paramètres : {1}</value>
   <data name="Issue.Encoding.Unsupported" xml:space="preserve">
     <value>L’étiquette utilise le jeu de caractères ^CI{0}, que cet ordinateur ne peut pas produire ; aucun ZPL n’a donc été généré. Choisissez un autre jeu de caractères dans les propriétés de l’étiquette.</value>
   </data>
+  <data name="Issue.Variable.Counter.Store.Failed" xml:space="preserve">
+    <value>Les compteurs de « {0} » n’ont pas pu être lus ni enregistrés ({1}). Aucun numéro de série n’a été perdu ni répété : les numéros déjà pris sont rendus ou sautés. Vérifiez que le disque a de l’espace libre et que vous pouvez écrire dans le dossier des compteurs, puis réessayez.</value>
+  </data>
 </root>
